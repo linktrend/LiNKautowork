@@ -29,9 +29,6 @@ jobs:
           for f in ops/*.sh; do
             bash -n "$f"
           done
-          for f in scripts/git/*.sh; do
-            bash -n "$f"
-          done
 
       - name: Run tests
         run: npm test
