@@ -1,0 +1,74 @@
+{
+  "source_of_truth": {
+    "canonical_directory": "automations/templates",
+    "mirror_targets": [
+      "AIOS workflow mirrors"
+    ],
+    "notes": "LiNKautowork templates are authoritative. AIOS copies are integration mirrors only."
+  },
+  "active_tenant": {
+    "tenant_uuid": "00000000-0000-0000-0000-000000000001",
+    "tenant_slug": "linktrend_internal"
+  },
+  "lifecycle": {
+    "states": [
+      "draft",
+      "dev_tested",
+      "qa_approved",
+      "ops_approved",
+      "prod_deployed",
+      "deprecated",
+      "archived"
+    ]
+  },
+  "templates": [
+    {
+      "file": "ritual-gates-unified.json",
+      "workflow_id": "ritual-gates-unified",
+      "criticality": "critical",
+      "state": "dev_tested"
+    },
+    {
+      "file": "urgent-event-ingestion.json",
+      "workflow_id": "urgent-event-ingestion",
+      "criticality": "critical",
+      "state": "dev_tested"
+    },
+    {
+      "file": "heartbeat-triage.json",
+      "workflow_id": "heartbeat-triage",
+      "criticality": "non_critical",
+      "state": "dev_tested"
+    },
+    {
+      "file": "security-exception-response.json",
+      "workflow_id": "security-exception-response",
+      "criticality": "critical",
+      "state": "dev_tested"
+    },
+    {
+      "file": "promotion-review-governance.json",
+      "workflow_id": "promotion-review-governance",
+      "criticality": "critical",
+      "state": "dev_tested"
+    },
+    {
+      "file": "restore-authorization-governance.json",
+      "workflow_id": "restore-authorization-governance",
+      "criticality": "critical",
+      "state": "dev_tested"
+    },
+    {
+      "file": "hot-cold-migration.json",
+      "workflow_id": "hot-cold-migration",
+      "criticality": "non_critical",
+      "state": "dev_tested"
+    },
+    {
+      "file": "daily-chairman-briefing.json",
+      "workflow_id": "daily-chairman-briefing-legacy",
+      "criticality": "non_critical",
+      "state": "deprecated"
+    }
+  ]
+}

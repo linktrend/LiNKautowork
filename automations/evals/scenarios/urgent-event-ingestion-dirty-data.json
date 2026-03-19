@@ -1,0 +1,1882 @@
+[
+  {
+    "case_id": "dirty-001",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-1",
+    "runId": "run-1",
+    "taskId": "task-1",
+    "dprId": "dpr-1",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 1",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-002",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-2",
+    "runId": "run-2",
+    "taskId": "task-2",
+    "dprId": "dpr-2",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 2",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-003",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-3",
+    "runId": "run-3",
+    "taskId": "task-3",
+    "dprId": "dpr-3",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 3",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-004",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-4",
+    "runId": "run-4",
+    "taskId": "task-4",
+    "dprId": "dpr-4",
+    "triggerSource": "api/webhook",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 4",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-005",
+    "tenantId": "bad-tenant",
+    "missionId": "mission-5",
+    "runId": "run-5",
+    "taskId": "task-5",
+    "dprId": "dpr-5",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 5",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-006",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-6",
+    "runId": "run-6",
+    "taskId": "task-6",
+    "dprId": "dpr-6",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 6",
+      "extra": null
+    }
+  },
+  {
+    "case_id": "dirty-007",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "",
+    "runId": "run-7",
+    "taskId": "task-7",
+    "dprId": "dpr-7",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 7",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-008",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-8",
+    "runId": "run-8",
+    "taskId": "task-8",
+    "dprId": "dpr-8",
+    "triggerSource": "api/webhook",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 8",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-009",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-9",
+    "runId": "",
+    "taskId": "task-9",
+    "dprId": "dpr-9",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 9",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-010",
+    "tenantId": "bad-tenant",
+    "missionId": "mission-10",
+    "runId": "run-10",
+    "taskId": "task-10",
+    "dprId": "dpr-10",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 10",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-011",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-11",
+    "runId": "run-11",
+    "taskId": "",
+    "dprId": "dpr-11",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 11",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-012",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-12",
+    "runId": "run-12",
+    "taskId": "task-12",
+    "dprId": "dpr-12",
+    "triggerSource": "api/webhook",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 12",
+      "extra": null
+    }
+  },
+  {
+    "case_id": "dirty-013",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-13",
+    "runId": "run-13",
+    "taskId": "task-13",
+    "dprId": "",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 13",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-014",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "",
+    "runId": "run-14",
+    "taskId": "task-14",
+    "dprId": "dpr-14",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 14",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-015",
+    "tenantId": "bad-tenant",
+    "missionId": "mission-15",
+    "runId": "run-15",
+    "taskId": "task-15",
+    "dprId": "dpr-15",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 15",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-016",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-16",
+    "runId": "run-16",
+    "taskId": "task-16",
+    "dprId": "dpr-16",
+    "triggerSource": "api/webhook",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 16",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-017",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-17",
+    "runId": "run-17",
+    "taskId": "task-17",
+    "dprId": "dpr-17",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 17",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-018",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-18",
+    "runId": "",
+    "taskId": "task-18",
+    "dprId": "dpr-18",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 18",
+      "extra": null
+    }
+  },
+  {
+    "case_id": "dirty-019",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-19",
+    "runId": "run-19",
+    "taskId": "task-19",
+    "dprId": "dpr-19",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 19",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-020",
+    "tenantId": "bad-tenant",
+    "missionId": "mission-20",
+    "runId": "run-20",
+    "taskId": "task-20",
+    "dprId": "dpr-20",
+    "triggerSource": "api/webhook",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 20",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-021",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "",
+    "runId": "run-21",
+    "taskId": "task-21",
+    "dprId": "dpr-21",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 21",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-022",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-22",
+    "runId": "run-22",
+    "taskId": "",
+    "dprId": "dpr-22",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 22",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-023",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-23",
+    "runId": "run-23",
+    "taskId": "task-23",
+    "dprId": "dpr-23",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 23",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-024",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-24",
+    "runId": "run-24",
+    "taskId": "task-24",
+    "dprId": "dpr-24",
+    "triggerSource": "api/webhook",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 24",
+      "extra": null
+    }
+  },
+  {
+    "case_id": "dirty-025",
+    "tenantId": "bad-tenant",
+    "missionId": "mission-25",
+    "runId": "run-25",
+    "taskId": "task-25",
+    "dprId": "dpr-25",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 25",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-026",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-26",
+    "runId": "run-26",
+    "taskId": "task-26",
+    "dprId": "",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 26",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-027",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-27",
+    "runId": "",
+    "taskId": "task-27",
+    "dprId": "dpr-27",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 27",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-028",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "",
+    "runId": "run-28",
+    "taskId": "task-28",
+    "dprId": "dpr-28",
+    "triggerSource": "api/webhook",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 28",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-029",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-29",
+    "runId": "run-29",
+    "taskId": "task-29",
+    "dprId": "dpr-29",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 29",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-030",
+    "tenantId": "bad-tenant",
+    "missionId": "mission-30",
+    "runId": "run-30",
+    "taskId": "task-30",
+    "dprId": "dpr-30",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 30",
+      "extra": null
+    }
+  },
+  {
+    "case_id": "dirty-031",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-31",
+    "runId": "run-31",
+    "taskId": "task-31",
+    "dprId": "dpr-31",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 31",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-032",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-32",
+    "runId": "run-32",
+    "taskId": "task-32",
+    "dprId": "dpr-32",
+    "triggerSource": "api/webhook",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 32",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-033",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-33",
+    "runId": "run-33",
+    "taskId": "",
+    "dprId": "dpr-33",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 33",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-034",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-34",
+    "runId": "run-34",
+    "taskId": "task-34",
+    "dprId": "dpr-34",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 34",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-035",
+    "tenantId": "bad-tenant",
+    "missionId": "",
+    "runId": "run-35",
+    "taskId": "task-35",
+    "dprId": "dpr-35",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 35",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-036",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-36",
+    "runId": "",
+    "taskId": "task-36",
+    "dprId": "dpr-36",
+    "triggerSource": "api/webhook",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 36",
+      "extra": null
+    }
+  },
+  {
+    "case_id": "dirty-037",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-37",
+    "runId": "run-37",
+    "taskId": "task-37",
+    "dprId": "dpr-37",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 37",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-038",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-38",
+    "runId": "run-38",
+    "taskId": "task-38",
+    "dprId": "dpr-38",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 38",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-039",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-39",
+    "runId": "run-39",
+    "taskId": "task-39",
+    "dprId": "",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 39",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-040",
+    "tenantId": "bad-tenant",
+    "missionId": "mission-40",
+    "runId": "run-40",
+    "taskId": "task-40",
+    "dprId": "dpr-40",
+    "triggerSource": "api/webhook",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 40",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-041",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-41",
+    "runId": "run-41",
+    "taskId": "task-41",
+    "dprId": "dpr-41",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 41",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-042",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "",
+    "runId": "run-42",
+    "taskId": "task-42",
+    "dprId": "dpr-42",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 42",
+      "extra": null
+    }
+  },
+  {
+    "case_id": "dirty-043",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-43",
+    "runId": "run-43",
+    "taskId": "task-43",
+    "dprId": "dpr-43",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 43",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-044",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-44",
+    "runId": "run-44",
+    "taskId": "",
+    "dprId": "dpr-44",
+    "triggerSource": "api/webhook",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 44",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-045",
+    "tenantId": "bad-tenant",
+    "missionId": "mission-45",
+    "runId": "",
+    "taskId": "task-45",
+    "dprId": "dpr-45",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 45",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-046",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-46",
+    "runId": "run-46",
+    "taskId": "task-46",
+    "dprId": "dpr-46",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 46",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-047",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-47",
+    "runId": "run-47",
+    "taskId": "task-47",
+    "dprId": "dpr-47",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 47",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-048",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-48",
+    "runId": "run-48",
+    "taskId": "task-48",
+    "dprId": "dpr-48",
+    "triggerSource": "api/webhook",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 48",
+      "extra": null
+    }
+  },
+  {
+    "case_id": "dirty-049",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "",
+    "runId": "run-49",
+    "taskId": "task-49",
+    "dprId": "dpr-49",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 49",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-050",
+    "tenantId": "bad-tenant",
+    "missionId": "mission-50",
+    "runId": "run-50",
+    "taskId": "task-50",
+    "dprId": "dpr-50",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 50",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-051",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-51",
+    "runId": "run-51",
+    "taskId": "task-51",
+    "dprId": "dpr-51",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 51",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-052",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-52",
+    "runId": "run-52",
+    "taskId": "task-52",
+    "dprId": "",
+    "triggerSource": "api/webhook",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 52",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-053",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-53",
+    "runId": "run-53",
+    "taskId": "task-53",
+    "dprId": "dpr-53",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 53",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-054",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-54",
+    "runId": "",
+    "taskId": "task-54",
+    "dprId": "dpr-54",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 54",
+      "extra": null
+    }
+  },
+  {
+    "case_id": "dirty-055",
+    "tenantId": "bad-tenant",
+    "missionId": "mission-55",
+    "runId": "run-55",
+    "taskId": "",
+    "dprId": "dpr-55",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 55",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-056",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "",
+    "runId": "run-56",
+    "taskId": "task-56",
+    "dprId": "dpr-56",
+    "triggerSource": "api/webhook",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 56",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-057",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-57",
+    "runId": "run-57",
+    "taskId": "task-57",
+    "dprId": "dpr-57",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 57",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-058",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-58",
+    "runId": "run-58",
+    "taskId": "task-58",
+    "dprId": "dpr-58",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 58",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-059",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-59",
+    "runId": "run-59",
+    "taskId": "task-59",
+    "dprId": "dpr-59",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 59",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-060",
+    "tenantId": "bad-tenant",
+    "missionId": "mission-60",
+    "runId": "run-60",
+    "taskId": "task-60",
+    "dprId": "dpr-60",
+    "triggerSource": "api/webhook",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 60",
+      "extra": null
+    }
+  },
+  {
+    "case_id": "dirty-061",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-61",
+    "runId": "run-61",
+    "taskId": "task-61",
+    "dprId": "dpr-61",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 61",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-062",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-62",
+    "runId": "run-62",
+    "taskId": "task-62",
+    "dprId": "dpr-62",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 62",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-063",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "",
+    "runId": "",
+    "taskId": "task-63",
+    "dprId": "dpr-63",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 63",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-064",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-64",
+    "runId": "run-64",
+    "taskId": "task-64",
+    "dprId": "dpr-64",
+    "triggerSource": "api/webhook",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 64",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-065",
+    "tenantId": "bad-tenant",
+    "missionId": "mission-65",
+    "runId": "run-65",
+    "taskId": "task-65",
+    "dprId": "",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 65",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-066",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-66",
+    "runId": "run-66",
+    "taskId": "",
+    "dprId": "dpr-66",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 66",
+      "extra": null
+    }
+  },
+  {
+    "case_id": "dirty-067",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-67",
+    "runId": "run-67",
+    "taskId": "task-67",
+    "dprId": "dpr-67",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 67",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-068",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-68",
+    "runId": "run-68",
+    "taskId": "task-68",
+    "dprId": "dpr-68",
+    "triggerSource": "api/webhook",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 68",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-069",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-69",
+    "runId": "run-69",
+    "taskId": "task-69",
+    "dprId": "dpr-69",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 69",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-070",
+    "tenantId": "bad-tenant",
+    "missionId": "",
+    "runId": "run-70",
+    "taskId": "task-70",
+    "dprId": "dpr-70",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 70",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-071",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-71",
+    "runId": "run-71",
+    "taskId": "task-71",
+    "dprId": "dpr-71",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 71",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-072",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-72",
+    "runId": "",
+    "taskId": "task-72",
+    "dprId": "dpr-72",
+    "triggerSource": "api/webhook",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 72",
+      "extra": null
+    }
+  },
+  {
+    "case_id": "dirty-073",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-73",
+    "runId": "run-73",
+    "taskId": "task-73",
+    "dprId": "dpr-73",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 73",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-074",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-74",
+    "runId": "run-74",
+    "taskId": "task-74",
+    "dprId": "dpr-74",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 74",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-075",
+    "tenantId": "bad-tenant",
+    "missionId": "mission-75",
+    "runId": "run-75",
+    "taskId": "task-75",
+    "dprId": "dpr-75",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 75",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-076",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-76",
+    "runId": "run-76",
+    "taskId": "task-76",
+    "dprId": "dpr-76",
+    "triggerSource": "api/webhook",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 76",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-077",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "",
+    "runId": "run-77",
+    "taskId": "",
+    "dprId": "dpr-77",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 77",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-078",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-78",
+    "runId": "run-78",
+    "taskId": "task-78",
+    "dprId": "",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 78",
+      "extra": null
+    }
+  },
+  {
+    "case_id": "dirty-079",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-79",
+    "runId": "run-79",
+    "taskId": "task-79",
+    "dprId": "dpr-79",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 79",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-080",
+    "tenantId": "bad-tenant",
+    "missionId": "mission-80",
+    "runId": "run-80",
+    "taskId": "task-80",
+    "dprId": "dpr-80",
+    "triggerSource": "api/webhook",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 80",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-081",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-81",
+    "runId": "",
+    "taskId": "task-81",
+    "dprId": "dpr-81",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 81",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-082",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-82",
+    "runId": "run-82",
+    "taskId": "task-82",
+    "dprId": "dpr-82",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 82",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-083",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-83",
+    "runId": "run-83",
+    "taskId": "task-83",
+    "dprId": "dpr-83",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 83",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-084",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "",
+    "runId": "run-84",
+    "taskId": "task-84",
+    "dprId": "dpr-84",
+    "triggerSource": "api/webhook",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 84",
+      "extra": null
+    }
+  },
+  {
+    "case_id": "dirty-085",
+    "tenantId": "bad-tenant",
+    "missionId": "mission-85",
+    "runId": "run-85",
+    "taskId": "task-85",
+    "dprId": "dpr-85",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 85",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-086",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-86",
+    "runId": "run-86",
+    "taskId": "task-86",
+    "dprId": "dpr-86",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 86",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-087",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-87",
+    "runId": "run-87",
+    "taskId": "task-87",
+    "dprId": "dpr-87",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 87",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-088",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-88",
+    "runId": "run-88",
+    "taskId": "",
+    "dprId": "dpr-88",
+    "triggerSource": "api/webhook",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 88",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-089",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-89",
+    "runId": "run-89",
+    "taskId": "task-89",
+    "dprId": "dpr-89",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 89",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-090",
+    "tenantId": "bad-tenant",
+    "missionId": "mission-90",
+    "runId": "",
+    "taskId": "task-90",
+    "dprId": "dpr-90",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 90",
+      "extra": null
+    }
+  },
+  {
+    "case_id": "dirty-091",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "",
+    "runId": "run-91",
+    "taskId": "task-91",
+    "dprId": "",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 91",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-092",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-92",
+    "runId": "run-92",
+    "taskId": "task-92",
+    "dprId": "dpr-92",
+    "triggerSource": "api/webhook",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 92",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-093",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-93",
+    "runId": "run-93",
+    "taskId": "task-93",
+    "dprId": "dpr-93",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 93",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-094",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-94",
+    "runId": "run-94",
+    "taskId": "task-94",
+    "dprId": "dpr-94",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 94",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-095",
+    "tenantId": "bad-tenant",
+    "missionId": "mission-95",
+    "runId": "run-95",
+    "taskId": "task-95",
+    "dprId": "dpr-95",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 95",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-096",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-96",
+    "runId": "run-96",
+    "taskId": "task-96",
+    "dprId": "dpr-96",
+    "triggerSource": "api/webhook",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 96",
+      "extra": null
+    }
+  },
+  {
+    "case_id": "dirty-097",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-97",
+    "runId": "run-97",
+    "taskId": "task-97",
+    "dprId": "dpr-97",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 97",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-098",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "",
+    "runId": "run-98",
+    "taskId": "task-98",
+    "dprId": "dpr-98",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 98",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-099",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-99",
+    "runId": "",
+    "taskId": "",
+    "dprId": "dpr-99",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 99",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-100",
+    "tenantId": "bad-tenant",
+    "missionId": "mission-100",
+    "runId": "run-100",
+    "taskId": "task-100",
+    "dprId": "dpr-100",
+    "triggerSource": "api/webhook",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 100",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-101",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-101",
+    "runId": "run-101",
+    "taskId": "task-101",
+    "dprId": "dpr-101",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 101",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-102",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-102",
+    "runId": "run-102",
+    "taskId": "task-102",
+    "dprId": "dpr-102",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 102",
+      "extra": null
+    }
+  },
+  {
+    "case_id": "dirty-103",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-103",
+    "runId": "run-103",
+    "taskId": "task-103",
+    "dprId": "dpr-103",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 103",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-104",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-104",
+    "runId": "run-104",
+    "taskId": "task-104",
+    "dprId": "",
+    "triggerSource": "api/webhook",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 104",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-105",
+    "tenantId": "bad-tenant",
+    "missionId": "",
+    "runId": "run-105",
+    "taskId": "task-105",
+    "dprId": "dpr-105",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 105",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-106",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-106",
+    "runId": "run-106",
+    "taskId": "task-106",
+    "dprId": "dpr-106",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 106",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-107",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-107",
+    "runId": "run-107",
+    "taskId": "task-107",
+    "dprId": "dpr-107",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 107",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-108",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-108",
+    "runId": "",
+    "taskId": "task-108",
+    "dprId": "dpr-108",
+    "triggerSource": "api/webhook",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 108",
+      "extra": null
+    }
+  },
+  {
+    "case_id": "dirty-109",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-109",
+    "runId": "run-109",
+    "taskId": "task-109",
+    "dprId": "dpr-109",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 109",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-110",
+    "tenantId": "bad-tenant",
+    "missionId": "mission-110",
+    "runId": "run-110",
+    "taskId": "",
+    "dprId": "dpr-110",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 110",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-111",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-111",
+    "runId": "run-111",
+    "taskId": "task-111",
+    "dprId": "dpr-111",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 111",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-112",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "",
+    "runId": "run-112",
+    "taskId": "task-112",
+    "dprId": "dpr-112",
+    "triggerSource": "api/webhook",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 112",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-113",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-113",
+    "runId": "run-113",
+    "taskId": "task-113",
+    "dprId": "dpr-113",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 113",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-114",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-114",
+    "runId": "run-114",
+    "taskId": "task-114",
+    "dprId": "dpr-114",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 114",
+      "extra": null
+    }
+  },
+  {
+    "case_id": "dirty-115",
+    "tenantId": "bad-tenant",
+    "missionId": "mission-115",
+    "runId": "run-115",
+    "taskId": "task-115",
+    "dprId": "dpr-115",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 115",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-116",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-116",
+    "runId": "run-116",
+    "taskId": "task-116",
+    "dprId": "dpr-116",
+    "triggerSource": "api/webhook",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 116",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-117",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-117",
+    "runId": "",
+    "taskId": "task-117",
+    "dprId": "",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 117",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-118",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "mission-118",
+    "runId": "run-118",
+    "taskId": "task-118",
+    "dprId": "dpr-118",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 118",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-119",
+    "tenantId": "00000000-0000-0000-0000-000000000001",
+    "missionId": "",
+    "runId": "run-119",
+    "taskId": "task-119",
+    "dprId": "dpr-119",
+    "triggerSource": "paperclip",
+    "payload": {
+      "severity": "urgent",
+      "message": "scenario 119",
+      "extra": {
+        "foo": "bar"
+      }
+    }
+  },
+  {
+    "case_id": "dirty-120",
+    "tenantId": "bad-tenant",
+    "missionId": "mission-120",
+    "runId": "run-120",
+    "taskId": "task-120",
+    "dprId": "dpr-120",
+    "triggerSource": "api/webhook",
+    "payload": {
+      "severity": "critical",
+      "message": "scenario 120",
+      "extra": null
+    }
+  }
+]

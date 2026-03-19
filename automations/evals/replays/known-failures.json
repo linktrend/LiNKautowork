@@ -1,0 +1,38 @@
+[
+  {
+    "case_id": "replay-001",
+    "workflow_id": "urgent-event-ingestion",
+    "reason": "missing missionId rejected",
+    "expected_result": "hard_fail"
+  },
+  {
+    "case_id": "replay-002",
+    "workflow_id": "urgent-event-ingestion",
+    "reason": "tenant mismatch rejected",
+    "expected_result": "hard_fail"
+  },
+  {
+    "case_id": "replay-003",
+    "workflow_id": "security-exception-response",
+    "reason": "security contradiction triggers scoped kill switch",
+    "expected_result": "kill_switch_scoped"
+  },
+  {
+    "case_id": "replay-004",
+    "workflow_id": "promotion-review-governance",
+    "reason": "missing Chairman approval blocks protected promotion",
+    "expected_result": "hard_fail"
+  },
+  {
+    "case_id": "replay-005",
+    "workflow_id": "restore-authorization-governance",
+    "reason": "missing COO approval blocks restore",
+    "expected_result": "hard_fail"
+  },
+  {
+    "case_id": "replay-006",
+    "workflow_id": "ritual-gates-unified",
+    "reason": "data source missing sections returns degraded report",
+    "expected_result": "degraded_report"
+  }
+]

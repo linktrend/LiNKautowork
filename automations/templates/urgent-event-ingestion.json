@@ -1,0 +1,88 @@
+{
+  "name": "AIOS Urgent Event Ingestion",
+  "nodes": [
+    {
+      "name": "Urgent Event Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "aios/urgent-event"
+      }
+    },
+    {
+      "name": "Validate Canonical Tenant & Lineage",
+      "type": "n8n-nodes-base.function",
+      "parameters": {
+        "functionCode": "const body = items[0].json;\nif (body.tenantId !== '00000000-0000-0000-0000-000000000001') { throw new Error('tenantId mismatch'); }\nif (!body.runId || !body.taskId || !body.dprId || !body.missionId) { throw new Error('missionId, runId, taskId, dprId required'); }\nreturn items;"
+      }
+    },
+    {
+      "name": "Wake Paperclip",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{$env.PAPERCLIP_EVENT_URL}}",
+        "method": "POST",
+        "sendBody": true,
+        "jsonBody": "={{$json}}"
+      }
+    },
+    {
+      "name": "Publish Execution Event",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{$env.LINKAUTOWORK_GATEWAY_URL + '/v1/events/publish'}}",
+        "method": "POST",
+        "sendBody": true,
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-link-service",
+              "value": "n8n"
+            },
+            {
+              "name": "x-link-service-token",
+              "value": "={{$env.LINK_SERVICE_TOKEN_N8N}}"
+            }
+          ]
+        },
+        "jsonBody": "={{ { eventType: 'workflow.execution', mission: { tenantId: $json.tenantId, missionId: $json.missionId, runId: $json.runId, taskId: $json.taskId, dprId: $json.dprId, triggerSource: 'n8n.webhook.urgent-event' }, status: 'ok', payload: { workflowId: 'urgent-event-ingestion', severity: $json.severity || 'urgent' } } }}"
+      }
+    }
+  ],
+  "connections": {
+    "Urgent Event Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Canonical Tenant & Lineage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Canonical Tenant & Lineage": {
+      "main": [
+        [
+          {
+            "node": "Wake Paperclip",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wake Paperclip": {
+      "main": [
+        [
+          {
+            "node": "Publish Execution Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -1,0 +1,139 @@
+{
+  "name": "AIOS Ritual Gates Unified Scheduler",
+  "nodes": [
+    {
+      "name": "Ritual Schedule Trigger",
+      "type": "n8n-nodes-base.cron",
+      "parameters": {
+        "timezone": "Asia/Taipei",
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyDay",
+              "hour": 8,
+              "minute": 0
+            },
+            {
+              "mode": "everyDay",
+              "hour": 10,
+              "minute": 45
+            },
+            {
+              "mode": "everyDay",
+              "hour": 14,
+              "minute": 45
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Build Gate Envelope",
+      "type": "n8n-nodes-base.function",
+      "parameters": {
+        "functionCode": "const now = new Date();\nconst hour = now.getHours();\nconst minute = now.getMinutes();\nlet gateWindow = 'strategic';\nif (hour === 10 && minute === 45) gateWindow = 'operational';\nif (hour === 14 && minute === 45) gateWindow = 'quality';\nconst missionId = `ritual-${gateWindow}-${now.toISOString().slice(0,10)}`;\nreturn [{\n  json: {\n    eventType: `ritual.${gateWindow}`,\n    gateWindow,\n    mission: {\n      tenantId: '00000000-0000-0000-0000-000000000001',\n      missionId,\n      runId: `${missionId}-run`,\n      taskId: `${missionId}-task`,\n      dprId: `${missionId}-dpr`,\n      triggerSource: 'n8n.scheduler'\n    },\n    generatedAt: now.toISOString()\n  }\n}];"
+      }
+    },
+    {
+      "name": "Fetch Gate Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{$env.AIOS_GATE_REPORT_URL + '?gate=' + $json.gateWindow}}",
+        "method": "GET"
+      }
+    },
+    {
+      "name": "Build Confidence Output",
+      "type": "n8n-nodes-base.function",
+      "parameters": {
+        "functionCode": "const item = items[0].json;\nconst gate = item.gateWindow;\nconst requiredByGate = {\n  strategic: ['strategicPriorities', 'blockedDecisions'],\n  operational: ['costAudit', 'healthMetrics', 'confidenceFlags'],\n  quality: ['qaHealth', 'releaseRisk', 'exceptions']\n};\nconst required = requiredByGate[gate] || [];\nconst missingSections = required.filter((k) => item[k] === undefined || item[k] === null);\nconst confidence = missingSections.length === 0 ? 95 : 70;\nitem.partialReport = missingSections.length > 0;\nitem.confidence = confidence;\nitem.missingSections = missingSections;\nitem.summary = `[${gate.toUpperCase()} Gate] confidence=${confidence}% partial=${item.partialReport}`;\nreturn [{ json: item }];"
+      }
+    },
+    {
+      "name": "Post Gate To Slack",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{$env.SLACK_OPERATIONS_WEBHOOK_URL}}",
+        "method": "POST",
+        "sendBody": true,
+        "jsonBody": "={{ { text: $json.summary + ($json.partialReport ? ' | Missing: ' + ($json.missingSections || []).join(', ') : '') } }}"
+      }
+    },
+    {
+      "name": "Publish Gate Event",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{$env.LINKAUTOWORK_GATEWAY_URL + '/v1/events/publish'}}",
+        "method": "POST",
+        "sendBody": true,
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-link-service",
+              "value": "n8n"
+            },
+            {
+              "name": "x-link-service-token",
+              "value": "={{$env.LINK_SERVICE_TOKEN_N8N}}"
+            }
+          ]
+        },
+        "jsonBody": "={{ { eventType: $json.eventType, mission: $json.mission, status: $json.partialReport ? 'degraded' : 'ok', payload: { gateWindow: $json.gateWindow, confidence: $json.confidence, partialReport: $json.partialReport, missingSections: $json.missingSections || [], generatedAt: $json.generatedAt } } }}"
+      }
+    }
+  ],
+  "connections": {
+    "Ritual Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Build Gate Envelope",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Gate Envelope": {
+      "main": [
+        [
+          {
+            "node": "Fetch Gate Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Gate Data": {
+      "main": [
+        [
+          {
+            "node": "Build Confidence Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Confidence Output": {
+      "main": [
+        [
+          {
+            "node": "Post Gate To Slack",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Publish Gate Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

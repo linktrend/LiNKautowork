@@ -1,0 +1,40 @@
+name: LiNKautowork CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate templates
+        run: npm run validate:templates
+
+      - name: Lint shell scripts syntax
+        run: |
+          for f in ops/*.sh; do
+            bash -n "$f"
+          done
+          for f in scripts/git/*.sh; do
+            bash -n "$f"
+          done
+
+      - name: Run tests
+        run: npm test
+
+      - name: Typecheck
+        run: npm run typecheck

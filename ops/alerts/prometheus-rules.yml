@@ -1,0 +1,29 @@
+groups:
+  - name: linkautowork-mvo
+    rules:
+      - alert: LiNKautoworkUrgentDispatchP95High
+        expr: histogram_quantile(0.95, sum(rate(linkautowork_ingress_dispatch_latency_ms_bucket[5m])) by (le)) > 30000
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Urgent dispatch p95 above 30s"
+      - alert: LiNKautoworkCriticalFailureRateHigh
+        expr: |
+          (
+            sum(rate(linkautowork_execution_outcome_total{criticality="critical",status="failure"}[15m]))
+            /
+            clamp_min(sum(rate(linkautowork_execution_outcome_total{criticality="critical"}[15m])), 0.0001)
+          ) > 0.01
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical workflow failure rate above 1% (SLO breach risk)"
+      - alert: LiNKautoworkKillSwitchActivated
+        expr: sum(increase(linkautowork_killswitch_events_total{action="activate"}[5m])) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Kill switch activated"

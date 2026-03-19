@@ -1,0 +1,2 @@
+export const CANONICAL_INTERNAL_TENANT_UUID = '00000000-0000-0000-0000-000000000001';
+export const INTERNAL_TENANT_SLUG = 'linktrend_internal';

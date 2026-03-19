@@ -1,0 +1,6 @@
+link-n8n/
+node_modules/
+dist/
+.git/
+ops/backups/
+automations/live/

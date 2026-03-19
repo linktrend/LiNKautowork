@@ -1,0 +1,123 @@
+{
+  "name": "AIOS Heartbeat Triage",
+  "nodes": [
+    {
+      "name": "Heartbeat Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "aios/heartbeat/triage"
+      }
+    },
+    {
+      "name": "Validate Canonical Tenant",
+      "type": "n8n-nodes-base.function",
+      "parameters": {
+        "functionCode": "const body = items[0].json;\nif (body.tenantId !== '00000000-0000-0000-0000-000000000001') throw new Error('tenant mismatch');\nif (!body.missionId || !body.runId || !body.taskId || !body.dprId) throw new Error('mission lineage required');\nreturn items;"
+      }
+    },
+    {
+      "name": "Load Mission Health",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{$env.SUPABASE_HEALTH_RPC}}",
+        "method": "POST",
+        "sendBody": true,
+        "jsonBody": "={{ { tenant_id: $json.tenantId, mission_id: $json.missionId } }}"
+      }
+    },
+    {
+      "name": "Build Priority Packet",
+      "type": "n8n-nodes-base.function",
+      "parameters": {
+        "functionCode": "const data = items[0].json;\nreturn [{ json: { tenantId: data.tenantId, missionId: data.missionId, runId: data.runId, taskId: data.taskId, dprId: data.dprId, summary: data.summary || 'Heartbeat triage packet', blockers: data.blockers || [], risk: data.risk || 'unknown', triggerSource: 'n8n.webhook.heartbeat' } }];"
+      }
+    },
+    {
+      "name": "Notify Operations Slack",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{$env.SLACK_OPERATIONS_WEBHOOK_URL}}",
+        "method": "POST",
+        "sendBody": true,
+        "jsonBody": "={{ { text: '[Heartbeat Triage] ' + $json.summary + ' | risk=' + $json.risk } }}"
+      }
+    },
+    {
+      "name": "Publish Heartbeat Event",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{$env.LINKAUTOWORK_GATEWAY_URL + '/v1/events/publish'}}",
+        "method": "POST",
+        "sendBody": true,
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-link-service",
+              "value": "n8n"
+            },
+            {
+              "name": "x-link-service-token",
+              "value": "={{$env.LINK_SERVICE_TOKEN_N8N}}"
+            }
+          ]
+        },
+        "jsonBody": "={{ { eventType: 'workflow.execution', mission: { tenantId: $json.tenantId, missionId: $json.missionId, runId: $json.runId, taskId: $json.taskId, dprId: $json.dprId, triggerSource: $json.triggerSource }, status: 'ok', payload: { workflowId: 'heartbeat-triage', summary: $json.summary, blockers: $json.blockers, risk: $json.risk } } }}"
+      }
+    }
+  ],
+  "connections": {
+    "Heartbeat Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Canonical Tenant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Canonical Tenant": {
+      "main": [
+        [
+          {
+            "node": "Load Mission Health",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Mission Health": {
+      "main": [
+        [
+          {
+            "node": "Build Priority Packet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Priority Packet": {
+      "main": [
+        [
+          {
+            "node": "Notify Operations Slack",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Publish Heartbeat Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

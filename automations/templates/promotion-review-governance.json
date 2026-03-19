@@ -1,0 +1,84 @@
+{
+  "name": "AIOS Promotion Review Governance",
+  "nodes": [
+    {
+      "name": "Promotion Candidate Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "aios/promotions/review"
+      }
+    },
+    {
+      "name": "Validate Governance Payload",
+      "type": "n8n-nodes-base.function",
+      "parameters": {
+        "functionCode": "const body = items[0].json;\nif (body.tenantId !== '00000000-0000-0000-0000-000000000001') throw new Error('tenant mismatch');\nif (!body.missionId || !body.runId || !body.taskId || !body.dprId) throw new Error('lineage required');\nif (!body.approvals?.auditorRecommendation || !body.approvals?.headOfQualityApproved || !body.approvals?.cooApproved) { throw new Error('auditor, Head of Quality, and COO approvals required'); }\nif (!body.approvals?.chairmanApproved) { throw new Error('Chairman approval required for protected promotion decision'); }\nreturn items;"
+      }
+    },
+    {
+      "name": "Record Lifecycle Transition",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{$env.LINKAUTOWORK_GATEWAY_URL + '/v1/lifecycle/transition'}}",
+        "method": "POST",
+        "sendBody": true,
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-link-control-token",
+              "value": "={{$env.LINK_CONTROL_TOKEN}}"
+            }
+          ]
+        },
+        "jsonBody": "={{ { mission: { tenantId: $json.tenantId, missionId: $json.missionId, runId: $json.runId, taskId: $json.taskId, dprId: $json.dprId, triggerSource: 'n8n.promotion-governance' }, workflowId: $json.workflowId || 'promotion-review-governance', fromState: $json.fromState || 'ops_approved', toState: $json.toState || 'prod_deployed', protectedAction: true, approvals: $json.approvals, reason: $json.reason || 'Promotion approval completed via governance chain' } }}"
+      }
+    },
+    {
+      "name": "Post Approval To Slack",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{$env.SLACK_APPROVALS_WEBHOOK_URL || $env.SLACK_OPERATIONS_WEBHOOK_URL}}",
+        "method": "POST",
+        "sendBody": true,
+        "jsonBody": "={{ { text: '[Promotion Approved] Auditor + Head of Quality + COO + Chairman approvals complete. Candidate ready for production deployment.' } }}"
+      }
+    }
+  ],
+  "connections": {
+    "Promotion Candidate Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Governance Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Governance Payload": {
+      "main": [
+        [
+          {
+            "node": "Record Lifecycle Transition",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record Lifecycle Transition": {
+      "main": [
+        [
+          {
+            "node": "Post Approval To Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

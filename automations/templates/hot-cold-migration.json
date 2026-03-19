@@ -1,0 +1,134 @@
+{
+  "name": "AIOS Hot to Cold Migration",
+  "nodes": [
+    {
+      "name": "Paperclip Heartbeat",
+      "type": "n8n-nodes-base.webhook",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "aios/heartbeat/archive"
+      }
+    },
+    {
+      "name": "Validate Tenant and Lineage",
+      "type": "n8n-nodes-base.function",
+      "parameters": {
+        "functionCode": "const body = items[0].json;\nif (body.tenantId !== '00000000-0000-0000-0000-000000000001') throw new Error('tenant mismatch');\nif (!body.missionId || !body.runId || !body.taskId || !body.dprId) throw new Error('lineage required');\nreturn items;"
+      }
+    },
+    {
+      "name": "Find Inactive Files",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{$env.SUPABASE_INACTIVE_FILES_RPC}}",
+        "method": "POST",
+        "sendBody": true,
+        "jsonBody": "={{ { tenant_id: $json.tenantId, inactive_days: 30 } }}"
+      }
+    },
+    {
+      "name": "Copy to Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "parameters": {
+        "operation": "upload",
+        "binaryData": true,
+        "parents": "={{$json.driveFolderId}}"
+      }
+    },
+    {
+      "name": "Verify Checksum",
+      "type": "n8n-nodes-base.function",
+      "parameters": {
+        "functionCode": "const source = $json.sourceChecksum;\nconst copied = $json.driveChecksum;\nif (source !== copied) { throw new Error('checksum mismatch'); }\nreturn items;"
+      }
+    },
+    {
+      "name": "Persist Pointer",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{$env.SUPABASE_POINTER_RPC}}",
+        "method": "POST",
+        "sendBody": true,
+        "jsonBody": "={{$json}}"
+      }
+    },
+    {
+      "name": "Delete Hot Object",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{$env.SUPABASE_DELETE_FILE_RPC}}",
+        "method": "POST",
+        "sendBody": true,
+        "jsonBody": "={{$json}}"
+      }
+    }
+  ],
+  "connections": {
+    "Paperclip Heartbeat": {
+      "main": [
+        [
+          {
+            "node": "Validate Tenant and Lineage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Tenant and Lineage": {
+      "main": [
+        [
+          {
+            "node": "Find Inactive Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Inactive Files": {
+      "main": [
+        [
+          {
+            "node": "Copy to Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Copy to Drive": {
+      "main": [
+        [
+          {
+            "node": "Verify Checksum",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Checksum": {
+      "main": [
+        [
+          {
+            "node": "Persist Pointer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist Pointer": {
+      "main": [
+        [
+          {
+            "node": "Delete Hot Object",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

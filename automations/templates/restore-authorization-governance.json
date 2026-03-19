@@ -1,0 +1,114 @@
+{
+  "name": "AIOS Restore Authorization Governance",
+  "nodes": [
+    {
+      "name": "Restore Request Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "aios/archive/restore-request"
+      }
+    },
+    {
+      "name": "Validate Restore Governance Payload",
+      "type": "n8n-nodes-base.function",
+      "parameters": {
+        "functionCode": "const body = items[0].json;\nif (body.tenantId !== '00000000-0000-0000-0000-000000000001') throw new Error('tenant mismatch');\nif (!body.missionId || !body.runId || !body.taskId || !body.dprId) throw new Error('lineage required');\nif (!body.approvals?.auditorRecommendation || !body.approvals?.headOfQualityApproved || !body.approvals?.cooApproved) { throw new Error('auditor, Head of Quality, and COO approvals required'); }\nif (!body.approvals?.chairmanApproved) { throw new Error('Chairman approval required for protected restore decision'); }\nreturn items;"
+      }
+    },
+    {
+      "name": "Record Protected Lifecycle Transition",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{$env.LINKAUTOWORK_GATEWAY_URL + '/v1/lifecycle/transition'}}",
+        "method": "POST",
+        "sendBody": true,
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-link-control-token",
+              "value": "={{$env.LINK_CONTROL_TOKEN}}"
+            }
+          ]
+        },
+        "jsonBody": "={{ { mission: { tenantId: $json.tenantId, missionId: $json.missionId, runId: $json.runId, taskId: $json.taskId, dprId: $json.dprId, triggerSource: 'n8n.restore-governance' }, workflowId: $json.workflowId || 'restore-authorization-governance', fromState: $json.fromState || 'archived', toState: $json.toState || 'deprecated', protectedAction: true, approvals: $json.approvals, reason: $json.reason || 'Restore authorized by governance chain' } }}"
+      }
+    },
+    {
+      "name": "Release Scoped Kill Switch",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{$env.LINKAUTOWORK_GATEWAY_URL + '/v1/control/killswitch/scoped'}}",
+        "method": "POST",
+        "sendBody": true,
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-link-control-token",
+              "value": "={{$env.LINK_CONTROL_TOKEN}}"
+            }
+          ]
+        },
+        "jsonBody": "={{ { mission: { tenantId: $json.tenantId, missionId: $json.missionId, runId: $json.runId, taskId: $json.taskId, dprId: $json.dprId, triggerSource: 'n8n.restore-governance' }, workflowId: $json.workflowId || 'restore-authorization-governance', reason: 'restore approved', incidentId: $json.incidentId || ('restore-' + $json.runId), action: 'release' } }}"
+      }
+    },
+    {
+      "name": "Post Restore Approval To Slack",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{$env.SLACK_APPROVALS_WEBHOOK_URL || $env.SLACK_OPERATIONS_WEBHOOK_URL}}",
+        "method": "POST",
+        "sendBody": true,
+        "jsonBody": "={{ { text: '[Restore Approved] Auditor + Head of Quality + COO + Chairman approvals complete. Scoped kill switch released for restore path.' } }}"
+      }
+    }
+  ],
+  "connections": {
+    "Restore Request Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Restore Governance Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Restore Governance Payload": {
+      "main": [
+        [
+          {
+            "node": "Record Protected Lifecycle Transition",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record Protected Lifecycle Transition": {
+      "main": [
+        [
+          {
+            "node": "Release Scoped Kill Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Release Scoped Kill Switch": {
+      "main": [
+        [
+          {
+            "node": "Post Restore Approval To Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

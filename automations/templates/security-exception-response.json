@@ -1,0 +1,101 @@
+{
+  "name": "AIOS Security Exception Response",
+  "nodes": [
+    {
+      "name": "Security Exception Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "aios/security-exception"
+      }
+    },
+    {
+      "name": "Validate Canonical Payload",
+      "type": "n8n-nodes-base.function",
+      "parameters": {
+        "functionCode": "const body = items[0].json;\nif (body.tenantId !== '00000000-0000-0000-0000-000000000001') throw new Error('tenant mismatch');\nif (!body.runId || !body.taskId || !body.dprId || !body.missionId) throw new Error('mission lineage required');\nreturn items;"
+      }
+    },
+    {
+      "name": "Open Incident",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{$env.SUPABASE_INCIDENT_RPC}}",
+        "method": "POST",
+        "sendBody": true,
+        "jsonBody": "={{$json}}"
+      }
+    },
+    {
+      "name": "Notify Leadership",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{$env.SLACK_OPERATIONS_WEBHOOK_URL}}",
+        "method": "POST",
+        "sendBody": true,
+        "jsonBody": "={{ { text: '[CRITICAL ERROR: EXECUTION HALTED] security exception run=' + $json.runId + ' task=' + $json.taskId } }}"
+      }
+    },
+    {
+      "name": "Activate Scoped Kill Switch",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{$env.LINKAUTOWORK_GATEWAY_URL + '/v1/control/killswitch/scoped'}}",
+        "method": "POST",
+        "sendBody": true,
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-link-control-token",
+              "value": "={{$env.LINK_CONTROL_TOKEN}}"
+            }
+          ]
+        },
+        "jsonBody": "={{ { mission: { tenantId: $json.tenantId, missionId: $json.missionId, runId: $json.runId, taskId: $json.taskId, dprId: $json.dprId, triggerSource: 'n8n.security-exception' }, workflowId: $json.workflowId || 'security-exception-response', reason: $json.reason || 'security contradiction', incidentId: $json.incidentId || ('sec-' + $json.runId), action: 'activate' } }}"
+      }
+    }
+  ],
+  "connections": {
+    "Security Exception Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Canonical Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Canonical Payload": {
+      "main": [
+        [
+          {
+            "node": "Open Incident",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open Incident": {
+      "main": [
+        [
+          {
+            "node": "Notify Leadership",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Activate Scoped Kill Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

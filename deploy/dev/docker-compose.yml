@@ -1,0 +1,46 @@
+services:
+  nats:
+    image: nats:2.10-alpine
+    command: ["-js"]
+    ports:
+      - "4222:4222"
+
+  gateway:
+    build:
+      context: ../..
+      dockerfile: deploy/common/gateway.Dockerfile
+    env_file:
+      - .env.runtime
+    depends_on:
+      - nats
+    ports:
+      - "8080:8080"
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    env_file:
+      - .env.runtime
+    environment:
+      - GENERIC_TIMEZONE=Asia/Taipei
+      - TZ=Asia/Taipei
+      - N8N_HOST=${N8N_HOST}
+      - N8N_PORT=${N8N_PORT}
+      - N8N_PROTOCOL=${N8N_PROTOCOL}
+      - N8N_EDITOR_BASE_URL=${N8N_EDITOR_BASE_URL}
+      - WEBHOOK_URL=${WEBHOOK_URL}
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=${SUPABASE_DB_HOST}
+      - DB_POSTGRESDB_PORT=${SUPABASE_DB_PORT}
+      - DB_POSTGRESDB_DATABASE=${SUPABASE_DB_DATABASE}
+      - DB_POSTGRESDB_USER=${SUPABASE_DB_USER}
+      - DB_POSTGRESDB_PASSWORD=${SUPABASE_DB_PASSWORD}
+      - DB_POSTGRESDB_SCHEMA=n8n_dev
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - EXECUTIONS_MODE=regular
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data_dev:/home/node/.n8n
+
+volumes:
+  n8n_data_dev:

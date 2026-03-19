@@ -1,0 +1,62 @@
+name: Git Governance Guardrails
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '15 1 * * 1'
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  pr-branch-and-signature-policy:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enforce branch naming convention
+        run: bash scripts/git/check-branch-name.sh "${{ github.head_ref }}"
+
+      - name: Enforce signed commits in PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const commits = await github.paginate(github.rest.pulls.listCommits, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              per_page: 100,
+            });
+
+            const unsigned = commits.filter((c) => !(c.commit && c.commit.verification && c.commit.verification.verified));
+            if (unsigned.length > 0) {
+              const list = unsigned.map((c) => `${c.sha.slice(0, 7)}:${c.commit.verification.reason || 'unknown'}`).join(', ');
+              core.setFailed(`Unsigned/unverified commits detected: ${list}`);
+            } else {
+              core.info('All commits in PR are verified.');
+            }
+
+  link-n8n-branch-protection-compatibility:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Validate link-n8n branch protection policy
+        env:
+          GH_TOKEN: ${{ secrets.LINK_N8N_SYNC_TOKEN }}
+        run: |
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "LINK_N8N_SYNC_TOKEN not set; skipping remote branch-protection compatibility check."
+            exit 0
+          fi
+          bash scripts/git/validate-branch-protection.sh --repo linktrend/link-n8n --branch master

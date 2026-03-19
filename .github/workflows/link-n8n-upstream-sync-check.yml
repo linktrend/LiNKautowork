@@ -1,0 +1,82 @@
+name: link-n8n Upstream Sync Check
+
+on:
+  workflow_dispatch:
+    inputs:
+      open_pr:
+        description: "Open sync PR when upstream is ahead"
+        required: false
+        default: false
+        type: boolean
+  schedule:
+    - cron: '30 1 * * *'
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  check-and-optionally-open-sync-pr:
+    runs-on: ubuntu-latest
+    env:
+      LINK_TOKEN: ${{ secrets.LINK_N8N_SYNC_TOKEN }}
+    steps:
+      - name: Checkout governance repo
+        uses: actions/checkout@v4
+
+      - name: Configure bot git identity
+        run: |
+          git config --global user.name "linktrend-sync-bot"
+          git config --global user.email "linktrend-sync-bot@users.noreply.github.com"
+
+      - name: Clone link-n8n fork
+        run: |
+          repo_dir="$RUNNER_TEMP/link-n8n"
+          git clone https://github.com/linktrend/link-n8n.git "$repo_dir"
+          git -C "$repo_dir" remote add upstream https://github.com/n8n-io/n8n.git || true
+          git -C "$repo_dir" remote set-url --push upstream no_push
+          echo "REPO_DIR=$repo_dir" >> "$GITHUB_ENV"
+
+      - name: Check upstream divergence
+        run: |
+          git -C "$REPO_DIR" fetch origin --prune --tags
+          git -C "$REPO_DIR" fetch upstream --prune --tags
+          counts=$(git -C "$REPO_DIR" rev-list --left-right --count origin/master...upstream/master)
+          ahead=$(echo "$counts" | awk '{print $1}')
+          behind=$(echo "$counts" | awk '{print $2}')
+          echo "ahead=$ahead"
+          echo "behind=$behind"
+          echo "AHEAD=$ahead" >> "$GITHUB_ENV"
+          echo "BEHIND=$behind" >> "$GITHUB_ENV"
+
+      - name: Exit when already up-to-date
+        if: env.BEHIND == '0'
+        run: echo "origin/master already contains upstream/master."
+
+      - name: Exit when token is missing
+        if: env.BEHIND != '0' && env.LINK_TOKEN == ''
+        run: |
+          echo "Upstream is ahead but LINK_N8N_SYNC_TOKEN is not configured."
+          echo "Set LINK_N8N_SYNC_TOKEN to enable automated sync PR creation."
+
+      - name: Skip if an upstream sync PR is already open
+        if: env.BEHIND != '0' && env.LINK_TOKEN != ''
+        env:
+          GH_TOKEN: ${{ env.LINK_TOKEN }}
+        run: |
+          open_count=$(gh pr list --repo linktrend/link-n8n --state open --json headRefName --jq '[.[] | select(.headRefName | startswith("sync/upstream-"))] | length')
+          echo "OPEN_SYNC_PR_COUNT=$open_count" >> "$GITHUB_ENV"
+          echo "open_sync_pr_count=$open_count"
+
+      - name: Open sync PR (scheduled or requested)
+        if: env.BEHIND != '0' && env.LINK_TOKEN != '' && env.OPEN_SYNC_PR_COUNT == '0' && (github.event_name == 'schedule' || inputs.open_pr)
+        env:
+          GH_TOKEN: ${{ env.LINK_TOKEN }}
+        run: |
+          git -C "$REPO_DIR" remote set-url origin "https://x-access-token:${LINK_TOKEN}@github.com/linktrend/link-n8n.git"
+          bash scripts/git/upstream-sync-pr.sh --repo-path "$REPO_DIR" --base-branch master --upstream-branch master --allow-unsigned
+
+      - name: No-op when PR creation not requested
+        if: env.BEHIND != '0' && env.LINK_TOKEN != '' && env.OPEN_SYNC_PR_COUNT == '0' && !(github.event_name == 'schedule' || inputs.open_pr)
+        run: |
+          echo "Upstream is ahead. Re-run workflow_dispatch with open_pr=true to open sync PR."

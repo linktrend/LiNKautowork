@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.log
+ops/backups/
+deploy/dev/.env
+deploy/prod/.env
+deploy/dev/.env.runtime
+deploy/prod/.env.runtime
+
+# Explicit nested fork boundary (managed independently)
+link-n8n/
