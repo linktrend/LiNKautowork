@@ -1,8 +1,8 @@
 -- LiNKautowork Phase 1 (MVO) baseline schema
 -- Single Supabase project with strict schema separation by environment and control plane.
 
-create schema if not exists n8n_dev;
-create schema if not exists n8n_prod;
+create schema if not exists lautowork_n8n_dev;
+create schema if not exists lautowork_n8n_prod;
 create schema if not exists linkautowork_audit;
 create schema if not exists linkautowork_control;
 
@@ -59,7 +59,7 @@ create or replace function public.linkautowork_write_audit_run(
 returns void
 language plpgsql
 security definer
-set search_path = public, linkautowork_audit
+set search_path = linkautowork_audit, public
 as $$
 begin
   insert into linkautowork_audit.audit_runs (
@@ -109,6 +109,6 @@ create table if not exists linkautowork_control.killswitch_events (
   created_at timestamptz not null default now()
 );
 
-comment on schema n8n_dev is 'n8n runtime schema for dev environment';
-comment on schema n8n_prod is 'n8n runtime schema for prod environment';
+comment on schema lautowork_n8n_dev is 'n8n runtime schema for dev environment';
+comment on schema lautowork_n8n_prod is 'n8n runtime schema for prod environment';
 comment on table linkautowork_audit.audit_runs is 'Canonical execution telemetry log for LiNKautowork';

@@ -32,6 +32,18 @@ LiNKautowork is the self-hosted automation engine for LiNKtrend operations, buil
   - primary `aios.*`
   - optional mirror `linkautowork.v1.*`
 
+## Supabase Schema Standard
+
+- Runtime schemas:
+  - `lautowork_n8n_dev`
+  - `lautowork_n8n_prod`
+- Control/audit schemas:
+  - `linkautowork_audit`
+  - `linkautowork_control`
+- SQL function `public.linkautowork_write_audit_run` uses `search_path=linkautowork_audit,public`.
+- Migration naming standard for new migrations:
+  - `YYYYMMDD_HHMMSS_lautowork_<change>.sql`
+
 ## Repository Layout
 
 - `automations/templates/`: canonical n8n templates and template manifest.
