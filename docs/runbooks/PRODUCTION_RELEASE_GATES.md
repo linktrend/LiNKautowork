@@ -1,0 +1,24 @@
+# LiNKautowork Production Release Gates
+
+The following gates are mandatory before production promotion.
+
+## 1. Security gate
+- CI green (`npm run ci`, env contract, secret scan, dependency scan).
+- No raw secrets in committed env files.
+- Runtime env rendered from GSM (`ops/render-env-from-gsm.sh prod`).
+
+## 2. Lifecycle gate
+- Template lifecycle approvals completed (`qa_approved` and `ops_approved`).
+- Required templates imported to n8n production and activated.
+- Live export evidence captured (`ops/export-live-from-n8n.sh prod`).
+
+## 3. Safety gate
+- Kill-switch endpoints validated (scoped + global).
+- Backup and restore drill validated (`ops/run-backup.sh`, `ops/restore-drill.sh`).
+- Incident/audit lineage confirmed in Supabase `audit_runs`.
+
+## 4. Governance gate
+- Protected actions route via Chairman approval protocol.
+- Slack ops/approval channels are configured and tested.
+
+Promotion is blocked until all gates are checked.
