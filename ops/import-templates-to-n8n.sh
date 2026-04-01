@@ -7,18 +7,31 @@ if [[ "$ENVIRONMENT" != "dev" && "$ENVIRONMENT" != "prod" ]]; then
   exit 1
 fi
 
-RUNTIME_ENV_FILE="/Users/linktrend/Projects/LiNKautowork/deploy/${ENVIRONMENT}/.env.runtime"
-if [[ -f "$RUNTIME_ENV_FILE" ]]; then
-  set -a
-  # shellcheck disable=SC1090
-  source "$RUNTIME_ENV_FILE"
-  set +a
-fi
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+ENV_FILE="$ROOT_DIR/deploy/${ENVIRONMENT}/.env"
+declare -A KV
+while IFS= read -r line || [[ -n "$line" ]]; do
+  [[ -z "$line" || "$line" =~ ^[[:space:]]*# || "$line" != *=* ]] && continue
+  key="${line%%=*}"
+  value="${line#*=}"
+  key="${key//[$'\t\r\n ']/}"
+  KV["$key"]="$value"
+done < "$ENV_FILE"
 
+N8N_BASE_URL="${KV[N8N_BASE_URL]:-}"
 : "${N8N_BASE_URL:?N8N_BASE_URL is required}"
-: "${N8N_API_KEY:?N8N_API_KEY is required}"
 
-TEMPLATE_DIR="/Users/linktrend/Projects/LiNKautowork/automations/templates"
+PROJECT_ID="${GCP_PROJECT_ID:-${GOOGLE_CLOUD_PROJECT:-${KV[GCP_PROJECT_ID]:-${KV[GOOGLE_CLOUD_PROJECT]:-}}}}"
+if [[ -z "$PROJECT_ID" ]]; then
+  echo "Missing GCP project (GCP_PROJECT_ID or GOOGLE_CLOUD_PROJECT)"
+  exit 1
+fi
+N8N_API_KEY_SECRET_NAME="${KV[N8N_API_KEY_SECRET_NAME]:-}"
+: "${N8N_API_KEY_SECRET_NAME:?N8N_API_KEY_SECRET_NAME is required}"
+N8N_API_KEY="$(gcloud secrets versions access latest --project "$PROJECT_ID" --secret "$N8N_API_KEY_SECRET_NAME")"
+
+TEMPLATE_DIR="$ROOT_DIR/automations/templates"
 
 find "$TEMPLATE_DIR" -maxdepth 1 -name '*.json' ! -name 'manifest.json' -print0 | while IFS= read -r -d '' template; do
   echo "Importing $(basename "$template")"

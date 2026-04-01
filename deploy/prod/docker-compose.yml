@@ -2,15 +2,20 @@ services:
   nats:
     image: nats:2.10-alpine
     command: ["-js"]
+    ports:
+      - "4222:4222"
+      - "8222:8222"
 
   gateway:
     build:
       context: ../..
       dockerfile: deploy/common/gateway.Dockerfile
     env_file:
-      - .env.runtime
+      - .env
     depends_on:
       - nats
+    volumes:
+      - ${GOOGLE_APPLICATION_CREDENTIALS_HOST_PATH:-/etc/linktrend/gcp/linkbot-901208-e7677c682cff.json}:${GOOGLE_APPLICATION_CREDENTIALS:-/etc/linktrend/gcp/linkbot-901208-e7677c682cff.json}:ro
     restart: unless-stopped
     ports:
       - "8080:8080"
@@ -18,7 +23,7 @@ services:
   n8n:
     image: docker.n8n.io/n8nio/n8n:latest
     env_file:
-      - .env.runtime
+      - .env
     environment:
       - GENERIC_TIMEZONE=Asia/Taipei
       - TZ=Asia/Taipei
@@ -41,6 +46,7 @@ services:
       - "5678:5678"
     volumes:
       - n8n_data_prod:/home/node/.n8n
+      - ${GOOGLE_APPLICATION_CREDENTIALS_HOST_PATH:-/etc/linktrend/gcp/linkbot-901208-e7677c682cff.json}:${GOOGLE_APPLICATION_CREDENTIALS:-/etc/linktrend/gcp/linkbot-901208-e7677c682cff.json}:ro
 
 volumes:
   n8n_data_prod:

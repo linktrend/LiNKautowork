@@ -12,8 +12,9 @@ if [[ "$ENVIRONMENT" != "dev" && "$ENVIRONMENT" != "prod" ]]; then
   exit 1
 fi
 
-ENV_FILE="/Users/linktrend/Projects/LiNKautowork/deploy/${ENVIRONMENT}/.env"
-OUT_FILE="/Users/linktrend/Projects/LiNKautowork/deploy/${ENVIRONMENT}/.env.runtime"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+ENV_FILE="$ROOT_DIR/deploy/${ENVIRONMENT}/.env"
 
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "Missing env file: $ENV_FILE"
@@ -42,7 +43,7 @@ if [[ -z "$PROJECT_ID" ]]; then
   exit 1
 fi
 
-cp "$ENV_FILE" "$OUT_FILE"
+echo "Validating GSM secret accessibility for $ENVIRONMENT (project: $PROJECT_ID)"
 
 for key in "${!kv[@]}"; do
   if [[ "$key" != *_SECRET_NAME ]]; then
@@ -55,19 +56,8 @@ for key in "${!kv[@]}"; do
     exit 1
   fi
 
-  base_key="${key%_SECRET_NAME}"
-  secret_value="$(gcloud secrets versions access latest --project "$PROJECT_ID" --secret "$secret_name")"
-
-  if grep -q "^${base_key}=" "$OUT_FILE"; then
-    sed -i.bak "/^${base_key}=/d" "$OUT_FILE"
-    rm -f "${OUT_FILE}.bak"
-  fi
-
-  {
-    printf '\n'
-    printf '%s=%s\n' "$base_key" "$secret_value"
-  } >> "$OUT_FILE"
+  gcloud secrets versions access latest --project "$PROJECT_ID" --secret "$secret_name" >/dev/null
+  echo "  OK $key -> $secret_name"
 done
 
-chmod 600 "$OUT_FILE"
-echo "Generated runtime env: $OUT_FILE"
+echo "Validation complete. No resolved secrets were written to disk."

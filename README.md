@@ -66,10 +66,10 @@ LiNKautowork is the self-hosted automation engine for LiNKtrend operations, buil
 - `npm install`
 4. Validate and test:
 - `npm run ci`
-5. Render GSM-backed runtime env:
+5. Validate GSM secret-name references:
 - `ops/render-env-from-gsm.sh dev`
-6. Start dev stack:
-- `docker compose --env-file deploy/dev/.env.runtime -f deploy/dev/docker-compose.yml up -d --build`
+6. Start dev stack with GSM runtime resolution (no secret values written to disk):
+- `ops/compose-up-gsm.sh dev --build`
 
 ## Daily Operations
 
@@ -79,8 +79,10 @@ LiNKautowork is the self-hosted automation engine for LiNKtrend operations, buil
   - `ops/import-templates-to-n8n.sh dev|prod`
 - Export live workflow evidence:
   - `ops/export-live-from-n8n.sh dev|prod`
-- Regenerate runtime env from GSM before stack start/restart:
+- Validate GSM secret references before stack start/restart:
   - `ops/render-env-from-gsm.sh dev|prod`
+- Start stack with in-memory GSM secret injection:
+  - `ops/compose-up-gsm.sh dev|prod --build`
 - Run eval inventory check:
   - `ops/run-evals.sh`
 - Backup and restore drill:
