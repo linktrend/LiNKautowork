@@ -1,5 +1,8 @@
 # Operations Runbook (MVO)
 
+Owner: LiNKtrend Platform  
+Last updated: 2026-04-01
+
 ## Deploy Dev
 
 1. Configure `deploy/dev/.env` with non-secret config and `*_SECRET_NAME` entries.

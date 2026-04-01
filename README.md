@@ -97,3 +97,8 @@ LiNKautowork is the self-hosted automation engine for LiNKtrend operations, buil
   - `docs/SLO.md`
 - Operator runbook:
   - `docs/runbooks/OPERATIONS.md`
+
+## Documentation Map
+- [Docs Index](./docs/README.md)
+- [Branching and Deployment Policy](./docs/BRANCHING_AND_DEPLOYMENT_POLICY.md)
+- [Documentation Governance](./docs/DOCUMENTATION_GOVERNANCE.md)
