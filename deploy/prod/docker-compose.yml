@@ -7,7 +7,7 @@ services:
     cap_drop:
       - ALL
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:8222/healthz >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 4222 || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 5
