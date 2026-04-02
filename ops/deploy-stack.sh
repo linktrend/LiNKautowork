@@ -63,9 +63,11 @@ if [[ "$ENVIRONMENT" == "prod" ]]; then
   fi
 fi
 
-# Export vars required by compose substitutions.
-set -a
-source "$RUNTIME_ENV_FILE"
-set +a
+# Export vars required by compose substitutions without shell-sourcing values.
+while IFS= read -r line || [[ -n "$line" ]]; do
+  [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+  [[ "$line" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]] || continue
+  export "$line"
+done < "$RUNTIME_ENV_FILE"
 
 docker compose --env-file "$BASE_ENV_FILE" -f "$COMPOSE_FILE" -p "$ENVIRONMENT" up -d $BUILD_FLAG
