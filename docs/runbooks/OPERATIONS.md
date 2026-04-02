@@ -7,19 +7,23 @@ Last updated: 2026-04-01
 
 1. Configure `deploy/dev/.env` with non-secret config and `*_SECRET_NAME` entries.
 2. Validate GSM-backed secret references: `ops/render-env-from-gsm.sh dev`.
-3. Start stack with in-memory GSM secret injection: `ops/compose-up-gsm.sh dev --build`.
-4. Verify gateway: `curl http://localhost:8080/health`.
-5. Import templates: `ops/import-templates-to-n8n.sh dev`.
-6. Export runtime evidence: `ops/export-live-from-n8n.sh dev`.
+3. Render runtime env outside repo codebase: `ops/render-runtime-env-from-gsm.sh dev --output /opt/linktrend/runtime/linkautowork/dev.env.runtime`.
+4. Start stack with GSM-resolved runtime env: `ops/deploy-stack.sh dev --build`.
+5. Verify gateway: `curl http://localhost:8080/health`.
+6. Import templates: `ops/import-templates-to-n8n.sh dev`.
+7. Export runtime evidence: `ops/export-live-from-n8n.sh dev`.
 
 ## Promote To Prod
 
 1. Ensure lifecycle approvals are complete (Auditor, Head of Quality, COO, and Chairman for protected actions).
 2. Configure `deploy/prod/.env` with non-secret config and `*_SECRET_NAME` entries.
-3. Validate GSM-backed secret references: `ops/render-env-from-gsm.sh prod`.
-4. Start/refresh prod stack with in-memory GSM secret injection: `ops/compose-up-gsm.sh prod --build`.
-5. Import approved templates: `ops/import-templates-to-n8n.sh prod`.
-6. Export runtime evidence: `ops/export-live-from-n8n.sh prod`.
+3. Set `N8N_TAILSCALE_IP` in `deploy/prod/.env` for canonical Tailscale URL rendering.
+4. Validate GSM-backed secret references: `ops/render-env-from-gsm.sh prod`.
+5. Render runtime env outside repo codebase: `ops/render-runtime-env-from-gsm.sh prod --output /opt/linktrend/runtime/linkautowork/prod.env.runtime`.
+6. Start/refresh prod stack with GSM runtime env: `ops/deploy-stack.sh prod --build`.
+7. Install/refresh tailscale-only firewall policy: `ops/security/install-tailscale-firewall-service.sh`.
+8. Import approved templates: `ops/import-templates-to-n8n.sh prod`.
+9. Export runtime evidence: `ops/export-live-from-n8n.sh prod`.
 
 ## Kill Switch
 
@@ -34,3 +38,9 @@ Last updated: 2026-04-01
 - Drill validation: `ops/restore-drill.sh <db-backup.sql.gz> <templates-backup.tar.gz>`
 - RTO target: `<= 60 min`
 - RPO target: `<= 15 min`
+
+## Security Verification
+
+- Secret hygiene scan in repository: `ops/security/scan-secrets.sh`
+- Confirm runtime env files with resolved secrets are outside repo path and mode `600`.
+- Confirm n8n/browser ingress is tailscale-only for protected ports (`5678`, `8080`, `4222`, `8222`).

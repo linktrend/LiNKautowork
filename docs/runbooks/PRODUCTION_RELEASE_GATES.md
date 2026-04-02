@@ -6,7 +6,9 @@ The following gates are mandatory before production promotion.
 - CI green (`npm run ci`, env contract, secret scan, dependency scan).
 - No raw secrets in committed env files.
 - GSM secret references validated (`ops/render-env-from-gsm.sh prod`).
-- Stack started with in-memory GSM secret injection (`ops/compose-up-gsm.sh prod --build`) and no secret values persisted in runtime env files.
+- Runtime env rendered from GSM to runtime path outside repo (`ops/render-runtime-env-from-gsm.sh prod --output /opt/linktrend/runtime/linkautowork/prod.env.runtime`).
+- Stack started via `ops/deploy-stack.sh prod --build`.
+- Tailscale-only firewall policy installed for protected ports (`5678`, `8080`, `4222`, `8222`).
 
 ## 2. Lifecycle gate
 - Template lifecycle approvals completed (`qa_approved` and `ops_approved`).

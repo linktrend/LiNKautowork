@@ -61,3 +61,4 @@ for key in "${!kv[@]}"; do
 done
 
 echo "Validation complete. No resolved secrets were written to disk."
+echo "Use ops/render-runtime-env-from-gsm.sh to generate a runtime env file when needed."

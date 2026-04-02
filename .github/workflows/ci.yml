@@ -24,11 +24,20 @@ jobs:
       - name: Validate templates
         run: npm run validate:templates
 
+      - name: Validate env contract
+        run: ops/validate-env-contract.sh
+
       - name: Lint shell scripts syntax
         run: |
           for f in ops/*.sh; do
             bash -n "$f"
           done
+          for f in ops/security/*.sh; do
+            bash -n "$f"
+          done
+
+      - name: Repository Secret Scan
+        run: ops/security/scan-secrets.sh
 
       - name: Run tests
         run: npm test

@@ -68,8 +68,10 @@ LiNKautowork is the self-hosted automation engine for LiNKtrend operations, buil
 - `npm run ci`
 5. Validate GSM secret-name references:
 - `ops/render-env-from-gsm.sh dev`
-6. Start dev stack with GSM runtime resolution (no secret values written to disk):
-- `ops/compose-up-gsm.sh dev --build`
+6. Render runtime env from GSM to runtime path:
+- `ops/render-runtime-env-from-gsm.sh dev --output /opt/linktrend/runtime/linkautowork/dev.env.runtime`
+7. Start dev stack with GSM runtime env:
+- `ops/deploy-stack.sh dev --build`
 
 ## Daily Operations
 
@@ -81,8 +83,14 @@ LiNKautowork is the self-hosted automation engine for LiNKtrend operations, buil
   - `ops/export-live-from-n8n.sh dev|prod`
 - Validate GSM secret references before stack start/restart:
   - `ops/render-env-from-gsm.sh dev|prod`
-- Start stack with in-memory GSM secret injection:
-  - `ops/compose-up-gsm.sh dev|prod --build`
+- Render runtime env from GSM:
+  - `ops/render-runtime-env-from-gsm.sh dev|prod --output /opt/linktrend/runtime/linkautowork/<env>.env.runtime`
+- Start stack with runtime env injection:
+  - `ops/deploy-stack.sh dev|prod --build`
+- Enforce tailscale-only firewall for protected ports:
+  - `ops/security/install-tailscale-firewall-service.sh`
+- Run repository secret scan:
+  - `ops/security/scan-secrets.sh`
 - Run eval inventory check:
   - `ops/run-evals.sh`
 - Backup and restore drill:
@@ -99,6 +107,8 @@ LiNKautowork is the self-hosted automation engine for LiNKtrend operations, buil
   - `docs/SLO.md`
 - Operator runbook:
   - `docs/runbooks/OPERATIONS.md`
+- Tailscale hardening runbook:
+  - `docs/runbooks/TAILSCALE_HARDENING.md`
 
 ## Documentation Map
 - [Docs Index](./docs/README.md)
