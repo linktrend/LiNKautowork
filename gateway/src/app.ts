@@ -1,4 +1,5 @@
 import express, { type NextFunction, type Request, type Response } from 'express';
+import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import type { AppEnv } from './config/env.js';
 import {
@@ -45,32 +46,6 @@ function normalizeApprovals(approvals: Partial<LifecycleApprovals> | undefined):
   };
 }
 
-function createRateLimiter(options: { limit: number; windowMs: number }) {
-  const buckets = new Map<string, { count: number; resetAt: number }>();
-
-  return (req: Request, res: Response, next: NextFunction) => {
-    const now = Date.now();
-    const key = `${req.path}:${req.ip ?? req.socket.remoteAddress ?? 'unknown'}`;
-    const bucket = buckets.get(key);
-
-    if (!bucket || bucket.resetAt <= now) {
-      buckets.set(key, { count: 1, resetAt: now + options.windowMs });
-      next();
-      return;
-    }
-
-    if (bucket.count >= options.limit) {
-      const retryAfter = Math.max(1, Math.ceil((bucket.resetAt - now) / 1000));
-      res.setHeader('Retry-After', String(retryAfter));
-      res.status(429).json({ error: 'rate_limit_exceeded' });
-      return;
-    }
-
-    bucket.count += 1;
-    next();
-  };
-}
-
 export type AppDeps = {
   env: AppEnv;
   nonceStore: NonceStore;
@@ -105,8 +80,20 @@ export function buildDependencies(env: AppEnv): AppDeps {
 
 export function createApp(deps: AppDeps) {
   const app = express();
-  const ingressRateLimiter = createRateLimiter({ limit: 120, windowMs: 60_000 });
-  const slackRateLimiter = createRateLimiter({ limit: 60, windowMs: 60_000 });
+  const ingressRateLimiter = rateLimit({
+    windowMs: 60_000,
+    max: 120,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'rate_limit_exceeded' },
+  });
+  const slackRateLimiter = rateLimit({
+    windowMs: 60_000,
+    max: 60,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'rate_limit_exceeded' },
+  });
 
   app.disable('x-powered-by');
   app.use((_req, res, next) => {
