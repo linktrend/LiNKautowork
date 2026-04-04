@@ -45,6 +45,32 @@ function normalizeApprovals(approvals: Partial<LifecycleApprovals> | undefined):
   };
 }
 
+function createRateLimiter(options: { limit: number; windowMs: number }) {
+  const buckets = new Map<string, { count: number; resetAt: number }>();
+
+  return (req: Request, res: Response, next: NextFunction) => {
+    const now = Date.now();
+    const key = `${req.path}:${req.ip ?? req.socket.remoteAddress ?? 'unknown'}`;
+    const bucket = buckets.get(key);
+
+    if (!bucket || bucket.resetAt <= now) {
+      buckets.set(key, { count: 1, resetAt: now + options.windowMs });
+      next();
+      return;
+    }
+
+    if (bucket.count >= options.limit) {
+      const retryAfter = Math.max(1, Math.ceil((bucket.resetAt - now) / 1000));
+      res.setHeader('Retry-After', String(retryAfter));
+      res.status(429).json({ error: 'rate_limit_exceeded' });
+      return;
+    }
+
+    bucket.count += 1;
+    next();
+  };
+}
+
 export type AppDeps = {
   env: AppEnv;
   nonceStore: NonceStore;
@@ -79,6 +105,8 @@ export function buildDependencies(env: AppEnv): AppDeps {
 
 export function createApp(deps: AppDeps) {
   const app = express();
+  const ingressRateLimiter = createRateLimiter({ limit: 120, windowMs: 60_000 });
+  const slackRateLimiter = createRateLimiter({ limit: 60, windowMs: 60_000 });
 
   app.disable('x-powered-by');
   app.use((_req, res, next) => {
@@ -108,7 +136,11 @@ export function createApp(deps: AppDeps) {
     res.send(await getMetricsRegistry().metrics());
   });
 
-  app.post('/v1/ingress/:workflowId', requireSignedIngress(deps.env, deps.nonceStore), async (req, res, next) => {
+  app.post(
+    '/v1/ingress/:workflowId',
+    ingressRateLimiter,
+    requireSignedIngress(deps.env, deps.nonceStore),
+    async (req, res, next) => {
     const start = performance.now();
     try {
       const body = parseSchema(ingressRequestSchema, req.body);
@@ -181,7 +213,8 @@ export function createApp(deps: AppDeps) {
     } catch (error) {
       next(error);
     }
-  });
+    },
+  );
 
   app.post('/v1/events/publish', requireInternalServiceToken(deps.env), async (req, res, next) => {
     try {
@@ -346,7 +379,7 @@ export function createApp(deps: AppDeps) {
     }
   });
 
-  app.post('/v1/slack/actions', async (req, res, next) => {
+  app.post('/v1/slack/actions', slackRateLimiter, async (req, res, next) => {
     try {
       if (!deps.env.SLACK_SIGNING_SECRET) {
         throw new HttpError(503, 'SLACK_SIGNING_SECRET is not configured');

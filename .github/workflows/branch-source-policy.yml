@@ -3,6 +3,9 @@ name: Branch Source Policy
 on:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   dev-branch-policy:
     runs-on: ubuntu-latest
