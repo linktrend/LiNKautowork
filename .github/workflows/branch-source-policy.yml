@@ -2,25 +2,48 @@ name: Branch Source Policy
 
 on:
   pull_request:
-
-permissions:
-  contents: read
+    branches: [main, staging, development]
 
 jobs:
-  dev-branch-policy:
+  branch-source-policy:
     runs-on: ubuntu-latest
     steps:
-      - name: Enforce source branch naming for development
-        shell: bash
+      - name: Enforce promotion branch flow
+        env:
+          BASE_BRANCH: ${{ github.base_ref }}
+          HEAD_BRANCH: ${{ github.head_ref }}
         run: |
           set -euo pipefail
-          BASE="${{ github.base_ref }}"
-          HEAD="${{ github.head_ref }}"
-          echo "base=$BASE head=$HEAD"
-          if [[ "$BASE" == "development" ]]; then
-            if [[ ! "$HEAD" =~ ^dev/[^/]+$ ]]; then
-              echo "PRs into development must come from dev/<developer> only. Received: $HEAD"
+
+          echo "PR source: ${HEAD_BRANCH}"
+          echo "PR target: ${BASE_BRANCH}"
+
+          case "${BASE_BRANCH}" in
+            main)
+              if [ "${HEAD_BRANCH}" != "staging" ]; then
+                echo "Only staging may be merged into main."
+                exit 1
+              fi
+              ;;
+            staging)
+              if [ "${HEAD_BRANCH}" != "development" ]; then
+                echo "Only development may be merged into staging."
+                exit 1
+              fi
+              ;;
+            development)
+              case "${HEAD_BRANCH}" in
+                dev/*|feature/*|fix/*|chore/*|codex/*|cursor/*|antigravity/*|dependabot/*)
+                  ;;
+                *)
+                  echo "Only short-lived work branches may be merged into development."
+                  echo "Allowed prefixes: dev/, feature/, fix/, chore/, codex/, cursor/, antigravity/, dependabot/."
+                  exit 1
+                  ;;
+              esac
+              ;;
+            *)
+              echo "Unhandled base branch: ${BASE_BRANCH}"
               exit 1
-            fi
-          fi
-          echo "Branch source policy passed."
+              ;;
+          esac
