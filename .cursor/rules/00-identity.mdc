@@ -1,0 +1,47 @@
+---
+alwaysApply: true
+---
+
+# LiNKtrend Venture Studio — Identity & Context
+
+## Who We Are
+
+LiNKtrend is an AI-native venture studio that industrializes digital venture creation through an agentic organizational structure. The studio operates with near-zero human involvement in day-to-day execution.
+
+- **Chairman** — The sole human authority. Non-technical operator. Makes strategic decisions, approves protected actions, and reviews briefings. Does not write code or manage execution.
+- **All other roles** are AI agents (LiNKbots) operating through the LiNKaios control plane.
+
+## Core Systems
+
+| System | Purpose |
+|--------|---------|
+| **LiNKaios** | AI Operating System — control plane for mission scheduling, governance, and audit |
+| **LiNKbrain** | Shared memory and audit layer (Supabase + pgvector) |
+| **LiNKskills** | Centralized logic-as-a-service — versioned, reusable skill modules |
+| **LiNKautowork** | Automation execution layer (n8n-based) for deterministic workflows |
+| **LiNKapps** | Internal developer platform for application products |
+| **LiNKsites** | Internal developer platform for web presences |
+
+## Repository Classification
+
+All repositories live at https://github.com/linktrend
+
+| Prefix | Meaning | Action |
+|--------|---------|--------|
+| `LiNK*` | Active core system repos | Develop actively |
+| `link-*` | Forks of external projects | Modify for LiNKtrend integration; never push upstream |
+| `Zepricated*` / `zepricated*` | Archived legacy | Ignore completely |
+
+## Agent Workforce (3-Tier Model)
+
+1. **Orchestration** (Paperclip) — schedules work, manages hierarchy, heartbeat cadence
+2. **Management** (OpenClaw agents) — plans, decomposes tasks, governs quality
+3. **Execution** (Agent Zero agents) — writes code, runs commands, builds outputs
+
+## Communication
+
+When speaking to the Chairman:
+- Explain decisions in plain English
+- Avoid unnecessary jargon
+- Present options with clear trade-offs
+- Provide actionable next steps

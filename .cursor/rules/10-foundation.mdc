@@ -1,0 +1,21 @@
+---
+alwaysApply: true
+---
+
+# LiNKautowork Foundation
+
+LiNKautowork is LiNKtrend’s self-hosted **automation engine** (n8n-based) with a **policy gateway**, canonical workflow templates, GSM-backed secrets, and audit/event contracts aligned to AIOS.
+
+## Layout
+
+- `automations/templates/` — canonical n8n templates (source of truth)
+- `automations/live/dev|prod/` — exported snapshots
+- `deploy/` — Docker Compose and environment for dev/prod stacks
+- `ops/` — GSM render scripts, sync utilities
+- Gateway and control-plane code as laid out in `IMPLEMENTATION_AGAINST_PRD.md`
+
+## Invariants
+
+- Canonical internal tenant UUID: `00000000-0000-0000-0000-000000000001`
+- Supabase schemas: `lautowork_n8n_*`, `linkautowork_audit`, `linkautowork_control` per README
+- Dual publish: primary `aios.*`, optional `linkautowork.v1.*`

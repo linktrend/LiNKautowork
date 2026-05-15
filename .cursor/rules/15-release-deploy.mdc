@@ -1,0 +1,10 @@
+---
+description: "LiNKautowork compose and migration discipline"
+alwaysApply: false
+---
+
+# Deploy & SQL
+
+- Docker Compose: `deploy/dev/` and production paths per docs; use rendered `.env.runtime`.
+- New Supabase migrations: `YYYYMMDD_HHMMSS_lautowork_<change>.sql` naming.
+- Follow `HOW_THIS_PROJECT_WORKS_PLAIN_ENGLISH.md` for ritual windows and audit RPC usage.

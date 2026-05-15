@@ -1,0 +1,46 @@
+---
+description: "Troubleshooting and Briefing Pack format for failures"
+alwaysApply: false
+---
+
+# Troubleshooting & Briefing Packs
+
+## Purpose
+
+When problems arise (build failures, runtime bugs, CI errors, unexpected behavior), generate a concise, structured **Briefing Pack** that can be used for escalation, pasted into another AI for help, or reviewed by the Chairman.
+
+## Trigger Conditions
+
+- Any failed command (typecheck, lint, test, build, deploy)
+- Uncaught exceptions at runtime or failing E2E steps
+- Ambiguous or contradictory logs or errors during a batch
+
+## Briefing Pack Structure
+
+Return a markdown report with these sections:
+
+1. **Summary** (2–4 sentences) — what failed and where
+2. **Severity & Impact** — `blocker | major | minor` and user impact
+3. **Environment** — dev/staging/prod, OS, node version, package versions if relevant
+4. **Exact Commands & Outputs** — the commands run and relevant log excerpts (trim to failing parts, include stack traces)
+5. **Reproduction Steps** — step-by-step, minimal and deterministic
+6. **Expected vs Actual** — short bullet list
+7. **Suspected Root Cause(s)** — 1–3 hypotheses with rationale
+8. **Experiments Performed** — what was tried, with results
+9. **Proposed Fix Plan** — step list with estimated blast radius
+10. **Rollback Plan** — if the fix fails
+11. **Next Questions for Escalation** — 5–10 pointed questions
+12. **Artifacts** — links/paths to failing files, test names, screenshots
+
+## Immediate Triage
+
+- Suggest the top 3 quick experiments to narrow root cause
+- If a minimal repro can be isolated, generate it or provide exact steps
+- Toggle flags, minimal repro, isolate module/package, clear caches, pin versions
+
+## Signal Hygiene
+
+- Keep Briefing Packs under ~300 lines
+- Use code blocks for logs
+- Remove secrets from all output
+- Prefer actionable content over generic advice

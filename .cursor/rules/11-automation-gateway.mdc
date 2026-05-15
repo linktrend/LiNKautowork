@@ -1,0 +1,11 @@
+---
+description: "LiNKautowork templates, gateway, and deploy paths"
+globs: "automations/**,deploy/**,ops/**"
+alwaysApply: false
+---
+
+# Automation & gateway
+
+- Prefer editing **templates** under `automations/templates/` then exporting to `automations/live/` via established ops flows.
+- Gateway changes must preserve signed ingress (HMAC, nonce, tenant lineage) and GSM JIT secret retrieval.
+- Use `ops/render-env-from-gsm.sh` for runtime env; never commit raw secrets.

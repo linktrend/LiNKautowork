@@ -1,0 +1,107 @@
+---
+alwaysApply: true
+---
+
+# Agent Behavior Rules
+
+These rules govern how AI coding agents (Cursor, Codex, Antigravity, or any other IDE agent) must behave when working in LiNKtrend repositories.
+
+## Autonomous execution (default)
+
+Agents must **carry work through to completion** using the tools available in the session (edit files, run terminal commands, tests, linters, read-only git operations, MCP where enabled). **Do not** default to telling the Chairman or operator to run routine commands for you.
+
+- **Execute, don’t delegate:** Run installs, builds, tests, and diagnostics yourself. If something fails, try another reasonable approach; avoid stopping after a single transient error.
+- **When handoff to a human is allowed:** Only when execution is **not possible** here (missing secrets or credentials, no network/auth to a required system, destructive production action that policy forbids without explicit approval, or a step that **must** happen in a provider UI). In those cases, state **what is blocked**, **why**, and the **minimal** remaining action — not a generic chore list for work you could have done.
+- **Outcome:** Prefer a **done** result (code + verification you can run) over instructions for the user to finish the same steps.
+
+## Planning First
+
+Before coding:
+1. Outline intended changes with rationale.
+2. List the steps.
+3. Identify risks and assumptions.
+4. Wait for approval only when the change is **large or sensitive** (production infra, secrets, billing, legal exposure), or the user explicitly asked for **plan-only** / **approval before edits** — otherwise proceed after a short inline plan.
+
+### Batch Header
+
+Before any substantive implementation batch, generate a Batch Header:
+
+- **Scope:** What is being changed and why (target: 1–2 hours of work)
+- **Inputs:** Files, context, or references used
+- **Plan:** Bullet-step execution plan
+- **Risks & Assumptions:** What could go wrong; what we're assuming
+- **Script Additions:** Any package.json or config updates needed
+
+The Batch Header is for **transparency**. Unless the user asked to pause for review or the batch is **approval-gated** (see above), **implement after publishing the header** — do not treat “header written” as a mandatory stop for normal work.
+
+## Execution Discipline
+
+- **Small steps:** Prefer small, incremental, reviewable changes. Avoid large refactors in a single batch unless explicitly requested.
+- **Maintain scope:** Respect the defined task scope. No scope creep. If unclear, list assumptions, risks, and open questions, then proceed.
+- **Shippable code:** Every change must be complete and functional. No placeholders, no TODOs, no partial implementations.
+- **Find the root:** Fix root causes, not surface symptoms.
+
+## Handling Ambiguity
+
+If anything is ambiguous:
+1. Ask up to **three focused questions**.
+2. If still unclear, proceed with **explicit written assumptions**.
+3. Do not block the batch.
+
+## Large Changes
+
+Before making complex or multi-file changes:
+- Summarize risks
+- Outline the plan
+- Request confirmation **only** when the change is protected, irreversible, or the user requested a checkpoint — otherwise execute after the brief plan
+
+## Error Handling
+
+### User-Facing Errors
+- Use consistent, non-obtrusive feedback (toast or inline message).
+- Never expose raw technical errors to end users.
+- Log technical details internally.
+
+### Development Errors
+- Never swallow errors silently.
+- Log contextual details and propagate through typed error paths.
+
+## Troubleshooting — Briefing Pack
+
+When a failure occurs (build, test, runtime, CI, deploy), generate a **Briefing Pack**:
+
+1. **Summary** (2–4 sentences) — what failed and where
+2. **Severity & Impact** — blocker / major / minor + user impact
+3. **Environment** — dev/staging/prod, OS, node/python version
+4. **Exact Commands & Outputs** — commands run + relevant log excerpts
+5. **Reproduction Steps** — step-by-step, minimal, deterministic
+6. **Expected vs Actual** — bullet list
+7. **Suspected Root Cause(s)** — 1–3 hypotheses with rationale
+8. **Experiments Performed** — what was tried, with results
+9. **Proposed Fix Plan** — steps with estimated blast radius
+10. **Rollback Plan** — if the fix fails
+11. **Next Questions** — 5–10 pointed questions for escalation
+12. **Artifacts** — links/paths to failing files, test names
+
+## Decision Q&A
+
+When requirements are ambiguous or conflicting, produce a **Decision Q&A** block:
+
+1. **Decision Context** — 3–5 bullets summarizing the task and constraints
+2. **Risk of Wrong Choice** — what breaks if we guess wrong
+3. **Questions by Category** — Product/UX, Architecture, Data, API, Performance, Security, DevEx
+4. **Recommended Defaults** — opinionated defaults aligned to our stack
+5. **Proceeding with Assumptions** — numbered list of explicit assumptions
+
+## Commit Hygiene
+
+Follow conventional commits: `type(scope): short summary`
+Keep scope small. See `01-git-branching` for full conventions.
+
+## Communication Style
+
+The Chairman is a non-technical operator. When communicating:
+- Explain decisions in plain, clear English
+- Avoid unnecessary jargon
+- Present options with trade-offs
+- **Actionable next steps** means what **you completed** and what **only a human can do** (approvals, secrets in GSM, production consoles) — not asking the Chairman to run dev commands you could run in-agent

@@ -1,0 +1,40 @@
+---
+description: "Testing standards: unit, integration, E2E, and acceptance"
+alwaysApply: false
+---
+
+# Testing Standards
+
+## Test Scope
+
+Choose the correct testing level:
+
+| Level | Use For | Tool |
+|-------|---------|------|
+| **Unit** | Pure functions, isolated logic, utilities, hooks | Vitest |
+| **Integration** | API routes, DB interactions, server actions | Vitest + test DB/mock |
+| **E2E** | Major user flows (auth, navigation, CRUD) | Playwright (web) |
+
+## Priorities
+
+1. The "happy path" for all features
+2. All critical error paths
+3. Boundary inputs and edge cases
+
+## Rules
+
+- Every new feature or bug fix must ship with corresponding tests.
+- When fixing a bug, write a test that fails before the fix and passes after.
+- Tests must be meaningful: validate real functionality, not just implementation details.
+- Tests should be colocated where possible (`__tests__/` folders) or under `tests/`.
+
+## Acceptance Harness
+
+If the repo has acceptance or pre-deployment scripts (e.g., `scripts/mvo-predeploy-acceptance.sh`), run them as part of the verification process.
+
+## Reporting
+
+At the end of each batch, output:
+- List of new or updated tests (file + test name)
+- Test run summary (PASS/FAIL)
+- Any failures with proposed fixes

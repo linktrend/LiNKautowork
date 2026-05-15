@@ -1,0 +1,74 @@
+---
+alwaysApply: true
+---
+
+# Git Branching & Workflow (SOP v2)
+
+## Branch Model
+
+Every LiNKtrend repository uses three branch tiers:
+
+| Branch | Purpose | Direct Push |
+|--------|---------|-------------|
+| `main` (or upstream default) | Production. Deploy only from here. | Forbidden |
+| `staging` | Integration and pre-production validation. | Forbidden |
+| `dev/<developer>` | Per-developer working branch. | Allowed |
+
+## Developer Branch Naming
+
+Format: `dev/<machine><ide>`
+
+Examples:
+- `dev/minicodex` — Mac Mini using Codex
+- `dev/blackcursor` — MacBook (black) using Cursor
+- `dev/silvercursor` — MacBook (silver) using Cursor
+- `dev/miniantigravity` — Mac Mini using Antigravity
+
+## Promotion Flow
+
+```
+dev/<developer> → PR to staging → PR to main
+```
+
+1. All development happens on `dev/<developer>` branches.
+2. Open PR from `dev/<developer>` to `staging`.
+3. Resolve conflicts and pass CI/security gates in `staging`.
+4. Open PR from `staging` to `main`.
+5. Deploy only from tagged commit on `main`.
+
+## Protection Rules (Mandatory)
+
+On `staging` and production branches:
+- No direct pushes
+- Pull request required
+- Minimum 1 approval required
+- Force push disabled
+- Branch deletion disabled
+
+## Upstream Fork Sync Policy
+
+For forked repos (`link-*`):
+- Original upstream repos are never modified by LiNKtrend.
+- Forks can be modified to fit LiNKtrend systems or for customization.
+- GitHub automation syncs upstream updates into `staging`.
+- Conflict resolution happens in `staging` before promotion to `main`.
+- Local customizations must not be silently overwritten by upstream sync.
+
+## Hotfix Policy
+
+Hotfixes follow the same flow: `dev/<developer>` → `staging` → `main`. No direct server-side hotfix commits outside the GitHub flow.
+
+## Commit Messages
+
+Follow conventional commits: `type(scope): short summary`
+
+Types: `feat`, `fix`, `chore`, `refactor`, `docs`, `test`, `ci`
+
+Examples:
+- `feat(api): add mission intake endpoint`
+- `fix(ui): correct briefing card alignment`
+- `chore(infra): update Caddy TLS config`
+
+## Auditability
+
+All production changes must be traceable to: PR → approval → merge commit → deployment record.

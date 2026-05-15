@@ -1,0 +1,59 @@
+---
+description: "Code quality standards: TypeScript, linting, formatting, completeness"
+alwaysApply: false
+---
+
+# Code Quality Standards
+
+## TypeScript
+
+- Strict mode (`"strict": true`) across all TypeScript apps and packages.
+- Use functional, declarative patterns with early returns.
+- Consistent naming conventions for variables, functions, folders, and components.
+
+## Linting & Formatting
+
+- ESLint + Prettier are mandatory. Do not disable rules without justification.
+- Run linters and formatters before completing any batch of work.
+
+## Styling & UI
+
+- Use **Tailwind CSS** for all web styling. Avoid inline styles except for dynamic computed values.
+- Use **shadcn/ui** for UI primitives where available. Compose components rather than forking.
+- Accessibility is mandatory: semantic HTML, ARIA attributes, keyboard navigation, visible focus states.
+- All layouts must be mobile-first and responsive.
+
+## Code Completeness
+
+- Always provide complete, production-ready code.
+- No placeholders, no "TODO" markers, no incomplete implementations.
+- All imports must be included. Code must be fully functional.
+- Fix the root cause of issues, not surface symptoms.
+
+## JSDoc
+
+All exported functions and components require JSDoc including:
+- Purpose
+- Parameters
+- Return value
+
+## Dependencies
+
+Prefer standard library and existing project packages. Introduce a new dependency only if:
+- It is necessary
+- It is lightweight and well-maintained
+- You provide a one-line justification
+
+## Directory Consistency
+
+Respect the existing project structure. Place code in the correct directories. Do not mix unrelated domains or collapse structure.
+
+## Definition of Done
+
+Before declaring work complete:
+- [ ] Type-check passes
+- [ ] Linting passes
+- [ ] Formatting passes
+- [ ] Tests pass (if applicable)
+- [ ] Build succeeds
+- [ ] No regressions introduced
