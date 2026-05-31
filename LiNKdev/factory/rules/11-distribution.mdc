@@ -1,0 +1,10 @@
+---
+description: "Skills and rules distribution"
+globs: "skills/**,rules/**"
+alwaysApply: false
+---
+
+# Editing rules
+
+- Editing `rules/*.md` affects **all** future `install.sh` runs—bump guidance carefully and keep frontmatter generation logic in `install.sh` aligned.
+- Skills should stay self-contained with runnable scripts where applicable; test paths on macOS/Linux.

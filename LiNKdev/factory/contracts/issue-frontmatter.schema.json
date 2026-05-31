@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.dev/LiNKdev/issue-frontmatter.schema.json",
+  "title": "DevSwarmIssueFrontmatter",
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "runtime",
+    "tier",
+    "module",
+    "phase",
+    "allowed_files",
+    "prohibited_files",
+    "acceptance_criteria",
+    "proof_required",
+    "report_path",
+    "read_first",
+    "read_forbidden"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^[A-Z][A-Z0-9]*-[0-9]{3}$" },
+    "title": { "type": "string", "minLength": 1 },
+    "runtime": { "type": "string", "enum": ["cursor", "codex"] },
+    "tier": { "type": "string", "enum": ["standard", "critical"], "default": "standard" },
+    "module": { "type": "string" },
+    "phase": { "type": "string" },
+    "depends_on": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[A-Z][A-Z0-9]*-[0-9]{3}$" }
+    },
+    "allowed_files": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1
+    },
+    "prohibited_files": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "read_first": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1
+    },
+    "read_forbidden": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1
+    },
+    "acceptance_criteria": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1
+    },
+    "proof_required": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1
+    },
+    "report_path": { "type": "string" },
+    "prompt_path": { "type": "string" }
+  }
+}

@@ -1,0 +1,31 @@
+---
+description: Reuse-first development workflow for existing LiNKtrend repos.
+alwaysApply: true
+---
+
+# Reuse-First Workflow
+
+This project is not greenfield.
+
+Before creating new code, search active and archived repos for existing implementations.
+
+Known reuse anchors:
+
+- `LiNKaios/` for LiNKaios ownership docs; existing code is still in `LiNKaios/linkaios-web` and `packages/linkaios-kernel`
+- `LiNKskills/services/logic-engine` for existing LinkSkills governance code
+- `LiNKskills/capability-connectors/` for new capability connector docs/manifests
+- `LiNKbrain/` for LiNKbrain ownership docs; existing code is still in `packages/linklogic-sdk/src/brain-*`, `LiNKaios/linkaios-web/src/components/linkbrain`, and `services/migrations/*linkbrain*`
+- `LiNKautowork` for n8n gateway and audit patterns
+- `LiNKbot/` for LiNKbot ownership docs, role definitions, runtime adapters, and communication profiles
+- `LiNKguard/` for worker security/cleanup sidecar ownership; legacy package code now lives in `LiNKguard/sidecar/linkguard`
+- `modules/` for tenant-enabled module homes
+- `Archive/LiNKaios/packages/linkbrain` for LiNKbrain schemas/migrations
+- `LiNKsites` for Payload CMS and site templates
+- `LiNKapps` for UI/design system patterns
+- `LiNKbot-core` and `Archive/LiNKopenclaw` for LiNKbot/OpenClaw runtime
+
+If existing code is useful, wire or adapt it.
+
+If existing code is unusable, document why in `LiNKdev/product/grounding/DECISIONS.md` before rebuilding.
+
+Do not preserve architectural debt merely because code exists.

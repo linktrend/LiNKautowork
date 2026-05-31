@@ -1,0 +1,32 @@
+---
+description: Bootstrap — read LiNKdev factory before product work.
+alwaysApply: true
+---
+
+# LiNKdev Bootstrap
+
+Portable install is **only** `.cursor/` + `LiNKdev/`. There is **no** root `AGENTS.md`. This rule is the Cursor entry point and sends every agent into the factory.
+
+Repository files, Git history, `LiNKdev/` documents, and committed implementation files are the source of truth. Do not rely on chat memory, IDE memory, or unstated assumptions.
+
+## Read first (mandatory order)
+
+1. `LiNKdev/AGENTS.md` (canonical agent entry — not repo root)
+2. `LiNKdev/skills/SKILLS_CATALOG.md`
+3. `LiNKdev/factory/rules/` (generic dev + swarm rules)
+4. Product rules in `.cursor/rules/` when present (add per host repo)
+5. `LiNKdev/product/grounding/` — **only** files listed in the active issue `read_first`
+6. the active issue file only (path from STATE or label)
+
+When executing an issue: read **only** `read_first` + `report_path` on that issue. Do not list `product/reports/` or glob full `product/grounding/`.
+
+## Skills and agents
+
+- **Skills:** canonical tree is `LiNKdev/skills/` only — not flat `.cursor/skills/` stubs.
+- **Agents:** canonical definitions live in `LiNKdev/factory/agents/`.
+
+## Bootstrap
+
+If `LiNKdev/` is missing, copy the LiNKdev template first.
+
+Do **not** read `LiNKdev/archive/` for active work unless an issue explicitly requires historical lookup.

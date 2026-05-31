@@ -1,0 +1,74 @@
+---
+alwaysApply: true
+---
+
+# Cross-IDE Handoff Protocol
+
+## Purpose
+
+Enable any agent or IDE (Cursor, Codex, Antigravity, Xcode) to resume work started by another agent or IDE without loss of context, across multiple machines and environments.
+
+## Machines & IDEs
+
+| Machine | IDEs |
+|---------|------|
+| MacBook (black) | Cursor, Antigravity |
+| MacBook (silver) | Cursor, Antigravity |
+| Mac Mini | Codex, Antigravity, Xcode |
+
+Branch naming encodes the machine+IDE identity: `dev/<machine><ide>` (e.g., `dev/minicodex`, `dev/blackcursor`).
+
+## Handoff Document
+
+When finishing a work session, write a handoff document to `docs/handoffs/`.
+
+**Filename:** `YYYY-MM-DD-<branch>-<short-summary>.md`
+
+**Template:**
+
+```markdown
+# Handoff: [Short Summary]
+
+- **Date:** YYYY-MM-DD HH:MM (timezone)
+- **Branch:** dev/<developer>
+- **IDE/Agent:** [Cursor | Codex | Antigravity | Xcode]
+- **Machine:** [MacBook black | MacBook silver | Mac Mini]
+
+## What Was Done
+- [Bullet list of completed work]
+
+## What's Next
+- [Bullet list of remaining tasks]
+
+## Blockers
+- [Any blockers or issues that need resolution]
+
+## Assumptions Made
+- [Decisions made without full information]
+
+## Files Changed
+- [List of key files modified]
+
+## Branch State
+- [ ] All changes committed
+- [ ] Pushed to remote
+- [ ] Tests passing
+- [ ] No uncommitted work
+```
+
+## Before Starting Work
+
+1. Check `docs/handoffs/` for the latest handoff on your branch or related branches.
+2. Read it before starting to understand context.
+3. Pull latest from the branch.
+
+## Overnight Autonomous Work
+
+When local LLM agents (via Ollama on Mac Mini) run overnight:
+- They must write a handoff document when their session ends.
+- Morning cloud-based agents read the handoff before continuing.
+- The handoff must include branch state and any assumptions made.
+
+## Future: LiNKbrain Integration
+
+This file-based handoff system is temporary. When LiNKbrain is ready, handoffs will be persisted as structured memory entries with vector search, replacing the `docs/handoffs/` folder.

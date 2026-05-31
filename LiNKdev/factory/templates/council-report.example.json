@@ -1,0 +1,74 @@
+{
+  "gate": "G2",
+  "program_id": "example-program",
+  "reviewed_at": "2026-05-30T12:00:00Z",
+  "subject_artifacts": [
+    { "label": "PROGRAM", "path": "LiNKdev/product/programs/example-program/PROGRAM.md" },
+    { "label": "INTENT", "path": "LiNKdev/product/grounding/INTENT.md" }
+  ],
+  "personas": [
+    {
+      "persona_id": "security-advisor",
+      "verdict": "PASS",
+      "summary": "No new secret surfaces in program plan.",
+      "evidence": [
+        {
+          "type": "file",
+          "ref": "LiNKdev/product/programs/example-program/PROGRAM.md",
+          "finding": "Release issues use GSM placeholders only."
+        }
+      ]
+    },
+    {
+      "persona_id": "architecture-advisor",
+      "verdict": "PASS",
+      "summary": "DAG valid; module boundaries match repo ownership.",
+      "evidence": [
+        {
+          "type": "command",
+          "ref": "LiNKdev/factory/scripts/validate-dag.sh",
+          "finding": "PROGRAM.md DAG acyclic."
+        }
+      ]
+    },
+    {
+      "persona_id": "dx-advisor",
+      "verdict": "WARN",
+      "summary": "Some issues lack explicit proof commands.",
+      "evidence": [
+        {
+          "type": "report",
+          "ref": "LiNKdev/factory/templates/issue.md",
+          "finding": "Planner should fill proof_commands on every issue."
+        }
+      ],
+      "warnings": ["Fill proof_commands before first linkdev:ready wave"]
+    },
+    {
+      "persona_id": "qa-advisor",
+      "verdict": "PASS",
+      "summary": "Acceptance criteria are testable per issue template.",
+      "evidence": [
+        {
+          "type": "file",
+          "ref": "LiNKdev/factory/templates/issue.md",
+          "finding": "Each criterion maps to proof block field."
+        }
+      ]
+    },
+    {
+      "persona_id": "product-advisor",
+      "verdict": "PASS",
+      "summary": "Program DoD aligns with SHIP_CRITERIA.",
+      "evidence": [
+        {
+          "type": "file",
+          "ref": "LiNKdev/product/grounding/SHIP_CRITERIA.md",
+          "finding": "Release module references demo evidence."
+        }
+      ]
+    }
+  ],
+  "summary_status": "PASS",
+  "blockers": []
+}

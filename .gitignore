@@ -9,3 +9,6 @@ deploy/prod/.env.runtime
 
 # Explicit nested fork boundary (managed independently)
 link-n8n/
+secrets/
+LiNKdev/factory/STATE.local.md
+LiNKdev/product/reports/**/*.local.md

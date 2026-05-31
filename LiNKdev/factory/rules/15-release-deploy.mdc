@@ -1,0 +1,9 @@
+---
+description: "linktrend-skills release"
+alwaysApply: false
+---
+
+# Release
+
+- Tag or document installer version when making breaking changes to `install.sh` output shape.
+- Downstream repos re-run installer to pick up Layer 1 refresh; Layer 2 remains per-repo in each codebase.

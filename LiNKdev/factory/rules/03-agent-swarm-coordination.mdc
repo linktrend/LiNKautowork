@@ -1,0 +1,83 @@
+---
+description: Coordination rules for Cursor, Codex, Antigravity, and other agents.
+alwaysApply: true
+---
+
+# Agent Swarm Coordination
+
+Agents coordinate through `LiNKdev/` (programs, issues, STATE, reports), not chat memory. Legacy material is under `LiNKdev/archive/` (read-only; do not use for active work).
+
+Every agent must read its assigned issue spec and update its agent report before stopping.
+
+Each issue must define:
+
+- objective
+- repo / branch
+- allowed files
+- prohibited files
+- required context files
+- steps
+- acceptance criteria
+- proof required
+- report file to update
+
+Every issue must use the canonical ownership map from `docs/architecture/repo-architecture-target.md` and the system completion targets from `docs/architecture/system-completion-targets.md` when working in LiNKtrend-System (host repos may replace these paths in `product/grounding/`).
+
+Specialist agents do not merge their own work. The Integrator reviews and merges.
+
+## Branch isolation (deterministic — no worktrees)
+
+LiNKdev uses **one repo checkout** and **one git branch per issue**. Git worktrees are **not** used.
+
+| Rule | Requirement |
+|------|-------------|
+| Issue branch | `issue/<issue-id>-<slug>` from `development` (or host SOP equivalent) |
+| Before edit | `git status --short --branch` clean except documented exclusions |
+| Parallel wave | Never two executors on the **same checkout** at the same time |
+| Parallel alternative | Different machines/IDEs (`dev/<machine><ide>`) or **sequential** waves |
+| Handoff | Commit + push on issue branch; dirty tree blocks merge-ready |
+
+See `LiNKdev/factory/docs/LINKDEV_SANDBOX.md` (DS-B12).
+
+Every prompt file must include: branch name, clean-status verification before edit, allowed/prohibited files, proof requirements, report path, commit/push instructions.
+
+Parallel issues in one wave must be dependency-free. Dependent work runs in sequential waves with an Integrator checkpoint between them.
+
+Every issue must finish with a durable handoff:
+
+- commit all intended code, docs, reports, and proof artifacts on the **issue branch**
+- leave `git status --short` clean except for explicitly documented exclusions
+- include the final commit SHA in the issue report
+- push the issue branch unless the Principal explicitly forbids pushing
+
+Reports alone are not a completed handoff when implementation files changed. Uncommitted local-only work is incomplete until committed and pushed.
+
+An Integrator checkpoint is required before launching any wave that depends on previous issue output. The Integrator must verify branch tips, reports, committed files, and proof commands, then update downstream issues/prompts with exact branch or commit dependencies.
+
+If two agents need to edit the same file, stop and escalate to the Integrator.
+
+All significant decisions go into `LiNKdev/product/grounding/DECISIONS.md`.
+
+Read `LiNKdev/factory/SPEC.md` and `LiNKdev/skills/SKILLS_CATALOG.md` for factory rules and skills.
+
+GitHub is the source of truth. At the end of every issue:
+
+- commit on the issue branch
+- push the issue branch
+- integrate through `development` before promoting to `staging` or `main`
+- record branch, commit SHA, commands run, and proof in the report
+
+Stable branches are `main`, `staging`, and `development`. Promotion flow:
+
+- issue branch → `development`
+- `development` → `staging`
+- `staging` → `main`
+
+## Wave-based execution workflow
+
+1. Integrator writes prompts under `LiNKdev/product/programs/<program>/prompts/`.
+2. Each prompt includes branch instructions and clean-status verification.
+3. User launches executors; Integrator merges approved PRs to `development` between waves.
+4. Repeat until the program stage is complete.
+
+Default model guidance: Cursor for integration; Codex for isolated implementation branches; Antigravity for UI/E2E when assigned.
