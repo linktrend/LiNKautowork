@@ -33,11 +33,11 @@ jobs:
               ;;
             development)
               case "${HEAD_BRANCH}" in
-                dev/*|feature/*|fix/*|chore/*|codex/*|cursor/*|antigravity/*|dependabot/*)
+                issue/*|dev/*|feature/*|fix/*|chore/*|codex/*|cursor/*|antigravity/*|dependabot/*)
                   ;;
                 *)
                   echo "Only short-lived work branches may be merged into development."
-                  echo "Allowed prefixes: dev/, feature/, fix/, chore/, codex/, cursor/, antigravity/, dependabot/."
+                  echo "Allowed prefixes: issue/, dev/, feature/, fix/, chore/, codex/, cursor/, antigravity/, dependabot/."
                   exit 1
                   ;;
               esac

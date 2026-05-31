@@ -53,7 +53,7 @@ LiNKautowork is the self-hosted automation engine for LiNKtrend operations, buil
 - `deploy/dev` and `deploy/prod`: Docker Compose stacks and env templates.
 - `ops/`: sync/import/export/backup/eval scripts, SQL, alert rules.
 - `docs/`: contracts, lifecycle, SLOs, and runbooks.
-- `link-n8n/`: independent nested n8n fork/runtime source (explicit fork boundary).
+`link-n8n/`: nested n8n fork — see [docs/UPSTREAM.md](docs/UPSTREAM.md).
 
 ## Quick Start
 

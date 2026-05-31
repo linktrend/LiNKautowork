@@ -3,73 +3,39 @@ alwaysApply: false
 globs: "**/*"
 ---
 
-# Git Branching & Workflow (SOP v2)
+# Git branching (LiNKdev-aligned)
 
-## Branch Model
+Canonical rules: `LiNKdev/factory/rules/01-git-branching.mdc` and **SPEC §8** (`LiNKdev/factory/SPEC.md`).
 
-Every LiNKtrend repository uses three branch tiers:
+## Integration branch
 
-| Branch | Purpose | Direct Push |
-|--------|---------|-------------|
-| `main` (or upstream default) | Production. Deploy only from here. | Forbidden |
-| `staging` | Integration and pre-production validation. | Forbidden |
-| `dev/<developer>` | Per-developer working branch. | Allowed |
+- **`development`** is the integration branch for factory and integrator merges.
 
-## Developer Branch Naming
+## Branch prefixes
 
-Format: `dev/<machine><ide>`
+| Prefix | Use | Merge target |
+|--------|-----|--------------|
+| `issue/<id>-<slug>` | LiNKdev issue execution (one branch per issue, LAW-05) | **`development`** (Integrator only) |
+| `dev/<machine><ide>` | Optional ad-hoc IDE work per host SOP | **`development`** via PR |
+| Promotion | `development` → `staging` → `main` | **Principal** for `staging` and `main` |
 
-Examples:
-- `dev/minicodex` — Mac Mini using Codex
-- `dev/blackcursor` — MacBook (black) using Cursor
-- `dev/silvercursor` — MacBook (silver) using Cursor
-- `dev/miniantigravity` — Mac Mini using Antigravity
-
-## Promotion Flow
+## Promotion flow
 
 ```
-dev/<developer> → PR to staging → PR to main
+issue/* or dev/*  →  PR to development  →  Integrator merges issue branches when merge-ready
+development       →  PR to staging      →  Principal
+staging           →  PR to main         →  Principal
 ```
 
-1. All development happens on `dev/<developer>` branches.
-2. Open PR from `dev/<developer>` to `staging`.
-3. Resolve conflicts and pass CI/security gates in `staging`.
-4. Open PR from `staging` to `main`.
-5. Deploy only from tagged commit on `main`.
+- **Integrator** automation merges only into **`development`**.
+- **Principal** approves promotion **`development` → `staging` → `main`**.
+- Allowed PR sources into `development` are enforced in `.github/workflows/branch-source-policy.yml`.
 
-## Protection Rules (Mandatory)
+## Commit messages
 
-On `staging` and production branches:
-- No direct pushes
-- Pull request required
-- Minimum 1 approval required
-- Force push disabled
-- Branch deletion disabled
+Conventional commits: `type(scope): summary` — details in the factory rule.
 
-## Upstream Fork Sync Policy
 
-For forked repos (`link-*`):
-- Original upstream repos are never modified by LiNKtrend.
-- Forks can be modified to fit LiNKtrend systems or for customization.
-- GitHub automation syncs upstream updates into `staging`.
-- Conflict resolution happens in `staging` before promotion to `main`.
-- Local customizations must not be silently overwritten by upstream sync.
+## Fork: link-n8n
 
-## Hotfix Policy
-
-Hotfixes follow the same flow: `dev/<developer>` → `staging` → `main`. No direct server-side hotfix commits outside the GitHub flow.
-
-## Commit Messages
-
-Follow conventional commits: `type(scope): short summary`
-
-Types: `feat`, `fix`, `chore`, `refactor`, `docs`, `test`, `ci`
-
-Examples:
-- `feat(api): add mission intake endpoint`
-- `fix(ui): correct briefing card alignment`
-- `chore(infra): update Caddy TLS config`
-
-## Auditability
-
-All production changes must be traceable to: PR → approval → merge commit → deployment record.
+The nested **`link-n8n/`** tree is an independent n8n fork. Upstream sync policy: **`docs/UPSTREAM.md`** (sync from `n8n-io/n8n` into **`development`**; never push to upstream).
