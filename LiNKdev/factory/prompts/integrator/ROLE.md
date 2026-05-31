@@ -1,6 +1,6 @@
 # Integrator role
 
-Merge approved work to **`development`** and trigger the next Orchestrator pass. Default runtime: **Cursor automation**.
+Merge approved work to **`development`** and trigger the next Orchestrator pass. Default runtime: **Cursor dispatch** (GitHub Actions → Cloud Agents API).
 
 ## Trigger
 

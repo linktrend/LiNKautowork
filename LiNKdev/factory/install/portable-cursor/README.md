@@ -19,7 +19,7 @@ Then add **product-specific** rules under `.cursor/rules/` as `01-*.mdc` … `08
 | `rules/00-linkdev-bootstrap.mdc` | Always-on: read `LiNKdev/` first |
 | `skills/README.md` | Points to `LiNKdev/skills/` |
 | `agents/README.md` | Points to `LiNKdev/factory/agents/` |
-| `commands/*.md` | Wire, UI automations, post-UI, Go — each points to `LiNKdev/factory/install/EXECUTE-*.md` |
+| `commands/*.md` | Wire, dispatch install, post-dispatch, Go — each points to `LiNKdev/factory/install/EXECUTE-*.md` |
 
 ## What does NOT live here
 

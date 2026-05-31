@@ -21,7 +21,7 @@ Apply on **issues** and/or **PRs** as noted. Colors are suggestions for GitHub U
 | `runtime:cursor` | Cursor cloud or manual Cursor executor |
 | `runtime:codex` | Codex automation or session |
 
-Filter automations: fire only when `linkdev:ready` **and** matching `runtime:*`.
+Dispatch v2 (GitHub Actions): executor fires only when `linkdev:ready` **and** matching `runtime:*` (AND check via `check-labels-for-dispatch.sh`). Codex path is future-only in v1.
 
 ## Tier (optional)
 

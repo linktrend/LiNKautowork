@@ -1,3 +1,3 @@
-# Wire LiNKdev (post–UI automations)
+# Wire LiNKdev (post–UI) — deprecated
 
-Execute the **EXECUTE-WIRE-LINKDEV-POST-UI.md** prompt in **LiNKdev/factory/install/** (read that file and follow it exactly).
+Use **`linkdev-wire-post-dispatch`** or **EXECUTE-WIRE-LINKDEV-POST-DISPATCH.md**.

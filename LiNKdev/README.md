@@ -24,8 +24,9 @@ LiNKdev/
 
 ## First run
 
-1. Wire — `factory/install/WIRE-PROMPT.md`
-2. Codex UI — `factory/install/automations/CODEX-CREATE-AUTOMATIONS.md` + `CURSOR-CREATE-AUTOMATIONS.md`
-3. Go — Planner cloud (`factory/prompts/planner/ROLE.md`)
+1. Wire Step A — `factory/install/EXECUTE-WIRE-LINKDEV.md`
+2. Dispatch — `factory/install/EXECUTE-LINKDEV-DISPATCH-INSTALL.md` + `factory/docs/DISPATCH.md`
+3. Post-dispatch proof — `factory/install/EXECUTE-WIRE-LINKDEV-POST-DISPATCH.md`
+4. Go — Planner cloud (`factory/prompts/planner/ROLE.md`)
 
 See `factory/SPEC.md`.

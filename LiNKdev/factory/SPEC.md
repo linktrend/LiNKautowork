@@ -1,11 +1,11 @@
 # LiNKdev Specification
 
-Version: 2.1  
-Status: active (2026-05-30)
+Version: 2.2  
+Status: active (2026-05-31)
 
 ## 1. What LiNKdev is
 
-LiNKdev is a **portable AI software factory**: Programs → Modules → Phases → **Issues**, coordinated through **GitHub + files**, with **Cursor-primary** control plane and **Codex** as peer executor automations.
+LiNKdev is a **portable AI software factory**: Programs → Modules → Phases → **Issues**, coordinated through **GitHub + files**, with **Cursor-primary** dispatch (GitHub Actions + Cloud Agents API) and **Codex** as a future peer executor path.
 
 Copy **only** **`.cursor/`** and **`LiNKdev/`** into a new repository. Do **not** add a root `AGENTS.md` — Cursor enters via `.cursor/rules/00-linkdev-bootstrap.mdc` → `LiNKdev/AGENTS.md`. The **product** subtree starts empty (except grounding stubs). **Factory** subtree is complete.
 
@@ -54,25 +54,32 @@ Integrator maintains `LiNKdev/product/reports/<program-id>/STATUS.md`.
 | Role | Runtime | Responsibility |
 |------|---------|----------------|
 | **Planner** | Cursor cloud (on **Go**) | Q&A with Principal → finished-product narrative → OK → create program + issues |
-| **Orchestrator** | Cursor automation | Advance STATE, set `linkdev:ready` (active wave cap in PROGRAM.md) |
-| **Executor** | Cursor or Codex cloud | Implement issue on branch |
-| **Reviewer** | Cursor automation | Spec + proof; reject vacuous PASS |
-| **Integrator** | Cursor automation | Merge to `development`; program STATUS |
+| **Orchestrator** | Cursor dispatch (GitHub Actions) | Advance STATE, set `linkdev:ready` (active wave cap in PROGRAM.md) |
+| **Executor** | Cursor dispatch (`runtime:cursor`) | Implement issue on branch |
+| **Reviewer** | Cursor dispatch | Spec + proof; reject vacuous PASS |
+| **Integrator** | Cursor dispatch | Merge to `development`; program STATUS |
 | **Principal** | Human | Go, Continue, staging/main, Release OK, optional pilot wave |
 
-**Codex** executors: `linkdev:ready` + `runtime:codex`.
+**Dispatch v2:** `.github/workflows/linkdev-dispatch.yml` calls the Cursor Cloud Agents API when labels/events match. Canonical doc: [docs/DISPATCH.md](docs/DISPATCH.md).
 
-## 6. Virgin repo → wire → UI → Go
+**Codex** executors (`linkdev:ready` + `runtime:codex`): documented for future dispatch; **not** wired in v1.
+
+**Cursor Automations UI:** deprecated optional legacy — same labels, no AND logic on issues; do not require for wire.
+
+## 6. Virgin repo → wire → dispatch → Go
 
 1. Copy `.cursor/` + `LiNKdev/` (product/programs empty; product/grounding stubs; skills/host empty).
-2. **Local Cursor — wire:** `LiNKdev/factory/install/WIRE-PROMPT.md` (no provider UI).
-3. **Codex computer use:** `factory/install/automations/CODEX-CREATE-AUTOMATIONS.md` and `CURSOR-CREATE-AUTOMATIONS.md` per `AUTOMATION-MANIFEST.md`.
-4. **Principal Go — cloud Cursor Planner:** Q&A until ≥95% clarity → plain-English **finished product** description (what users get when all issues are done) → Principal OK → Planner **creates** `product/programs/<program-id>/` (no program exists before Go).
-5. **Loop starts automatically:** Orchestrator → Executor → Reviewer → Integrator → … until program complete or `linkdev:principal-stop`.
+2. **Wire Step A (Cursor):** labels, guard workflow, copy dispatch workflows — [install/EXECUTE-WIRE-LINKDEV.md](install/EXECUTE-WIRE-LINKDEV.md).
+3. **Wire Step B (Cursor):** confirm `CURSOR_API_KEY` GitHub secret + workflows on `development` — [install/EXECUTE-LINKDEV-DISPATCH-INSTALL.md](install/EXECUTE-LINKDEV-DISPATCH-INSTALL.md).
+4. **Wire Step C (Cursor):** post-dispatch proof — [install/EXECUTE-WIRE-LINKDEV-POST-DISPATCH.md](install/EXECUTE-WIRE-LINKDEV-POST-DISPATCH.md).
+5. **Principal Go — cloud Cursor Planner:** Q&A until ≥95% clarity → plain-English **finished product** description → Principal OK → Planner **creates** `product/programs/<program-id>/` (no program exists before Go).
+6. **Loop:** Orchestrator → Executor → Reviewer → Integrator → … until program complete or `linkdev:principal-stop`.
 
-**Principal Continue** clears Principal stop and resumes Orchestrator.
+**Principal Continue** clears chairman stop and resumes Orchestrator.
 
 Repos with an existing program (e.g. LiNKtrend migration) may run Planner without Go to update the plan.
+
+Launch lines: [install/PRINCIPAL-LAUNCH.md](install/PRINCIPAL-LAUNCH.md).
 
 ## 7. Bootstrap program
 

@@ -1,30 +1,13 @@
-# Codex automations
+# Codex automations — **future / optional legacy**
 
-Codex executors are **peer automations** to Cursor cloud agents. Same GitHub labels; separate Codex automation entries.
+**Dispatch v1** does not call Codex from GitHub Actions. Executor path: `linkdev:ready` + `runtime:codex` — manual Codex session or future workflow.
 
-## LiNKdev-executor-codex
+**Cursor executor (wired):** `linkdev:ready` + `runtime:cursor` → [../../docs/DISPATCH.md](../../docs/DISPATCH.md).
 
-- **Trigger:** GitHub issue labeled `linkdev:ready` AND `runtime:codex`
-- **Filter:** Issue body or path references `LiNKdev/programs/` (optional narrow filter)
-- **Prompt:** `LiNKdev/factory/prompts/executor-codex/ROLE.md` + issue spec from `LiNKdev/factory/programs/bootstrap/issues/<id>.md`
-- **Branch:** `dev/minicodex` or `issue/<id>-*`
+---
 
-## Planner checklist
+## Legacy UI (optional)
 
-For each Codex issue group in PROGRAM.md, duplicate trigger with same label contract — do not rely on Principal manual launch.
+If using Codex Automations UI, mirror the same labels as Cursor. Record non-secret metadata in this folder after setup.
 
-## Proof
-
-Automation run must update `LiNKdev/product/reports/<id>.md` and push branch without Principal starting Codex.
-
-## Principal UI checklist (one-time)
-
-1. Open **Codex → Automations** (or project automations UI) for **this repository** (`{org}/{host-repo}`).
-2. Create **LiNKdev-executor-codex** with trigger: issue labels `linkdev:ready` + `runtime:codex`.
-3. Point prompt at `LiNKdev/factory/prompts/executor-codex/ROLE.md` and issue spec under `LiNKdev/product/programs/`.
-4. Default branch: `dev/minicodex` (or `issue/<id>-*` per issue template).
-5. Record automation ID in this folder after save.
-
-## Export
-
-Document Codex automation IDs in this folder after Principal configures UI.
+Do not commit secrets.

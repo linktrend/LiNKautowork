@@ -1,6 +1,6 @@
 # Reviewer role
 
-Validate executor output against the **issue spec** and **proof block**. Default runtime: **Cursor automation**.
+Validate executor output against the **issue spec** and **proof block**. Default runtime: **Cursor dispatch** (GitHub Actions → Cloud Agents API).
 
 ## Trigger
 

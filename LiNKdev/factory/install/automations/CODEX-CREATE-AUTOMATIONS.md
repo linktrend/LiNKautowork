@@ -1,3 +1,9 @@
+# Create Codex automations — **DEPRECATED**
+
+> Codex dispatch is **future-only** in v1. See [../../docs/DISPATCH.md](../../docs/DISPATCH.md).
+
+---
+
 # Create Codex automations (Codex computer use)
 
 You are configuring **Codex** automations for LiNKdev. Use computer use to navigate the Codex UI.

@@ -41,7 +41,31 @@ for s in LiNKdev/factory/scripts/*.sh; do
     shellcheck -x "$s" || fail "shellcheck $s"
   fi
 done
+DISPATCH_MJS="LiNKdev/factory/scripts/dispatch-cursor-agent.mjs"
+[[ -f "$DISPATCH_MJS" ]] || fail "missing $DISPATCH_MJS"
+if command -v node >/dev/null 2>&1; then
+  node --check "$DISPATCH_MJS" || fail "dispatch-cursor-agent.mjs syntax"
+fi
 ok "scripts present"
+
+# 3b. Dispatch workflow templates
+for wf in linkdev-dispatch.yml linkdev-guard.yml branch-source-policy.yml; do
+  [[ -f "LiNKdev/factory/install/github/${wf}" ]] || fail "missing workflow template ${wf}"
+done
+if command -v python3 >/dev/null 2>&1; then
+  python3 - <<'PY' || fail "workflow YAML parse"
+import pathlib, sys
+try:
+    import yaml
+except ImportError:
+    print("workflow yaml: skip (no PyYAML)")
+    sys.exit(0)
+for p in pathlib.Path("LiNKdev/factory/install/github").glob("*.yml"):
+    yaml.safe_load(p.read_text())
+print("workflow yaml ok")
+PY
+fi
+ok "dispatch workflow templates"
 
 # 4. JSON schemas parse
 for j in LiNKdev/factory/contracts/*.json LiNKdev/factory/gates/catalog.json; do

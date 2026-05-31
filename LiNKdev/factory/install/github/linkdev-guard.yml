@@ -1,0 +1,53 @@
+# Copy to: .github/workflows/linkdev-guard.yml
+# Mechanical verify on LiNKdev-touched PRs.
+
+name: LiNKdev guard
+
+on:
+  pull_request:
+    paths:
+      - 'LiNKdev/factory/STATE.md'
+      - 'LiNKdev/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  state-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate STATE JSON block
+        if: hashFiles('LiNKdev/factory/STATE.md') != ''
+        run: |
+          python3 <<'PY'
+          import json, re, sys
+          from pathlib import Path
+          p = Path("LiNKdev/factory/STATE.md")
+          text = p.read_text()
+          m = re.search(r"```json\s*(\{.*?\})\s*```", text, re.S)
+          if not m:
+            print("No JSON block in STATE.md")
+            sys.exit(1)
+          json.loads(m.group(1))
+          print("STATE JSON valid")
+          PY
+
+      - name: Mechanical verify (LiNKdev scope)
+        run: |
+          chmod +x LiNKdev/factory/scripts/*.sh
+          LINKDEV_SCOPE=LiNKdev LINKDEV_TIER=standard LiNKdev/factory/scripts/verify.sh
+
+      - name: PR comment on failure
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'LiNKdev guard failed. Fix STATE JSON or run `LiNKdev/factory/scripts/verify.sh` locally before merge-ready.'
+            })

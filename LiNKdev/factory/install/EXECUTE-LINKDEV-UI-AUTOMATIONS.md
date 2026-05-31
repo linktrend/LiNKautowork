@@ -1,3 +1,9 @@
+# Execute: LiNKdev UI automations — **DEPRECATED**
+
+> **Do not use for new wire.** Use dispatch v2 instead: [EXECUTE-LINKDEV-DISPATCH-INSTALL.md](EXECUTE-LINKDEV-DISPATCH-INSTALL.md) and [../docs/DISPATCH.md](../docs/DISPATCH.md).
+
+---
+
 # Execute: LiNKdev UI automations (Codex agent — autonomous)
 
 **Principal launch (one line only):**  

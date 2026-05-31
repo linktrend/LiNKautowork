@@ -5,11 +5,13 @@ Agents execute this checklist **autonomously**. The Principal only sends one-lin
 | Sections | Agent | Prompt file |
 |----------|--------|-------------|
 | 0–3, 6–7 | Cursor | [EXECUTE-WIRE-LINKDEV.md](EXECUTE-WIRE-LINKDEV.md) |
-| 4–5 | Codex (computer use) | [EXECUTE-LINKDEV-UI-AUTOMATIONS.md](EXECUTE-LINKDEV-UI-AUTOMATIONS.md) |
-| 9 (+ wire sign-off) | Cursor | [EXECUTE-WIRE-LINKDEV-POST-UI.md](EXECUTE-WIRE-LINKDEV-POST-UI.md) |
+| 4–5 | Cursor | [EXECUTE-LINKDEV-DISPATCH-INSTALL.md](EXECUTE-LINKDEV-DISPATCH-INSTALL.md) |
+| 9 (+ wire sign-off) | Cursor | [EXECUTE-WIRE-LINKDEV-POST-DISPATCH.md](EXECUTE-WIRE-LINKDEV-POST-DISPATCH.md) |
 | 8 **Go** | Principal only | `linkdev-go` / **Go** — not part of wire |
 
 Progress is recorded in `LiNKdev/product/reports/wire/WIRE-SESSION.md`.
+
+Canonical dispatch doc: [../docs/DISPATCH.md](../docs/DISPATCH.md).
 
 ## 0. Prerequisites
 
@@ -17,7 +19,7 @@ Progress is recorded in `LiNKdev/product/reports/wire/WIRE-SESSION.md`.
 
 - [ ] Git repository with `development`, `staging`, `main` branches (or documented equivalents)
 - [ ] GitHub remote connected (`gh repo view`)
-- [ ] Cursor and Codex accounts assumed enabled for deployed instances
+- [ ] Cursor account for Cloud Agents API (Principal supplies `CURSOR_API_KEY` secret)
 - [ ] Principal policy documented: **Go**, **Continue**, `staging`/`main` only by Principal
 
 ## 1. Copy pack
@@ -39,26 +41,32 @@ LiNKdev/factory/scripts/install-labels.sh
 
 - [ ] Script exited 0; `gh label list` shows `linkdev:*`, `runtime:*`, `tier:*`
 
-## 3. GitHub Actions guard
+## 3. GitHub Actions (guard + dispatch)
 
-**Cursor wire agent verifies:**
+**Cursor wire agent copies** from `LiNKdev/factory/install/github/` to `.github/workflows/`:
 
-- [ ] `.github/workflows/linkdev-guard.yml` on `development`
+- [ ] `linkdev-guard.yml`
+- [ ] `linkdev-dispatch.yml`
+- [ ] `branch-source-policy.yml`
+- [ ] Files committed on `development`
 
-## 4. Cursor automations
+## 4. Dispatch secret
 
-**Codex UI agent only** — [EXECUTE-LINKDEV-UI-AUTOMATIONS.md](EXECUTE-LINKDEV-UI-AUTOMATIONS.md) + [automations/CURSOR-CREATE-AUTOMATIONS.md](automations/CURSOR-CREATE-AUTOMATIONS.md)
+**Principal adds** (agents document status only):
 
-- [ ] Orchestrator — trigger: merge to `development`
-- [ ] Reviewer — trigger: label `linkdev:review-ready`
-- [ ] Integrator — trigger: label `linkdev:merge-ready`
-- [ ] Executor — trigger: `linkdev:ready` + `runtime:cursor`
+- [ ] GitHub Actions secret `CURSOR_API_KEY` configured on this repository
 
-## 5. Codex automations
+## 5. Dispatch triggers (verify)
 
-**Codex UI agent only** — [EXECUTE-LINKDEV-UI-AUTOMATIONS.md](EXECUTE-LINKDEV-UI-AUTOMATIONS.md) + [automations/CODEX-CREATE-AUTOMATIONS.md](automations/CODEX-CREATE-AUTOMATIONS.md)
+**Cursor dispatch agent** — [EXECUTE-LINKDEV-DISPATCH-INSTALL.md](EXECUTE-LINKDEV-DISPATCH-INSTALL.md):
 
-- [ ] Executor — trigger: `linkdev:ready` + `runtime:codex`
+- [ ] Workflow **LiNKdev dispatch** visible in Actions
+- [ ] Orchestrator — PR merged to `development` (or `workflow_dispatch`)
+- [ ] Reviewer — label `linkdev:review-ready` on PR
+- [ ] Integrator — label `linkdev:merge-ready` on PR
+- [ ] Executor — issue labels `linkdev:ready` **and** `runtime:cursor` (AND check in workflow)
+
+Codex executor (`runtime:codex`) — **future**; not required for wire v1.
 
 ## 6. Skills
 
@@ -72,7 +80,7 @@ LiNKdev/factory/scripts/install-labels.sh
 **Cursor wire agent verifies:**
 
 - [ ] `LiNKdev/product/programs/<product>/PROGRAM.md` exists (draft OK pre-Go)
-- [ ] Planner / Codex issue-group automations — **after Go**, not during wire
+- [ ] Planner — **after Go**, not during wire
 
 ## 8. Go
 
@@ -84,10 +92,10 @@ LiNKdev/factory/scripts/install-labels.sh
 
 ## 9. Proof of wire
 
-**Cursor post-UI agent** — [EXECUTE-WIRE-LINKDEV-POST-UI.md](EXECUTE-WIRE-LINKDEV-POST-UI.md):
+**Cursor post-dispatch agent** — [EXECUTE-WIRE-LINKDEV-POST-DISPATCH.md](EXECUTE-WIRE-LINKDEV-POST-DISPATCH.md):
 
-- [ ] Test issue: automation fired without manual executor launch
-- [ ] Report contains proof block
+- [ ] Test issue: **LiNKdev dispatch** workflow ran after `linkdev:ready` + `runtime:cursor`
+- [ ] Report contains proof block and Actions run link
 - [ ] `LiNKdev/factory/scripts/verify.sh` exits 0
 
 ## Done

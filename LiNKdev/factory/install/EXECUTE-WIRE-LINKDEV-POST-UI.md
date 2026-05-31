@@ -1,3 +1,9 @@
+# Execute: Wire LiNKdev post–UI automations — **DEPRECATED**
+
+> **Do not use for new wire.** Use [EXECUTE-WIRE-LINKDEV-POST-DISPATCH.md](EXECUTE-WIRE-LINKDEV-POST-DISPATCH.md).
+
+---
+
 # Execute: Wire LiNKdev post–UI automations (Cursor agent — autonomous)
 
 **Principal launch (one line only, after Step B):**  

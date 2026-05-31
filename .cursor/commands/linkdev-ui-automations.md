@@ -1,3 +1,3 @@
-# LiNKdev UI automations
+# LiNKdev UI automations — deprecated
 
-Execute the **EXECUTE-LINKDEV-UI-AUTOMATIONS.md** prompt in **LiNKdev/factory/install/** (read that file and follow it exactly).
+Use **`linkdev-dispatch`** or **EXECUTE-LINKDEV-DISPATCH-INSTALL.md**. See **LiNKdev/factory/docs/DISPATCH.md**.

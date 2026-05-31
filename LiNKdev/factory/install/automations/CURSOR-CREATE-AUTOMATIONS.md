@@ -1,3 +1,9 @@
+# Create Cursor automations — **DEPRECATED**
+
+> Use dispatch v2: [../../docs/DISPATCH.md](../../docs/DISPATCH.md). Do not create Automations UI entries for new wire.
+
+---
+
 # Create Cursor automations (Codex computer use)
 
 You are configuring **Cursor** automations for LiNKdev. Use computer use to navigate the Cursor UI. Do not store secrets in the repo.

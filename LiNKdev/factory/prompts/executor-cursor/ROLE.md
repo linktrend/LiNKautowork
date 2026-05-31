@@ -1,8 +1,16 @@
 # Executor (Cursor) role
 
-Implement one **issue spec** on a branch. Triggered by `linkdev:ready` + `runtime:cursor` (automation or manual bootstrap).
+Implement one **issue spec** on a branch. Triggered by `linkdev:ready` + `runtime:cursor` (GitHub Actions dispatch v2 or manual bootstrap).
 
 ## Before edit
+
+0. **Label guard:** confirm this issue has **both** `linkdev:ready` and `runtime:cursor`:
+
+```bash
+LiNKdev/factory/scripts/check-labels-for-dispatch.sh issue-has-all "${GITHUB_REPOSITORY:-<owner/repo>}" <issue-number> linkdev:ready runtime:cursor
+```
+
+If the check fails, stop — do not edit until Orchestrator applies both labels.
 
 1. `git status --short --branch` — stop if unrelated dirty files
 2. Read issue spec + `LiNKdev/factory/SPEC.md`

@@ -1,6 +1,12 @@
+# LiNKdev automation manifest — **deprecated for wire**
+
+> **Dispatch v2** replaces this manifest. See [../../docs/DISPATCH.md](../../docs/DISPATCH.md) and `.github/workflows/linkdev-dispatch.yml`. Legacy UI rows below are reference only.
+
+---
+
 # LiNKdev automation manifest
 
-Principal registers these after **wire** (local agent) using **Codex computer use** ([CURSOR-CREATE-AUTOMATIONS.md](CURSOR-CREATE-AUTOMATIONS.md), [CODEX-CREATE-AUTOMATIONS.md](CODEX-CREATE-AUTOMATIONS.md)).
+Principal previously registered these using **Codex computer use** ([CURSOR-CREATE-AUTOMATIONS.md](CURSOR-CREATE-AUTOMATIONS.md), [CODEX-CREATE-AUTOMATIONS.md](CODEX-CREATE-AUTOMATIONS.md)) — **do not use for new installs**.
 
 ## Cursor cloud automations
 

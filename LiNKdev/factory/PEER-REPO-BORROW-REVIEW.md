@@ -89,6 +89,7 @@ See `LiNKdev/factory/prompts/council/ROLE.md`.
 | **Per-atom orchestrator** | UBS atom-level scheduling | LiNKdev uses issue-level Orchestrator + PROGRAM.md DAG; no sub-issue atom scheduler |
 | **Mandatory multi-Opus adversarial review** | UBS | Replaced by council G1–G4 with five fixed personas |
 | **Antigravity in core factory** | Peer automation experiments | Optional peer executor only; not in factory install manifest |
+| **Cursor Automations UI (required)** | Cursor product Automations | **Rejected for v1 wire** — no issue triggers, no AND labels, no API CRUD; replaced by dispatch v2 ([docs/DISPATCH.md](docs/DISPATCH.md)) |
 | **Second orchestration stack** | CrewAI / LangGraph / n8n brain | GitHub + STATE + labels remain control plane |
 | **Mandatory gstack `/ship` on every issue** | gstack | Release phase and critical tier only |
 
