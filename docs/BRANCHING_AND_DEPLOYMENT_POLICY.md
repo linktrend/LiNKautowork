@@ -5,7 +5,9 @@ Last updated: 2026-05-31
 
 ## Purpose
 
-This repository follows the **LiNKdev branch model** so integration, release, and production deploys are deterministic and auditable. Canonical rules: `LiNKdev/factory/SPEC.md` **§8**, `LiNKdev/factory/rules/01-git-branching.mdc`, and `LiNKdev/factory/install/WORKSPACE-GITHUB.md`.
+This repository follows the **LiNKdev branch model** so integration, release, and production deploys are deterministic and auditable. Canonical rules: `LiNKdev/factory/SPEC.md` **§8** and `LiNKdev/factory/rules/01-git-branching.mdc`.
+
+MVO workspace policy lives in LiNKtrend-System `docs/workspace/` (execution target repo only).
 
 ## Branch model
 
@@ -70,6 +72,6 @@ Configure in GitHub repository settings:
 ## Related docs
 
 - LiNKdev SPEC §8: `LiNKdev/factory/SPEC.md`
-- Workspace GitHub strategy: `LiNKdev/factory/install/WORKSPACE-GITHUB.md`
+- Factory git rule: `LiNKdev/factory/rules/01-git-branching.mdc`
 - Host git rule: `.cursor/rules/01-git-branching.mdc`
 - Nested n8n fork upstream: `docs/UPSTREAM.md`

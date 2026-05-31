@@ -25,7 +25,7 @@ You are the **LiNKdev UI automations agent**. Configure **all** Cursor and Codex
 | `LiNKdev-executor-cursor` | Cursor | Labels `linkdev:ready` + `runtime:cursor` |
 | `LiNKdev-executor-codex` | Codex | Labels `linkdev:ready` + `runtime:codex` |
 
-System prompts must reference the matching `LiNKdev/factory/prompts/<role>/ROLE.md` files in **linktrend/LiNKtrend-System** (or the repo you are in).
+System prompts must reference the matching `LiNKdev/factory/prompts/<role>/ROLE.md` files in **this repository**.
 
 Add any extra Codex automations listed in `LiNKdev/product/programs/*/PROGRAM.md` if present.
 

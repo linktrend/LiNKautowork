@@ -28,7 +28,7 @@ Create four automations in Cursor (Cloud Agents) for this repository.
 
 ## Principal UI checklist (one-time)
 
-1. Open **Cursor → Settings → Cloud Agents → Automations** for repo `linktrend/LiNKtrend-System`.
+1. Open **Cursor → Settings → Cloud Agents → Automations** for **this repository** (`{org}/{host-repo}`).
 2. Confirm GitHub labels exist (agent created 13 `linkdev:*`, `runtime:*`, `tier:*` labels via `gh`).
 3. Create four automations per sections 1–4 above; paste prompts from `LiNKdev/factory/prompts/*/ROLE.md`.
 4. Set default branch context to `development` for orchestrator/integrator triggers.

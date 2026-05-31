@@ -10,7 +10,7 @@ From repo root:
 cp -R LiNKdev/factory/install/portable-cursor/.cursor ./
 ```
 
-Then add **product-specific** rules under `.cursor/rules/` as `01-*.mdc` … `08-*.mdc` (this LiNKtrend repo is the reference implementation).
+Then add **product-specific** rules under `.cursor/rules/` as `01-*.mdc` … `08-*.mdc` (fill in per host repo during wire).
 
 ## What this shim contains
 
@@ -25,6 +25,6 @@ Then add **product-specific** rules under `.cursor/rules/` as `01-*.mdc` … `08
 
 - Skill bodies → `LiNKdev/skills/`
 - Factory rules → `LiNKdev/factory/rules/`
-- Product rules → `.cursor/rules/01`–`08` per product (LiNKtrend only in this repo)
+- Product rules → `.cursor/rules/01`–`08` per host repo (not shipped in virgin template)
 
 Do not copy `mcp.json` from another repo unless you configure secrets locally.

@@ -30,7 +30,7 @@ You are the **LiNKdev wire agent**. Complete every step you can **without** Prin
 | `LiNKdev/` at root | Must exist; if missing, **STOP** with blocker |
 | `.cursor/` shim | Must include `rules/00-linkdev-bootstrap.mdc`; sync from `LiNKdev/factory/install/portable-cursor/.cursor/` only if missing or stale |
 | Spec read | Confirm `LiNKdev/factory/SPEC.md` and `LiNKdev/README.md` present |
-| Product rules | LiNKtrend-System: `.cursor/rules/01`–`08` may exist — do not remove |
+| Product rules | Host repo: `.cursor/rules/01`–`08` may exist — do not remove |
 
 ## Section 2 — GitHub labels
 
@@ -61,7 +61,7 @@ Confirm `LiNKdev/skills/SKILLS_CATALOG.md` exists; bootstrap rule points to `LiN
 
 ## Section 7 — Product program
 
-Confirm `LiNKdev/product/programs/<product-id>/PROGRAM.md` exists for this repo (LiNKtrend-System: `linktrend-system`). **Draft** status is OK pre-Go. Do not run Planner in this session.
+Confirm `LiNKdev/product/programs/<product-id>/PROGRAM.md` exists for this repo. **Draft** status is OK pre-Go. Do not run Planner in this session.
 
 ## Proof commands (this session)
 

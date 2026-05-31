@@ -27,7 +27,7 @@ Progress is recorded in `LiNKdev/product/reports/wire/WIRE-SESSION.md`.
 - [ ] `LiNKdev/` exists at repository root
 - [ ] Portable Cursor shim: `cp -R LiNKdev/factory/install/portable-cursor/.cursor ./` if missing
 - [ ] `LiNKdev/README.md` and `LiNKdev/factory/SPEC.md` present
-- [ ] Product-specific `.cursor/rules/01`–`08` when needed (LiNKtrend reference: this repo)
+- [ ] Product-specific `.cursor/rules/01`–`08` when needed (add per host repo during wire)
 
 ## 2. GitHub labels
 

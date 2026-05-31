@@ -69,12 +69,12 @@ On **`development`**:
 
 ## Upstream fork sync policy
 
-For forked repos (`link-*`):
-- Original upstream repos are never modified by LiNKtrend.
-- Forks may be customized for LiNKtrend integration.
+For forked repos (`link-*` or org-specific fork prefix):
+- Original upstream repos are never modified by the host organization.
+- Forks may be customized for host integration.
 - GitHub automation syncs upstream updates into the fork’s **`development`** branch — **not** `staging`.
 - Conflict resolution happens in **`development`** before Principal promotion.
-- **No PRs to upstream.** Sync stays inside the `linktrend/*` fork.
+- **No PRs to upstream.** Sync stays inside the host org fork (e.g. `{org}/{fork-name}`).
 - Local customizations must not be silently overwritten by upstream sync.
 
 ## Hotfix policy

@@ -10,7 +10,7 @@ All other roles are AI agents. See `.cursor/rules/00-identity.mdc` for full cont
 
 ## Git Workflow (LiNKdev-aligned)
 
-Canonical: `.cursor/rules/01-git-branching.mdc`, `LiNKdev/factory/install/WORKSPACE-GITHUB.md`, and `docs/BRANCHING_AND_DEPLOYMENT_POLICY.md`.
+Canonical: `.cursor/rules/01-git-branching.mdc`, `LiNKdev/factory/rules/01-git-branching.mdc`, `LiNKdev/factory/SPEC.md` §8, and `docs/BRANCHING_AND_DEPLOYMENT_POLICY.md`.
 
 - **Integration branch:** `development` — all agent and ad-hoc work lands here via PR
 - **Branch prefixes:** `issue/<id>-<slug>` (LiNKdev issues, LAW-05), `dev/<machine><ide>` (optional ad-hoc)

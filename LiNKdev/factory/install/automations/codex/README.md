@@ -19,7 +19,7 @@ Automation run must update `LiNKdev/product/reports/<id>.md` and push branch wit
 
 ## Principal UI checklist (one-time)
 
-1. Open **Codex → Automations** (or project automations UI) for `linktrend/LiNKtrend-System`.
+1. Open **Codex → Automations** (or project automations UI) for **this repository** (`{org}/{host-repo}`).
 2. Create **LiNKdev-executor-codex** with trigger: issue labels `linkdev:ready` + `runtime:codex`.
 3. Point prompt at `LiNKdev/factory/prompts/executor-codex/ROLE.md` and issue spec under `LiNKdev/product/programs/`.
 4. Default branch: `dev/minicodex` (or `issue/<id>-*` per issue template).

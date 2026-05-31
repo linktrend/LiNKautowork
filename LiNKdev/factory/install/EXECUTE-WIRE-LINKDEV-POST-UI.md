@@ -20,4 +20,4 @@ You are the **LiNKdev wire completion agent**. Step B (Codex UI automations) is 
 
 > **LiNKdev is wired.** UI automations and wire proof are recorded.  
 > When you are ready to start the program, say **Go** (cloud Planner — `linkdev-go` command).  
-> Do not say Go until you intend to start `linktrend-system` execution.
+> Do not say Go until you intend to start `<product-id>` program execution.
