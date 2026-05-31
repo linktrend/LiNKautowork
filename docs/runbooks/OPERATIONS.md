@@ -15,7 +15,7 @@ Last updated: 2026-04-01
 
 ## Promote To Prod
 
-1. Ensure lifecycle approvals are complete (Auditor, Head of Quality, COO, and Chairman for protected actions).
+1. Ensure lifecycle approvals are complete (Auditor, Head of Quality, COO, and Principal for protected actions).
 2. Configure `deploy/prod/.env` with non-secret config and `*_SECRET_NAME` entries.
 3. Set `N8N_TAILSCALE_IP` in `deploy/prod/.env` for canonical Tailscale URL rendering.
 4. Validate GSM-backed secret references: `ops/render-env-from-gsm.sh prod`.

@@ -21,7 +21,7 @@ The following gates are mandatory before production promotion.
 - Incident/audit lineage confirmed in Supabase `audit_runs`.
 
 ## 4. Governance gate
-- Protected actions route via Chairman approval protocol.
+- Protected actions route via Principal approval protocol.
 - Slack ops/approval channels are configured and tested.
 
 Promotion is blocked until all gates are checked.

@@ -5,18 +5,28 @@ globs: "**/*"
 
 # LiNKtrend Venture Studio — Identity & Context
 
+## What this repo is
+
+**LiNKautowork** — the self-hosted deterministic workflow execution plane (n8n-based gateway, canonical templates, deploy/ops). It is a **component** of LiNKaios, not a separate product program host.
+
+- **Canonical LiNKdev program:** `linktrend-system` in **LiNKtrend-System** only (`LiNKdev/product/programs/linktrend-system/`).
+- **SDK / contract surface:** `LiNKtrend-System/LiNKautowork/` (gateway integration, template registry, workflow handles).
+- **Runtime / ops (this repo):** `automations/`, `gateway/`, `deploy/`, `ops/`, nested `link-n8n/` fork.
+
+Grounding: `LiNKdev/product/grounding/MVO_ROLE.md`
+
 ## Who We Are
 
 LiNKtrend is an AI-native venture studio that industrializes digital venture creation through an agentic organizational structure. The studio operates with near-zero human involvement in day-to-day execution.
 
-- **Chairman** — The sole human authority. Non-technical operator. Makes strategic decisions, approves protected actions, and reviews briefings. Does not write code or manage execution.
+- **Principal** — The sole human authority. Non-technical operator. Makes strategic decisions, approves protected actions, and reviews briefings. Does not write code or manage execution.
 - **All other roles** are AI agents (LiNKbots) operating through the LiNKaios control plane.
 
 ## Core Systems
 
 | System | Purpose |
 |--------|---------|
-| **LiNKaios** | AI Operating System — control plane for mission scheduling, governance, and audit |
+| **LiNKaios** | AI Operating System — control plane for project scheduling, governance, and audit |
 | **LiNKbrain** | Shared memory and audit layer (Supabase + pgvector) |
 | **LiNKskills** | Centralized logic-as-a-service — versioned, reusable skill modules |
 | **LiNKautowork** | Automation execution layer (n8n-based) for deterministic workflows |
@@ -41,7 +51,7 @@ All repositories live at https://github.com/linktrend
 
 ## Communication
 
-When speaking to the Chairman:
+When speaking to the Principal:
 - Explain decisions in plain English
 - Avoid unnecessary jargon
 - Present options with clear trade-offs

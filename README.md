@@ -2,6 +2,8 @@
 
 LiNKautowork is the self-hosted automation engine for LiNKtrend operations, built on n8n Community with a policy gateway, canonical templates, governance controls, and audit/event interoperability.
 
+**LiNKdev program:** canonical program is `linktrend-system` in [LiNKtrend-System](https://github.com/linktrend/LiNKtrend-System) only. This repo is the **execution target** (runtime, ops, gateway, templates). SDK/contracts: `LiNKtrend-System/LiNKautowork/`. See `LiNKdev/product/grounding/MVO_ROLE.md`.
+
 ## Root Documents
 
 - PRD (source requirements):
@@ -75,7 +77,7 @@ LiNKautowork is the self-hosted automation engine for LiNKtrend operations, buil
 
 ## Daily Operations
 
-- Mirror templates to AIOS:
+- Mirror templates to LiNKtrend-System SDK:
   - `ops/sync-templates-to-aios.sh`
 - Import templates into n8n:
   - `ops/import-templates-to-n8n.sh dev|prod`

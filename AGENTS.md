@@ -5,7 +5,7 @@ For full rules, see `.cursor/rules/` (Cursor) or `.agent/` (Antigravity).
 
 ## Identity
 
-LiNKtrend is an AI-native venture studio. The Chairman is the sole human operator (non-technical).
+LiNKtrend is an AI-native venture studio. The Principal is the sole human operator (non-technical).
 All other roles are AI agents. See `.cursor/rules/00-identity.mdc` for full context.
 
 ## Git Workflow (SOP v2)
@@ -31,12 +31,12 @@ All other roles are AI agents. See `.cursor/rules/00-identity.mdc` for full cont
 
 ## Agent Behavior
 
-- **Autonomous execution:** Run terminal commands, tests, and linters yourself; deliver work end-to-end. Do not instruct the Chairman to run routine dev commands unless execution is impossible in-session (missing auth, blocked network, policy, or UI-only step). See `.cursor/rules/05-agent-behavior.mdc`.
+- **Autonomous execution:** Run terminal commands, tests, and linters yourself; deliver work end-to-end. Do not instruct the Principal to run routine dev commands unless execution is impossible in-session (missing auth, blocked network, policy, or UI-only step). See `.cursor/rules/05-agent-behavior.mdc`.
 - Plan before coding (Batch Header: scope, inputs, plan, risks) — then **implement** unless the batch is approval-gated or the user asked for plan-only.
 - Small, incremental changes.
 - Ask max 3 questions, then proceed with stated assumptions.
 - On failure, generate a Briefing Pack (structured 12-section report).
-- Communicate in plain English for the non-technical Chairman; “next steps” = what you finished + human-only gaps, not a generic todo list for the operator.
+- Communicate in plain English for the non-technical Principal; “next steps” = what you finished + human-only gaps, not a generic todo list for the operator.
 
 ## Other LiNKtrend repositories
 

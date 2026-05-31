@@ -16,7 +16,7 @@ Promotion requirements:
 
 1. `qa_approved`: Auditor recommendation + Head of Quality approval.
 2. `ops_approved`: Auditor + Head of Quality + COO approval.
-3. Protected actions (promotion/restore decisions): Chairman approval required.
+3. Protected actions (promotion/restore decisions): Principal approval required.
 
 ## Operational Ritual Alignment (Asia/Taipei)
 

@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Backwards-compatible entrypoint kept by filename, but source-of-truth now flows
-# from LiNKautowork templates to AIOS mirror copies.
-SOURCE_DIR="/Users/linktrend/Projects/LiNKautowork/automations/templates"
-AIOS_WORKFLOWS="/Users/linktrend/Projects/LiNKaios/apps/LiNKautowork/workflows"
+# Mirror canonical templates from this repo (source of truth) to LiNKtrend-System SDK path.
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+SOURCE_DIR="${REPO_ROOT}/automations/templates"
+SYSTEM_ROOT="${LINKTREND_SYSTEM_ROOT:-/Users/linktrend/Projects/LiNKtrend-System}"
+SYSTEM_TEMPLATES="${SYSTEM_ROOT}/LiNKautowork/templates"
 
-mkdir -p "$AIOS_WORKFLOWS"
+mkdir -p "$SYSTEM_TEMPLATES"
 find "$SOURCE_DIR" -maxdepth 1 -name '*.json' ! -name 'manifest.json' -print0 | while IFS= read -r -d '' file; do
-  cp -f "$file" "$AIOS_WORKFLOWS/"
+  cp -f "$file" "$SYSTEM_TEMPLATES/"
 done
 
-echo "Mirrored templates from LiNKautowork (source of truth) to AIOS: $AIOS_WORKFLOWS"
+echo "Mirrored templates from LiNKautowork (source of truth) to LiNKtrend-System SDK: ${SYSTEM_TEMPLATES}"

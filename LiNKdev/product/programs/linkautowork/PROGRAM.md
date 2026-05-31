@@ -1,17 +1,33 @@
 ---
 program_id: linkautowork
-title: linkautowork
-status: awaiting-planner
+title: LiNKautowork execution target
+status: execution-target
 ---
 
-# Program: linkautowork
+# Program: linkautowork (execution target)
 
-**Status:** awaiting Planner
+This repository is **not** the canonical LiNKdev program host. Do **not** run Planner here or create a local issue tree.
+
+## Canonical program
+
+| Field | Value |
+|-------|-------|
+| **Program id** | `linktrend-system` |
+| **Host repo** | [LiNKtrend-System](https://github.com/linktrend/LiNKtrend-System) |
+| **Path** | `LiNKdev/product/programs/linktrend-system/` |
+
+LiNKautowork work is tracked under **linktrend-system** modules, phases, and issues. Principal **Go** and cloud Planner run against LiNKtrend-System only.
+
+## This repo's role
+
+**Execution target** for the LiNKautowork plane:
+
+- Self-hosted n8n runtime boundary — nested `link-n8n/` fork ([docs/UPSTREAM.md](../../../../docs/UPSTREAM.md))
+- Policy gateway, GSM-backed deploy stacks, ops scripts
+- Canonical workflow templates — `automations/templates/` (source of truth)
+
+**SDK / contracts** for LiNKaios integration live in LiNKtrend-System at `LiNKautowork/` (gateway, template registry, workflow handles).
 
 Product overview: [README.md](../../../../README.md) at repository root.
 
-## Next steps
-
-1. Principal runs wire if not done (`LiNKdev/factory/install/PRINCIPAL-LAUNCH.md`).
-2. Principal **Go** → cloud Planner Q&A → finished-product narrative → OK.
-3. Planner fills modules, phases, and issues under this program.
+Grounding: [MVO_ROLE.md](../../grounding/MVO_ROLE.md)
