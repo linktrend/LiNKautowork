@@ -1,5 +1,7 @@
 # Product grounding
 
+> **Wire, Planner, and Go run in [LiNKtrend-System](https://github.com/linktrend/LiNKtrend-System) only.** This repo is an execution target — follow issues assigned from program `linktrend-system` there.
+
 Stable product truth for **this repository**. Issues list exact `read_first` paths here — never glob-read this folder.
 
 **Repository overview:** [README.md](../../../README.md)

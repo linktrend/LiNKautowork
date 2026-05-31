@@ -47,4 +47,12 @@ Go, Continue, Release OK, staging/main only.
 
 ## LiNKtrend
 
-Product rules: `.cursor/rules/`. Legacy issues: `product/programs/linktrend-system/issues/legacy/`.
+Product rules: `.cursor/rules/`. Local program stub: `product/programs/linkautowork/` (execution metadata only).
+
+## Execution target (do not wire here)
+
+This repo is the **LiNKautowork / n8n automation** execution target — not the LiNKdev program host.
+
+- **Do NOT run** in this checkout: `factory/install/EXECUTE-WIRE-LINKDEV.md`, `factory/install/EXECUTE-WIRE-LINKDEV-POST-UI.md`, cloud **Planner**, or Principal **Go**.
+- **Canonical program host:** [LiNKtrend-System](https://github.com/linktrend/LiNKtrend-System) only — program `linktrend-system` at `LiNKdev/product/programs/linktrend-system/`.
+- **Legacy issues:** `LiNKdev/product/programs/linktrend-system/issues/legacy/` in **LiNKtrend-System** only (not under this repo's `product/programs/`).
