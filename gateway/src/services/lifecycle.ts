@@ -42,6 +42,6 @@ export function validateLifecycleTransition(args: {
   }
 
   if (args.protectedAction && !args.approvals.chairmanApproved) {
-    throw new HttpError(403, 'protected action requires Chairman approval');
+    throw new HttpError(403, 'protected action requires Principal approval');
   }
 }

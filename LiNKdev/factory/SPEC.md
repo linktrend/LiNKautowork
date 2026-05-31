@@ -70,7 +70,7 @@ Integrator maintains `LiNKdev/product/reports/<program-id>/STATUS.md`.
 4. **Principal Go — cloud Cursor Planner:** Q&A until ≥95% clarity → plain-English **finished product** description (what users get when all issues are done) → Principal OK → Planner **creates** `product/programs/<program-id>/` (no program exists before Go).
 5. **Loop starts automatically:** Orchestrator → Executor → Reviewer → Integrator → … until program complete or `linkdev:principal-stop`.
 
-**Principal Continue** clears chairman stop and resumes Orchestrator.
+**Principal Continue** clears Principal stop and resumes Orchestrator.
 
 Repos with an existing program (e.g. LiNKtrend migration) may run Planner without Go to update the plan.
 

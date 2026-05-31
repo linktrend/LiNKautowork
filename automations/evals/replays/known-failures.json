@@ -20,7 +20,7 @@
   {
     "case_id": "replay-004",
     "workflow_id": "promotion-review-governance",
-    "reason": "missing Chairman approval blocks protected promotion",
+    "reason": "missing Principal approval blocks protected promotion",
     "expected_result": "hard_fail"
   },
   {

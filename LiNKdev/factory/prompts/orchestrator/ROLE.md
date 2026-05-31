@@ -27,7 +27,7 @@ Do not set `linkdev:ready` until this passes (LAW-02, DS-B20).
 4. When all issues in a module phase are `done`, trigger council **G3**; on pass run tier B gates: `LiNKdev/factory/scripts/run-gates.sh --tier B --program <program-id>`.
 5. Set next parallel group to `ready` in STATE; respect **active wave cap** in PROGRAM.md; apply labels `linkdev:ready` + `runtime:*`.
 6. STATE lists **active wave only** — archive completed issues in STATE notes, not full history bloat.
-7. Schedule chairman stop per program plan → label `linkdev:principal-stop`, set phase `principal_stop`.
+7. Schedule Principal stop per program plan → label `linkdev:principal-stop`, set phase `principal_stop`.
 8. Never merge to `staging` or `main`.
 
 ## Outputs

@@ -18,7 +18,7 @@ describe('validateLifecycleTransition', () => {
     ).toThrow(/qa_approved/);
   });
 
-  it('requires chairman approval for protected actions', () => {
+  it('requires Principal approval for protected actions', () => {
     expect(() =>
       validateLifecycleTransition({
         fromState: 'ops_approved',
@@ -31,7 +31,7 @@ describe('validateLifecycleTransition', () => {
           chairmanApproved: false,
         },
       }),
-    ).toThrow(/Chairman/);
+    ).toThrow(/Principal/);
   });
 
   it('accepts a valid ops approval transition', () => {

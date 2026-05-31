@@ -13,7 +13,7 @@
       "name": "Validate Governance Payload",
       "type": "n8n-nodes-base.function",
       "parameters": {
-        "functionCode": "const body = items[0].json;\nif (body.tenantId !== '00000000-0000-0000-0000-000000000001') throw new Error('tenant mismatch');\nif (!body.missionId || !body.runId || !body.taskId || !body.dprId) throw new Error('lineage required');\nif (!body.approvals?.auditorRecommendation || !body.approvals?.headOfQualityApproved || !body.approvals?.cooApproved) { throw new Error('auditor, Head of Quality, and COO approvals required'); }\nif (!body.approvals?.chairmanApproved) { throw new Error('Chairman approval required for protected promotion decision'); }\nreturn items;"
+        "functionCode": "const body = items[0].json;\nif (body.tenantId !== '00000000-0000-0000-0000-000000000001') throw new Error('tenant mismatch');\nif (!body.missionId || !body.runId || !body.taskId || !body.dprId) throw new Error('lineage required');\nif (!body.approvals?.auditorRecommendation || !body.approvals?.headOfQualityApproved || !body.approvals?.cooApproved) { throw new Error('auditor, Head of Quality, and COO approvals required'); }\nif (!body.approvals?.chairmanApproved) { throw new Error('Principal approval required for protected promotion decision'); }\nreturn items;"
       }
     },
     {
@@ -42,7 +42,7 @@
         "url": "={{$env.SLACK_APPROVALS_WEBHOOK_URL || $env.SLACK_OPERATIONS_WEBHOOK_URL}}",
         "method": "POST",
         "sendBody": true,
-        "jsonBody": "={{ { text: '[Promotion Approved] Auditor + Head of Quality + COO + Chairman approvals complete. Candidate ready for production deployment.' } }}"
+        "jsonBody": "={{ { text: '[Promotion Approved] Auditor + Head of Quality + COO + Principal approvals complete. Candidate ready for production deployment.' } }}"
       }
     }
   ],
