@@ -7,7 +7,7 @@ alwaysApply: false
 
 ## Purpose
 
-When problems arise (build failures, runtime bugs, CI errors, unexpected behavior), generate a concise, structured **Briefing Pack** that can be used for escalation, pasted into another AI for help, or reviewed by the Chairman.
+When problems arise (build failures, runtime bugs, CI errors, unexpected behavior), generate a concise, structured **Briefing Pack** that can be used for escalation, pasted into another AI for help, or reviewed by the Principal.
 
 ## Trigger Conditions
 

@@ -1,38 +1,75 @@
 # Branching and Deployment Policy
 
 Owner: LiNKtrend Platform  
-Last updated: 2026-04-01
+Last updated: 2026-05-31
 
 ## Purpose
-This repository uses a protected promotion model so production deploys are deterministic and auditable.
 
-## Branch Model
-- `main` is production-only (protected, no direct pushes).
-- `staging` is the integration branch (all feature work lands here first).
-- `dev/<agent-name>/<topic>` branches are short-lived developer/agent branches.
+This repository follows the **LiNKdev branch model** so integration, release, and production deploys are deterministic and auditable. Canonical rules: `LiNKdev/factory/SPEC.md` **§8**, `LiNKdev/factory/rules/01-git-branching.mdc`, and `LiNKdev/factory/install/WORKSPACE-GITHUB.md`.
 
-## Promotion Flow
-1. Develop in `dev/*`.
-2. Open PR to `staging`.
-3. Resolve conflicts and pass CI/security gates in `staging`.
-4. Open PR from `staging` to `main`.
-5. Deploy only from tagged commit on `main` (pin by tag/SHA, never `latest`).
+## Branch model
 
-## Required Gates
-- CI must pass on both `staging` and `main`.
-- Security checks required: SAST, dependency vulnerability scan, secret scan.
-- PR review required for `staging` (minimum 1 approval).
-- Stricter review for `main` (recommended 2 approvals + release owner sign-off).
+| Branch | Purpose | Who merges |
+|--------|---------|------------|
+| **`development`** | Integration — all agent and ad-hoc work lands here via PR | **Integrator** (after Reviewer PASS) |
+| **`staging`** | Pre-production validation before release | **Principal only** (after Release OK) |
+| **`main`** | Production — deploy only from tagged commits here | **Principal only** (after Release OK) |
 
-## Deployment Rules
-- Production deployment source is `main` only.
-- Optional dev/staging VPS deployments may come from `staging`.
-- Every production release must be tagged (example: `v2026.04.01-1`).
+Short-lived work branches branch **from `development`** and merge **to `development`** via PR.
 
-## Branch Protection Setup
+## Work branches
+
+| Prefix | Use | Merge target |
+|--------|-----|--------------|
+| `issue/<id>-<slug>` | LiNKdev issue execution (one branch per issue, LAW-05) | **`development`** (Integrator only) |
+| `dev/<machine><ide>` | Optional ad-hoc IDE work per host SOP | **`development`** via PR |
+
+Examples:
+
+- `issue/LA-012-gateway-lease-hook`
+- `dev/blackcursor`
+
+**LAW-05:** one branch per issue; one repo checkout per executor run. Git worktrees are forbidden in LiNKdev.
+
+## Promotion flow
+
+```
+issue/* or dev/*  →  PR to development  →  Integrator merges when merge-ready
+development       →  PR to staging      →  Principal
+staging           →  PR to main         →  Principal
+```
+
+1. Branch from latest **`development`**.
+2. Implement; open PR targeting **`development`**.
+3. Pass CI, Reviewer PASS, Integrator merge (**LAW-06** blocks direct merge to `staging`/`main`).
+4. After program Release OK, Principal promotes **`development` → `staging` → `main`**.
+
+Deploy only from tagged commits on **`main`** (pin by tag/SHA, never `latest`).
+
+## Required gates
+
+- CI must pass on PRs to **`development`**, **`staging`**, and **`main`**.
+- Security checks: SAST, dependency vulnerability scan, secret scan.
+- **`branch-source-policy.yml`** enforces allowed PR sources (`.github/workflows/`).
+- **`staging`** and **`main`**: PR required; no direct pushes; force push disabled.
+
+## Deployment rules
+
+- Production deployment source is **`main`** only.
+- Optional dev/staging VPS deployments may come from **`staging`**.
+- Every production release must be tagged (example: `v2026.05.31-1`).
+
+## Branch protection setup
+
 Configure in GitHub repository settings:
-- Protect `main`: no force-push, no direct push, required checks, required approvals.
-- Protect `staging`: required checks and at least one approval.
 
-## Note for Repos Still on `main`
-If this repo currently uses `main` as default, treat `main` as production branch until default branch is renamed to `main`.
+- Protect **`main`**: no force-push, no direct push, required checks, Principal approval.
+- Protect **`staging`**: required checks and Principal approval.
+- Protect **`development`**: PR required; enforce allowed source branches via workflow.
+
+## Related docs
+
+- LiNKdev SPEC §8: `LiNKdev/factory/SPEC.md`
+- Workspace GitHub strategy: `LiNKdev/factory/install/WORKSPACE-GITHUB.md`
+- Host git rule: `.cursor/rules/01-git-branching.mdc`
+- Nested n8n fork upstream: `docs/UPSTREAM.md`

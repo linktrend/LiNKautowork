@@ -105,7 +105,7 @@ Approval logic:
 
 - `qa_approved`: Auditor + Head of Quality
 - `ops_approved`: Auditor + Head of Quality + COO
-- Protected decisions (for example restore/promotion actions with governance risk): Chairman approval required
+- Protected decisions (for example restore/promotion actions with governance risk): Principal approval required
 
 This is enforced by gateway lifecycle transition validation.
 

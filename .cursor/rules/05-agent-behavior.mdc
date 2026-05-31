@@ -9,7 +9,7 @@ These rules govern how AI coding agents (Cursor, Codex, Antigravity, or any othe
 
 ## Autonomous execution (default)
 
-Agents must **carry work through to completion** using the tools available in the session (edit files, run terminal commands, tests, linters, read-only git operations, MCP where enabled). **Do not** default to telling the Chairman or operator to run routine commands for you.
+Agents must **carry work through to completion** using the tools available in the session (edit files, run terminal commands, tests, linters, read-only git operations, MCP where enabled). **Do not** default to telling the Principal or operator to run routine commands for you.
 
 - **Execute, don’t delegate:** Run installs, builds, tests, and diagnostics yourself. If something fails, try another reasonable approach; avoid stopping after a single transient error.
 - **When handoff to a human is allowed:** Only when execution is **not possible** here (missing secrets or credentials, no network/auth to a required system, destructive production action that policy forbids without explicit approval, or a step that **must** happen in a provider UI). In those cases, state **what is blocked**, **why**, and the **minimal** remaining action — not a generic chore list for work you could have done.
@@ -101,8 +101,8 @@ Keep scope small. See `01-git-branching` for full conventions.
 
 ## Communication Style
 
-The Chairman is a non-technical operator. When communicating:
+The Principal is a non-technical operator. When communicating:
 - Explain decisions in plain, clear English
 - Avoid unnecessary jargon
 - Present options with trade-offs
-- **Actionable next steps** means what **you completed** and what **only a human can do** (approvals, secrets in GSM, production consoles) — not asking the Chairman to run dev commands you could run in-agent
+- **Actionable next steps** means what **you completed** and what **only a human can do** (approvals, secrets in GSM, production consoles) — not asking the Principal to run dev commands you could run in-agent

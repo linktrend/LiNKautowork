@@ -99,7 +99,7 @@ When an automation is proven successful within a specific venture, it follows a 
 
 ### **5.1 Operational Gate (Review \#2)**
 
-The **Operational Gate** occurs daily at **10:45 Taipei Time**. The COO manages the **Paperclip Orchestrator** to generate an automated "Operational Pulse Report" for the Chairman:
+The **Operational Gate** occurs daily at **10:45 Taipei Time**. The COO manages the **Paperclip Orchestrator** to generate an automated "Operational Pulse Report" for the Principal:
 
 * **Cost Audit:** Global token usage and API costs per venture.
 
