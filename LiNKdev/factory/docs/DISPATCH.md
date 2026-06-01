@@ -45,6 +45,8 @@ flowchart LR
 
 Cursor Automations cannot express **AND** label logic on issues; Actions run `check-labels-for-dispatch.sh` on every candidate `labeled` event and no-op unless all required labels are present.
 
+See [PRINCIPAL-MONITORING.md](./PRINCIPAL-MONITORING.md) — **GitHub issue comments + labels**, not Cursor Web dashboard.
+
 ## Workflow install (wire)
 
 Template stubs live under `LiNKdev/factory/install/github/`:
@@ -55,6 +57,8 @@ Template stubs live under `LiNKdev/factory/install/github/`:
 | `linkdev-guard.yml` | `.github/workflows/linkdev-guard.yml` |
 | `linkdev-planner-bootstrap.yml` | `.github/workflows/linkdev-planner-bootstrap.yml` |
 | `linkdev-orchestrator-bootstrap.yml` | `.github/workflows/linkdev-orchestrator-bootstrap.yml` |
+| `linkdev-agent-watch.yml` | `.github/workflows/linkdev-agent-watch.yml` |
+| `linkdev-cursor-status.yml` | `.github/workflows/linkdev-cursor-status.yml` (diagnostic) |
 | `branch-source-policy.yml` | `.github/workflows/branch-source-policy.yml` |
 
 During wire Step A ([../install/EXECUTE-WIRE-LINKDEV.md](../install/EXECUTE-WIRE-LINKDEV.md)):
@@ -64,6 +68,7 @@ mkdir -p .github/workflows
 cp LiNKdev/factory/install/github/linkdev-dispatch.yml .github/workflows/
 cp LiNKdev/factory/install/github/linkdev-planner-bootstrap.yml .github/workflows/
 cp LiNKdev/factory/install/github/linkdev-orchestrator-bootstrap.yml .github/workflows/
+cp LiNKdev/factory/install/github/linkdev-agent-watch.yml .github/workflows/
 cp LiNKdev/factory/install/github/linkdev-guard.yml .github/workflows/
 cp LiNKdev/factory/install/github/branch-source-policy.yml .github/workflows/
 git add .github/workflows/

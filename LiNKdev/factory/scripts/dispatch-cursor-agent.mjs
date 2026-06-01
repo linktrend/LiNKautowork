@@ -7,7 +7,7 @@
  *   node dispatch-cursor-agent.mjs --role <orchestrator|executor|reviewer|integrator> \
  *     [--repo owner/name] [--issue N] [--pr N] [--dry-run]
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, appendFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -78,7 +78,14 @@ function repoPayload({ repo, issue, pr }) {
   return [entry];
 }
 
-async function dispatchAgent(prompt, repoConfig) {
+function agentDisplayName({ role, repo, issue, pr }) {
+  const slug = repo.split('/').pop() ?? 'repo';
+  if (issue) return `LiNKdev-${role}-issue-${issue}-${slug}`;
+  if (pr) return `LiNKdev-${role}-pr-${pr}-${slug}`;
+  return `LiNKdev-${role}-${slug}`;
+}
+
+async function dispatchAgent(prompt, repoConfig, args) {
   const apiKey = process.env.CURSOR_API_KEY;
   if (!apiKey) {
     throw new Error('CURSOR_API_KEY is not set');
@@ -87,7 +94,7 @@ async function dispatchAgent(prompt, repoConfig) {
   const body = {
     prompt: { text: prompt },
     repos: repoConfig,
-    name: `LiNKdev-${repoConfig[0]?.url?.split('/').pop() ?? 'repo'}`,
+    name: agentDisplayName(args),
   };
   const res = await fetch(API_URL, {
     method: 'POST',
@@ -124,9 +131,21 @@ async function main() {
     process.exit(0);
   }
 
-  const result = await dispatchAgent(prompt, repos);
-  const agentId = result?.agent?.id ?? result?.id ?? 'unknown';
-  console.log(`DISPATCH_OK role=${args.role} agent=${agentId}`);
+  const result = await dispatchAgent(prompt, repos, args);
+  const agent = result?.agent ?? result;
+  const run = result?.run;
+  const agentId = agent?.id ?? result?.id ?? 'unknown';
+  const agentUrl = agent?.url ?? '';
+  const runStatus = run?.status ?? 'unknown';
+  const runId = run?.id ?? '';
+  const payload = { agent_id: agentId, agent_url: agentUrl, run_status: runStatus, run_id: runId };
+  console.log(`DISPATCH_JSON=${JSON.stringify(payload)}`);
+  console.log(`DISPATCH_OK role=${args.role} agent=${agentId} run_status=${runStatus} url=${agentUrl}`);
+  if (process.env.GITHUB_OUTPUT) {
+    for (const [key, value] of Object.entries(payload)) {
+      appendFileSync(process.env.GITHUB_OUTPUT, `${key}=${value}\n`);
+    }
+  }
 }
 
 main().catch((err) => {

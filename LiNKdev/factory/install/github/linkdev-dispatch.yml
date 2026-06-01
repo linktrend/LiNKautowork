@@ -26,17 +26,15 @@ on:
           - reviewer
           - integrator
 
-permissions:
-  contents: read
-  issues: read
-  pull-requests: read
-
 jobs:
   dispatch-executor:
     if: >-
       github.event_name == 'issues' &&
       (github.event.label.name == 'linkdev:ready' || github.event.label.name == 'runtime:cursor')
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
     steps:
       - uses: actions/checkout@v4
 
@@ -44,7 +42,7 @@ jobs:
         id: labels
         continue-on-error: true
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           chmod +x LiNKdev/factory/scripts/check-labels-for-dispatch.sh
           LiNKdev/factory/scripts/check-labels-for-dispatch.sh issue-has-all \
@@ -52,6 +50,7 @@ jobs:
             linkdev:ready runtime:cursor
 
       - name: Dispatch Cursor executor
+        id: dispatch
         if: steps.labels.outcome == 'success'
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
@@ -62,12 +61,29 @@ jobs:
             --repo "${GITHUB_REPOSITORY}" \
             --issue "${{ github.event.issue.number }}"
 
+      - name: Post dispatch status on issue
+        if: steps.labels.outcome == 'success' && steps.dispatch.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          chmod +x LiNKdev/factory/scripts/post-linkdev-dispatch-status.sh
+          LiNKdev/factory/scripts/post-linkdev-dispatch-status.sh \
+            --role executor \
+            --repo "${{ github.repository }}" \
+            --issue "${{ github.event.issue.number }}" \
+            --agent-id "${{ steps.dispatch.outputs.agent_id }}" \
+            --agent-url "${{ steps.dispatch.outputs.agent_url }}" \
+            --run-status "${{ steps.dispatch.outputs.run_status }}"
+
   dispatch-reviewer:
     if: >-
       github.event_name == 'pull_request' &&
       github.event.action == 'labeled' &&
       github.event.label.name == 'linkdev:review-ready'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
 
@@ -79,6 +95,7 @@ jobs:
             linkdev:review-ready
 
       - name: Dispatch Cursor reviewer
+        id: dispatch
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -88,12 +105,29 @@ jobs:
             --repo "${GITHUB_REPOSITORY}" \
             --pr "${{ github.event.pull_request.number }}"
 
+      - name: Post dispatch status on PR
+        if: steps.dispatch.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          chmod +x LiNKdev/factory/scripts/post-linkdev-dispatch-status.sh
+          LiNKdev/factory/scripts/post-linkdev-dispatch-status.sh \
+            --role reviewer \
+            --repo "${{ github.repository }}" \
+            --pr "${{ github.event.pull_request.number }}" \
+            --agent-id "${{ steps.dispatch.outputs.agent_id }}" \
+            --agent-url "${{ steps.dispatch.outputs.agent_url }}" \
+            --run-status "${{ steps.dispatch.outputs.run_status }}"
+
   dispatch-integrator:
     if: >-
       github.event_name == 'pull_request' &&
       github.event.action == 'labeled' &&
       github.event.label.name == 'linkdev:merge-ready'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
 
@@ -105,6 +139,7 @@ jobs:
             linkdev:merge-ready
 
       - name: Dispatch Cursor integrator
+        id: dispatch
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -114,12 +149,29 @@ jobs:
             --repo "${GITHUB_REPOSITORY}" \
             --pr "${{ github.event.pull_request.number }}"
 
+      - name: Post dispatch status on PR
+        if: steps.dispatch.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          chmod +x LiNKdev/factory/scripts/post-linkdev-dispatch-status.sh
+          LiNKdev/factory/scripts/post-linkdev-dispatch-status.sh \
+            --role integrator \
+            --repo "${{ github.repository }}" \
+            --pr "${{ github.event.pull_request.number }}" \
+            --agent-id "${{ steps.dispatch.outputs.agent_id }}" \
+            --agent-url "${{ steps.dispatch.outputs.agent_url }}" \
+            --run-status "${{ steps.dispatch.outputs.run_status }}"
+
   dispatch-orchestrator-merge:
     if: >-
       github.event_name == 'pull_request' &&
       github.event.action == 'closed' &&
       github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
 
@@ -133,6 +185,7 @@ jobs:
             development
 
       - name: Dispatch Cursor orchestrator
+        id: dispatch
         if: steps.merged.outcome == 'success'
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
@@ -143,13 +196,31 @@ jobs:
             --repo "${GITHUB_REPOSITORY}" \
             --pr "${{ github.event.pull_request.number }}"
 
+      - name: Post dispatch status on PR
+        if: steps.merged.outcome == 'success' && steps.dispatch.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          chmod +x LiNKdev/factory/scripts/post-linkdev-dispatch-status.sh
+          LiNKdev/factory/scripts/post-linkdev-dispatch-status.sh \
+            --role orchestrator \
+            --repo "${{ github.repository }}" \
+            --pr "${{ github.event.pull_request.number }}" \
+            --agent-id "${{ steps.dispatch.outputs.agent_id }}" \
+            --agent-url "${{ steps.dispatch.outputs.agent_url }}" \
+            --run-status "${{ steps.dispatch.outputs.run_status }}"
+
   dispatch-orchestrator-manual:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
     steps:
       - uses: actions/checkout@v4
 
       - name: Dispatch selected role
+        id: dispatch
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -159,11 +230,27 @@ jobs:
             --role "${DISPATCH_ROLE}" \
             --repo "${GITHUB_REPOSITORY}"
 
+      - name: Post dispatch status (tracking issue)
+        if: steps.dispatch.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          chmod +x LiNKdev/factory/scripts/post-linkdev-dispatch-status.sh
+          LiNKdev/factory/scripts/post-linkdev-dispatch-status.sh \
+            --role "${{ github.event.inputs.role }}" \
+            --repo "${{ github.repository }}" \
+            --agent-id "${{ steps.dispatch.outputs.agent_id }}" \
+            --agent-url "${{ steps.dispatch.outputs.agent_url }}" \
+            --run-status "${{ steps.dispatch.outputs.run_status }}"
+
   dispatch-orchestrator-state:
     if: >-
       (github.event_name == 'push' && github.ref == 'refs/heads/development') ||
       github.event_name == 'repository_dispatch'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
     concurrency:
       group: linkdev-orchestrator-state-${{ github.repository }}
       cancel-in-progress: false
@@ -190,6 +277,7 @@ jobs:
           fi
 
       - name: Dispatch Cursor orchestrator (planner handoff)
+        id: dispatch
         if: steps.state.outcome == 'success'
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
@@ -198,3 +286,16 @@ jobs:
           node LiNKdev/factory/scripts/dispatch-cursor-agent.mjs \
             --role orchestrator \
             --repo "${GITHUB_REPOSITORY}"
+
+      - name: Post dispatch status (tracking issue)
+        if: steps.state.outcome == 'success' && steps.dispatch.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          chmod +x LiNKdev/factory/scripts/post-linkdev-dispatch-status.sh
+          LiNKdev/factory/scripts/post-linkdev-dispatch-status.sh \
+            --role orchestrator \
+            --repo "${{ github.repository }}" \
+            --agent-id "${{ steps.dispatch.outputs.agent_id }}" \
+            --agent-url "${{ steps.dispatch.outputs.agent_url }}" \
+            --run-status "${{ steps.dispatch.outputs.run_status }}"
