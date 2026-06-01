@@ -20,14 +20,13 @@ Triggered by Principal **Go** (cloud Cursor) on a virgin repo, or ad hoc when up
     - Set `status: PASS` **only** if laws + requirements pass and `blockers` is empty; otherwise `FAIL` or `BLOCKED` with blockers listed.
     - Run `LiNKdev/factory/scripts/validate-intent.sh <program-id>` — must exit 0 before handoff.
 12. Update `LiNKdev/factory/STATE.md`: set `phase: running`, `program_id`, `next_orchestrator_trigger: go`, and initial issue rows.
-13. **Handoff (automatic)** — mandatory before session ends; do **not** tell Principal "no action required" until this exits 0:
+13. **Handoff (automatic, Actions-driven)** — mandatory before session ends; do **not** tell Principal "no action required" until the handoff marker is pushed **and** the **LiNKdev planner bootstrap** GitHub Actions workflow is green:
     - Run `LiNKdev/factory/scripts/validate-intent.sh <program-id>` again if STATE changed after step 11.
-    - Ensure program changes are on `development` **or** will reach `development` via bootstrap PR (step below).
-    - Run `LiNKdev/factory/scripts/planner-handoff.sh <program-id>` which:
-      - On a feature branch: push, open/update PR to `development`, apply `linkdev:bootstrap-merge` + `linkdev:merge-ready`, include `[linkdev-bootstrap]` in PR body, run `verify.sh`, merge when policy allows **or** dispatch Integrator.
-      - When STATE is on `development` with `phase: running` and `next_orchestrator_trigger: go`: push triggers Orchestrator via GitHub Actions (`push` on `STATE.md`) or `workflow_dispatch` / `repository_dispatch` fallback from the script.
-      - Clears `next_orchestrator_trigger` to `none` after dispatch is requested (Orchestrator clears on start to avoid push-trigger race).
-    - **Bootstrap PR exception:** program-setup PRs labeled `linkdev:bootstrap-merge` or with `[linkdev-bootstrap]` in the body skip Reviewer per LAW/bootstrap rule — Integrator may merge when `verify.sh` passes (see Integrator ROLE).
+    - Commit all program artifacts on your working branch (integration target is always **`development`** — **never** open or leave a bootstrap PR with base `main`).
+    - Run `LiNKdev/factory/scripts/planner-handoff.sh <program-id>` which validates G2, runs `verify.sh`, writes `.linkdev/handoff/planner-complete.json`, commits, and **pushes** — then prints `Handoff delegated to GitHub Actions linkdev-planner-bootstrap`.
+    - **Do not** merge PRs, add labels, retarget PR base, or `gh workflow run` from the cloud Planner session (403 on protected repos). Those steps run in `.github/workflows/linkdev-planner-bootstrap.yml`.
+    - If an existing PR targets the wrong base (e.g. `main`), include its number in STATE notes or ensure it is the open PR for your branch; the bootstrap workflow retargets to `development`. Optional field `pr_number` in the marker.
+    - Orchestrator clears `next_orchestrator_trigger` on start after dispatch.
 
 Orchestrator must not set `linkdev:ready` until intent verdict PASS and `validate-intent.sh` exits 0 — do not wait for second Go once PASS.
 

@@ -73,7 +73,7 @@ Integrator maintains `LiNKdev/product/reports/<program-id>/STATUS.md`.
 3. **Wire Step B (Cursor):** confirm `CURSOR_API_KEY` GitHub secret + workflows on `development` — [install/EXECUTE-LINKDEV-DISPATCH-INSTALL.md](install/EXECUTE-LINKDEV-DISPATCH-INSTALL.md).
 4. **Wire Step C (Cursor):** post-dispatch proof — [install/EXECUTE-WIRE-LINKDEV-POST-DISPATCH.md](install/EXECUTE-WIRE-LINKDEV-POST-DISPATCH.md).
 5. **Principal Go — cloud Cursor Planner:** Q&A until ≥95% clarity → plain-English **finished product** description → Principal OK → Planner **creates** `product/programs/<program-id>/` (no program exists before Go).
-6. **Planner handoff (automatic):** G2 PASS → STATE `phase: running`, `next_orchestrator_trigger: go` → `planner-handoff.sh` pushes/bootstrap-merges to `development` → GitHub Actions dispatches **Orchestrator** (zero Principal action).
+6. **Planner handoff (automatic):** G2 PASS → STATE `phase: running`, `next_orchestrator_trigger: go` → `planner-handoff.sh` writes `.linkdev/handoff/planner-complete.json` and pushes → **`linkdev-planner-bootstrap`** workflow merges to `development` and dispatches **Orchestrator** (zero Principal merge).
 7. **Loop:** Orchestrator → Executor → Reviewer → Integrator → … until program complete or `linkdev:principal-stop`.
 
 **Principal Continue** clears chairman stop and resumes Orchestrator.

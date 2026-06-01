@@ -53,6 +53,7 @@ Template stubs live under `LiNKdev/factory/install/github/`:
 |---------------|----------------|
 | `linkdev-dispatch.yml` | `.github/workflows/linkdev-dispatch.yml` |
 | `linkdev-guard.yml` | `.github/workflows/linkdev-guard.yml` |
+| `linkdev-planner-bootstrap.yml` | `.github/workflows/linkdev-planner-bootstrap.yml` |
 | `branch-source-policy.yml` | `.github/workflows/branch-source-policy.yml` |
 
 During wire Step A ([../install/EXECUTE-WIRE-LINKDEV.md](../install/EXECUTE-WIRE-LINKDEV.md)):
@@ -60,6 +61,7 @@ During wire Step A ([../install/EXECUTE-WIRE-LINKDEV.md](../install/EXECUTE-WIRE
 ```bash
 mkdir -p .github/workflows
 cp LiNKdev/factory/install/github/linkdev-dispatch.yml .github/workflows/
+cp LiNKdev/factory/install/github/linkdev-planner-bootstrap.yml .github/workflows/
 cp LiNKdev/factory/install/github/linkdev-guard.yml .github/workflows/
 cp LiNKdev/factory/install/github/branch-source-policy.yml .github/workflows/
 git add .github/workflows/
@@ -83,7 +85,7 @@ Never commit API keys. Do not store `CURSOR_API_KEY` in `LiNKdev/` or `.env` in 
 | Script | Purpose |
 |--------|---------|
 | [../scripts/check-labels-for-dispatch.sh](../scripts/check-labels-for-dispatch.sh) | `gh`-based AND label checks for issues and PRs; `state-requests-orchestrator` parses STATE.md |
-| [../scripts/planner-handoff.sh](../scripts/planner-handoff.sh) | Automatic Planner → Orchestrator handoff after G2 PASS |
+| [../scripts/planner-handoff.sh](../scripts/planner-handoff.sh) | Planner G2 handoff marker (push only; bootstrap workflow merges + dispatches) |
 | [../scripts/dispatch-cursor-agent.mjs](../scripts/dispatch-cursor-agent.mjs) | Build prompt from `ROLE.md`; `POST https://api.cursor.com/v1/agents` |
 
 ### Local dry-run (no API call)
@@ -109,6 +111,76 @@ After `CURSOR_API_KEY` is set and workflows are on `development`:
 2. Apply `linkdev:ready` + `runtime:cursor` to a dry-run test issue.
 3. Confirm **Actions** run **LiNKdev dispatch** succeeded and Cursor shows a new agent run.
 4. Record evidence in `LiNKdev/product/reports/wire/WIRE-SESSION.md`.
+
+
+## Planner handoff (privileged bootstrap)
+
+Cloud **Planner** tokens can push commits and open issues but often **cannot** retarget PRs, label, merge protected `development`, or `gh workflow run` (403). Handoff is **marker + push**; privileged steps run in GitHub Actions.
+
+### Marker contract
+
+| Item | Value |
+|------|--------|
+| Path | `.linkdev/handoff/planner-complete.json` |
+| Schema | [../contracts/planner-handoff.schema.json](../contracts/planner-handoff.schema.json) |
+| Writer | [../scripts/planner-handoff.sh](../scripts/planner-handoff.sh) (after G2 PASS + `verify.sh`) |
+| Consumer | `.github/workflows/linkdev-planner-bootstrap.yml` |
+
+Required fields: `program_id`, `branch`, `head_sha`, `created_at`. Optional: `pr_number` (workflow retargets base to **`development`** — never `main`).
+
+On success the bootstrap workflow renames the marker to `planner-complete.processed.json` on `development` to avoid re-runs.
+
+### Bootstrap workflow
+
+| Template | Installed path |
+|----------|----------------|
+| `linkdev-planner-bootstrap.yml` | `.github/workflows/linkdev-planner-bootstrap.yml` |
+
+**Triggers:** `push` when `.linkdev/handoff/planner-complete.json` changes (any branch); `workflow_dispatch` with optional `program_id`.
+
+**Permissions (explicit):** `contents: write`, `pull-requests: write`, `issues: write`, `actions: write`.
+
+**Steps (summary):**
+
+1. Read marker; run `validate-intent.sh` + `verify.sh`.
+2. Ensure open PR **base = `development`** (create, or PATCH retarget — fixes wrong base such as `main`).
+3. Label `linkdev:bootstrap-merge` + `linkdev:merge-ready`; PR body includes `[linkdev-bootstrap]`.
+4. Wait for checks; merge (admin bypass only when policy allows bootstrap / linkdev-guard-only blockers).
+5. `gh workflow run "LiNKdev dispatch" -f role=orchestrator --ref development` (or Cursor API fallback).
+6. Clear marker on `development`.
+
+Copy during wire Step A together with `linkdev-dispatch.yml` (see [../install/EXECUTE-WIRE-LINKDEV.md](../install/EXECUTE-WIRE-LINKDEV.md)).
+
+### Planner script (cloud-safe)
+
+`planner-handoff.sh` **only**:
+
+- Validates G2 / STATE / `verify.sh`
+- Writes `.linkdev/handoff/planner-complete.json`
+- Commits and **pushes** the current branch
+
+It does **not** merge, label, or dispatch. Print line: `Handoff delegated to GitHub Actions linkdev-planner-bootstrap`.
+
+Do not tell Principal "no action required" until the marker is pushed **and** **LiNKdev planner bootstrap** workflow is green.
+
+### Trigger matrix addition
+
+| Role | GitHub event | Condition | Dispatch |
+|------|----------------|-----------|----------|
+| **Bootstrap handoff** | `push` | Path `.linkdev/handoff/planner-complete.json` | Workflow `linkdev-planner-bootstrap` → merge + orchestrator |
+| **Orchestrator** (after bootstrap) | `workflow_dispatch` / merge / STATE push | As existing rows | `orchestrator` |
+
+### Appendix — GitHub repo settings (wired product repos)
+
+| Setting | Requirement |
+|---------|-------------|
+| **Actions → General → Workflow permissions** | Read and write (bootstrap merges and dispatches) |
+| **`GITHUB_TOKEN`** | Default; bootstrap workflow sets elevated job `permissions` |
+| **`CURSOR_API_KEY`** | Required for Cursor dispatch fallback |
+| **Branch protection `development`** | Allow GitHub Actions to merge bootstrap PRs, or rely on documented admin bypass for bootstrap-only PRs |
+| **Cursor GitHub App** (cloud agents) | Needs **Contents: Read & write** (push marker + program commits). Does **not** need merge, labels, or Actions dispatch — bootstrap workflow uses `GITHUB_TOKEN` |
+
+Principal manual merge is **not** the normal path after Go.
 
 ## Codex (future)
 

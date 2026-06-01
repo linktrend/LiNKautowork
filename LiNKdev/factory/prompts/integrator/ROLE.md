@@ -8,6 +8,8 @@ Label `linkdev:merge-ready` on PR (only after `LiNKdev/factory/scripts/verify.sh
 
 ## Bootstrap merge exception (program setup only)
 
+**Primary path:** Planner G2 handoff is merged by **`linkdev-planner-bootstrap`** (GitHub Actions). Integrator dispatch for bootstrap PRs is a **fallback** if that workflow failed — not the normal cloud Planner path.
+
 PRs labeled `linkdev:bootstrap-merge` **or** whose body contains `[linkdev-bootstrap]` may merge to `development` **without Reviewer pass** when:
 
 - STATE is transitioning to `phase: running` (Planner G2 handoff), and

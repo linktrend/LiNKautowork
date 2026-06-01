@@ -49,6 +49,7 @@ Copy workflow stubs to the repository (create `.github/workflows/` if needed):
 mkdir -p .github/workflows
 cp LiNKdev/factory/install/github/linkdev-guard.yml .github/workflows/
 cp LiNKdev/factory/install/github/linkdev-dispatch.yml .github/workflows/
+cp LiNKdev/factory/install/github/linkdev-planner-bootstrap.yml .github/workflows/
 cp LiNKdev/factory/install/github/branch-source-policy.yml .github/workflows/
 ```
 

@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.dev/schemas/planner-handoff.schema.json",
+  "title": "Planner handoff marker",
+  "description": "Written by planner-handoff.sh; consumed by linkdev-planner-bootstrap workflow.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["program_id", "branch", "head_sha", "created_at"],
+  "properties": {
+    "program_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Active program id in LiNKdev/factory/STATE.md"
+    },
+    "branch": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Git branch containing program setup commits"
+    },
+    "head_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$",
+      "description": "Commit SHA at handoff time"
+    },
+    "pr_number": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Optional open PR number (bootstrap workflow retargets base to development)"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 UTC timestamp when Planner wrote the marker"
+    }
+  }
+}
