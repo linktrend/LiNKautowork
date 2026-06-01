@@ -39,6 +39,8 @@ flowchart LR
 | **Reviewer** | `pull_request` → `labeled` | `linkdev:review-ready` on PR | `reviewer` |
 | **Integrator** | `pull_request` → `labeled` | `linkdev:merge-ready` on PR | `integrator` |
 | **Orchestrator** | `pull_request` → `closed` (merged) | Base branch `development` | `orchestrator` |
+| **Orchestrator** (planner handoff) | `push` → `development` | Path `LiNKdev/factory/STATE.md` and STATE `phase: running` + `next_orchestrator_trigger: go` | `orchestrator` |
+| **Orchestrator** (planner fallback) | `repository_dispatch` | Type `linkdev-planner-complete` + STATE check | `orchestrator` |
 | **Orchestrator** (manual) | `workflow_dispatch` | Input role = `orchestrator` | `orchestrator` |
 
 Cursor Automations cannot express **AND** label logic on issues; Actions run `check-labels-for-dispatch.sh` on every candidate `labeled` event and no-op unless all required labels are present.
@@ -80,7 +82,8 @@ Never commit API keys. Do not store `CURSOR_API_KEY` in `LiNKdev/` or `.env` in 
 
 | Script | Purpose |
 |--------|---------|
-| [../scripts/check-labels-for-dispatch.sh](../scripts/check-labels-for-dispatch.sh) | `gh`-based AND label checks for issues and PRs |
+| [../scripts/check-labels-for-dispatch.sh](../scripts/check-labels-for-dispatch.sh) | `gh`-based AND label checks for issues and PRs; `state-requests-orchestrator` parses STATE.md |
+| [../scripts/planner-handoff.sh](../scripts/planner-handoff.sh) | Automatic Planner → Orchestrator handoff after G2 PASS |
 | [../scripts/dispatch-cursor-agent.mjs](../scripts/dispatch-cursor-agent.mjs) | Build prompt from `ROLE.md`; `POST https://api.cursor.com/v1/agents` |
 
 ### Local dry-run (no API call)

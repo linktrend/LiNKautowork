@@ -15,6 +15,7 @@ labels=(
   "linkdev:in-progress|fbca04|Executor active"
   "linkdev:review-ready|1d76db|Ready for reviewer"
   "linkdev:merge-ready|2da44e|Verify passed, integrator may merge"
+  "linkdev:bootstrap-merge|6f42c1|Planner program setup — bootstrap merge path"
   "linkdev:blocked|d73a4a|Blocked — principal/orchestrator"
   "linkdev:done|0e8a16|Issue complete on development"
   "runtime:cursor|5319e7|Cursor executor runtime"

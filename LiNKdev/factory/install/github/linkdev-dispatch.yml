@@ -9,6 +9,11 @@ on:
     types: [labeled]
   pull_request:
     types: [labeled, closed]
+  push:
+    branches: [development]
+    paths: ['LiNKdev/factory/STATE.md']
+  repository_dispatch:
+    types: [linkdev-planner-complete]
   workflow_dispatch:
     inputs:
       role:
@@ -152,4 +157,44 @@ jobs:
         run: |
           node LiNKdev/factory/scripts/dispatch-cursor-agent.mjs \
             --role "${DISPATCH_ROLE}" \
+            --repo "${GITHUB_REPOSITORY}"
+
+  dispatch-orchestrator-state:
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/development') ||
+      github.event_name == 'repository_dispatch'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: linkdev-orchestrator-state-${{ github.repository }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: development
+
+      - name: Verify STATE requests orchestrator
+        id: state
+        continue-on-error: true
+        run: |
+          chmod +x LiNKdev/factory/scripts/check-labels-for-dispatch.sh
+          PROGRAM_ID=""
+          if [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
+            PROGRAM_ID="${{ github.event.client_payload.program_id }}"
+          fi
+          if [[ -n "$PROGRAM_ID" ]]; then
+            LiNKdev/factory/scripts/check-labels-for-dispatch.sh state-requests-orchestrator \
+              LiNKdev/factory/STATE.md "$PROGRAM_ID"
+          else
+            LiNKdev/factory/scripts/check-labels-for-dispatch.sh state-requests-orchestrator \
+              LiNKdev/factory/STATE.md
+          fi
+
+      - name: Dispatch Cursor orchestrator (planner handoff)
+        if: steps.state.outcome == 'success'
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          node LiNKdev/factory/scripts/dispatch-cursor-agent.mjs \
+            --role orchestrator \
             --repo "${GITHUB_REPOSITORY}"

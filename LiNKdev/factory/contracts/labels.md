@@ -11,6 +11,7 @@ Apply on **issues** and/or **PRs** as noted. Colors are suggestions for GitHub U
 | `linkdev:in-progress` | Executor active | Executor | Executor |
 | `linkdev:review-ready` | PR or report ready for Reviewer | Executor | Reviewer |
 | `linkdev:merge-ready` | Verify passed; Integrator may merge to `development` | Executor (after verify) | Integrator |
+| `linkdev:bootstrap-merge` | Planner program-setup PR; Reviewer skipped when `[linkdev-bootstrap]` | Planner handoff | Integrator |
 | `linkdev:blocked` | Stop line; Principal or Orchestrator decision needed | Any role | Orchestrator after resolution |
 | `linkdev:done` | Issue closed on `development` | Integrator | — |
 

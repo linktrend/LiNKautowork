@@ -8,6 +8,7 @@ Usage:
   check-labels-for-dispatch.sh issue-has-all <owner/repo> <issue_number> <label> [<label>...]
   check-labels-for-dispatch.sh pr-has <owner/repo> <pr_number> <label>
   check-labels-for-dispatch.sh pr-merged-to <owner/repo> <pr_number> <base_branch>
+  check-labels-for-dispatch.sh state-requests-orchestrator <state_md_path> [<program_id>]
 
 Exit 0 when the condition holds; exit 1 otherwise.
 EOF
@@ -61,6 +62,37 @@ pr_merged_to() {
   echo "check-labels: PR #${pr} merged to ${base}"
 }
 
+state_requests_orchestrator() {
+  local state_path="$1"
+  local want_program="${2:-}"
+  python3 - <<'PY' "$state_path" "$want_program"
+import json, re, sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+want_program = sys.argv[2]
+text = path.read_text()
+m = re.search(r"```json\s*(\{.*?\})\s*```", text, re.S)
+if not m:
+    print("check-labels: STATE.md missing json block", file=sys.stderr)
+    sys.exit(1)
+state = json.loads(m.group(1))
+phase = state.get("phase")
+trigger = state.get("next_orchestrator_trigger")
+program = state.get("program_id", "")
+if phase != "running":
+    print(f"check-labels: STATE phase is {phase!r}, expected running", file=sys.stderr)
+    sys.exit(1)
+if trigger not in ("go", "merge_to_development"):
+    print(f"check-labels: STATE trigger is {trigger!r}, expected go", file=sys.stderr)
+    sys.exit(1)
+if want_program and program != want_program:
+    print(f"check-labels: STATE program_id {program!r} != {want_program!r}", file=sys.stderr)
+    sys.exit(1)
+print(f"check-labels: STATE requests orchestrator (program={program}, trigger={trigger})")
+PY
+}
+
 main() {
   require_gh
   local cmd="${1:-}"
@@ -86,6 +118,13 @@ main() {
         exit 2
       }
       pr_merged_to "$@"
+      ;;
+    state-requests-orchestrator)
+      [[ $# -ge 1 && $# -le 2 ]] || {
+        usage >&2
+        exit 2
+      }
+      state_requests_orchestrator "$@"
       ;;
     -h | --help | "")
       usage
