@@ -54,6 +54,7 @@ Template stubs live under `LiNKdev/factory/install/github/`:
 | `linkdev-dispatch.yml` | `.github/workflows/linkdev-dispatch.yml` |
 | `linkdev-guard.yml` | `.github/workflows/linkdev-guard.yml` |
 | `linkdev-planner-bootstrap.yml` | `.github/workflows/linkdev-planner-bootstrap.yml` |
+| `linkdev-orchestrator-bootstrap.yml` | `.github/workflows/linkdev-orchestrator-bootstrap.yml` |
 | `branch-source-policy.yml` | `.github/workflows/branch-source-policy.yml` |
 
 During wire Step A ([../install/EXECUTE-WIRE-LINKDEV.md](../install/EXECUTE-WIRE-LINKDEV.md)):
@@ -62,6 +63,7 @@ During wire Step A ([../install/EXECUTE-WIRE-LINKDEV.md](../install/EXECUTE-WIRE
 mkdir -p .github/workflows
 cp LiNKdev/factory/install/github/linkdev-dispatch.yml .github/workflows/
 cp LiNKdev/factory/install/github/linkdev-planner-bootstrap.yml .github/workflows/
+cp LiNKdev/factory/install/github/linkdev-orchestrator-bootstrap.yml .github/workflows/
 cp LiNKdev/factory/install/github/linkdev-guard.yml .github/workflows/
 cp LiNKdev/factory/install/github/branch-source-policy.yml .github/workflows/
 git add .github/workflows/
@@ -181,6 +183,26 @@ Do not tell Principal "no action required" until the marker is pushed **and** **
 | **Cursor GitHub App** (cloud agents) | Needs **Contents: Read & write** (push marker + program commits). Does **not** need merge, labels, or Actions dispatch — bootstrap workflow uses `GITHUB_TOKEN` |
 
 Principal manual merge is **not** the normal path after Go.
+
+## Orchestrator wave handoff (privileged bootstrap)
+
+Cloud **Orchestrator** tokens can push STATE commits and open PRs but often **cannot** write issue labels (HTTP 403). Same pattern as Planner handoff.
+
+### Marker contract
+
+| Item | Value |
+|------|--------|
+| Path | `.linkdev/handoff/orchestrator-wave-ready.json` |
+| Schema | [../contracts/orchestrator-handoff.schema.json](../contracts/orchestrator-handoff.schema.json) |
+| Consumer | `.github/workflows/linkdev-orchestrator-bootstrap.yml` |
+
+Cloud Orchestrator opens a **non-draft** PR to `development`, writes the marker, and pushes. The bootstrap workflow merges the PR, runs `apply-wave-labels-from-state.sh` (STATE `ready` rows + `github-issues.json`), then clears the marker.
+
+### Trigger matrix addition
+
+| Role | GitHub event | Condition | Dispatch |
+|------|----------------|-----------|----------|
+| **Orchestrator wave handoff** | `push` | Path `.linkdev/handoff/orchestrator-wave-ready.json` | Workflow `linkdev-orchestrator-bootstrap` → merge + label wave |
 
 ## Codex (future)
 

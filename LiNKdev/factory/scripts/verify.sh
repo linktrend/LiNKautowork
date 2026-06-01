@@ -49,7 +49,7 @@ fi
 ok "scripts present"
 
 # 3b. Dispatch workflow templates
-for wf in linkdev-dispatch.yml linkdev-guard.yml branch-source-policy.yml linkdev-planner-bootstrap.yml; do
+for wf in linkdev-dispatch.yml linkdev-guard.yml branch-source-policy.yml linkdev-planner-bootstrap.yml linkdev-orchestrator-bootstrap.yml; do
   [[ -f "LiNKdev/factory/install/github/${wf}" ]] || fail "missing workflow template ${wf}"
 done
 if command -v python3 >/dev/null 2>&1; then
