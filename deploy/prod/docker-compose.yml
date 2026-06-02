@@ -79,6 +79,20 @@ services:
     volumes:
       - n8n_data_prod:/home/node/.n8n
       - ${GOOGLE_APPLICATION_CREDENTIALS_HOST_PATH:-/etc/linktrend/gcp/linkbot-901208-e7677c682cff.json}:${GOOGLE_APPLICATION_CREDENTIALS:-/etc/linktrend/gcp/linkbot-901208-e7677c682cff.json}:ro
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=linktrend-network
+      - traefik.http.routers.n8n.rule=Host(`${TRAEFIK_N8N_HOST:-n8n.linktrend.internal}`)
+      - traefik.http.routers.n8n.entrypoints=websecure
+      - traefik.http.routers.n8n.tls=true
+      - traefik.http.services.n8n.loadbalancer.server.port=5678
+    networks:
+      - default
+      - linktrend-network
+
+networks:
+  linktrend-network:
+    external: true
 
 volumes:
   n8n_data_prod:

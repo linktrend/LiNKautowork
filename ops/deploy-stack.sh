@@ -55,7 +55,56 @@ fi
 "$SCRIPT_DIR/render-runtime-env-from-gsm.sh" "$ENVIRONMENT" --output "$RUNTIME_ENV_FILE"
 
 if [[ "$ENVIRONMENT" == "prod" ]]; then
-  if [[ -n "${N8N_TAILSCALE_IP:-}" ]]; then
+  python3 - "$RUNTIME_ENV_FILE" <<'PY'
+import pathlib
+import sys
+
+runtime_env = pathlib.Path(sys.argv[1])
+lines = runtime_env.read_text().splitlines()
+values = {}
+for line in lines:
+    if not line or line.lstrip().startswith("#") or "=" not in line:
+        continue
+    key, value = line.split("=", 1)
+    values[key] = value
+
+host = values.get("SUPABASE_DB_HOST", "")
+pooler = values.get("SUPABASE_DB_SESSION_POOLER_HOST", "")
+ipv4_host = values.get("SUPABASE_DB_HOST_IPV4", "")
+
+replacement = ""
+if pooler:
+    replacement = pooler
+elif ipv4_host:
+    replacement = ipv4_host
+elif host.endswith(".supabase.com") and ".pooler." not in host:
+    replacement = host.replace(".", "-ipv4.", 1)
+
+if replacement:
+    updated = []
+    replaced = False
+    for line in lines:
+        if line.startswith("SUPABASE_DB_HOST="):
+            updated.append(f"SUPABASE_DB_HOST={replacement}")
+            replaced = True
+        else:
+            updated.append(line)
+    if not replaced:
+        updated.append(f"SUPABASE_DB_HOST={replacement}")
+    runtime_env.write_text("\n".join(updated) + "\n")
+PY
+fi
+
+if [[ "$ENVIRONMENT" == "prod" ]]; then
+  traefik_n8n_host="$(grep '^TRAEFIK_N8N_HOST=' "$BASE_ENV_FILE" 2>/dev/null | cut -d= -f2- || true)"
+  if [[ -n "$traefik_n8n_host" ]]; then
+    sed -i "s#^N8N_HOST=.*#N8N_HOST=${traefik_n8n_host}#" "$RUNTIME_ENV_FILE"
+    sed -i "s#^N8N_PORT=.*#N8N_PORT=5678#" "$RUNTIME_ENV_FILE"
+    sed -i "s#^N8N_PROTOCOL=.*#N8N_PROTOCOL=https#" "$RUNTIME_ENV_FILE"
+    sed -i "s#^N8N_SECURE_COOKIE=.*#N8N_SECURE_COOKIE=true#" "$RUNTIME_ENV_FILE"
+    sed -i "s#^N8N_EDITOR_BASE_URL=.*#N8N_EDITOR_BASE_URL=https://${traefik_n8n_host}#" "$RUNTIME_ENV_FILE"
+    sed -i "s#^WEBHOOK_URL=.*#WEBHOOK_URL=https://${traefik_n8n_host}/#" "$RUNTIME_ENV_FILE"
+  elif [[ -n "${N8N_TAILSCALE_IP:-}" ]]; then
     sed -i "s#^N8N_HOST=.*#N8N_HOST=${N8N_TAILSCALE_IP}#" "$RUNTIME_ENV_FILE"
     sed -i "s#^N8N_PROTOCOL=.*#N8N_PROTOCOL=http#" "$RUNTIME_ENV_FILE"
     sed -i "s#^N8N_EDITOR_BASE_URL=.*#N8N_EDITOR_BASE_URL=http://${N8N_TAILSCALE_IP}:5678#" "$RUNTIME_ENV_FILE"

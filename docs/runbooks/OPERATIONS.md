@@ -17,7 +17,7 @@ Last updated: 2026-04-01
 
 1. Ensure lifecycle approvals are complete (Auditor, Head of Quality, COO, and Principal for protected actions).
 2. Configure `deploy/prod/.env` with non-secret config and `*_SECRET_NAME` entries.
-3. Set `N8N_TAILSCALE_IP` in `deploy/prod/.env` for canonical Tailscale URL rendering.
+3. Set `TRAEFIK_N8N_HOST=n8n.linktrend.internal` in `deploy/prod/.env` for Traefik ingress (preferred). Optional `N8N_TAILSCALE_IP` keeps direct `:5678` fallback when Traefik is unavailable.
 4. Validate GSM-backed secret references: `ops/render-env-from-gsm.sh prod`.
 5. Render runtime env outside repo codebase: `ops/render-runtime-env-from-gsm.sh prod --output /opt/linktrend/runtime/linkautowork/prod.env.runtime`.
 6. Start/refresh prod stack with GSM runtime env: `ops/deploy-stack.sh prod --build`.
@@ -44,3 +44,24 @@ Last updated: 2026-04-01
 - Secret hygiene scan in repository: `ops/security/scan-secrets.sh`
 - Confirm runtime env files with resolved secrets are outside repo path and mode `600`.
 - Confirm n8n/browser ingress is tailscale-only for protected ports (`5678`, `8080`, `4222`, `8222`).
+
+## Public URL (Traefik on linkdroplet-00)
+
+| Surface | URL | Verify |
+|--------|-----|--------|
+| n8n editor (preferred) | `https://n8n.linktrend.internal` | Tailscale DNS → Traefik `100.66.84.96:443` |
+| Direct fallback | `http://100.66.84.96:5678` | Tailscale IP only; bypasses Traefik |
+
+Traefik routes `Host(n8n.linktrend.internal)` on entrypoint `websecure` to container port `5678` on `linktrend-network`. Compose labels live on the `n8n` service in `deploy/prod/docker-compose.yml`.
+
+Quick check from a Tailscale-connected machine:
+
+```bash
+curl -k -H 'Host: n8n.linktrend.internal' -o /dev/null -w '%{http_code}\n' https://100.66.84.96/
+# expect: 200
+
+curl -k --resolve n8n.linktrend.internal:443:100.66.84.96 -o /dev/null -w '%{http_code}\n' https://n8n.linktrend.internal/
+# expect: 200
+```
+
+**Important:** keep `N8N_PORT=5678` in runtime env even when `N8N_PROTOCOL=https` and `N8N_EDITOR_BASE_URL=https://n8n.linktrend.internal`. Setting `N8N_PORT=443` makes n8n bind to 443 inside the container and breaks Traefik (which forwards to 5678) and the Docker healthcheck.
