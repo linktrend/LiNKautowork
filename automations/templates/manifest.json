@@ -69,6 +69,36 @@
       "workflow_id": "daily-chairman-briefing-legacy",
       "criticality": "non_critical",
       "state": "deprecated"
+    },
+    {
+      "file": "linksites-artifact_write_local.json",
+      "workflow_id": "linksites-artifact_write_local",
+      "criticality": "critical",
+      "state": "ops_approved"
+    },
+    {
+      "file": "linksites-supabase_mirror_upsert.json",
+      "workflow_id": "linksites-supabase_mirror_upsert",
+      "criticality": "critical",
+      "state": "ops_approved"
+    },
+    {
+      "file": "linksites-payload_sync_local.json",
+      "workflow_id": "linksites-payload_sync_local",
+      "criticality": "critical",
+      "state": "ops_approved"
+    },
+    {
+      "file": "linksites-preview_readiness_check.json",
+      "workflow_id": "linksites-preview_readiness_check",
+      "criticality": "critical",
+      "state": "ops_approved"
+    },
+    {
+      "file": "linksites-crm_ready_to_contact_mark.json",
+      "workflow_id": "linksites-crm_ready_to_contact_mark",
+      "criticality": "critical",
+      "state": "ops_approved"
     }
   ]
 }
