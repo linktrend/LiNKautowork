@@ -13,7 +13,35 @@ const requiredTemplates = [
   'restore-authorization-governance.json',
   'hot-cold-migration.json',
 ];
+const wave4RequiredTemplates = [
+  'linksites-artifact_write_local.json',
+  'linksites-supabase_mirror_upsert.json',
+  'linksites-payload_sync_local.json',
+  'linksites-preview_readiness_check.json',
+  'linksites-crm_ready_to_contact_mark.json',
+  'linksuitegen-discovery_collect.json',
+  'linksuitegen-ranking_persist.json',
+  'linksuitegen-factory_generate.json',
+  'linksuitegen-factory_validate.json',
+  'linksuitegen-factory_export.json',
+  'linksuitegen-admin_handoff.json',
+  'linksuitegen-orchestrator_cycle.json',
+  'linksuitegen-crm_step.json',
+  'linksuitegen-odoo_lead_create.json',
+  'linkdeveloper-run_validation.json',
+  'linkdeveloper-status_sync.json',
+  'linkdeveloper-starter_generation.json',
+  'linkdeveloper-notification.json',
+  'linkdeveloper-report_generation.json',
+  'linkdeveloper-run_task.json',
+  'linkdeveloper-deploy_scaffold.json',
+  'linkdeveloper-product_run_bootstrap.json',
+  'linkdeveloper-issue_dispatch.json',
+  'linkdeveloper-validation_record.json',
+  'linkdeveloper-artifact_write.json',
+];
 const tenantUuid = '00000000-0000-0000-0000-000000000001';
+const tenantExemptFiles = new Set(['manifest.json', 'daily-chairman-briefing.json']);
 
 function fail(message) {
   console.error(`Template validation failed: ${message}`);
@@ -29,10 +57,30 @@ if (manifest?.active_tenant?.tenant_uuid !== tenantUuid) {
   fail('manifest active tenant UUID mismatch');
 }
 
-for (const requiredFile of requiredTemplates) {
+for (const requiredFile of [...requiredTemplates, ...wave4RequiredTemplates]) {
   const fullPath = path.join(templateDir, requiredFile);
   if (!fs.existsSync(fullPath)) {
     fail(`required template missing: ${requiredFile}`);
+  }
+}
+
+const manifestEntries = manifest?.templates;
+if (!Array.isArray(manifestEntries) || manifestEntries.length === 0) {
+  fail('manifest templates array is missing or empty');
+}
+
+const manifestFiles = new Set();
+for (const entry of manifestEntries) {
+  if (!entry?.file || typeof entry.file !== 'string') {
+    fail('manifest entry missing file');
+  }
+  if (manifestFiles.has(entry.file)) {
+    fail(`duplicate manifest file entry: ${entry.file}`);
+  }
+  manifestFiles.add(entry.file);
+  const fullPath = path.join(templateDir, entry.file);
+  if (!fs.existsSync(fullPath)) {
+    fail(`manifest references missing file: ${entry.file}`);
   }
 }
 
@@ -53,11 +101,21 @@ for (const file of files) {
     names.add(parsed.name);
   }
 
-  if (file !== 'manifest.json' && file !== 'daily-chairman-briefing.json') {
+  if (!tenantExemptFiles.has(file)) {
     if (!raw.includes(tenantUuid)) {
       fail(`canonical tenant UUID not found in ${file}`);
     }
   }
+
+  if (file !== 'manifest.json' && !manifestFiles.has(file)) {
+    fail(`template file not listed in manifest.json: ${file}`);
+  }
 }
 
-console.log(`Template validation passed for ${files.length} JSON files.`);
+for (const waveFile of wave4RequiredTemplates) {
+  if (!manifestFiles.has(waveFile)) {
+    fail(`wave 4 template missing from manifest: ${waveFile}`);
+  }
+}
+
+console.log(`Template validation passed for ${files.length} JSON files (${manifestEntries.length} manifest entries).`);

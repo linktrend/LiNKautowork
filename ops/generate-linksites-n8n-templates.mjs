@@ -7,6 +7,8 @@ import { writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
+const TENANT_UUID = "00000000-0000-0000-0000-000000000001";
+
 const HANDLES = [
   "autowork.linksites.artifact_write_local",
   "autowork.linksites.supabase_mirror_upsert",
@@ -73,7 +75,11 @@ function buildWorkflow(handle) {
       "Invoke LiNKaios Handler": { main: [[{ node: "Respond", type: "main", index: 0 }]] },
     },
     settings: { executionOrder: "v1" },
-    meta: { workflow_handle: handle, webhook_path: webhookPath },
+    meta: {
+      tenant_uuid: TENANT_UUID,
+      workflow_handle: handle,
+      webhook_path: webhookPath,
+    },
   };
 }
 

@@ -1,5 +1,5 @@
 {
-  "name": "LinkSites linksites / supabase_mirror_upsert",
+  "name": "LiNKdeveloper / starter_generation",
   "nodes": [
     {
       "name": "Webhook",
@@ -11,7 +11,7 @@
       ],
       "parameters": {
         "httpMethod": "POST",
-        "path": "linksites-supabase_mirror_upsert",
+        "path": "linkdeveloper-starter_generation",
         "responseMode": "responseNode"
       }
     },
@@ -40,7 +40,7 @@
             }
           ]
         },
-        "jsonBody": "={{ { tenant_id: $json.body.tenant_id || $json.tenant_id, run_id: $json.body.run_id || $json.run_id, stage_id: $json.body.stage_id || $json.stage_id, workflow_handle: 'autowork.linksites.supabase_mirror_upsert', inputs: $json.body.inputs || $json.inputs || {}, lease_id: $json.body.lease_id || $json.lease_id, idempotency_key: $json.body.idempotency_key || $json.idempotency_key } }}"
+        "jsonBody": "={{ { tenant_id: $json.body.tenant_id || $json.tenant_id, run_id: $json.body.run_id || $json.run_id, stage_id: $json.body.stage_id || $json.stage_id, workflow_handle: 'autowork.linkdeveloper.starter_generation', inputs: $json.body.inputs || $json.inputs || {}, lease_id: $json.body.lease_id || $json.lease_id, idempotency_key: $json.body.idempotency_key || $json.idempotency_key } }}"
       }
     },
     {
@@ -86,7 +86,7 @@
   },
   "meta": {
     "tenant_uuid": "00000000-0000-0000-0000-000000000001",
-    "workflow_handle": "autowork.linksites.supabase_mirror_upsert",
-    "webhook_path": "linksites-supabase_mirror_upsert"
+    "workflow_handle": "autowork.linkdeveloper.starter_generation",
+    "webhook_path": "linkdeveloper-starter_generation"
   }
 }
