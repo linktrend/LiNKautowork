@@ -101,6 +101,12 @@
       "state": "ops_approved"
     },
     {
+      "file": "linksites-outreach_dispatch.json",
+      "workflow_id": "linksites-outreach_dispatch",
+      "criticality": "critical",
+      "state": "ops_approved"
+    },
+    {
       "file": "linksuitegen-discovery_collect.json",
       "workflow_id": "linksuitegen-discovery_collect",
       "criticality": "critical",
