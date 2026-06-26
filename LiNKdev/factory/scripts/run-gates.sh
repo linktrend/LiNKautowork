@@ -7,7 +7,6 @@ PROGRAM=""
 REPORT=""
 SCOPE="${LINKDEV_SCOPE:-LiNKdev}"
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CATALOG="$ROOT/LiNKdev/factory/gates/catalog.json"
 
 FAILURES=0
@@ -58,18 +57,6 @@ program_plan() {
     [[ -f "$plan" ]] && { echo "$plan"; return; }
   fi
   echo "LiNKdev/factory/programs/bootstrap/PROGRAM.md"
-}
-
-release_report() {
-  if [[ -n "$REPORT" && -f "$REPORT" ]]; then
-    echo "$REPORT"
-    return
-  fi
-  if [[ -n "$PROGRAM" ]]; then
-    local status="LiNKdev/product/reports/${PROGRAM}/STATUS.md"
-    [[ -f "$status" ]] && { echo "$status"; return; }
-  fi
-  echo ""
 }
 
 council_report_path() {
