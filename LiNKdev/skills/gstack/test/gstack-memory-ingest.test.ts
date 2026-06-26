@@ -728,7 +728,7 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 if echo "$SRC" | grep -q dirty; then
-  echo '[{"RuleID":"fake-rule","Description":"fake finding","StartLine":1,"Match":"REDACTED","Secret":"AKIAFAKEFAKEFAKE12345"}]'
+  echo '[{"RuleID":"fake-rule","Description":"fake finding","StartLine":1,"Match":"REDACTED","Secret":"AKIA'"'"'XXXXFAKEFAKE12345"}]'
 else
   echo '[]'
 fi

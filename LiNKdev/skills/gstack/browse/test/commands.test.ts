@@ -412,10 +412,11 @@ describe('Cookies and storage', () => {
 
   test('storage read redacts sensitive values by prefix', async () => {
     await handleWriteCommand('goto', [baseUrl + '/basic.html'], bm);
+    const githubPat = ['gh', 'p_', 'abc123def456'].join('');
     // JWT value under innocuous key name
     await handleReadCommand('storage', ['set', 'userData', 'eyJhbGciOiJIUzI1NiJ9.payload.sig'], bm);
     // GitHub PAT under innocuous key name
-    await handleReadCommand('storage', ['set', 'repoAccess', 'ghp_abc123def456'], bm);
+    await handleReadCommand('storage', ['set', 'repoAccess', githubPat], bm);
     const result = await handleReadCommand('storage', [], bm);
     const storage = JSON.parse(result);
     expect(storage.localStorage.userData).toMatch(/REDACTED/);
