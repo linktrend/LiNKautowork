@@ -85,6 +85,7 @@
     "executionOrder": "v1"
   },
   "meta": {
+    "active_tenant_uuid": "00000000-0000-0000-0000-000000000001",
     "workflow_handle": "autowork.linksites.artifact_write_local",
     "webhook_path": "linksites-artifact_write_local"
   }
