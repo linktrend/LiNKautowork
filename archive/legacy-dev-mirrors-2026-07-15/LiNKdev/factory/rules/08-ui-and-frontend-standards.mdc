@@ -1,0 +1,44 @@
+---
+description: Generic UI and frontend standards for any LiNKdev product repo.
+alwaysApply: false
+---
+
+# UI And Frontend Standards (portable)
+
+Use when building web UI in any product repo that uses LiNKdev. This rule is **portable** — it does not hardcode paths from any one host repo.
+
+## UI authority (host repo wins)
+
+Operator-facing UI follows the **host product’s** UI authority chain:
+
+1. **Product rule** — `{host}/.cursor/rules/08-*` (host-specific UI standards rule)
+2. **UI system doc** — `{host-app}/docs/ui-system.md` or equivalent app-local doc (layer map, component families, migration notes)
+3. **Token module** — `{host-app}/src/lib/ui-standards.ts` (or documented equivalent) for `FIELD`, `BUTTON`, `TABLE`, `FORM`, `DATA_TABLE`, `ACTION_QUEUE`, `SUMMARY_METRIC_CARD`, shell chrome, etc.
+
+Copy `LiNKdev/product/grounding/UI_AUTHORITY.template.md` into the host repo’s grounding folder during wire and fill in the real paths.
+
+**Operator UI** and **customer-facing UI** are separate surfaces — do not apply operator shell rules to published customer sites unless an issue explicitly says so.
+
+## Discovery
+
+1. Read the host **UI authority** files above before inventing components.
+2. Read `LiNKdev/skills/SKILLS_CATALOG.md` and open **host** skills when present (host wins over gstack):
+   - `data-table` — columnar HTML tables (Family A)
+   - `action-queue` — feed-style attention rows (Family B)
+   - `summary-metric-cards` — dashboard stat tiles
+   - `personal-information-forms` — name, address, phone, email fields
+   - `frontend-design`, `web-design-guidelines` — general UX
+3. Reuse existing design system and components in the target app before inventing new patterns.
+
+Virgin templates ship `skills/host/` empty — wire copies operator UI skills from a reference host when building operator UI. See `LiNKdev/skills/host/README.md`.
+
+## Defaults
+
+- Functional clarity over pixel polish unless an issue specifies design review.
+- Accessible labels, focus states, and error feedback (no raw stack traces to users).
+- Match project test/lint commands from `LiNKdev/AGENTS.md` or repo `CLAUDE.md`.
+- Prefer documented table/list/form primitives and token modules over hand-rolled markup.
+
+## Proof
+
+UI issues must include visual or route proof per issue template (screenshot path, Playwright trace, or browser verification command output).

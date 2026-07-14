@@ -1,0 +1,123 @@
+{
+  "version": 1,
+  "description": "LiNKdev completion gates (package B). Tier A = per issue; B = module phase; C = program release.",
+  "tiers": {
+    "A": {
+      "label": "Per issue",
+      "when": "Executor merge-ready; invoked from verify.sh when tier=standard or LINKDEV_RUN_GATES=1",
+      "gates": [
+        {
+          "id": "verify_subset",
+          "description": "Mechanical verify over issue scope (STATE, secrets, scripts, contracts)",
+          "check_type": "script",
+          "script": "LiNKdev/factory/scripts/verify.sh",
+          "env": {
+            "LINKDEV_SKIP_GATES": "1"
+          }
+        },
+        {
+          "id": "secrets_scan",
+          "description": "No obvious secret assignments in scope tree",
+          "check_type": "inline",
+          "handler": "secrets_scan"
+        },
+        {
+          "id": "proof_block_present",
+          "description": "Agent report contains valid DS-B5 proof block JSON with verified acceptance criteria",
+          "check_type": "inline",
+          "handler": "proof_block_present",
+          "requires": ["report"]
+        },
+        {
+          "id": "allowed_files_respected",
+          "description": "Working tree changes stay inside issue allowed_files and avoid prohibited_files",
+          "check_type": "inline",
+          "handler": "allowed_files_respected",
+          "requires": ["report"]
+        },
+        {
+          "id": "working_tree_clean",
+          "description": "Git working tree clean except documented report-only exclusions",
+          "check_type": "inline",
+          "handler": "working_tree_clean"
+        }
+      ]
+    },
+    "B": {
+      "label": "Module phase complete",
+      "when": "Integrator marks module phase done",
+      "gates": [
+        {
+          "id": "validate_dag",
+          "description": "Program issue dependency DAG is acyclic and references known issues",
+          "check_type": "script",
+          "script": "LiNKdev/factory/scripts/validate-dag.sh",
+          "args_from": "program_plan"
+        },
+        {
+          "id": "integration_smoke",
+          "description": "Integration smoke command from STACK.md or package test:smoke",
+          "check_type": "inline",
+          "handler": "integration_smoke"
+        },
+        {
+          "id": "architecture_gate",
+          "description": "Typecheck/lint for JS/TS stacks; N/A logged when STACK.md has no JS/TS languages",
+          "check_type": "conditional",
+          "handler": "architecture_gate"
+        },
+        {
+          "id": "council_g3_report",
+          "description": "Module-phase council (G3) JSON report present and structurally valid",
+          "check_type": "script",
+          "script": "LiNKdev/factory/scripts/validate-council.sh",
+          "args_from": "council_report_g3"
+        }
+      ]
+    },
+    "C": {
+      "label": "Program release",
+      "when": "Release phase critical issues; Principal Release OK prerequisite",
+      "gates": [
+        {
+          "id": "verify_critical",
+          "description": "Full-repo mechanical verify at critical tier",
+          "check_type": "script",
+          "script": "LiNKdev/factory/scripts/verify.sh",
+          "env": {
+            "LINKDEV_TIER": "critical",
+            "LINKDEV_SCOPE": ".",
+            "LINKDEV_SKIP_GATES": "1"
+          }
+        },
+        {
+          "id": "program_proof_manifest",
+          "description": "Program-level proof manifest over reports and proof artifacts",
+          "check_type": "script",
+          "script": "LiNKdev/factory/scripts/program-proof-manifest.sh",
+          "args_from": "program_id"
+        },
+        {
+          "id": "replay_merge_verify",
+          "description": "Issue branch merge traceability on development (replay-merge-verify.sh)",
+          "check_type": "script",
+          "script": "LiNKdev/factory/scripts/replay-merge-verify.sh",
+          "args_from": "program_id"
+        },
+        {
+          "id": "ship_criteria_check",
+          "description": "SHIP_CRITERIA.md checklist satisfied (except Principal Release OK human gate)",
+          "check_type": "inline",
+          "handler": "ship_criteria_check"
+        },
+        {
+          "id": "council_g4_report",
+          "description": "Program-release council (G4) JSON report present and structurally valid",
+          "check_type": "script",
+          "script": "LiNKdev/factory/scripts/validate-council.sh",
+          "args_from": "council_report_g4"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,153 @@
+# Copy to: .github/workflows/linkdev-orchestrator-bootstrap.yml
+# Privileged Orchestrator wave merge + issue labels (cloud agents push marker only).
+# Canonical doc: LiNKdev/factory/docs/DISPATCH.md
+
+name: LiNKdev orchestrator bootstrap
+
+on:
+  push:
+    paths:
+      - '.linkdev/handoff/orchestrator-wave-ready.json'
+  workflow_dispatch:
+    inputs:
+      program_id:
+        description: Program id (optional; defaults from marker on triggering ref)
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: write
+
+concurrency:
+  group: linkdev-orchestrator-bootstrap-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    env:
+      INTEGRATION_BRANCH: development
+      BOOTSTRAP_MARKER: '[linkdev-orchestrator-bootstrap]'
+      HANDOFF_PATH: .linkdev/handoff/orchestrator-wave-ready.json
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read handoff marker
+        id: handoff
+        run: |
+          set -euo pipefail
+          if [[ ! -f "$HANDOFF_PATH" ]]; then
+            echo "No handoff marker at $HANDOFF_PATH — skip"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          python3 LiNKdev/factory/scripts/read-orchestrator-handoff-marker.py "$HANDOFF_PATH" >> "$GITHUB_ENV"
+          if [[ -n "${{ github.event.inputs.program_id }}" ]]; then
+            echo "PROGRAM_ID=${{ github.event.inputs.program_id }}" >> "$GITHUB_ENV"
+          fi
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure orchestrator PR targets development
+        if: steps.handoff.outputs.skip != 'true' && env.HANDOFF_BRANCH != env.INTEGRATION_BRANCH
+        id: pr
+        run: |
+          set -euo pipefail
+          REPO="${{ github.repository }}"
+          TITLE="Orchestrator wave: ${PROGRAM_ID} (${BOOTSTRAP_MARKER})"
+          {
+            printf '%s\n\n' "$BOOTSTRAP_MARKER"
+            printf 'Orchestrator STATE advance — merge to `%s` and apply wave labels.\n' "$INTEGRATION_BRANCH"
+            printf 'Privileged handoff via GitHub Actions (`linkdev-orchestrator-bootstrap`).\n\n'
+            printf 'Program: `%s`\n' "$PROGRAM_ID"
+            printf 'Branch: `%s`\n' "$HANDOFF_BRANCH"
+            printf 'SHA: `%s`\n' "$HANDOFF_SHA"
+          } > /tmp/linkdev-orchestrator-pr-body.md
+          BODY="$(cat /tmp/linkdev-orchestrator-pr-body.md)"
+
+          PR="${PR_NUMBER:-}"
+          if [[ -n "$PR" ]]; then
+            BASE="$(gh pr view "$PR" --repo "$REPO" --json baseRefName -q .baseRefName)"
+            if [[ "$BASE" != "$INTEGRATION_BRANCH" ]]; then
+              echo "Retargeting PR #${PR} base ${BASE} → ${INTEGRATION_BRANCH}"
+              gh api "repos/${REPO}/pulls/${PR}" -X PATCH -f base="$INTEGRATION_BRANCH" >/dev/null
+            fi
+          else
+            PR="$(gh pr list --repo "$REPO" --head "$HANDOFF_BRANCH" --state open --json number -q '.[0].number' 2>/dev/null || true)"
+            if [[ -z "$PR" || "$PR" == "null" ]]; then
+              echo "Opening PR to ${INTEGRATION_BRANCH}"
+              PR="$(gh pr create --repo "$REPO" --base "$INTEGRATION_BRANCH" --head "$HANDOFF_BRANCH" --title "$TITLE" --body "$BODY" --json number -q .number)"
+            else
+              BASE="$(gh pr view "$PR" --repo "$REPO" --json baseRefName -q .baseRefName)"
+              if [[ "$BASE" != "$INTEGRATION_BRANCH" ]]; then
+                gh api "repos/${REPO}/pulls/${PR}" -X PATCH -f base="$INTEGRATION_BRANCH" >/dev/null
+              fi
+              gh pr edit "$PR" --repo "$REPO" --title "$TITLE" --body "$BODY" >/dev/null
+            fi
+          fi
+
+          gh pr ready "$PR" --repo "$REPO" 2>/dev/null || true
+          gh pr edit "$PR" --repo "$REPO" --add-label "linkdev:merge-ready" >/dev/null 2>&1 || true
+          echo "pr_number=${PR}" >> "$GITHUB_OUTPUT"
+
+      - name: Merge orchestrator PR
+        if: steps.handoff.outputs.skip != 'true' && env.HANDOFF_BRANCH != env.INTEGRATION_BRANCH
+        run: |
+          set -euo pipefail
+          REPO="${{ github.repository }}"
+          PR="${{ steps.pr.outputs.pr_number }}"
+          gh pr ready "$PR" --repo "$REPO" 2>/dev/null || true
+          echo "Waiting for PR #${PR} checks (up to 25m)"
+          for _ in $(seq 1 50); do
+            read -r STATE MERGEABLE < <(gh pr view "$PR" --repo "$REPO" --json mergeStateStatus,mergeable -q '[.mergeStateStatus,.mergeable]|@tsv')
+            if [[ "$STATE" == "CLEAN" && "$MERGEABLE" == "MERGEABLE" ]]; then
+              break
+            fi
+            sleep 30
+          done
+
+          if gh pr merge "$PR" --repo "$REPO" --squash --delete-branch=false >/dev/null 2>&1; then
+            echo "Merged PR #${PR}"
+          elif gh pr merge "$PR" --repo "$REPO" --squash --admin --delete-branch=false >/dev/null 2>&1; then
+            echo "Merged PR #${PR} with admin bypass"
+          else
+            echo "Merge failed for PR #${PR}" >&2
+            exit 1
+          fi
+
+      - name: Apply wave labels from STATE
+        if: steps.handoff.outputs.skip != 'true'
+        run: |
+          set -euo pipefail
+          git fetch origin "$INTEGRATION_BRANCH"
+          git checkout "$INTEGRATION_BRANCH"
+          git pull origin "$INTEGRATION_BRANCH"
+          chmod +x LiNKdev/factory/scripts/apply-wave-labels-from-state.sh
+          LiNKdev/factory/scripts/apply-wave-labels-from-state.sh "$PROGRAM_ID" \
+            --repo "${{ github.repository }}" \
+            --state LiNKdev/factory/STATE.md
+
+      - name: Clear handoff marker on development
+        if: steps.handoff.outputs.skip != 'true' && success()
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          git fetch origin "$INTEGRATION_BRANCH"
+          git checkout "$INTEGRATION_BRANCH"
+          git pull origin "$INTEGRATION_BRANCH"
+          PROCESSED=".linkdev/handoff/orchestrator-wave-ready.processed.json"
+          if [[ ! -f "$HANDOFF_PATH" ]]; then
+            echo "Marker already cleared on ${INTEGRATION_BRANCH}"
+            exit 0
+          fi
+          mv "$HANDOFF_PATH" "$PROCESSED"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$PROCESSED"
+          git commit -m "chore(linkdev): clear orchestrator handoff marker (${PROGRAM_ID})"
+          git push origin "$INTEGRATION_BRANCH"

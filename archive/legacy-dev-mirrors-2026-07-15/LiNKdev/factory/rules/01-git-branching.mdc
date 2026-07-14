@@ -1,0 +1,97 @@
+---
+alwaysApply: true
+---
+
+# Git Branching & Workflow (LiNKdev)
+
+Aligned with `LiNKdev/factory/SPEC.md` §8 and **LAW-05** / **LAW-06**.
+
+## Branch model
+
+| Branch | Purpose | Who merges |
+|--------|---------|------------|
+| **`development`** | Integration. All agent and ad-hoc work lands here via PR. | **Integrator** (after Reviewer PASS) |
+| **`staging`** | Pre-production validation before release. | **Principal only** (after Release OK) |
+| **`main`** | Production. Deploy only from here. | **Principal only** (after Release OK) |
+
+Short-lived work branches branch **from `development`** and merge **to `development`** via PR.
+
+## Executor branches (mandatory for LiNKdev issues)
+
+Format: `issue/<issue-id>-<slug>`
+
+Examples:
+- `issue/DS-024-wire-github-labels`
+- `issue/WP-042-template-registry`
+
+Rules (**LAW-05**):
+- One branch per issue; one repo checkout per executor run.
+- Git worktrees are **forbidden** in LiNKdev.
+- Never run two concurrent executors on the same checkout — use separate machines/IDEs or sequential waves.
+
+## Optional ad-hoc branches
+
+Format: `dev/<machine><ide>`
+
+Examples:
+- `dev/minicodex` — Mac Mini using Codex
+- `dev/blackcursor` — MacBook using Cursor
+
+Use for exploratory or non-issue work. Open PR to **`development`** (same as issue branches). Do not treat `dev/*` as the primary integration path when a LiNKdev issue is active.
+
+## Promotion flow
+
+```
+issue/<id>-<slug>  ─┐
+dev/<machine><ide> ─┼→ PR → development → PR → staging → PR → main
+                    │
+         Integrator merges          Principal only    Principal only
+```
+
+1. Branch from latest **`development`**.
+2. Implement; open PR targeting **`development`**.
+3. Pass CI, Reviewer PASS, Integrator merge (**LAW-06** blocks direct merge to `staging`/`main`).
+4. After program Release OK, Principal promotes **`development` → `staging` → `main`**.
+
+Deploy only from tagged commits on **`main`**.
+
+## Protection rules (mandatory)
+
+On **`staging`** and **`main`**:
+- No direct pushes
+- Pull request required
+- Force push disabled
+- Branch deletion disabled
+
+On **`development`**:
+- PR required for issue and ad-hoc branches (Integrator or team policy)
+- Enforce allowed source branches via `branch-source-policy.yml` (see `LiNKdev/factory/install/github/`)
+
+## Upstream fork sync policy
+
+For forked repos (`link-*` or org-specific fork prefix):
+- Original upstream repos are never modified by the host organization.
+- Forks may be customized for host integration.
+- GitHub automation syncs upstream updates into the fork’s **`development`** branch — **not** `staging`.
+- Conflict resolution happens in **`development`** before Principal promotion.
+- **No PRs to upstream.** Sync stays inside the host org fork (e.g. `{org}/{fork-name}`).
+- Local customizations must not be silently overwritten by upstream sync.
+
+## Hotfix policy
+
+Hotfixes follow the same flow: short-lived branch → **`development`** → **`staging`** → **`main`**. No direct server-side commits outside GitHub.
+
+## Commit messages
+
+Follow conventional commits: `type(scope): short summary`
+
+Types: `feat`, `fix`, `chore`, `refactor`, `docs`, `test`, `ci`
+
+Examples:
+- `feat(api): add project intake endpoint`
+- `fix(ui): correct briefing card alignment`
+- `chore(infra): update Caddy TLS config`
+
+## Auditability
+
+All production changes must be traceable to: PR → approval → merge commit → deployment record.

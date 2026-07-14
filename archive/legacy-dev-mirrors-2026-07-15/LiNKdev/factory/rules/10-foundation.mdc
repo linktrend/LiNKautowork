@@ -1,0 +1,14 @@
+---
+alwaysApply: true
+---
+
+# linktrend-skills Foundation
+
+**Source distribution** for LiNKtrend Layer 1 Cursor rules, shared skills, and `install.sh` that copies into target repos (`.cursor/`, `.agent/`, `.codex/`). This repo is the **canonical template**—changes here propagate via installer, not by editing generated copies by hand in other repos.
+
+## Layout
+
+- `rules/` — Layer 1 markdown sources (00–07)
+- `skills/` — SKILL.md trees and scripts
+- `agents/`, `workflows/` — Antigravity payloads when present
+- `install.sh`, `CUSTOMIZE_LAYER2.md` — installer and Layer 2 prompt

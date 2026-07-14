@@ -1,0 +1,30 @@
+---
+description: Testing and proof requirements.
+alwaysApply: true
+---
+
+# Testing And Proof
+
+No work packet is complete without proof.
+
+Acceptable proof includes:
+
+- tests passing
+- service boot output
+- curl command output
+- migration applied successfully
+- Docker Compose service healthy
+- UI route visible
+- Playwright/browser verification
+- logs showing full demo step
+- screenshot path or trace ID
+
+Every agent report must include:
+
+- files changed
+- commands run
+- proof produced
+- blockers
+- next step
+
+For integration work, proof must show cross-service behavior, not only isolated unit success.

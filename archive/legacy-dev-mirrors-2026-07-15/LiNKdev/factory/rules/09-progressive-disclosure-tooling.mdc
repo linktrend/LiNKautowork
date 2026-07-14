@@ -1,0 +1,29 @@
+---
+description: Progressive disclosure for skills, MCP servers, plugins, and LiNKdev rules.
+alwaysApply: true
+---
+
+# Progressive Disclosure Tooling
+
+Agents must discover available help before executing work, without loading unnecessary context.
+
+## Required Discovery Step
+
+After reading `LiNKdev/AGENTS.md`, `LiNKdev/factory/rules/`, and product rules in `.cursor/rules/`, and before substantive planning or coding:
+
+1. Read `LiNKdev/skills/SKILLS_CATALOG.md`.
+2. Select the skills whose category, name, or description fits the user request.
+3. Read only the selected skill `SKILL.md` files under `LiNKdev/skills/` and any directly referenced files required for the task.
+4. If the task can use an MCP server, inspect the relevant MCP descriptor folder first:
+   - `.cursor/mcp.json`
+   - the workspace MCP descriptor folder when present
+5. If a Cursor plugin appears relevant, inspect plugin-provided skills/rules/assets under the local plugins cache before relying on memory.
+
+## Selection Rules
+
+- Prefer LiNKtrend product rules (`.cursor/rules/`) and project skills (`LiNKdev/skills/`) over imported generic skills when they conflict on product scope.
+- Use imported GStack skills as optional workflow accelerators; they do not override `LiNKdev/factory/rules/`, product rules, or direct user instructions.
+- Do not read every skill body at startup. The catalog is the routing layer.
+- Skills are canonical only under `LiNKdev/skills/` — not flat `.cursor/skills/` stubs.
+- Always inspect an MCP tool schema/descriptor before calling that MCP tool.
+- Follow all always-applied rules even when a selected skill suggests a different workflow.

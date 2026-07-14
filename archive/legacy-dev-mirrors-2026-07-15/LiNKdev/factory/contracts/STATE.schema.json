@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.dev/LiNKdev/STATE.schema.json",
+  "title": "DevSwarmState",
+  "type": "object",
+  "required": ["version", "program_id", "phase", "updated_at", "issues"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "program_id": { "type": "string", "minLength": 1 },
+    "phase": {
+      "type": "string",
+      "enum": ["planning", "awaiting_go", "running", "principal_stop", "complete"]
+    },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "principal_stop_reason": { "type": "string" },
+    "next_orchestrator_trigger": {
+      "type": "string",
+      "enum": ["merge_to_development", "continue", "go", "none"]
+    },
+    "issues": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["status", "runtime"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "planned",
+              "ready",
+              "in_progress",
+              "review_ready",
+              "merge_ready",
+              "blocked",
+              "done"
+            ]
+          },
+          "runtime": { "type": "string", "enum": ["cursor", "codex"] },
+          "tier": { "type": "string", "enum": ["standard", "critical"], "default": "standard" },
+          "branch": { "type": "string" },
+          "report": { "type": "string" },
+          "depends_on": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "last_commit": { "type": "string", "pattern": "^[0-9a-f]{7,40}$" }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

@@ -1,0 +1,37 @@
+# Copy to: .github/workflows/linkdev-cursor-status.yml
+# Diagnostic: list Cursor agents / inspect run status using CURSOR_API_KEY.
+
+name: LiNKdev cursor status
+
+on:
+  workflow_dispatch:
+    inputs:
+      agent_id:
+        description: Optional agent id (bc-...) to inspect run status
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cursor API status
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+          AGENT_ID: ${{ github.event.inputs.agent_id }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${CURSOR_API_KEY:-}" ]]; then
+            echo "CURSOR_API_KEY secret is not set" >&2
+            exit 1
+          fi
+          ARGS=(--limit 30)
+          if [[ -n "$AGENT_ID" ]]; then
+            ARGS=(--agent "$AGENT_ID")
+          fi
+          node LiNKdev/factory/scripts/check-cursor-agents.mjs "${ARGS[@]}"

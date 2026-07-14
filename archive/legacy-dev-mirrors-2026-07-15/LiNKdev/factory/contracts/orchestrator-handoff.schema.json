@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.dev/schemas/orchestrator-handoff.schema.json",
+  "title": "Orchestrator wave handoff marker",
+  "description": "Written by cloud Orchestrator; consumed by linkdev-orchestrator-bootstrap workflow.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["program_id", "branch", "head_sha", "created_at"],
+  "properties": {
+    "program_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "branch": {
+      "type": "string",
+      "minLength": 1
+    },
+    "head_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "pr_number": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "program_id": "example-program",
+  "status": "PASS",
+  "laws_checked": [
+    "LAW-01",
+    "LAW-02",
+    "LAW-03",
+    "LAW-04",
+    "LAW-05",
+    "LAW-06",
+    "LAW-07",
+    "LAW-08"
+  ],
+  "requirements_checked": [
+    "INTENT.md present with required sections",
+    "VISION.md and SHIP_CRITERIA.md linked from INTENT.md",
+    "PROGRAM.md copied from template and DAG valid",
+    "Principal OK on finished-product narrative recorded",
+    "Council G1: no BLOCKER verdicts",
+    "validate-intent.sh exits 0"
+  ],
+  "blockers": [],
+  "timestamp": "2026-05-30T12:00:00Z",
+  "planner_narrative_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+}
