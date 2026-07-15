@@ -12,7 +12,12 @@ export class AuditService {
     details: Record<string, unknown>;
   }): Promise<void> {
     const payload: AuditRecord = {
-      tenant_id: args.mission.tenantId,
+      // The inbound mission envelope still carries `tenantId` on its own wire
+      // contract (missionEnvelopeSchema), which the gateway does not own; that
+      // value is the owning organization id and is stored as such (org_id).
+      // Renaming the inbound mission field is a separate, caller-coordinated
+      // change and is intentionally out of scope here (docs/adr/0001).
+      orgId: args.mission.tenantId,
       run_id: args.mission.runId,
       task_id: args.mission.taskId,
       dpr_id: args.mission.dprId,

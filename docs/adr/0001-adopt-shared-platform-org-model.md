@@ -132,3 +132,27 @@ This is exactly spec §3's "n8n (LiNKautowork's runtime, logically isolated) →
 - **Keep `tenant_id` only, layering the org check in the application/gateway instead of RLS:** rejected — RLS is the trust boundary Postgres enforces regardless of application bugs; this is the same reasoning LiNKsites' ADR 0003 used to reject an app-layer-only org check.
 - **Delete the embedded `link-n8n` and rely on the standalone, or delete the standalone and keep the embedded:** rejected as an action in this change — resolving the duplication is a deliberate submodule pass, not a delete; both copies are preserved and the authoritative one is documented.
 - **Convert `link-n8n` to a submodule now:** rejected for this change — it rewrites refs/remotes and must be a dedicated, verified pass, not a side effect of a schema retrofit.
+
+## Update (2026-07-15) — gateway audit-wire open item closed (internal `tenant` → `org` naming)
+
+The Consequences open item — "the gateway audit wire field (`tenant_id`) → `org_id` rename … deferred, not forced by this migration (RPC keeps accepting `tenant_id` on the wire and writes `org_id`)" — is now closed as a **TypeScript-only clarity change on the gateway side**. No SQL signature was changed and no database connection was made; the change only aligns internal gateway naming with the already-applied migration's data reality (`org_id` column, FK to `platform.organizations`).
+
+### The internal-vs-wire split, verified against the real RPC
+
+`supabase/migrations/20260715_000001_lautowork_control_core.sql` declares the RPC with the SQL parameter literally named `tenant_id uuid`, inserting it into `lautowork.audit_runs.org_id`. PostgREST maps a JSON request body's keys onto the RPC's named parameters, so **the key sent on the wire must remain `tenant_id`** until a separate, coordinated RPC signature change is made (exactly the change this ADR deferred). Therefore:
+
+- **Internal TypeScript concept → `orgId`.** The value the gateway writes is an organization id (it lands in `org_id`), so the internal representation should say so. `AuditRecord.tenant_id` was renamed to `AuditRecord.orgId`.
+- **Outbound audit wire → still `tenant_id`.** `SupabaseAuditClient.writeAudit` now maps `orgId` → a `tenant_id` body key at the exact call site, with an inline comment explaining the deliberate mismatch, so a future reader is not misled into "fixing" it and breaking the RPC call.
+
+This confirms the ADR's stated plan (internal names reflect the org reality; wire param name stays for backward compatibility). It matched what the real code needed.
+
+### One deviation from the ADR's literal file list, flagged explicitly
+
+The Consequences item named the coordinated change as spanning `gateway/src/integrations/supabase-rpc.ts`, `gateway/src/config/env.ts`, and the RPC signature. On inspecting the actual code, **the audit-write value does not flow through `env.ts`** — `AuditService.writeRunAudit` sources it from the inbound `mission.tenantId`, not from env config. Two consequences of that finding:
+
+- **`env.ts` identifiers were not renamed.** `ACTIVE_TENANT_UUID` / `ACTIVE_TENANT_SLUG` are **external deployment env-var names** (present in `deploy/{dev,prod}/.env.example`, consumed via docker-compose `env_file`). Renaming them is an ops-coordinated deployment change, not a TypeScript-only cleanup, so they are kept and a clarifying comment was added noting the value is the active organization identity. (`SUPABASE_AUDIT_RPC` likewise unchanged — the RPC name is preserved by design.)
+- **The inbound `missionEnvelopeSchema.tenantId` was not renamed.** That is a separate wire contract with the gateway's callers (LiNKaios), which this ADR did not scope and which cannot be changed unilaterally. The gateway maps that inbound value to the org concept at the audit boundary (`orgId: mission.tenantId`).
+
+Net: the only external contract names retained are (1) the RPC wire param `tenant_id`, (2) the inbound mission field `tenantId`, and (3) the `ACTIVE_TENANT_*` env-var names. Everything genuinely internal now says `org`. The pure-internal constants file `gateway/src/constants/tenant.ts` was renamed to `gateway/src/constants/org.ts` with `CANONICAL_INTERNAL_ORG_UUID` / `INTERNAL_ORG_SLUG`; the canonical internal-org UUID **value** `00000000-0000-0000-0000-000000000001` is unchanged (renaming the value would be a behavioral change, not a naming cleanup).
+
+Still deferred (unchanged by this update): the actual RPC signature rename, the inbound mission-contract rename, and the `ACTIVE_TENANT_*` env-var rename — each requires cross-service or ops coordination beyond a gateway-local TypeScript change.
