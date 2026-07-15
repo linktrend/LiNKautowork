@@ -51,5 +51,23 @@ describe('KillSwitchService', () => {
       scope: 'global',
       reason: 'platform-incident',
     });
+
+    service.releaseGlobal();
+    expect(service.isBlocked(mission.tenantId, 'wf-any')).toEqual({ blocked: false });
+  });
+
+  it('gives the global kill switch precedence over an unaffected scoped path', async () => {
+    const service = new KillSwitchService({
+      deactivateAllActiveWorkflows: async () => 1,
+    } as never);
+
+    await service.activateGlobal({ reason: 'global-halt', incidentId: 'inc-3', mission });
+
+    // Even a workflow with no scoped switch is blocked, and reported as global.
+    expect(service.isBlocked(mission.tenantId, 'never-scoped')).toEqual({
+      blocked: true,
+      scope: 'global',
+      reason: 'global-halt',
+    });
   });
 });

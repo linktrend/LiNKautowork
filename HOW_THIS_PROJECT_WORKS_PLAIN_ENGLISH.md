@@ -56,7 +56,7 @@ There are 4 main parts:
 
 3. n8n runtime (`deploy/dev` and `deploy/prod`)
 - Executes workflow logic.
-- Uses Supabase/Postgres backend (schema-separated for dev/prod).
+- Uses a Supabase/Postgres backend. n8n's own tables live in the isolated `lautowork_n8n` schema, which n8n creates and manages itself. Dev and prod are separated at the Supabase-project level (`linkplatform-stage` / `linkplatform-prod`), not by a schema-name suffix (the old `lautowork_n8n_dev` / `lautowork_n8n_prod` split is retired — see ADR 0001).
 
 4. Data and event plane
 - Supabase: audit and control-plane state.

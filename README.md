@@ -50,7 +50,7 @@ Current standard (post ADR 0001, shared `platform` org model):
 
 Under the shared two-Supabase-project topology (`linkplatform-stage` / `linkplatform-prod`, see ADR 0001 Decisions 2–3), environment separation happens at the **Supabase-project level, not via a schema-name suffix**. n8n is therefore pointed at the single schema name `lautowork_n8n` in whichever project is the current target — not the retired `lautowork_n8n_dev` / `lautowork_n8n_prod` split, and not the old `linkautowork_audit` / `linkautowork_control` control schemas.
 
-**Deploy-time follow-up (human action required):** the actual n8n `DB_POSTGRESDB_SCHEMA` value still reads `lautowork_n8n_dev` in `deploy/dev/docker-compose.yml` (and `lautowork_n8n_prod` in `deploy/prod/docker-compose.yml`). These are live deploy config, not documentation, so they are **not** changed here. When n8n is next redeployed, set `DB_POSTGRESDB_SCHEMA=lautowork_n8n` in the target stack. No n8n is running anywhere at present (the VPS was destroyed — ADR 0001 Update 2026-07-15), so there is nothing to migrate; the empty `lautowork_n8n` schema will be populated by n8n on its next first boot.
+**Schema wiring status:** `deploy/dev/docker-compose.yml` now sets `DB_POSTGRESDB_SCHEMA=lautowork_n8n` (updated 2026-07-15, matching the isolation migration). The `deploy/prod/docker-compose.yml` value still reads `lautowork_n8n_prod` and is the one remaining follow-up: it is left for the next prod redeploy (prod deploy config is not edited here). No n8n is running anywhere at present (the VPS was destroyed — ADR 0001 Update 2026-07-15), so there is nothing to migrate; the empty `lautowork_n8n` schema will be populated by n8n on its next first boot.
 
 ## Repository Layout
 
