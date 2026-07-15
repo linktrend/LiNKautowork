@@ -36,15 +36,21 @@ LiNKautowork is the self-hosted automation engine for LiNKtrend operations, buil
 
 ## Supabase Schema Standard
 
-- Runtime schemas:
-  - `lautowork_n8n_dev`
-  - `lautowork_n8n_prod`
-- Control/audit schemas:
-  - `linkautowork_audit`
-  - `linkautowork_control`
-- SQL function `public.linkautowork_write_audit_run` uses `search_path=linkautowork_audit,public`.
+Current standard (post ADR 0001, shared `platform` org model):
+
+- n8n runtime schema (single, per Supabase project):
+  - `lautowork_n8n` — owned and managed by n8n itself on boot; LiNKautowork never hand-designs tables here. Provisioned by `supabase/migrations/20260715_000002_lautowork_n8n_isolation.sql`, which creates only the empty schema + a dedicated `svc_lautowork_n8n` role (broad DDL grant on that one isolated schema so n8n can create its own tables). LiNKautowork's own control role (`svc_lautowork_runtime`) and `svc_observer` are deliberately never granted access — a hard isolation boundary (ADR 0001 Decision 3).
+- Control/ledger schema (single, spec-compliant):
+  - `lautowork` — `audit_runs`, `lifecycle_transitions`, `killswitch_events`, org-scoped via `platform.organizations`. Provisioned by `supabase/migrations/20260715_000001_lautowork_control_core.sql`.
+- SQL function `public.linkautowork_write_audit_run` uses `search_path=lautowork,public`.
 - Migration naming standard for new migrations:
   - `YYYYMMDD_HHMMSS_lautowork_<change>.sql`
+
+### Environment separation (two-project topology)
+
+Under the shared two-Supabase-project topology (`linkplatform-stage` / `linkplatform-prod`, see ADR 0001 Decisions 2–3), environment separation happens at the **Supabase-project level, not via a schema-name suffix**. n8n is therefore pointed at the single schema name `lautowork_n8n` in whichever project is the current target — not the retired `lautowork_n8n_dev` / `lautowork_n8n_prod` split, and not the old `linkautowork_audit` / `linkautowork_control` control schemas.
+
+**Deploy-time follow-up (human action required):** the actual n8n `DB_POSTGRESDB_SCHEMA` value still reads `lautowork_n8n_dev` in `deploy/dev/docker-compose.yml` (and `lautowork_n8n_prod` in `deploy/prod/docker-compose.yml`). These are live deploy config, not documentation, so they are **not** changed here. When n8n is next redeployed, set `DB_POSTGRESDB_SCHEMA=lautowork_n8n` in the target stack. No n8n is running anywhere at present (the VPS was destroyed — ADR 0001 Update 2026-07-15), so there is nothing to migrate; the empty `lautowork_n8n` schema will be populated by n8n on its next first boot.
 
 ## Repository Layout
 
