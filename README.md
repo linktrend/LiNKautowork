@@ -122,3 +122,66 @@ Under the shared two-Supabase-project topology (`linkplatform-stage` / `linkplat
 - [Docs Index](./docs/README.md)
 - [Branching and Deployment Policy](./docs/BRANCHING_AND_DEPLOYMENT_POLICY.md)
 - [Documentation Governance](./docs/DOCUMENTATION_GOVERNANCE.md)
+
+## Live Automation Template Inventory (2026-07-15)
+
+Per Principal instruction (2026-07-15), speculative automations that referenced undefined RPCs were dropped, leaving only templates needed to run the real Programs that exist today. Three templates were archived to [`automations/templates/archive/`](./automations/templates/archive/README.md) — `heartbeat-triage.json`, `security-exception-response.json`, `hot-cold-migration.json` — because they called five never-defined Supabase RPCs (`linkautowork_health`, `linkautowork_open_incident`, `linkautowork_find_inactive_files`, `linkautowork_persist_pointer`, `linkautowork_delete_file`). An independent sweep of the remaining templates found no other undefined-RPC or non-existent-schema references.
+
+The **31 live templates** below are the "what's actually needed to run the Programs" set. `validate:templates` passes against this reduced set (32 JSON files / 31 manifest entries).
+
+### Platform / governance (LiNKautowork itself)
+
+| Template | What it's for | Real Program / schema element it connects to |
+|----------|---------------|----------------------------------------------|
+| `ritual-gates-unified.json` | Scheduled strategic/operational/quality ritual gates with confidence scoring | LiNKautowork → gateway `POST /v1/events/publish` → `lautowork.audit_runs` via `public.linkautowork_write_audit_run` |
+| `urgent-event-ingestion.json` | Webhook intake for urgent events, wakes orchestrator, publishes execution event | LiNKautowork / LiNKbrain event bridge → gateway `POST /v1/events/publish` → `lautowork.audit_runs` |
+| `promotion-review-governance.json` | Governed lifecycle promotion with auditor/HoQ/COO/Principal approval gates | LiNKautowork lifecycle → gateway `POST /v1/lifecycle/transition` → `lautowork.lifecycle_transitions` |
+| `restore-authorization-governance.json` | Governed restore authorization + scoped kill-switch on protected restore | LiNKautowork lifecycle + control → gateway `POST /v1/lifecycle/transition` and `POST /v1/control/killswitch/scoped` → `lautowork.lifecycle_transitions`, `lautowork.killswitch_events` |
+| `daily-chairman-briefing.json` | **Deprecated** legacy 08:00 briefing shim; forwards to the unified ritual gate | LiNKautowork (legacy compat) → gateway `POST /v1/events/publish`. Real endpoint, marked `deprecated` in manifest; kept as a compatibility path, superseded by `ritual-gates-unified.json` |
+
+### LiNKsites Program (lead-to-outreach commercial loop)
+
+All LiNKsites templates are thin n8n webhook shells that invoke the real LiNKaios autowork handler (`$env.LINKAIOS_AUTOWORK_INVOKE_URL`, secured by `$env.LINKAUTOWORK_INVOKE_SECRET`) with a stable `workflow_handle`.
+
+| Template | What it's for | Real Program / handle |
+|----------|---------------|-----------------------|
+| `linksites-artifact_write_local.json` | Persist a generated site artifact locally | LiNKsites → `autowork.linksites.artifact_write_local` |
+| `linksites-supabase_mirror_upsert.json` | Mirror site record into Supabase | LiNKsites → `autowork.linksites.supabase_mirror_upsert` |
+| `linksites-payload_sync_local.json` | Sync site content to local Payload CMS | LiNKsites → `autowork.linksites.payload_sync_local` |
+| `linksites-preview_readiness_check.json` | Gate that a preview site is publish-ready | LiNKsites → `autowork.linksites.preview_readiness_check` |
+| `linksites-crm_ready_to_contact_mark.json` | Mark a lead ready-to-contact in CRM | LiNKsites → `autowork.linksites.crm_ready_to_contact_mark` |
+| `linksites-outreach_dispatch.json` | Dispatch (governed) outreach to a lead | LiNKsites → `autowork.linksites.outreach_dispatch` |
+
+### LiNKsuitegen (LiNKsites suite-generation factory)
+
+The suite-generation factory behind the LiNKsites loop (discovery → rank → build → validate → export → CRM → orchestrate). Same real invoke pattern as above.
+
+| Template | What it's for | Real Program / handle |
+|----------|---------------|-----------------------|
+| `linksuitegen-discovery_collect.json` | Collect discovered leads | LiNKsites suite-gen → `autowork.linksuitegen.discovery_collect` |
+| `linksuitegen-ranking_persist.json` | Persist lead ranking | LiNKsites suite-gen → `autowork.linksuitegen.ranking_persist` |
+| `linksuitegen-factory_generate.json` | Generate a site from an industry template | LiNKsites suite-gen → `autowork.linksuitegen.factory_generate` |
+| `linksuitegen-factory_validate.json` | Validate generated site | LiNKsites suite-gen → `autowork.linksuitegen.factory_validate` |
+| `linksuitegen-factory_export.json` | Export/publish generated site | LiNKsites suite-gen → `autowork.linksuitegen.factory_export` |
+| `linksuitegen-admin_handoff.json` | Hand off completed run to admin | LiNKsites suite-gen → `autowork.linksuitegen.admin_handoff` |
+| `linksuitegen-orchestrator_cycle.json` | Drive one orchestration cycle | LiNKsites suite-gen → `autowork.linksuitegen.orchestrator_cycle` |
+| `linksuitegen-crm_step.json` | Advance a CRM step | LiNKsites suite-gen → `autowork.linksuitegen.crm_step` |
+| `linksuitegen-odoo_lead_create.json` | Create an Odoo CRM lead | LiNKsites suite-gen → `autowork.linksuitegen.odoo_lead_create` |
+
+### LiNKdeveloper (developer/build platform)
+
+Wave 4 deliverable set (see `docs/runbooks/WAVE4_AUTOMATION_PROOF.md`); each shell invokes the real, tested LiNKaios autowork ingress handler (`gateway/src/workflows/linkdeveloper.ts` in LiNKtrend-System). Same real invoke pattern as above — none reference undefined RPCs.
+
+| Template | What it's for | Real Program / handle |
+|----------|---------------|-----------------------|
+| `linkdeveloper-run_validation.json` | Run validation for a dev run | LiNKdeveloper → `autowork.linkdeveloper.run_validation` |
+| `linkdeveloper-status_sync.json` | Sync run status | LiNKdeveloper → `autowork.linkdeveloper.status_sync` |
+| `linkdeveloper-starter_generation.json` | Generate a project starter | LiNKdeveloper → `autowork.linkdeveloper.starter_generation` |
+| `linkdeveloper-notification.json` | Emit a developer notification | LiNKdeveloper → `autowork.linkdeveloper.notification` |
+| `linkdeveloper-report_generation.json` | Generate a report | LiNKdeveloper → `autowork.linkdeveloper.report_generation` |
+| `linkdeveloper-run_task.json` | Run a build/dev task | LiNKdeveloper → `autowork.linkdeveloper.run_task` |
+| `linkdeveloper-deploy_scaffold.json` | Scaffold a deployment | LiNKdeveloper → `autowork.linkdeveloper.deploy_scaffold` |
+| `linkdeveloper-product_run_bootstrap.json` | Bootstrap a product run | LiNKdeveloper → `autowork.linkdeveloper.product_run_bootstrap` |
+| `linkdeveloper-issue_dispatch.json` | Dispatch an issue to execution | LiNKdeveloper → `autowork.linkdeveloper.issue_dispatch` |
+| `linkdeveloper-validation_record.json` | Record a validation result | LiNKdeveloper → `autowork.linkdeveloper.validation_record` |
+| `linkdeveloper-artifact_write.json` | Write a build artifact | LiNKdeveloper → `autowork.linkdeveloper.artifact_write` |

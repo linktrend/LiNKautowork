@@ -4,14 +4,17 @@ import path from 'node:path';
 const root = process.cwd();
 const templateDir = path.join(root, 'automations', 'templates');
 const manifestPath = path.join(templateDir, 'manifest.json');
+// heartbeat-triage.json, security-exception-response.json and
+// hot-cold-migration.json were archived on 2026-07-15 (see
+// automations/templates/archive/README.md): they referenced undefined Supabase
+// RPCs (linkautowork_health / _open_incident / _find_inactive_files /
+// _persist_pointer / _delete_file) with no current Program need. They are no
+// longer required live templates.
 const requiredTemplates = [
   'ritual-gates-unified.json',
   'urgent-event-ingestion.json',
-  'heartbeat-triage.json',
-  'security-exception-response.json',
   'promotion-review-governance.json',
   'restore-authorization-governance.json',
-  'hot-cold-migration.json',
 ];
 const wave4RequiredTemplates = [
   'linksites-artifact_write_local.json',

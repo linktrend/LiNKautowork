@@ -35,18 +35,6 @@
       "state": "dev_tested"
     },
     {
-      "file": "heartbeat-triage.json",
-      "workflow_id": "heartbeat-triage",
-      "criticality": "non_critical",
-      "state": "dev_tested"
-    },
-    {
-      "file": "security-exception-response.json",
-      "workflow_id": "security-exception-response",
-      "criticality": "critical",
-      "state": "dev_tested"
-    },
-    {
       "file": "promotion-review-governance.json",
       "workflow_id": "promotion-review-governance",
       "criticality": "critical",
@@ -56,12 +44,6 @@
       "file": "restore-authorization-governance.json",
       "workflow_id": "restore-authorization-governance",
       "criticality": "critical",
-      "state": "dev_tested"
-    },
-    {
-      "file": "hot-cold-migration.json",
-      "workflow_id": "hot-cold-migration",
-      "criticality": "non_critical",
       "state": "dev_tested"
     },
     {
