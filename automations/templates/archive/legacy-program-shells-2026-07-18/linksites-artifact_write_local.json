@@ -1,0 +1,92 @@
+{
+  "name": "LinkSites linksites / artifact_write_local",
+  "nodes": [
+    {
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "linksites-artifact_write_local",
+        "responseMode": "responseNode"
+      }
+    },
+    {
+      "name": "Invoke LiNKaios Handler",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        520,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.LINKAIOS_AUTOWORK_INVOKE_URL }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "content-type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-linkautowork-invoke-secret",
+              "value": "={{ $env.LINKAUTOWORK_INVOKE_SECRET }}"
+            }
+          ]
+        },
+        "jsonBody": "={{ { tenant_id: $json.body.tenant_id || $json.tenant_id, run_id: $json.body.run_id || $json.run_id, stage_id: $json.body.stage_id || $json.stage_id, workflow_handle: 'autowork.linksites.artifact_write_local', inputs: $json.body.inputs || $json.inputs || {}, lease_id: $json.body.lease_id || $json.lease_id, idempotency_key: $json.body.idempotency_key || $json.idempotency_key } }}"
+      }
+    },
+    {
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        800,
+        300
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Invoke LiNKaios Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invoke LiNKaios Handler": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "tenant_uuid": "00000000-0000-0000-0000-000000000001",
+    "workflow_handle": "autowork.linksites.artifact_write_local",
+    "webhook_path": "linksites-artifact_write_local"
+  }
+}

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
-import { CANONICAL_INTERNAL_TENANT_UUID, INTERNAL_TENANT_SLUG } from '../constants/tenant.js';
+import { CANONICAL_INTERNAL_ORG_UUID, INTERNAL_ORG_SLUG } from '../constants/org.js';
 
 const envSchema = z.object({
   NODE_ENV: z.string().default('development'),
@@ -13,8 +13,15 @@ const envSchema = z.object({
   LINK_CONTROL_TOKEN: z.string().optional(),
   LINK_CONTROL_TOKEN_SECRET_NAME: z.string().default('LINKAUTOWORK_LINK_CONTROL_TOKEN'),
 
-  ACTIVE_TENANT_UUID: z.string().uuid().default(CANONICAL_INTERNAL_TENANT_UUID),
-  ACTIVE_TENANT_SLUG: z.string().default(INTERNAL_TENANT_SLUG),
+  // NOTE (org model, docs/adr/0001): these hold the active organization
+  // identity (platform.organizations) — the value written to lautowork
+  // control tables' org_id column. The env-var NAMES are deliberately kept as
+  // `ACTIVE_TENANT_*` because they are part of the external deployment contract
+  // (deploy/{dev,prod}/.env.example, consumed via docker-compose `env_file`).
+  // Renaming them is a coordinated ops change, not a TypeScript-only cleanup,
+  // so it is intentionally out of scope for the audit-wire rename.
+  ACTIVE_TENANT_UUID: z.string().uuid().default(CANONICAL_INTERNAL_ORG_UUID),
+  ACTIVE_TENANT_SLUG: z.string().default(INTERNAL_ORG_SLUG),
 
   SUPABASE_URL: z.string().url(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),

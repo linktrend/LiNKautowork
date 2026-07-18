@@ -4,16 +4,17 @@ import path from 'node:path';
 const root = process.cwd();
 const templateDir = path.join(root, 'automations', 'templates');
 const manifestPath = path.join(templateDir, 'manifest.json');
+// Live set is governance-only (2026-07-18). Legacy LiNKsites / suitegen /
+// linkdeveloper shells that called shelved LiNKaios invoke URLs were archived
+// to automations/templates/archive/legacy-program-shells-2026-07-18/.
 const requiredTemplates = [
   'ritual-gates-unified.json',
   'urgent-event-ingestion.json',
-  'heartbeat-triage.json',
-  'security-exception-response.json',
   'promotion-review-governance.json',
   'restore-authorization-governance.json',
-  'hot-cold-migration.json',
 ];
 const tenantUuid = '00000000-0000-0000-0000-000000000001';
+const tenantExemptFiles = new Set(['manifest.json', 'daily-chairman-briefing.json']);
 
 function fail(message) {
   console.error(`Template validation failed: ${message}`);
@@ -36,28 +37,46 @@ for (const requiredFile of requiredTemplates) {
   }
 }
 
-const files = fs.readdirSync(templateDir).filter((file) => file.endsWith('.json'));
-const names = new Set();
-for (const file of files) {
-  const fullPath = path.join(templateDir, file);
-  const raw = fs.readFileSync(fullPath, 'utf8');
-  const parsed = JSON.parse(raw);
+const manifestEntries = manifest?.templates;
+if (!Array.isArray(manifestEntries) || manifestEntries.length === 0) {
+  fail('manifest templates array is missing or empty');
+}
 
-  if (file !== 'manifest.json') {
-    if (!parsed.name || !Array.isArray(parsed.nodes) || typeof parsed.connections !== 'object') {
-      fail(`invalid workflow shape in ${file}`);
-    }
-    if (names.has(parsed.name)) {
-      fail(`duplicate workflow name: ${parsed.name}`);
-    }
-    names.add(parsed.name);
+const manifestFiles = new Set();
+for (const entry of manifestEntries) {
+  if (!entry?.file || typeof entry.file !== 'string') {
+    fail('manifest entry missing file');
   }
+  if (manifestFiles.has(entry.file)) {
+    fail(`duplicate manifest file entry: ${entry.file}`);
+  }
+  manifestFiles.add(entry.file);
 
-  if (file !== 'manifest.json' && file !== 'daily-chairman-briefing.json') {
-    if (!raw.includes(tenantUuid)) {
-      fail(`canonical tenant UUID not found in ${file}`);
-    }
+  const fullPath = path.join(templateDir, entry.file);
+  if (!fs.existsSync(fullPath)) {
+    fail(`manifest references missing template: ${entry.file}`);
   }
 }
 
-console.log(`Template validation passed for ${files.length} JSON files.`);
+const topLevelJson = fs
+  .readdirSync(templateDir)
+  .filter((name) => name.endsWith('.json'));
+
+for (const file of topLevelJson) {
+  if (file === 'manifest.json') continue;
+  if (!manifestFiles.has(file)) {
+    fail(`template file not listed in manifest: ${file}`);
+  }
+}
+
+for (const file of topLevelJson) {
+  if (tenantExemptFiles.has(file)) continue;
+  const content = fs.readFileSync(path.join(templateDir, file), 'utf8');
+  if (!content.includes(tenantUuid)) {
+    fail(`template missing canonical tenant UUID: ${file}`);
+  }
+}
+
+console.log(
+  `Template validation passed (${manifestEntries.length} manifest entries, ${topLevelJson.length} JSON files)`,
+);
