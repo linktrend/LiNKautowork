@@ -70,7 +70,7 @@ describe('SupabaseAuditClient.writeAudit', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     await expect(new SupabaseAuditClient(auditEnv).writeAudit(record)).rejects.toThrow(
-      /audit rpc write failed with status 403/,
+      /audit rpc failed with status 403/,
     );
   });
 });

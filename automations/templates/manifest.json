@@ -1,10 +1,7 @@
 {
   "source_of_truth": {
     "canonical_directory": "automations/templates",
-    "mirror_targets": [
-      "AIOS workflow mirrors"
-    ],
-    "notes": "LiNKautowork templates are authoritative. AIOS copies are integration mirrors only."
+    "notes": "LiNKautowork templates are authoritative. Only governance templates that call this repo's gateway are live. Legacy Program shells that depended on shelved LiNKaios invoke handlers were archived 2026-07-18."
   },
   "active_tenant": {
     "tenant_uuid": "00000000-0000-0000-0000-000000000001",
@@ -26,187 +23,31 @@
       "file": "ritual-gates-unified.json",
       "workflow_id": "ritual-gates-unified",
       "criticality": "critical",
-      "state": "dev_tested"
+      "state": "ops_approved"
     },
     {
       "file": "urgent-event-ingestion.json",
       "workflow_id": "urgent-event-ingestion",
       "criticality": "critical",
-      "state": "dev_tested"
+      "state": "ops_approved"
     },
     {
       "file": "promotion-review-governance.json",
       "workflow_id": "promotion-review-governance",
       "criticality": "critical",
-      "state": "dev_tested"
+      "state": "ops_approved"
     },
     {
       "file": "restore-authorization-governance.json",
       "workflow_id": "restore-authorization-governance",
       "criticality": "critical",
-      "state": "dev_tested"
+      "state": "ops_approved"
     },
     {
       "file": "daily-chairman-briefing.json",
       "workflow_id": "daily-chairman-briefing-legacy",
       "criticality": "non_critical",
       "state": "deprecated"
-    },
-    {
-      "file": "linksites-artifact_write_local.json",
-      "workflow_id": "linksites-artifact_write_local",
-      "criticality": "critical",
-      "state": "ops_approved"
-    },
-    {
-      "file": "linksites-supabase_mirror_upsert.json",
-      "workflow_id": "linksites-supabase_mirror_upsert",
-      "criticality": "critical",
-      "state": "ops_approved"
-    },
-    {
-      "file": "linksites-payload_sync_local.json",
-      "workflow_id": "linksites-payload_sync_local",
-      "criticality": "critical",
-      "state": "ops_approved"
-    },
-    {
-      "file": "linksites-preview_readiness_check.json",
-      "workflow_id": "linksites-preview_readiness_check",
-      "criticality": "critical",
-      "state": "ops_approved"
-    },
-    {
-      "file": "linksites-crm_ready_to_contact_mark.json",
-      "workflow_id": "linksites-crm_ready_to_contact_mark",
-      "criticality": "critical",
-      "state": "ops_approved"
-    },
-    {
-      "file": "linksites-outreach_dispatch.json",
-      "workflow_id": "linksites-outreach_dispatch",
-      "criticality": "critical",
-      "state": "ops_approved"
-    },
-    {
-      "file": "linksuitegen-discovery_collect.json",
-      "workflow_id": "linksuitegen-discovery_collect",
-      "criticality": "critical",
-      "state": "dev_tested"
-    },
-    {
-      "file": "linksuitegen-ranking_persist.json",
-      "workflow_id": "linksuitegen-ranking_persist",
-      "criticality": "critical",
-      "state": "dev_tested"
-    },
-    {
-      "file": "linksuitegen-factory_generate.json",
-      "workflow_id": "linksuitegen-factory_generate",
-      "criticality": "critical",
-      "state": "dev_tested"
-    },
-    {
-      "file": "linksuitegen-factory_validate.json",
-      "workflow_id": "linksuitegen-factory_validate",
-      "criticality": "critical",
-      "state": "dev_tested"
-    },
-    {
-      "file": "linksuitegen-factory_export.json",
-      "workflow_id": "linksuitegen-factory_export",
-      "criticality": "critical",
-      "state": "dev_tested"
-    },
-    {
-      "file": "linksuitegen-admin_handoff.json",
-      "workflow_id": "linksuitegen-admin_handoff",
-      "criticality": "critical",
-      "state": "dev_tested"
-    },
-    {
-      "file": "linksuitegen-orchestrator_cycle.json",
-      "workflow_id": "linksuitegen-orchestrator_cycle",
-      "criticality": "critical",
-      "state": "dev_tested"
-    },
-    {
-      "file": "linksuitegen-crm_step.json",
-      "workflow_id": "linksuitegen-crm_step",
-      "criticality": "critical",
-      "state": "dev_tested"
-    },
-    {
-      "file": "linksuitegen-odoo_lead_create.json",
-      "workflow_id": "linksuitegen-odoo_lead_create",
-      "criticality": "critical",
-      "state": "dev_tested"
-    },
-    {
-      "file": "linkdeveloper-run_validation.json",
-      "workflow_id": "linkdeveloper-run_validation",
-      "criticality": "critical",
-      "state": "dev_tested"
-    },
-    {
-      "file": "linkdeveloper-status_sync.json",
-      "workflow_id": "linkdeveloper-status_sync",
-      "criticality": "non_critical",
-      "state": "dev_tested"
-    },
-    {
-      "file": "linkdeveloper-starter_generation.json",
-      "workflow_id": "linkdeveloper-starter_generation",
-      "criticality": "non_critical",
-      "state": "dev_tested"
-    },
-    {
-      "file": "linkdeveloper-notification.json",
-      "workflow_id": "linkdeveloper-notification",
-      "criticality": "non_critical",
-      "state": "dev_tested"
-    },
-    {
-      "file": "linkdeveloper-report_generation.json",
-      "workflow_id": "linkdeveloper-report_generation",
-      "criticality": "non_critical",
-      "state": "dev_tested"
-    },
-    {
-      "file": "linkdeveloper-run_task.json",
-      "workflow_id": "linkdeveloper-run_task",
-      "criticality": "non_critical",
-      "state": "dev_tested"
-    },
-    {
-      "file": "linkdeveloper-deploy_scaffold.json",
-      "workflow_id": "linkdeveloper-deploy_scaffold",
-      "criticality": "critical",
-      "state": "dev_tested"
-    },
-    {
-      "file": "linkdeveloper-product_run_bootstrap.json",
-      "workflow_id": "linkdeveloper-product_run_bootstrap",
-      "criticality": "critical",
-      "state": "dev_tested"
-    },
-    {
-      "file": "linkdeveloper-issue_dispatch.json",
-      "workflow_id": "linkdeveloper-issue_dispatch",
-      "criticality": "critical",
-      "state": "dev_tested"
-    },
-    {
-      "file": "linkdeveloper-validation_record.json",
-      "workflow_id": "linkdeveloper-validation_record",
-      "criticality": "critical",
-      "state": "dev_tested"
-    },
-    {
-      "file": "linkdeveloper-artifact_write.json",
-      "workflow_id": "linkdeveloper-artifact_write",
-      "criticality": "critical",
-      "state": "dev_tested"
     }
   ]
 }

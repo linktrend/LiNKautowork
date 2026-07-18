@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { KillSwitchService } from '../src/services/killswitch.js';
 
 const mission = {
@@ -11,12 +11,19 @@ const mission = {
 };
 
 describe('KillSwitchService', () => {
-  it('blocks scoped workflow and can release it', () => {
-    const service = new KillSwitchService({
-      deactivateAllActiveWorkflows: async () => 0,
-    } as never);
+  it('blocks scoped workflow and can release it', async () => {
+    const store = {
+      writeKillSwitchEvent: vi.fn(async () => undefined),
+      listActiveKillSwitches: vi.fn(async () => []),
+    };
+    const service = new KillSwitchService(
+      {
+        deactivateAllActiveWorkflows: async () => 0,
+      } as never,
+      store,
+    );
 
-    service.activateScoped({
+    await service.activateScoped({
       tenantId: mission.tenantId,
       workflowId: 'wf-1',
       reason: 'quality-failure',
@@ -29,15 +36,39 @@ describe('KillSwitchService', () => {
       scope: 'scoped',
       reason: 'quality-failure',
     });
+    expect(store.writeKillSwitchEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scope: 'scoped',
+        action: 'activate',
+        metadata: { workflow_id: 'wf-1' },
+      }),
+    );
 
-    service.releaseScoped(mission.tenantId, 'wf-1');
+    await service.releaseScoped(mission.tenantId, 'wf-1', {
+      reason: 'resolved',
+      incidentId: 'inc-1',
+    });
     expect(service.isBlocked(mission.tenantId, 'wf-1')).toEqual({ blocked: false });
+    expect(store.writeKillSwitchEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scope: 'scoped',
+        action: 'release',
+        metadata: { workflow_id: 'wf-1' },
+      }),
+    );
   });
 
   it('activates global kill switch and deactivates workflows', async () => {
-    const service = new KillSwitchService({
-      deactivateAllActiveWorkflows: async () => 4,
-    } as never);
+    const store = {
+      writeKillSwitchEvent: vi.fn(async () => undefined),
+      listActiveKillSwitches: vi.fn(async () => []),
+    };
+    const service = new KillSwitchService(
+      {
+        deactivateAllActiveWorkflows: async () => 4,
+      } as never,
+      store,
+    );
 
     const result = await service.activateGlobal({
       reason: 'platform-incident',
@@ -51,8 +82,18 @@ describe('KillSwitchService', () => {
       scope: 'global',
       reason: 'platform-incident',
     });
+    expect(store.writeKillSwitchEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scope: 'global',
+        action: 'activate',
+      }),
+    );
 
-    service.releaseGlobal();
+    await service.releaseGlobal({
+      tenantId: mission.tenantId,
+      reason: 'cleared',
+      incidentId: 'inc-2',
+    });
     expect(service.isBlocked(mission.tenantId, 'wf-any')).toEqual({ blocked: false });
   });
 
@@ -63,11 +104,48 @@ describe('KillSwitchService', () => {
 
     await service.activateGlobal({ reason: 'global-halt', incidentId: 'inc-3', mission });
 
-    // Even a workflow with no scoped switch is blocked, and reported as global.
     expect(service.isBlocked(mission.tenantId, 'never-scoped')).toEqual({
       blocked: true,
       scope: 'global',
       reason: 'global-halt',
+    });
+  });
+
+  it('hydrates active kill switches from the store on boot', async () => {
+    const store = {
+      writeKillSwitchEvent: vi.fn(async () => undefined),
+      listActiveKillSwitches: vi.fn(async () => [
+        {
+          scope: 'global' as const,
+          reason: 'persisted-global',
+          incident_id: 'inc-h1',
+          org_id: mission.tenantId,
+          activated_at: '2026-07-18T00:00:00.000Z',
+        },
+        {
+          scope: 'scoped' as const,
+          workflow_id: 'wf-persisted',
+          reason: 'persisted-scoped',
+          incident_id: 'inc-h2',
+          org_id: mission.tenantId,
+          activated_at: '2026-07-18T00:00:00.000Z',
+        },
+      ]),
+    };
+
+    const service = new KillSwitchService(
+      {
+        deactivateAllActiveWorkflows: async () => 0,
+      } as never,
+      store,
+    );
+
+    await service.hydrate();
+
+    expect(service.isBlocked(mission.tenantId, 'any')).toEqual({
+      blocked: true,
+      scope: 'global',
+      reason: 'persisted-global',
     });
   });
 });
