@@ -34,6 +34,22 @@ describe('validateLifecycleTransition', () => {
     ).toThrow(/Principal/);
   });
 
+  it('rejects a transition that is not allowed by the state machine', () => {
+    expect(() =>
+      validateLifecycleTransition({
+        fromState: 'draft',
+        toState: 'prod_deployed',
+        protectedAction: false,
+        approvals: {
+          auditorRecommendation: true,
+          headOfQualityApproved: true,
+          cooApproved: true,
+          chairmanApproved: true,
+        },
+      }),
+    ).toThrow(/invalid lifecycle transition from draft to prod_deployed/);
+  });
+
   it('accepts a valid ops approval transition', () => {
     expect(() =>
       validateLifecycleTransition({

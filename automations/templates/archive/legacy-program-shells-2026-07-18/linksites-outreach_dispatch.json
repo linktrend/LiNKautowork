@@ -1,5 +1,5 @@
 {
-  "name": "LinkSites linksites / crm_ready_to_contact_mark",
+  "name": "LinkSites linksites / outreach_dispatch",
   "nodes": [
     {
       "name": "Webhook",
@@ -11,7 +11,7 @@
       ],
       "parameters": {
         "httpMethod": "POST",
-        "path": "linksites-crm_ready_to_contact_mark",
+        "path": "linksites-outreach_dispatch",
         "responseMode": "responseNode"
       }
     },
@@ -40,7 +40,7 @@
             }
           ]
         },
-        "jsonBody": "={{ { tenant_id: $json.body.tenant_id || $json.tenant_id, run_id: $json.body.run_id || $json.run_id, stage_id: $json.body.stage_id || $json.stage_id, workflow_handle: 'autowork.linksites.crm_ready_to_contact_mark', inputs: $json.body.inputs || $json.inputs || {}, lease_id: $json.body.lease_id || $json.lease_id, idempotency_key: $json.body.idempotency_key || $json.idempotency_key } }}"
+        "jsonBody": "={{ { tenant_id: $json.body.tenant_id || $json.tenant_id, run_id: $json.body.run_id || $json.run_id, stage_id: $json.body.stage_id || $json.stage_id, workflow_handle: 'autowork.linksites.outreach_dispatch', inputs: $json.body.inputs || $json.inputs || {}, lease_id: $json.body.lease_id || $json.lease_id, idempotency_key: $json.body.idempotency_key || $json.idempotency_key } }}"
       }
     },
     {
@@ -85,7 +85,8 @@
     "executionOrder": "v1"
   },
   "meta": {
-    "workflow_handle": "autowork.linksites.crm_ready_to_contact_mark",
-    "webhook_path": "linksites-crm_ready_to_contact_mark"
+    "tenant_uuid": "00000000-0000-0000-0000-000000000001",
+    "workflow_handle": "autowork.linksites.outreach_dispatch",
+    "webhook_path": "linksites-outreach_dispatch"
   }
 }

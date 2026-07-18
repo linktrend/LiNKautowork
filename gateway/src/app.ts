@@ -55,6 +55,7 @@ export type AppDeps = {
   auditService: AuditService;
   eventBridgeService: EventBridgeService;
   killSwitchService: KillSwitchService;
+  supabaseClient: SupabaseAuditClient;
 };
 
 export function buildDependencies(env: AppEnv): AppDeps {
@@ -62,9 +63,10 @@ export function buildDependencies(env: AppEnv): AppDeps {
   const n8nClient = new N8nClient(env);
   const natsPublisher = new NatsPublisher(env);
   const secretsProvider = new SecretsProvider(env);
-  const auditService = new AuditService(new SupabaseAuditClient(env));
+  const supabaseClient = new SupabaseAuditClient(env);
+  const auditService = new AuditService(supabaseClient);
   const eventBridgeService = new EventBridgeService(env, natsPublisher);
-  const killSwitchService = new KillSwitchService(n8nClient);
+  const killSwitchService = new KillSwitchService(n8nClient, supabaseClient);
 
   return {
     env,
@@ -75,6 +77,7 @@ export function buildDependencies(env: AppEnv): AppDeps {
     auditService,
     eventBridgeService,
     killSwitchService,
+    supabaseClient,
   };
 }
 
@@ -248,6 +251,18 @@ export function createApp(deps: AppDeps) {
         approvals: normalizeApprovals(body.approvals),
       });
 
+      const approvals = normalizeApprovals(body.approvals);
+
+      await deps.supabaseClient.writeLifecycleTransition({
+        orgId: body.mission.tenantId,
+        workflowId: body.workflowId,
+        fromState: body.fromState,
+        toState: body.toState,
+        protectedAction: body.protectedAction ?? false,
+        approvals: { ...approvals },
+        reason: `transition ${body.fromState} -> ${body.toState}`,
+      });
+
       await deps.eventBridgeService.publish({
         eventType: 'lifecycle.transition',
         mission: body.mission,
@@ -289,7 +304,7 @@ export function createApp(deps: AppDeps) {
       assertCanonicalTenant(body.mission.tenantId, deps.env.ACTIVE_TENANT_UUID);
 
       if (body.action === 'activate') {
-        deps.killSwitchService.activateScoped({
+        await deps.killSwitchService.activateScoped({
           tenantId: body.mission.tenantId,
           workflowId: body.workflowId,
           reason: body.reason,
@@ -298,7 +313,10 @@ export function createApp(deps: AppDeps) {
         });
         killSwitchEvents.inc({ scope: 'scoped', action: 'activate' });
       } else {
-        deps.killSwitchService.releaseScoped(body.mission.tenantId, body.workflowId);
+        await deps.killSwitchService.releaseScoped(body.mission.tenantId, body.workflowId, {
+          reason: body.reason,
+          incidentId: body.incidentId,
+        });
         killSwitchEvents.inc({ scope: 'scoped', action: 'release' });
       }
 
@@ -339,7 +357,11 @@ export function createApp(deps: AppDeps) {
         revokedWorkflows = result.revokedWorkflows;
         killSwitchEvents.inc({ scope: 'global', action: 'activate' });
       } else {
-        deps.killSwitchService.releaseGlobal();
+        await deps.killSwitchService.releaseGlobal({
+          tenantId: body.mission.tenantId,
+          reason: body.reason,
+          incidentId: body.incidentId,
+        });
         killSwitchEvents.inc({ scope: 'global', action: 'release' });
       }
 
@@ -437,6 +459,7 @@ export function createApp(deps: AppDeps) {
 export async function bootstrapApp(env: AppEnv) {
   const deps = buildDependencies(env);
   await deps.natsPublisher.connect();
+  await deps.killSwitchService.hydrate();
   return {
     app: createApp(deps),
     deps,
