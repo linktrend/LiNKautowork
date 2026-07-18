@@ -76,11 +76,18 @@ Implemented now (MVO-safe contracts):
 
 Evidence:
 
-- Tenant constants: `gateway/src/constants/tenant.ts`
-- Tenant enforcement: `gateway/src/lib/tenant.ts`, `gateway/src/app.ts`
+- Canonical internal-org constants: `gateway/src/constants/org.ts`
+- Tenant/org enforcement: `gateway/src/lib/tenant.ts`, `gateway/src/app.ts`
 - Audit RPC integration: `gateway/src/integrations/supabase-rpc.ts`
-- Supabase schema + RLS + RPC function: `ops/sql/001_mvo_schema.sql`
+- Supabase schema + RLS + RPC function: `supabase/migrations/20260715_000001_lautowork_control_core.sql`
 - JIT secret retrieval: `gateway/src/integrations/secrets-provider.ts`
+
+Schema/org-model update (2026-07-15, `docs/adr/0001-adopt-shared-platform-org-model.md`):
+
+- The control/ledger surface is now a single `lautowork` schema (`audit_runs`, `lifecycle_transitions`, `killswitch_events`), replacing the retired two-schema `linkautowork_audit` / `linkautowork_control` split.
+- Each control table is org-scoped via `org_id uuid references platform.organizations(id)` (replacing the old bare `tenant_id uuid`), with RLS that OR's the JWT tenant-claim fast-path against a real `platform.has_org_access()` membership check.
+- The exposed RPC keeps its published name `public.linkautowork_write_audit_run` (preserving the `SUPABASE_AUDIT_RPC` gateway contract) and still accepts a wire parameter literally named `tenant_id`, which it writes into the `org_id` column. Gateway internals were renamed to `org` (`constants/org.ts`, `AuditRecord.orgId`); the external env-var names (`ACTIVE_TENANT_*`) and inbound mission field (`tenantId`) are deliberately unchanged.
+- The prior `ops/sql/001_mvo_schema.sql` was archived to `ops/sql/archive/` (confirmed never applied to any live database).
 
 Important clarification:
 
@@ -192,7 +199,8 @@ Evidence:
   - `deploy/prod/docker-compose.yml`
   - `deploy/common/gateway.Dockerfile`
 - Supabase baseline:
-  - `ops/sql/001_mvo_schema.sql`
+  - `supabase/migrations/20260715_000001_lautowork_control_core.sql` (`lautowork` control schema)
+  - `supabase/migrations/20260715_000002_lautowork_n8n_isolation.sql` (isolated `lautowork_n8n` schema + `svc_lautowork_n8n` role)
 
 ### 6.2 Security and Risk Management
 

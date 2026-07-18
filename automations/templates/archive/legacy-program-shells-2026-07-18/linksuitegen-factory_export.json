@@ -1,5 +1,5 @@
 {
-  "name": "LinkSites linksites / artifact_write_local",
+  "name": "LiNKsuitegen / linksuitegen-factory_export",
   "nodes": [
     {
       "name": "Webhook",
@@ -11,7 +11,7 @@
       ],
       "parameters": {
         "httpMethod": "POST",
-        "path": "linksites-artifact_write_local",
+        "path": "linksuitegen-factory_export",
         "responseMode": "responseNode"
       }
     },
@@ -40,7 +40,7 @@
             }
           ]
         },
-        "jsonBody": "={{ { tenant_id: $json.body.tenant_id || $json.tenant_id, run_id: $json.body.run_id || $json.run_id, stage_id: $json.body.stage_id || $json.stage_id, workflow_handle: 'autowork.linksites.artifact_write_local', inputs: $json.body.inputs || $json.inputs || {}, lease_id: $json.body.lease_id || $json.lease_id, idempotency_key: $json.body.idempotency_key || $json.idempotency_key } }}"
+        "jsonBody": "={{ { tenant_id: $json.body.tenant_id || $json.tenant_id, run_id: $json.body.run_id || $json.run_id, stage_id: $json.body.stage_id || $json.stage_id, workflow_handle: 'autowork.linksuitegen.factory_export', inputs: $json.body.inputs || $json.inputs || {}, lease_id: $json.body.lease_id || $json.lease_id, idempotency_key: $json.body.idempotency_key || $json.idempotency_key } }}"
       }
     },
     {
@@ -85,7 +85,8 @@
     "executionOrder": "v1"
   },
   "meta": {
-    "workflow_handle": "autowork.linksites.artifact_write_local",
-    "webhook_path": "linksites-artifact_write_local"
+    "tenant_uuid": "00000000-0000-0000-0000-000000000001",
+    "workflow_handle": "autowork.linksuitegen.factory_export",
+    "webhook_path": "linksuitegen-factory_export"
   }
 }

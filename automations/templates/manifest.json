@@ -1,10 +1,7 @@
 {
   "source_of_truth": {
     "canonical_directory": "automations/templates",
-    "mirror_targets": [
-      "AIOS workflow mirrors"
-    ],
-    "notes": "LiNKautowork templates are authoritative. AIOS copies are integration mirrors only."
+    "notes": "LiNKautowork templates are authoritative. Only governance templates that call this repo's gateway are live. Legacy Program shells that depended on shelved LiNKaios invoke handlers were archived 2026-07-18."
   },
   "active_tenant": {
     "tenant_uuid": "00000000-0000-0000-0000-000000000001",
@@ -26,79 +23,31 @@
       "file": "ritual-gates-unified.json",
       "workflow_id": "ritual-gates-unified",
       "criticality": "critical",
-      "state": "dev_tested"
+      "state": "ops_approved"
     },
     {
       "file": "urgent-event-ingestion.json",
       "workflow_id": "urgent-event-ingestion",
       "criticality": "critical",
-      "state": "dev_tested"
-    },
-    {
-      "file": "heartbeat-triage.json",
-      "workflow_id": "heartbeat-triage",
-      "criticality": "non_critical",
-      "state": "dev_tested"
-    },
-    {
-      "file": "security-exception-response.json",
-      "workflow_id": "security-exception-response",
-      "criticality": "critical",
-      "state": "dev_tested"
+      "state": "ops_approved"
     },
     {
       "file": "promotion-review-governance.json",
       "workflow_id": "promotion-review-governance",
       "criticality": "critical",
-      "state": "dev_tested"
+      "state": "ops_approved"
     },
     {
       "file": "restore-authorization-governance.json",
       "workflow_id": "restore-authorization-governance",
       "criticality": "critical",
-      "state": "dev_tested"
-    },
-    {
-      "file": "hot-cold-migration.json",
-      "workflow_id": "hot-cold-migration",
-      "criticality": "non_critical",
-      "state": "dev_tested"
+      "state": "ops_approved"
     },
     {
       "file": "daily-chairman-briefing.json",
       "workflow_id": "daily-chairman-briefing-legacy",
       "criticality": "non_critical",
       "state": "deprecated"
-    },
-    {
-      "file": "linksites-artifact_write_local.json",
-      "workflow_id": "linksites-artifact_write_local",
-      "criticality": "critical",
-      "state": "ops_approved"
-    },
-    {
-      "file": "linksites-supabase_mirror_upsert.json",
-      "workflow_id": "linksites-supabase_mirror_upsert",
-      "criticality": "critical",
-      "state": "ops_approved"
-    },
-    {
-      "file": "linksites-payload_sync_local.json",
-      "workflow_id": "linksites-payload_sync_local",
-      "criticality": "critical",
-      "state": "ops_approved"
-    },
-    {
-      "file": "linksites-preview_readiness_check.json",
-      "workflow_id": "linksites-preview_readiness_check",
-      "criticality": "critical",
-      "state": "ops_approved"
-    },
-    {
-      "file": "linksites-crm_ready_to_contact_mark.json",
-      "workflow_id": "linksites-crm_ready_to_contact_mark",
-      "criticality": "critical",
-      "state": "ops_approved"
     }
   ]
 }

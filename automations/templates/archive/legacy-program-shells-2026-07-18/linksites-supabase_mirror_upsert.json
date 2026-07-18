@@ -1,5 +1,5 @@
 {
-  "name": "LinkSites linksites / preview_readiness_check",
+  "name": "LinkSites linksites / supabase_mirror_upsert",
   "nodes": [
     {
       "name": "Webhook",
@@ -11,7 +11,7 @@
       ],
       "parameters": {
         "httpMethod": "POST",
-        "path": "linksites-preview_readiness_check",
+        "path": "linksites-supabase_mirror_upsert",
         "responseMode": "responseNode"
       }
     },
@@ -40,7 +40,7 @@
             }
           ]
         },
-        "jsonBody": "={{ { tenant_id: $json.body.tenant_id || $json.tenant_id, run_id: $json.body.run_id || $json.run_id, stage_id: $json.body.stage_id || $json.stage_id, workflow_handle: 'autowork.linksites.preview_readiness_check', inputs: $json.body.inputs || $json.inputs || {}, lease_id: $json.body.lease_id || $json.lease_id, idempotency_key: $json.body.idempotency_key || $json.idempotency_key } }}"
+        "jsonBody": "={{ { tenant_id: $json.body.tenant_id || $json.tenant_id, run_id: $json.body.run_id || $json.run_id, stage_id: $json.body.stage_id || $json.stage_id, workflow_handle: 'autowork.linksites.supabase_mirror_upsert', inputs: $json.body.inputs || $json.inputs || {}, lease_id: $json.body.lease_id || $json.lease_id, idempotency_key: $json.body.idempotency_key || $json.idempotency_key } }}"
       }
     },
     {
@@ -85,7 +85,8 @@
     "executionOrder": "v1"
   },
   "meta": {
-    "workflow_handle": "autowork.linksites.preview_readiness_check",
-    "webhook_path": "linksites-preview_readiness_check"
+    "tenant_uuid": "00000000-0000-0000-0000-000000000001",
+    "workflow_handle": "autowork.linksites.supabase_mirror_upsert",
+    "webhook_path": "linksites-supabase_mirror_upsert"
   }
 }
