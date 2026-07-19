@@ -15,8 +15,16 @@ patterns=(
   'tskey-auth-[0-9A-Za-z_-]+'
 )
 
+# Known false-positive fixture files: archived gstack tests that intentionally
+# embed fake AKIA… / ghp_… literals to assert secret-blocking behavior.
+# Exclude only these paths — do not broaden to the rest of archive/ or tests/.
+FIXTURE_EXCLUDES=(
+  ':(exclude)archive/legacy-dev-mirrors-2026-07-15/LiNKdev/skills/gstack/test/brain-sync.test.ts'
+  ':(exclude)archive/legacy-dev-mirrors-2026-07-15/LiNKdev/skills/gstack/test/gstack-memory-ingest.test.ts'
+)
+
 tracked_file_list="$(mktemp)"
-git ls-files ':(exclude)link-n8n/**' >"$tracked_file_list" 2>/dev/null || true
+git ls-files ':(exclude)link-n8n/**' "${FIXTURE_EXCLUDES[@]}" >"$tracked_file_list" 2>/dev/null || true
 if [[ ! -s "$tracked_file_list" ]]; then
   echo 'No tracked files found to scan.'
   rm -f "$tracked_file_list"
