@@ -37,7 +37,7 @@ services:
       - "8080:8080"
 
   n8n:
-    # Pinned stock n8n (see deploy/prod and docs/UPSTREAM.md).
+    # Pinned stock n8n (see deploy/prod and docs/LINKAUTOWORK-TECHNICAL-PRD.md §5).
     image: docker.n8n.io/n8nio/n8n:2.30.0
     env_file:
       - .env
