@@ -1,6 +1,6 @@
 // Canonical internal organization identity.
 //
-// Under the shared platform org model (docs/adr/0001), LiNKautowork's
+// Under the shared platform org model (docs/archive/adr/0001), LiNKautowork's
 // tenant-scoped concept is an organization in platform.organizations, and this
 // value is what lands in the org_id column of the lautowork control tables.
 // The identifiers are named for what the value now IS (an org id/slug); only

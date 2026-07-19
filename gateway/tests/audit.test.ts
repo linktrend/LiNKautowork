@@ -52,7 +52,7 @@ describe('SupabaseAuditClient.writeAudit', () => {
     const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     const body = JSON.parse(init.body as string);
     // The DB column is org_id, but the RPC parameter is still literally named
-    // tenant_id (docs/adr/0001). Regressing this mapping silently breaks the
+    // tenant_id (docs/archive/adr/0001). Regressing this mapping silently breaks the
     // PostgREST call, so it is asserted explicitly.
     expect(body.tenant_id).toBe('00000000-0000-0000-0000-000000000001');
     expect(body).not.toHaveProperty('org_id');
