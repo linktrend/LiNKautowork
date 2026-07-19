@@ -1,20 +1,29 @@
 # LiNKautowork Documentation Index
 
 Owner: LiNKtrend Platform  
-Last updated: 2026-04-01
+Last updated: 2026-07-19
 
-## Core Governance
-- [Branching and Deployment Policy](./BRANCHING_AND_DEPLOYMENT_POLICY.md)
-- [Documentation Governance](./DOCUMENTATION_GOVERNANCE.md)
-- [Archive](./archive/README.md)
+## Source of truth
 
-## Operational Docs
+- [Intent](./LINKAUTOWORK-INTENT.md)
+- [Technical PRD](./LINKAUTOWORK-TECHNICAL-PRD.md)
+- [Operations Manual](./LINKAUTOWORK-OPERATIONS-MANUAL.md)
+- [Open Issues / build log](./OPEN-ISSUES.md)
+
+## Operational docs (still live)
+
+- [Deploy Readiness (DONE)](./DEPLOY_READINESS.md)
+- [SLO](./SLO.md)
 - [Operations Runbook](./runbooks/OPERATIONS.md)
 - [Production Release Gates](./runbooks/PRODUCTION_RELEASE_GATES.md)
-- [Deploy Readiness (DONE)](./DEPLOY_READINESS.md)
-- [Automation Lifecycle](./AUTOMATION_LIFECYCLE.md)
-- [Contracts](./CONTRACTS.md)
-- [Upstream / n8n fork](./UPSTREAM.md)
+- [Tailscale Hardening](./runbooks/TAILSCALE_HARDENING.md)
+- [Import Automation Templates](./runbooks/IMPORT_AUTOMATION_TEMPLATES.md)
+- [Wave 4 Automation Proof](./runbooks/WAVE4_AUTOMATION_PROOF.md)
+
+## Archive
+
+- [Archive index](./archive/README.md) — superseded PRD, contracts, upstream, ADR, and related docs.
 
 ## Rule
-If behavior changes, docs must be updated in the same PR.
+
+If behavior changes, update the Technical PRD (and Intent/Ops Manual when scope or Principal-facing behavior changes) in the same PR. Prefer appending `OPEN-ISSUES.md` for build-log entries.
