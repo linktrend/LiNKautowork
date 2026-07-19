@@ -16,7 +16,7 @@ export class AuditService {
       // contract (missionEnvelopeSchema), which the gateway does not own; that
       // value is the owning organization id and is stored as such (org_id).
       // Renaming the inbound mission field is a separate, caller-coordinated
-      // change and is intentionally out of scope here (docs/adr/0001).
+      // change and is intentionally out of scope here (docs/archive/adr/0001).
       orgId: args.mission.tenantId,
       run_id: args.mission.runId,
       task_id: args.mission.taskId,

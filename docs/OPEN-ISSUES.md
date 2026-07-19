@@ -1,13 +1,23 @@
-# LiNKautowork MVO Implementation Against PRD
+# LiNKautowork — Open Issues & Build Log
 
-Document purpose:
+**Role:** Append-only engineering build / compliance log for this Program. Prefer this file over stale prose elsewhere when asking "what was actually built, deferred, or limited?"
+
+**Current source of truth for product description:** [`LINKAUTOWORK-INTENT.md`](./LINKAUTOWORK-INTENT.md), [`LINKAUTOWORK-TECHNICAL-PRD.md`](./LINKAUTOWORK-TECHNICAL-PRD.md), [`LINKAUTOWORK-OPERATIONS-MANUAL.md`](./LINKAUTOWORK-OPERATIONS-MANUAL.md).
+
+**History note:** This file was renamed from root `IMPLEMENTATION_AGAINST_PRD.md` on 2026-07-19 (documentation cleanup). Sections 1–12 below are the preserved MVO implementation trace against the original PRD; path references inside them were updated to `docs/archive/...` where those docs moved. New dated entries append after that baseline.
+
+---
+
+# Baseline — MVO Implementation Against PRD (preserved)
+
+Document purpose (original):
 
 - Provide a comprehensive, implementation-level trace from the PRD to what is now built in this repository.
 - Show where each PRD requirement is implemented, how it is enforced, and what remains intentionally deferred.
 
-Reference PRD in this repo root:
+Reference PRD (archived):
 
-- `260319 - PRD_ LiNKautowork Automation Engine.md`
+- `docs/archive/root-docs/260319 - PRD_ LiNKautowork Automation Engine.md`
 
 Implementation baseline date:
 
@@ -34,7 +44,7 @@ Primary implementation artifacts:
 - Templates: `automations/templates/*`
 - Deploy: `deploy/dev/*`, `deploy/prod/*`, `deploy/common/*`
 - Ops and SQL: `ops/*`
-- Contract docs: `docs/CONTRACTS.md`, `docs/AUTOMATION_LIFECYCLE.md`, `docs/SLO.md`
+- Contract docs: `docs/archive/CONTRACTS.md` (superseded; see Technical PRD), `docs/archive/AUTOMATION_LIFECYCLE.md` (superseded; see Technical PRD), `docs/SLO.md`
 
 ## 2) Business Logic and Monetization Layer (PRD Section 2)
 
@@ -82,7 +92,7 @@ Evidence:
 - Supabase schema + RLS + RPC function: `supabase/migrations/20260715_000001_lautowork_control_core.sql`
 - JIT secret retrieval: `gateway/src/integrations/secrets-provider.ts`
 
-Schema/org-model update (2026-07-15, `docs/adr/0001-adopt-shared-platform-org-model.md`):
+Schema/org-model update (2026-07-15, `docs/archive/adr/0001-adopt-shared-platform-org-model.md`):
 
 - The control/ledger surface is now a single `lautowork` schema (`audit_runs`, `lifecycle_transitions`, `killswitch_events`), replacing the retired two-schema `linkautowork_audit` / `linkautowork_control` split.
 - Each control table is org-scoped via `org_id uuid references platform.organizations(id)` (replacing the old bare `tenant_id uuid`), with RLS that OR's the JWT tenant-claim fast-path against a real `platform.has_org_access()` membership check.
@@ -144,7 +154,7 @@ Evidence:
 
 - `automations/evals/*`
 - `automations/templates/manifest.json`
-- `docs/AUTOMATION_LIFECYCLE.md`
+- `docs/archive/AUTOMATION_LIFECYCLE.md` (superseded; see Technical PRD)
 
 ### 4.3 LiNKskills Promotion Path
 
@@ -275,7 +285,7 @@ Event contract:
 Evidence:
 
 - `gateway/src/services/event-bridge.ts`
-- `docs/CONTRACTS.md`
+- `docs/archive/CONTRACTS.md` (superseded; see Technical PRD)
 
 ## 9) Test and Quality Coverage Implemented
 
@@ -351,3 +361,37 @@ Validated during implementation:
 Result:
 
 - All checks above passed with current repository state.
+
+
+---
+
+## 13. Documentation cleanup — four new source-of-truth documents, legacy docs archived, this file renamed — 2026-07-19
+
+Following the same Principal-requested process already completed on sibling repo LiNKdeveloper (2026-07-18, their OPEN-ISSUES item #43), performed the documentation source-of-truth cleanup for LiNKautowork.
+
+**New source-of-truth documents created** (drafted against real code — compose pins, gateway routes, Supabase migrations, live `automations/templates/manifest.json` — not only the archived PRD/plain-English prose):
+
+- `docs/LINKAUTOWORK-INTENT.md` — why this Program exists, scope, out-of-scope, success criteria.
+- `docs/LINKAUTOWORK-TECHNICAL-PRD.md` — exhaustive technical reference (architecture, terminology, n8n+gateway, Supabase `lautowork` / `lautowork_n8n`, link-n8n fork subsection, rituals, kill-switch/lifecycle, dual NATS subjects, LiNKplatform org-model integration, directory map, deferred items, and a §12 table of factual discrepancies vs archived docs).
+- `docs/LINKAUTOWORK-OPERATIONS-MANUAL.md` — plain-English handbook for the Principal (non-technical audience), adapted from the archived plain-English doc and verified against current code.
+- This file — `docs/OPEN-ISSUES.md` — renamed via `git mv` from root `IMPLEMENTATION_AGAINST_PRD.md` so the running implementation/compliance log has an intuitive name matching LiNKdeveloper's convention (placed under `docs/` to match this repo's docs layout).
+
+**Legacy documentation archived to `docs/archive/`** (moved, not deleted; `docs/archive/README.md` explains the supersession and links back to the 4 new documents):
+
+- Root: `260319 - PRD_ LiNKautowork Automation Engine.md`, `HOW_THIS_PROJECT_WORKS_PLAIN_ENGLISH.md`, `GIT_STRATEGY.md` → `docs/archive/root-docs/`
+- `docs/UPSTREAM.md`, `docs/AUTOMATION_LIFECYCLE.md`, `docs/CONTRACTS.md`, `docs/DOCUMENTATION_GOVERNANCE.md`, `docs/RELEASE_GATE_CHECKLIST.md`, `docs/BRANCHING_AND_DEPLOYMENT_POLICY.md`
+- `docs/adr/0001-adopt-shared-platform-org-model.md` → `docs/archive/adr/` (code comments updated to the archived path; decisions remain implemented in migrations/gateway)
+
+Every in-repo cross-reference to these old paths (README, AGENTS.md, Deploy Readiness, compose comments, gateway comments, ops/sql archive README) was updated — verified zero dangling references remain outside deliberately frozen artifacts. Explicitly excluded from path rewrites (untouched): `archive/legacy-dev-mirrors-2026-07-15/**`, `link-n8n/**`, and `supabase/migrations/**` (migration SQL comments still cite the ADR path as historical authority text; migrations are not edited in doc cleanups).
+
+**Explicitly NOT archived:**
+
+- `docs/runbooks/*`, `docs/SLO.md`, `docs/DEPLOY_READINESS.md` — still used for real operations / DONE definition.
+- `archive/legacy-dev-mirrors-2026-07-15/**` — pre-existing bulk archive; left completely untouched.
+- `link-n8n/**` — nested separate git repo / submodule; documented inside the Technical PRD only; no file changes.
+
+**`README.md` rewritten** to point at the 4 new documents as source of truth and to correct stale "Root Documents" claims.
+
+**Verification performed after structural changes:** `npm run ci`, `ops/security/scan-secrets.sh`, `ops/validate-env-contract.sh`, `bash -n` on ops scripts, `docker compose … config` for dev/prod — pure documentation/file-organization pass; no `gateway/src` behavior changes beyond comment path updates.
+
+**What this deliberately does NOT do:** delete any archived document (moved only); touch `link-n8n/**` or `archive/legacy-dev-mirrors-2026-07-15/**`; invent a separate Intent/PRD/Ops-manual set for the n8n fork; edit archived document *content* beyond the archive index README.

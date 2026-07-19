@@ -39,4 +39,4 @@
 
 ## Release checklist
 
-Use `docs/RELEASE_GATE_CHECKLIST.md` during the first live bring-up.
+Use `docs/runbooks/PRODUCTION_RELEASE_GATES.md` and `docs/runbooks/OPERATIONS.md` during the first live bring-up. (The former short checklist lived at `docs/archive/RELEASE_GATE_CHECKLIST.md`.)

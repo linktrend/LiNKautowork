@@ -13,7 +13,7 @@ const envSchema = z.object({
   LINK_CONTROL_TOKEN: z.string().optional(),
   LINK_CONTROL_TOKEN_SECRET_NAME: z.string().default('LINKAUTOWORK_LINK_CONTROL_TOKEN'),
 
-  // NOTE (org model, docs/adr/0001): these hold the active organization
+  // NOTE (org model, docs/archive/adr/0001): these hold the active organization
   // identity (platform.organizations) — the value written to lautowork
   // control tables' org_id column. The env-var NAMES are deliberately kept as
   // `ACTIVE_TENANT_*` because they are part of the external deployment contract
