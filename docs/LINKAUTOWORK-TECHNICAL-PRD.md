@@ -20,7 +20,7 @@ LiNKautowork is **not** "n8n with some scripts." It is a small control plane aro
 | **Control ledger** | Supabase schema `lautowork` — `audit_runs`, `lifecycle_transitions`, `killswitch_events` + public RPCs |
 | **n8n data isolation** | Schema `lautowork_n8n` + role `svc_lautowork_n8n` (n8n owns tables on first boot) |
 | **Events** | NATS JetStream (`nats:2.10-alpine` in Compose); dual subjects `aios.*` + optional `linkautowork.v1.*` |
-| **Fork (non-runtime)** | Git submodule `link-n8n` → `github.com/linktrend/link-n8n` for upstream sync and future custom images — **not** what Compose runs today |
+| **n8n source of truth** | Upstream `https://github.com/n8n-io/n8n` releases / official Docker images — no LiNKtrend fork in this Program |
 
 ### Process topology (one environment)
 
@@ -59,7 +59,6 @@ Stage stack: `deploy/dev/docker-compose.yml`. Prod stack: `deploy/prod/docker-co
 | **Ritual windows** | Scheduled Taipei-time gates: 08:00 strategic, 10:45 operational, 14:45 quality |
 | **Primary event subjects** | `aios.*` NATS subjects for cross-Program interoperability |
 | **Mirror subjects** | `linkautowork.v1.*` optional duplicates when `ENABLE_INTERNAL_MIRROR_SUBJECTS=true` |
-| **link-n8n** | Separate-repo fork of upstream n8n; submodule pin; not the runtime image unless Compose is switched later |
 
 ---
 
@@ -144,26 +143,23 @@ Env separation is at **Supabase project** level (`linkplatform-stage` vs `linkpl
 
 ---
 
-## 5. The `link-n8n` fork relationship
+## 5. Upstream n8n (stock only — no LiNKtrend fork)
 
-**Documented here on purpose** — there is no separate Intent/PRD/Ops-manual for the fork (Principal decision 2026-07-19).
+**Principal decision 2026-07-23:** LiNKautowork does **not** maintain or require a custom fork of n8n (`linktrend/link-n8n` is unused and not part of this Program). Customizations live outside n8n core: `gateway/`, `automations/templates/`, Supabase `lautowork*`, GSM, NATS, and platform contracts.
 
 | Surface | Location |
 |---|---|
 | Gateway, templates, deploy, ops, control migrations | **This repo** (`LiNKautowork`) |
-| n8n engine fork (customize / upstream sync) | Separate repo `https://github.com/linktrend/link-n8n` |
-| How this repo references the fork | Git submodule `link-n8n/` (`.gitmodules`, branch `development`) |
-| What Compose runs today | Stock `docker.n8n.io/n8nio/n8n:2.30.0` matching the fork sync point |
+| n8n engine source of truth for upgrades | Upstream `https://github.com/n8n-io/n8n` releases |
+| What Compose runs | Official image `docker.n8n.io/n8nio/n8n:2.30.0` (pinned; never `:latest`) |
+| Full upstream tree vendored in this repo | **No** — not needed for MVO; do not add an `n8n-io/n8n` submodule without a concrete build-from-source reason |
 
 **Rules:**
 
-1. Never push to `n8n-io/n8n` or any upstream remote you do not own.
-2. Sync upstream **inside** the `link-n8n` repo on its `development` branch.
-3. After syncing the fork, bump the Compose pin (or switch to a private registry image built from the fork) in **this** repo in the same change.
-4. Canonical workflow templates stay in `automations/templates/` — never inside `link-n8n`.
-5. Do not modify `link-n8n/**` as part of LiNKautowork documentation or MVO feature work unless the task is explicitly a fork change.
-
-**Why stock image for MVO:** do not run an unpublished fork image until the fork has required customizations. Pin a version (never `:latest`).
+1. Bump the Compose image pin when upgrading n8n (document why in the same change). Prefer official published tags.
+2. Canonical workflow templates stay in `automations/templates/` — never inside an n8n source tree.
+3. Patching n8n core itself is a **new Principal decision**, not the current architecture.
+4. The remote GitHub repo `linktrend/link-n8n` (if still present) is orphan/unused for this Program and may be archived later by the Principal — LiNKautowork no longer references it.
 
 ---
 
@@ -286,7 +282,6 @@ Baseline under `automations/evals/` (dirty-data scenarios, known-failure replays
 | `ops/security/` | Secret scan + Tailscale firewall installers |
 | `ops/alerts/prometheus-rules.yml` | Baseline alert rules for SLO metrics |
 | `scripts/validate-templates.mjs` | Template shape + canonical tenant validation |
-| `link-n8n/` | Submodule — n8n fork (do not treat as this repo's source tree) |
 | `docs/runbooks/` | Operator runbooks (keep live) |
 | `docs/archive/` | Superseded documentation |
 | `archive/legacy-dev-mirrors-2026-07-15/` | Pre-existing large archive — **out of scope / do not touch** |
@@ -304,7 +299,7 @@ Factual discrepancies between older (now archived) docs and current code:
 | Two control schemas `linkautowork_audit` / `linkautowork_control` | Single `lautowork` schema |
 | `lautowork_n8n_dev` / `_prod` schema suffixes | Single `lautowork_n8n` per Supabase project |
 | Kill-switch / lifecycle only in memory | Persisted + hydrate (2026-07-18 migration + gateway) |
-| Compose builds/runs custom `link-n8n` image | Stock `n8nio/n8n:2.30.0`; submodule for future |
+| Compose builds/runs custom `link-n8n` image / keeps fork submodule | Stock `n8nio/n8n:2.30.0` only; fork submodule **removed** 2026-07-23 |
 | `security-exception-response.json` as live evidence | File lives under **archived** templates, not the live manifest set |
 | `IMPLEMENTATION_AGAINST_PRD` "gateway not deployed / tables have no writers" (early ADR finding) | Superseded: persistence writers exist; deploy readiness marks schemas applied — historical Finding text in archived ADR is a snapshot, not current ops state |
 | Slack `/v1/slack/actions` fully equivalent to `/v1/lifecycle/transition` | Slack path validates + publishes event; does **not** call `writeLifecycleTransition` |
@@ -324,8 +319,8 @@ Cross-checked against `docs/DEPLOY_READINESS.md` and archived PRD roadmap:
 4. **Per-template research dossiers** (PRD "Research Doc" anatomy) — not fully authored per template.
 5. **RPC/env renames** — wire `tenant_id` / `ACTIVE_TENANT_*` → `org_*` (needs coordinated cross-service change).
 6. **`lautowork.managed_automations` registry** — future parent table for workflow ids (ADR open question).
-7. **Compose switch to fork-built image** — only when fork customizations exist.
-8. **Slack lifecycle path persistence** — align Slack handler with control-token route DB write.
+7. **Slack lifecycle path persistence** — align Slack handler with control-token route DB write.
+8. ~~**Compose switch to fork-built image**~~ — **retired 2026-07-23**; Program uses stock upstream images only. Revisit only under a new Principal decision to patch n8n core.
 
 ### Ops inputs (not software holes — from Deploy Readiness)
 
