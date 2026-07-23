@@ -1,6 +1,8 @@
 # ADR 0001 — Adopt the Shared `platform` Org Model and Confirm `lautowork_` Schema Isolation
 
-- **Status:** Accepted — migration promoted from `DRAFT_` to a real dated file, `link-n8n` converted to a git submodule (both executed 2026-07-15, see Update below)
+> **Supersession note (2026-07-23):** The `link-n8n` submodule conversion recorded in this ADR is **retired**. LiNKautowork no longer vendors or depends on `linktrend/link-n8n`; runtime is stock upstream `n8nio/n8n` only (see live Technical PRD §5). Org-model / `lautowork` schema decisions in this ADR remain in force. Historical Finding/Decision text below is left as written.
+
+- **Status:** Accepted — migration promoted from `DRAFT_` to a real dated file, `link-n8n` converted to a git submodule (both executed 2026-07-15, see Update below). **Partial supersession 2026-07-23:** submodule/fork path removed from the live Program.
 - **Date:** 2026-07-15
 - **Decided by:** LiNKplatform build sequence step 5 (`LiNKplatform/docs/specs/shared-foundation-spec.md` §10), executed as a LiNKautowork-side retrofit, mirroring the LiNKsites-side retrofit in `LiNKsites/docs/adr/0003-retire-mirror-pattern-and-adopt-shared-platform-org-model.md`
 - **Context source:** `LiNKplatform/docs/specs/shared-foundation-spec.md` (§1–4, §10), `LiNKplatform/supabase/migrations/20260714_000001_platform_foundation.sql` (the shared foundation this retrofit depends on), this repo's `ops/sql/001_mvo_schema.sql` (current control/audit schema), `README.md` §"Supabase Schema Standard", `HOW_THIS_PROJECT_WORKS_PLAIN_ENGLISH.md`, `260319 - PRD_ LiNKautowork Automation Engine.md` §2.3, `docs/runbooks/WAVE4_AUTOMATION_PROOF.md`, `docs/UPSTREAM.md`, `docs/DOCUMENTATION_GOVERNANCE.md`

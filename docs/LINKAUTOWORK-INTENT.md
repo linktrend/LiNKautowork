@@ -75,10 +75,9 @@ For the current Minimum Viable Operations (MVO) bar, "done" means:
 | Public automation marketplace / client self-service provisioning | PRD Gate 2 — deferred |
 | Autonomous bot-driven JSON self-editing of production workflows | PRD Gate 1 / Karpathy loop as live autonomy — deferred; eval assets exist as baseline |
 | Full commercial multi-tenant client isolation beyond internal org | MVO enforces one canonical internal org UUID; broader SaaS tenancy not claimed complete |
-| Running a custom-built `link-n8n` image in Compose today | Stock `n8nio/n8n:2.30.0` is pinned; fork is submodule for sync + future custom images |
+| Maintaining a LiNKtrend fork of n8n (`linktrend/link-n8n`) | Principal decision 2026-07-23: not needed — stock upstream image only; remote fork may be archived later |
 | Owning LiNKbrain memory / LiNKskills RPE product logic | Bridge and events only; those Programs own their domains |
 | LiNKaios / shelved Program invoke shells | Removed from live template set (archived 2026-07-18) |
-| Separate Intent/PRD/Ops-manual set for `link-n8n` | Principal decision: document the fork **inside** LiNKautowork docs only |
 
 ---
 
@@ -123,4 +122,4 @@ For the current Minimum Viable Operations (MVO) bar, "done" means:
 
 ## 8. One-sentence Intent
 
-**LiNKautowork is LiNKtrend's self-hosted automation engine: a pinned n8n Community runtime behind a signed policy gateway, with canonical governance templates, persisted kill-switch/lifecycle controls, shared-platform org identity, and dual `aios.*` / `linkautowork.v1.*` events — so studio rituals and emergency brakes run safely without putting secrets or ungoverned webhooks in the critical path.**
+**LiNKautowork is LiNKtrend's self-hosted automation engine: a pinned stock upstream n8n Community runtime behind a signed policy gateway, with canonical governance templates, persisted kill-switch/lifecycle controls, shared-platform org identity, and dual `aios.*` / `linkautowork.v1.*` events — so studio rituals and emergency brakes run safely without putting secrets or ungoverned webhooks in the critical path.**

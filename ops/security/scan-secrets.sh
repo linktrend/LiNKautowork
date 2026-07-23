@@ -24,7 +24,7 @@ FIXTURE_EXCLUDES=(
 )
 
 tracked_file_list="$(mktemp)"
-git ls-files ':(exclude)link-n8n/**' "${FIXTURE_EXCLUDES[@]}" >"$tracked_file_list" 2>/dev/null || true
+git ls-files "${FIXTURE_EXCLUDES[@]}" >"$tracked_file_list" 2>/dev/null || true
 if [[ ! -s "$tracked_file_list" ]]; then
   echo 'No tracked files found to scan.'
   rm -f "$tracked_file_list"

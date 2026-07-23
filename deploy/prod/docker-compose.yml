@@ -39,10 +39,9 @@ services:
       - "8080:8080"
 
   n8n:
-    # Pinned stock n8n matching link-n8n fork sync point (2.30.x).
-    # Runtime uses upstream image for MVO; link-n8n remains the separate-repo
-    # customization path — switch Compose to a registry image built from that
-    # fork when fork-specific changes are required. Never use :latest in prod.
+    # Pinned official upstream n8n image (never :latest).
+    # Source of truth for upgrades: https://github.com/n8n-io/n8n releases.
+    # LiNKautowork does not use a LiNKtrend n8n fork (decision 2026-07-23).
     image: docker.n8n.io/n8nio/n8n:2.30.0
     env_file:
       - .env

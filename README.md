@@ -7,7 +7,7 @@ LiNKautowork is LiNKtrend's self-hosted automation engine: a pinned n8n Communit
 These four documents are the current, authoritative description of this Program. If anything elsewhere in this repo (including older docs under `docs/archive/`) disagrees with them, **these four win**:
 
 - **[`docs/LINKAUTOWORK-INTENT.md`](docs/LINKAUTOWORK-INTENT.md)** — why LiNKautowork exists, who it's for, scope, and what "done" means.
-- **[`docs/LINKAUTOWORK-TECHNICAL-PRD.md`](docs/LINKAUTOWORK-TECHNICAL-PRD.md)** — the exhaustive technical reference: architecture, gateway + n8n, Supabase schemas, link-n8n fork relationship, rituals, kill-switch/lifecycle, events, platform integration, and deferred items.
+- **[`docs/LINKAUTOWORK-TECHNICAL-PRD.md`](docs/LINKAUTOWORK-TECHNICAL-PRD.md)** — the exhaustive technical reference: architecture, gateway + stock upstream n8n, Supabase schemas, rituals, kill-switch/lifecycle, events, platform integration, and deferred items.
 - **[`docs/LINKAUTOWORK-OPERATIONS-MANUAL.md`](docs/LINKAUTOWORK-OPERATIONS-MANUAL.md)** — a plain-English handbook for the Principal.
 - **[`docs/OPEN-ISSUES.md`](docs/OPEN-ISSUES.md)** — append-only engineering build / compliance log (what was built, deferred, and limited).
 
@@ -19,7 +19,6 @@ These four documents are the current, authoritative description of this Program.
 - `deploy/dev` / `deploy/prod` — Compose stacks (NATS + gateway + pinned stock n8n `2.30.0`)
 - `supabase/migrations/` — `lautowork` control schema + `lautowork_n8n` isolation + persistence RPCs
 - `ops/` — import/export/backup/GSM/deploy scripts
-- `link-n8n/` — git submodule → `github.com/linktrend/link-n8n` (fork for upstream sync / future custom images; Compose does **not** run it today)
 - `docs/runbooks/` — operator procedures still used for real bring-up
 - `docs/archive/` — superseded documentation (see `docs/archive/README.md`)
 - `archive/legacy-dev-mirrors-2026-07-15/` — pre-existing bulk archive (untouched by doc cleanups)
