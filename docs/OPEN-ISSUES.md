@@ -395,3 +395,26 @@ Every in-repo cross-reference to these old paths (README, AGENTS.md, Deploy Read
 **Verification performed after structural changes:** `npm run ci`, `ops/security/scan-secrets.sh`, `ops/validate-env-contract.sh`, `bash -n` on ops scripts, `docker compose … config` for dev/prod — pure documentation/file-organization pass; no `gateway/src` behavior changes beyond comment path updates.
 
 **What this deliberately does NOT do:** delete any archived document (moved only); touch `link-n8n/**` or `archive/legacy-dev-mirrors-2026-07-15/**`; invent a separate Intent/PRD/Ops-manual set for the n8n fork; edit archived document *content* beyond the archive index README.
+
+---
+
+## 14. Drop `linktrend/link-n8n` fork / submodule — stock upstream n8n only — 2026-07-23
+
+**Principal decision:** LiNKautowork does not need a custom fork of n8n. Compose already ran stock `docker.n8n.io/n8nio/n8n:2.30.0`; customizations live in `gateway/`, templates, Supabase, GSM, NATS — not in n8n core.
+
+**Removed:**
+
+- Git submodule `link-n8n` (`.gitmodules` entry pointing at `https://github.com/linktrend/link-n8n.git`)
+- Working-tree `link-n8n/` directory and `.git/modules/link-n8n`
+- Live docs claiming a required LiNKtrend n8n fork / submodule
+
+**Documented:**
+
+- Technical PRD §5 rewritten to “stock upstream n8n only”
+- Intent / Ops Manual / Deploy Readiness / README updated
+- `docs/archive/UPSTREAM.md` marked retired; archived ADR 0001 carries a supersession note for the submodule conversion
+- Remote GitHub `linktrend/link-n8n` **not** deleted — unused/orphan; Principal may archive later
+
+**Unchanged:** gateway behavior, live templates, Compose image pin `2.30.0`, Supabase migrations, secrets.
+
+**Verify:** `git submodule status` empty of `link-n8n`; `npm run ci` green; no live docs require the fork.

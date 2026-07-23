@@ -11,7 +11,7 @@
 | Isolation schema `lautowork_n8n` + role on stage/prod | Applied (this close-out) |
 | Compose `DB_POSTGRESDB_SCHEMA=lautowork_n8n` | Fixed (retired `_prod` suffix removed) |
 | Pinned n8n image `2.30.0` (not `:latest`) | Done |
-| Separate-repo fork model (`link-n8n` submodule) | Documented; stock image for MVO |
+| Stock upstream n8n only (no `link-n8n` fork/submodule) | Done (2026-07-23) |
 | Kill-switch + lifecycle persisted to DB + hydrate on boot | Done (8A) |
 | LiNKaios / dead Program shells removed from live set | Archived |
 | Secrets contract = GSM `*_SECRET_NAME` only in `.env.example` | Cleaned |

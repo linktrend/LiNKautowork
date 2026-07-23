@@ -1,4 +1,0 @@
-[submodule "link-n8n"]
-	path = link-n8n
-	url = https://github.com/linktrend/link-n8n.git
-	branch = development

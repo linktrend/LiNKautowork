@@ -74,4 +74,4 @@ Configure in GitHub repository settings:
 - LiNKdev SPEC §8: `LiNKdev/factory/SPEC.md`
 - Factory git rule: `LiNKdev/factory/rules/01-git-branching.mdc`
 - Host git rule: `.cursor/rules/01-git-branching.mdc`
-- Nested n8n fork upstream: `docs/UPSTREAM.md`
+- Nested n8n upstream: retired fork policy in `docs/archive/UPSTREAM.md`; live policy in Technical PRD §5 (stock `n8n-io/n8n` only).

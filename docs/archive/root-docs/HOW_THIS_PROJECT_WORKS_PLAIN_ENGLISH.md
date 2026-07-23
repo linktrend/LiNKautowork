@@ -29,7 +29,7 @@ Wrong tenant UUID → rejected.
 3. **n8n runtime** (`deploy/dev` and `deploy/prod`) — executes workflows; DB schema `lautowork_n8n` on `linkplatform-stage` / `linkplatform-prod`.
 4. **Control data** — Supabase schema `lautowork` (`audit_runs`, `lifecycle_transitions`, `killswitch_events`).
 
-The n8n **fork** lives in a separate repo (`link-n8n`). This repo pins a stock n8n image for MVO and keeps the submodule for when customizations are needed (see `docs/UPSTREAM.md`).
+The n8n engine is **stock upstream** (Compose pins the official Docker image). LiNKautowork customizations live in this repo's gateway, templates, and ops — not in a forked n8n core. See live `docs/LINKAUTOWORK-TECHNICAL-PRD.md` §5 (this archived plain-English doc previously referred to a `link-n8n` submodule that has been removed).
 
 ## 5) Request flow
 
