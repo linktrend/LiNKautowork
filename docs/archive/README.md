@@ -16,7 +16,7 @@ Everything under `docs/archive/` is retained for history but is **no longer auth
 ## What's here
 
 - `root-docs/` — original root PRD, plain-English explainer, and short git-strategy note.
-- `UPSTREAM.md` — former standalone fork policy (now §5 of the Technical PRD).
+- `UPSTREAM.md` — **retired** former fork policy (stock upstream n8n only as of 2026-07-23; see Technical PRD §5).
 - `AUTOMATION_LIFECYCLE.md` / `CONTRACTS.md` — former contract snippets (now Technical PRD §§7–10).
 - `DOCUMENTATION_GOVERNANCE.md` — former docs process (superseded by this archive convention + the four SoT documents).
 - `RELEASE_GATE_CHECKLIST.md` — former first-bring-up checklist (content retained in runbooks + Deploy Readiness).

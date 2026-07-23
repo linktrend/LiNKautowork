@@ -111,7 +111,7 @@ Framed as **where we are**, not as a defect list:
 | Public marketplace / selling automations as a product | **Not built** (deliberately later) |
 | Bots that rewrite production workflows by themselves | **Not built** as a live feature (research/eval assets exist as a baseline) |
 | Many external client tenants | **Not claimed** — MVO runs the one internal studio identity |
-| Custom n8n fork image in production | **Not used yet** — production runs a pinned stock n8n; the fork is kept ready for when custom changes are needed |
+| Custom n8n fork image / LiNKtrend n8n fork | **Not used** — production runs pinned stock upstream n8n only (Principal decision 2026-07-23) |
 
 ---
 
