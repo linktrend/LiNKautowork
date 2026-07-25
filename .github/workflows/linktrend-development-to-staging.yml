@@ -1,8 +1,9 @@
-name: LiNKtrend Monday Development To Staging
+name: LiNKtrend Development To Staging
 
+# Tue & Fri 08:00 Asia/Taipei = 00:00 UTC (Taiwan has no DST)
 on:
   schedule:
-    - cron: "0 1 * * 1"
+    - cron: "0 0 * * 2,5"
   workflow_dispatch:
 
 permissions:
