@@ -1,0 +1,33 @@
+{
+  "schema_version": "0.1",
+  "automation_id": "golden-example-validation",
+  "automation_version": "0.1.0",
+  "required_runtime": { "engine": "n8n", "n8n_version": "2.30.0" },
+  "sources": [
+    {
+      "source_id": "linkautowork-gap-v01",
+      "kind": "internal",
+      "locator": "https://github.com/linktrend/LiNKautowork",
+      "revision": "a368a45e164eda92eddf1eccad62e58a7c349399",
+      "content_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "license": "LicenseRef-LiNKtrend-Internal",
+      "commercial_use": "not_applicable",
+      "adaptation_status": "reference_only"
+    }
+  ],
+  "source_to_target_map": [
+    {
+      "source_id": "linkautowork-gap-v01",
+      "source_content_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "source_component_ref": "golden-package-contract",
+      "target_component_ref": "automation.json",
+      "action": "reference_only",
+      "reason": "The internal package contract defines this inactive structural example."
+    }
+  ],
+  "review": {
+    "status": "not_applicable",
+    "reviewer_role": "LiNKautowork product contract",
+    "conclusion": "This package is an internal format example and does not incorporate a third-party automation source."
+  }
+}

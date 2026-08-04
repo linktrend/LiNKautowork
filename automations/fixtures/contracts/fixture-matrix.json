@@ -1,0 +1,15 @@
+{
+  "schema_version": "0.1",
+  "base_valid_fixture": "package-valid.json",
+  "fixtures": [
+    { "path": "package-valid.json", "document": "automation-package", "expected": "accept" },
+    { "path": "package-invalid-id.json", "document": "automation-package", "expected": "reject", "rule": "automation_id" },
+    { "path": "package-invalid-semver.json", "document": "automation-package", "expected": "reject", "rule": "release.version" },
+    { "path": "package-invalid-lifecycle.json", "document": "automation-package", "expected": "reject", "rule": "release.lifecycle" },
+    { "path": "package-invalid-engine.json", "document": "automation-package", "expected": "reject", "rule": "runtime.engine" },
+    { "path": "package-missing-monitoring.json", "document": "automation-package", "expected": "reject", "rule": "operations.monitoring_ref" },
+    { "path": "package-missing-evaluation.json", "document": "automation-package", "expected": "reject", "rule": "evaluation" },
+    { "path": "package-embedded-secret-shaped.json", "document": "automation-package", "expected": "reject", "rule": "no_raw_secret_or_credential_content" },
+    { "path": "provenance-unresolved.json", "document": "provenance-sources", "expected": "reject", "rule": "resolved_provenance_and_commercial_use_clearance" }
+  ]
+}

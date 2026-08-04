@@ -1,0 +1,221 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.dev/schemas/linkautowork/automation-package-v0.1.schema.json",
+  "title": "LiNKautowork Golden Automation Package v0.1",
+  "description": "Source-controlled definition of one immutable n8n automation release. Secret values are forbidden; only named secret references may be declared.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "automation_id",
+    "display_name",
+    "summary",
+    "ownership",
+    "release",
+    "runtime",
+    "contracts",
+    "secrets",
+    "execution_policy",
+    "telemetry",
+    "evaluation",
+    "operations",
+    "provenance",
+    "source_authority"
+  ],
+  "properties": {
+    "schema_version": { "const": "0.1" },
+    "automation_id": { "$ref": "#/$defs/automationId" },
+    "display_name": { "type": "string", "minLength": 3, "maxLength": 160 },
+    "summary": { "type": "string", "minLength": 20, "maxLength": 1200 },
+    "ownership": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["owner_kind", "owning_program", "classification", "binding_operations"],
+      "properties": {
+        "owner_kind": { "enum": ["internal_system", "commercial_product", "shared_internal"] },
+        "owning_program": { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,63}$" },
+        "classification": { "enum": ["internal_only", "commercial_capable"] },
+        "product_offering_key": { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,63}$" },
+        "binding_operations": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9._-]{2,127}$" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "channel", "lifecycle", "identity"],
+      "properties": {
+        "version": { "$ref": "#/$defs/semver" },
+        "channel": { "enum": ["development", "canary", "stable"] },
+        "lifecycle": { "enum": ["draft", "eval_pending", "certified", "deprecated", "retired"] },
+        "supersedes": { "$ref": "#/$defs/releaseReference" },
+        "replacement": { "$ref": "#/$defs/releaseReference" },
+        "identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["package_digest", "workflow_digest", "source_git_sha", "n8n_version"],
+          "properties": {
+            "package_digest": { "$ref": "#/$defs/digest" },
+            "workflow_digest": { "$ref": "#/$defs/digest" },
+            "source_git_sha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+            "n8n_version": { "$ref": "#/$defs/semver" }
+          }
+        }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["engine", "workflow_ref", "trigger_mode", "result_mode"],
+      "properties": {
+        "engine": { "const": "n8n", "description": "n8n is the only executable engine in GAP v0.1." },
+        "workflow_ref": { "$ref": "#/$defs/safePath" },
+        "trigger_mode": { "enum": ["webhook", "schedule", "event", "manual", "hybrid"] },
+        "result_mode": { "enum": ["synchronous_response", "callback", "event", "none"] },
+        "approved_node_policy": { "type": "string", "minLength": 1 }
+      }
+    },
+    "contracts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input_schema_ref", "output_schema_ref", "configuration_schema_ref", "invocation_contract_version"],
+      "properties": {
+        "input_schema_ref": { "$ref": "#/$defs/safePath" },
+        "output_schema_ref": { "$ref": "#/$defs/safePath" },
+        "configuration_schema_ref": { "$ref": "#/$defs/safePath" },
+        "invocation_contract_version": { "type": "string", "pattern": "^v[0-9]+(?:\\.[0-9]+)?$" }
+      }
+    },
+    "secrets": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/secretReference" },
+      "uniqueItems": true,
+      "description": "Declarations only. A secret reference is a GSM resource name/alias, never a secret value."
+    },
+    "execution_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["criticality", "side_effects", "approval", "retry", "idempotency", "kill_switch_scope"],
+      "properties": {
+        "criticality": { "enum": ["low", "standard", "high", "critical"] },
+        "side_effects": {
+          "type": "array",
+          "items": { "enum": ["none", "read_external", "write_external", "send_message", "create_record", "update_record", "delete_record", "financial_action"] },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "approval": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mode"],
+          "properties": {
+            "mode": { "enum": ["none", "automation_specific", "operator_required"] },
+            "evidence_required": { "type": "boolean", "default": true }
+          }
+        },
+        "retry": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["max_attempts", "backoff"],
+          "properties": {
+            "max_attempts": { "type": "integer", "minimum": 0, "maximum": 10 },
+            "backoff": { "enum": ["none", "fixed", "exponential"] },
+            "max_delay_seconds": { "type": "integer", "minimum": 0, "maximum": 86400 }
+          }
+        },
+        "idempotency": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["required", "key_location"],
+          "properties": {
+            "required": { "type": "boolean" },
+            "key_location": { "enum": ["request", "derived", "not_applicable"] },
+            "retention_hours": { "type": "integer", "minimum": 1, "maximum": 8760 }
+          }
+        },
+        "kill_switch_scope": { "enum": ["instance", "definition", "global"] }
+      }
+    },
+    "telemetry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["classification", "redaction_rules", "retention_days", "required_fields"],
+      "properties": {
+        "classification": { "enum": ["internal", "restricted", "sensitive"] },
+        "redaction_rules": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 3 } },
+        "retention_days": { "type": "integer", "minimum": 1, "maximum": 3650 },
+        "required_fields": {
+          "type": "array",
+          "minItems": 4,
+          "items": { "enum": ["org_id", "instance_id", "release_id", "execution_id", "status", "latency_ms", "retry_count", "failure_class", "cost_estimate"] },
+          "uniqueItems": true
+        }
+      }
+    },
+    "evaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["suite_ref", "required_for_certification"],
+      "properties": {
+        "suite_ref": { "$ref": "#/$defs/safePath" },
+        "required_for_certification": { "const": true },
+        "regression_baseline_ref": { "$ref": "#/$defs/safePath" }
+      }
+    },
+    "operations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["monitoring_ref", "maintenance_ref", "deployment_ref", "runbook_ref"],
+      "properties": {
+        "monitoring_ref": { "$ref": "#/$defs/safePath" },
+        "maintenance_ref": { "$ref": "#/$defs/safePath" },
+        "deployment_ref": { "$ref": "#/$defs/safePath" },
+        "runbook_ref": { "$ref": "#/$defs/safePath" }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sources_ref", "commercial_use_clearance"],
+      "properties": {
+        "sources_ref": { "$ref": "#/$defs/safePath" },
+        "commercial_use_clearance": { "enum": ["not_applicable", "cleared"] }
+      }
+    },
+    "source_authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "cutover_state"],
+      "properties": {
+        "kind": { "const": "golden_automation_package" },
+        "cutover_state": { "enum": ["package_authoritative", "compatibility_conversion"] }
+      }
+    }
+  },
+  "$defs": {
+    "automationId": { "type": "string", "pattern": "^[a-z][a-z0-9-]{2,62}$" },
+    "semver": { "type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$" },
+    "digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "safePath": { "type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9][A-Za-z0-9._/-]*$" },
+    "releaseReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["automation_id", "version"],
+      "properties": { "automation_id": { "$ref": "#/$defs/automationId" }, "version": { "$ref": "#/$defs/semver" } }
+    },
+    "secretReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["secret_ref", "purpose", "required"],
+      "properties": {
+        "secret_ref": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{2,127}$" },
+        "purpose": { "type": "string", "minLength": 3, "maxLength": 240 },
+        "required": { "type": "boolean" }
+      }
+    }
+  }
+}

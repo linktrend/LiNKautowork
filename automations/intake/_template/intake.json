@@ -1,0 +1,20 @@
+{
+  "schema_version": "0.1",
+  "intake_id": "example-intake-source",
+  "source_kind": "documented_flow",
+  "source_locator": "https://example.invalid/source-reference",
+  "source_revision": "external-reference-only",
+  "source_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "status": "submitted",
+  "secret_scan_status": "pending",
+  "provenance_ref": "provenance/sources.json",
+  "target_intent": "Describe the intended automation outcome without copying source content, credentials, or customer data.",
+  "source_to_target_map": [
+    {
+      "source_component_ref": "source-step-reference",
+      "target_component_ref": "workflow.json#candidate-step",
+      "action": "reimplemented",
+      "reason": "The source behaviour will be reimplemented using governed n8n nodes and GSM references."
+    }
+  ]
+}

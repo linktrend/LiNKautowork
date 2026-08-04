@@ -1,0 +1,10 @@
+{
+  "name": "@linktrend/automation-contracts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run --config vitest.config.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "verify:db": "bash disposable-db/run.sh"
+  }
+}

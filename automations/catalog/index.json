@@ -1,0 +1,7 @@
+{
+  "schema_version": "0.1",
+  "catalogue_kind": "operator_metadata_index",
+  "source_packages_root": "automations/catalog",
+  "release_count": 0,
+  "releases": []
+}

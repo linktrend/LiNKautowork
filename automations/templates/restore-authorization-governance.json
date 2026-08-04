@@ -1,13 +1,10 @@
 {
-  "name": "AIOS Restore Authorization Governance",
+  "name": "LiNKautowork Restore Authorization Governance",
   "nodes": [
     {
-      "name": "Restore Request Trigger",
-      "type": "n8n-nodes-base.webhook",
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "aios/archive/restore-request"
-      }
+      "name": "Governed Restore Dispatch",
+      "type": "n8n-nodes-base.manualTrigger",
+      "parameters": {}
     },
     {
       "name": "Validate Restore Governance Payload",
@@ -66,7 +63,7 @@
     }
   ],
   "connections": {
-    "Restore Request Trigger": {
+    "Governed Restore Dispatch": {
       "main": [
         [
           {

@@ -1,0 +1,6 @@
+{
+  "name": "@linktrend/product-api",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "vitest run --config vitest.config.ts", "typecheck": "tsc -p tsconfig.production.json --noEmit", "build:production": "tsc -p tsconfig.production.json --outDir dist" }
+}

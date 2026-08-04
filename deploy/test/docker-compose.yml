@@ -1,0 +1,17 @@
+services:
+  fake-upstream:
+    image: node:22.13.1-alpine
+    command: ["node", "/fixtures/fake-upstream.mjs"]
+    volumes:
+      - ./fixtures:/fixtures:ro
+    read_only: true
+    tmpfs: ["/tmp"]
+  n8n-eval:
+    image: n8nio/n8n:2.30.0
+    environment:
+      N8N_ENCRYPTION_KEY: test-only-not-a-production-secret
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_PERSONALIZATION_ENABLED: "false"
+    read_only: true
+    tmpfs: ["/home/node/.n8n", "/tmp"]
+    depends_on: [fake-upstream]

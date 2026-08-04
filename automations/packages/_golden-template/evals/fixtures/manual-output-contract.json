@@ -1,0 +1,7 @@
+{
+  "input": {},
+  "expected_output": {
+    "status": "ok",
+    "automation_id": "golden-example-validation"
+  }
+}

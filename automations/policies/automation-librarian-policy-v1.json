@@ -1,0 +1,10 @@
+{
+  "policy_id": "automation-librarian-policy-v1",
+  "domain": "automation",
+  "inputs": "immutable evidence references and approved de-identified aggregates only",
+  "evidence_verification": "resolve every reference from the durable registry, recompute SHA-256, count distinct hashes, authenticate aggregate approval issuer, and verify the complete WP-06 HMAC envelope through its governed key ID and GSM reference",
+  "minimum_evidence": { "repeated_deterministic_failure": 2, "slo_regression": 2, "incident_closure": 1, "dependency_deprecation": 1, "operator_feedback": 1, "scheduled_review": 1 },
+  "prohibitions": ["credentials", "raw_client_payloads", "cross_org_raw_evidence", "publish", "promote", "deploy"],
+  "redaction": "references_only",
+  "review": "signed institutional JWT subject and role identify distinct proposer/reviewer principals; proposer cannot certify, publish, promote, or deploy"
+}

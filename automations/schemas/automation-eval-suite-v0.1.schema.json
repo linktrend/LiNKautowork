@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.dev/schemas/linkautowork/automation-eval-suite-v0.1.schema.json",
+  "title": "LiNKautowork Automation Evaluation Suite v0.1",
+  "description": "Executable-test definition for an exact automation release. Fixture and receipt references contain redacted test data only.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "suite_id", "automation_id", "automation_version", "required_runtime", "pass_threshold", "cases", "evidence_policy"],
+  "properties": {
+    "schema_version": { "const": "0.1" },
+    "suite_id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{2,62}$" },
+    "automation_id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{2,62}$" },
+    "automation_version": { "type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$" },
+    "required_runtime": {
+      "type": "object", "additionalProperties": false,
+      "required": ["engine", "n8n_version"],
+      "properties": {
+        "engine": { "const": "n8n" },
+        "n8n_version": { "type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$" }
+      }
+    },
+    "pass_threshold": { "type": "number", "minimum": 0, "maximum": 1 },
+    "cases": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["case_id", "case_type", "fixture_ref", "expected", "side_effect_mode"],
+        "properties": {
+          "case_id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{2,62}$" },
+          "case_type": { "enum": ["happy_path", "validation", "idempotency", "upstream_failure", "secret_configuration_failure", "authorization", "side_effect_safety", "schedule", "regression", "compatibility", "privacy"] },
+          "fixture_ref": { "type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9][A-Za-z0-9._/-]*$" },
+          "expected": {
+            "type": "object", "additionalProperties": false,
+            "required": ["outcome", "assertions"],
+            "properties": {
+              "outcome": { "enum": ["success", "controlled_failure", "no_side_effect"] },
+              "assertions": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 3 } },
+              "receipt_fields": { "type": "array", "items": { "enum": ["release_id", "instance_id", "execution_id", "status", "latency_ms", "failure_class"] }, "uniqueItems": true }
+            }
+          },
+          "side_effect_mode": { "enum": ["none", "mocked", "prohibited"] }
+        }
+      }
+    },
+    "evidence_policy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["retain", "redact", "independent_verdict_required"],
+      "properties": {
+        "retain": { "type": "array", "minItems": 1, "items": { "enum": ["case_result", "assertion_result", "release_hash", "runtime_version", "receipt_hash"] }, "uniqueItems": true },
+        "redact": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 3 } },
+        "independent_verdict_required": { "const": true }
+      }
+    },
+    "regression_baseline_ref": { "type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9][A-Za-z0-9._/-]*$" }
+  }
+}
