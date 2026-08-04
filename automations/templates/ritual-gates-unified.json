@@ -1,5 +1,5 @@
 {
-  "name": "AIOS Ritual Gates Unified Scheduler",
+  "name": "LiNKautowork Ritual Gates Unified Scheduler",
   "nodes": [
     {
       "name": "Ritual Schedule Trigger",
@@ -32,14 +32,6 @@
       "type": "n8n-nodes-base.function",
       "parameters": {
         "functionCode": "const now = new Date();\nconst hour = now.getHours();\nconst minute = now.getMinutes();\nlet gateWindow = 'strategic';\nif (hour === 10 && minute === 45) gateWindow = 'operational';\nif (hour === 14 && minute === 45) gateWindow = 'quality';\nconst missionId = `ritual-${gateWindow}-${now.toISOString().slice(0,10)}`;\nreturn [{\n  json: {\n    eventType: `ritual.${gateWindow}`,\n    gateWindow,\n    mission: {\n      tenantId: '00000000-0000-0000-0000-000000000001',\n      missionId,\n      runId: `${missionId}-run`,\n      taskId: `${missionId}-task`,\n      dprId: `${missionId}-dpr`,\n      triggerSource: 'n8n.scheduler'\n    },\n    generatedAt: now.toISOString()\n  }\n}];"
-      }
-    },
-    {
-      "name": "Fetch Gate Data",
-      "type": "n8n-nodes-base.httpRequest",
-      "parameters": {
-        "url": "={{$env.AIOS_GATE_REPORT_URL + '?gate=' + $json.gateWindow}}",
-        "method": "GET"
       }
     },
     {
@@ -96,17 +88,6 @@
       ]
     },
     "Build Gate Envelope": {
-      "main": [
-        [
-          {
-            "node": "Fetch Gate Data",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Fetch Gate Data": {
       "main": [
         [
           {

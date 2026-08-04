@@ -1,0 +1,5 @@
+{
+  "schema_version": "0.1",
+  "automation_id": "fixture-invalid-engine",
+  "runtime": { "engine": "make", "workflow_ref": "workflow.json", "trigger_mode": "manual", "result_mode": "none" }
+}

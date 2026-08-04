@@ -56,7 +56,7 @@ Operators (or agents acting as operators) maintain the templates, deploy the sta
 | Control ledger | Database tables that remember audits, promotions, and kill-switch events |
 | Ritual windows | Three daily Taipei-time checkpoints: morning strategic, mid-morning operational, afternoon quality |
 | Kill switch | Emergency brake — one workflow, or everything |
-| Events | Messages on the studio event bus so other systems can listen (`aios.*`) |
+| Events | Messages on the studio event bus so explicitly wired systems can listen (`linkautowork.v1.*`) |
 
 ---
 

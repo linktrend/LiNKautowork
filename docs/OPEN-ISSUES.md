@@ -35,7 +35,7 @@ Delivered in MVO:
 - Canonical template authority in `automations/templates`.
 - Dedicated policy gateway enforcing signed ingress, canonical tenant contract, and mission lineage.
 - Canonical audit write path to Supabase RPC.
-- Event bridge to primary `aios.*` subjects plus internal mirror `linkautowork.v1.*`.
+- Event bridge uses the current versioned `linkautowork.v1.*` subject namespace.
 - Governance and kill-switch controls aligned with operational requirements.
 
 Primary implementation artifacts:
@@ -272,13 +272,13 @@ Audit contract:
 Event contract:
 
 - Primary interoperability subjects:
-  - `aios.ritual.strategic`
-  - `aios.ritual.operational`
-  - `aios.ritual.quality`
-  - `aios.workflow.execution`
-  - `aios.security.exception`
-  - `aios.killswitch`
-  - `aios.lifecycle.transition`
+  - `linkautowork.v1.ritual.strategic`
+  - `linkautowork.v1.ritual.operational`
+  - `linkautowork.v1.ritual.quality`
+  - `linkautowork.v1.workflow.execution`
+  - `linkautowork.v1.security.exception`
+  - `linkautowork.v1.killswitch`
+  - `linkautowork.v1.lifecycle.transition`
 - Internal mirror subjects:
   - `linkautowork.v1.*` equivalents
 
@@ -337,7 +337,7 @@ Implemented in MVO:
 - 08:00 and 14:45 alignment feeds.
 - Canonical tenant UUID enforcement in cross-system contracts.
 - Signed ingress + JIT secret retrieval in gateway.
-- Dual event publishing with `aios.*` primary.
+- Versioned `linkautowork.v1.*` event publishing.
 - Scoped and global kill-switch hierarchy.
 - Canonical audit runs via RPC + baseline RLS policy.
 - Eval assets and CI verification.

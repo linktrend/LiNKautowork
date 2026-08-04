@@ -1,0 +1,16 @@
+{
+  "domain": "automation",
+  "orgId": "00000000-0000-0000-0000-000000000001",
+  "source": { "automationId": "urgent-intake", "version": "1.0.0", "releaseId": "20000000-0000-0000-0000-000000000001" },
+  "trigger": "repeated_deterministic_failure",
+  "evidence": [
+    { "ref": "evidence://eval/urgent-intake-timeout-1", "hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "kind": "eval_receipt", "orgId": "00000000-0000-0000-0000-000000000001" },
+    { "ref": "evidence://eval/urgent-intake-timeout-2", "hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "kind": "eval_receipt", "orgId": "00000000-0000-0000-0000-000000000001" }
+  ],
+  "proposal": { "opportunityClass": "reliability", "scope": "Bound retry handling to deterministic upstream timeout failures.", "patch": { "artifactRef": "candidate://urgent-intake/retry-v2", "digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" }, "packagePath": "automations/packages/_golden-template", "expectedBenefit": "Fewer controlled timeout failures.", "riskLevel": "low", "requiredEvalSuites": ["regression", "privacy"] },
+  "actor": { "id": "librarian:automation", "kind": "librarian" },
+  "model": { "provider": "local-test", "model": "deterministic", "version": "1" },
+  "policyVersion": "automation-librarian-policy-v1",
+  "promptVersion": "automation-librarian-prompt-v1",
+  "toolActivity": ["evidence_read", "candidate_patch_created", "validator", "eval_runner"]
+}

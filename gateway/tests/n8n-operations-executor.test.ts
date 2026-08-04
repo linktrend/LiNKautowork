@@ -1,0 +1,10 @@
+import { describe, expect, it } from 'vitest';
+import type { N8nClient } from '../src/integrations/n8n-client.js';
+import type { SupabaseAuditClient } from '../src/integrations/supabase-rpc.js';
+import { N8nOperationsExecutor } from '../src/services/deployments/n8n-operations-executor.js';
+
+const authority = { baselineDeploymentId: 'baseline-deployment', candidateReleaseId: 'candidate-release', baselineReleaseId: 'baseline-release', candidateWorkflowId: 'candidate', baselineWorkflowId: 'baseline', compatibleBindings: true, candidateCertified: true, baselineCertified: true, approvalRef: 'evidence://approval/1', healthEvidenceRef: 'evidence://health/1', sampleCount: 5, minimumSamples: 5, elapsedMs: 1000, minimumWindowMs: 1000, candidateSuccessRate: 1, baselineSuccessRate: 1 };
+describe('n8n operations executor', () => {
+  it('compensates a failed promotion switch', async () => { const calls: string[] = []; const n8n = { setWorkflowActive: async (id: string, active: boolean) => { calls.push(`${id}:${active}`); if (id === 'baseline' && !active) throw new Error('deactivate failed'); } } as unknown as N8nClient; const client = { callOperationsRpc: async () => ({}) } as unknown as SupabaseAuditClient; await expect(new N8nOperationsExecutor(n8n, client).apply('promote', authority)).rejects.toThrow('deactivate failed'); expect(calls).toEqual(['candidate:true', 'baseline:false', 'candidate:false', 'baseline:true']); });
+  it('queues retry through the durable credentialed RPC', async () => { const calls: Array<{ name: string; body: Record<string, unknown> }> = []; const client = { callOperationsRpc: async (name: string, body: Record<string, unknown>) => { calls.push({ name, body }); return { queued: true }; } } as unknown as SupabaseAuditClient; const executor = new N8nOperationsExecutor({} as N8nClient, client); await executor.retry('00000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000001', { allowed: true, supportsFailover: false, authorizationRef: 'evidence://approval/retry' }); expect(calls[0]).toMatchObject({ name: 'linkautowork_execute_retry', body: { p_authorization_ref: 'evidence://approval/retry' } }); });
+});

@@ -1,0 +1,13 @@
+{
+  "name": "@linktrend/client-product",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && node scripts/copy-public.mjs",
+    "start": "node dist/src/server.js",
+    "test": "vitest run --config vitest.config.ts",
+    "test:browser": "bash e2e/run-durable-browser-e2e.sh",
+    "test:browser:component": "tsx e2e/browser-e2e.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}

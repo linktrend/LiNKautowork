@@ -27,25 +27,20 @@ These four documents are the current, authoritative description of this Program.
 
 - Internal-only org UUID: `00000000-0000-0000-0000-000000000001` (`linktrend_internal`)
 - Ritual windows (Taipei): `08:00` / `10:45` / `14:45`
-- Dual event subjects: `aios.*` + optional `linkautowork.v1.*`
+- Event contract: `linkautowork.v1.*`
 - Control schema: `lautowork` · n8n schema: `lautowork_n8n` · env split: `linkplatform-stage` vs `linkplatform-prod`
 
-## Quick start (stage / VPS)
+## Pre-VPS release package
 
-1. Confirm schemas applied on target Supabase project (`lautowork` + `lautowork_n8n`).
-2. Copy `deploy/dev/.env.example` or `deploy/prod/.env.example` → `.env`; fill GSM secret **names** (not raw secrets in git).
-3. `npm install` && `npm run ci`
-4. `ops/render-env-from-gsm.sh <dev|prod>`
-5. `ops/render-runtime-env-from-gsm.sh <dev|prod> --output /opt/linktrend/runtime/linkautowork/<env>.env.runtime`
-6. `ops/deploy-stack.sh <dev|prod> --build`
-7. `ops/import-templates-to-n8n.sh <dev|prod>`
-8. Smoke: health → signed ingress → row in `lautowork.audit_runs`
+1. Run `npm ci && npm run release:check && npm run ci` from a clean checkout.
+2. Review the [release candidate manifest](docs/production-roadmap/evidence/WP-12-RELEASE-CANDIDATE-MANIFEST.md), environment matrix, and [VPS Deployment Input Register](docs/production-roadmap/evidence/WP-12-VPS-DEPLOYMENT-INPUT-REGISTER.md).
+3. Do not render GSM values, apply migrations, or start a stack until the external inputs and explicit authority in that register are supplied.
 
 Full operator detail: [`docs/DEPLOY_READINESS.md`](docs/DEPLOY_READINESS.md) and [`docs/runbooks/OPERATIONS.md`](docs/runbooks/OPERATIONS.md).
 
 ## Live template inventory (2026-07-18)
 
-Governance-only. Legacy Program shells that called shelved LiNKaios were archived under `automations/templates/archive/legacy-program-shells-2026-07-18/`.
+Governance-only. The historical program-shell archive is non-authoritative and cannot be generated or imported by current release scripts.
 
 | Template | Purpose |
 |----------|---------|
@@ -53,8 +48,7 @@ Governance-only. Legacy Program shells that called shelved LiNKaios were archive
 | `urgent-event-ingestion.json` | Urgent event intake → gateway publish |
 | `promotion-review-governance.json` | Lifecycle promotion approvals |
 | `restore-authorization-governance.json` | Restore auth + scoped kill-switch |
-| `daily-chairman-briefing.json` | Deprecated shim → unified ritual gate |
 
 ## Status
 
-**MVO coding bar met; VPS live bring-up is an ops milestone on ready software (as of 2026-07-19).** `npm run ci` validates templates, runs gateway tests, and typechecks. See the Technical PRD for architecture and `docs/OPEN-ISSUES.md` for the build log. Marketplace, autonomous JSON self-edit, and multi-client SaaS remain deliberately deferred.
+**Pre-VPS release-readiness is in progress.** Local validation can prove source and disposable dependencies only. It cannot prove a selected VPS, live migration, GSM, DNS/TLS, payment, external identity, alert delivery, backup target, or production integration. See the WP-12 evidence for the exact state.

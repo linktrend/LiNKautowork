@@ -1,0 +1,9 @@
+{
+  "name": "@linktrend/automation-eval-runner",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "run": "node src/run.mjs --profile=full"
+  }
+}

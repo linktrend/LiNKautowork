@@ -5,40 +5,19 @@ import { logWarn } from '../lib/logger.js';
 
 export type EventType = EventPublishRequest['eventType'];
 
-const SUBJECT_MAP: Record<EventType, { primary: string; mirror: string }> = {
-  'ritual.strategic': {
-    primary: 'aios.ritual.strategic',
-    mirror: 'linkautowork.v1.ritual.strategic',
-  },
-  'ritual.operational': {
-    primary: 'aios.ritual.operational',
-    mirror: 'linkautowork.v1.ritual.operational',
-  },
-  'ritual.quality': {
-    primary: 'aios.ritual.quality',
-    mirror: 'linkautowork.v1.ritual.quality',
-  },
-  'workflow.execution': {
-    primary: 'aios.workflow.execution',
-    mirror: 'linkautowork.v1.workflow.execution',
-  },
-  'security.exception': {
-    primary: 'aios.security.exception',
-    mirror: 'linkautowork.v1.security.exception',
-  },
-  killswitch: {
-    primary: 'aios.killswitch',
-    mirror: 'linkautowork.v1.killswitch',
-  },
-  'lifecycle.transition': {
-    primary: 'aios.lifecycle.transition',
-    mirror: 'linkautowork.v1.lifecycle.transition',
-  },
+/** The sole supported event namespace. Historical compatibility subjects are retired. */
+const SUBJECT_MAP: Record<EventType, string> = {
+  'ritual.strategic': 'linkautowork.v1.ritual.strategic',
+  'ritual.operational': 'linkautowork.v1.ritual.operational',
+  'ritual.quality': 'linkautowork.v1.ritual.quality',
+  'workflow.execution': 'linkautowork.v1.workflow.execution',
+  'security.exception': 'linkautowork.v1.security.exception',
+  killswitch: 'linkautowork.v1.killswitch',
+  'lifecycle.transition': 'linkautowork.v1.lifecycle.transition',
 };
 
-export function subjectsForEvent(eventType: EventType, includeMirror: boolean): string[] {
-  const mapping = SUBJECT_MAP[eventType];
-  return includeMirror ? [mapping.primary, mapping.mirror] : [mapping.primary];
+export function subjectsForEvent(eventType: EventType): string[] {
+  return [SUBJECT_MAP[eventType]];
 }
 
 export class EventBridgeService {
@@ -53,7 +32,7 @@ export class EventBridgeService {
     payload: Record<string, unknown>;
     status: string;
   }): Promise<void> {
-    const subjects = subjectsForEvent(args.eventType, this.env.enableInternalMirrorSubjects);
+    const subjects = subjectsForEvent(args.eventType);
     const event = {
       eventType: args.eventType,
       tenantId: args.mission.tenantId,

@@ -44,7 +44,7 @@ Canonical: `.cursor/rules/01-git-branching.mdc`, `LiNKdev/factory/rules/01-git-b
 
 ## Other LiNKtrend repositories
 
-The canonical **`05-agent-behavior.mdc`** and this **`AGENTS.md`** template are copied across LiNKtrend repos in the operator’s `Projects` tree so Cursor/Codex/Antigravity behave consistently. **New** repos should copy `.cursor/rules/05-agent-behavior.mdc` and `AGENTS.md` from LiNKaios (or any sibling that already has them) before the first agent session.
+The canonical **`05-agent-behavior.mdc`** and this **`AGENTS.md`** template are copied across LiNKtrend repos in the operator’s `Projects` tree so Cursor/Codex/Antigravity behave consistently. **New** repos should copy `.cursor/rules/05-agent-behavior.mdc` and `AGENTS.md` from a current sibling repository before the first agent session.
 
 ## Handoff
 
