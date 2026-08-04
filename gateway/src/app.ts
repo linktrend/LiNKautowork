@@ -280,7 +280,7 @@ export function createApp(deps: AppDeps) {
     }
   });
 
-  app.post('/v1/executions/callback', requireSignedIngress(deps.env, deps.nonceStore), async (req, res, next) => {
+  app.post('/v1/executions/callback', ingressRateLimiter, requireSignedIngress(deps.env, deps.nonceStore), async (req, res, next) => {
     try {
       const callback = parseSchema(executionCallbackSchema, req.body);
       const callbackToken = req.header('x-link-execution-callback-token');

@@ -36,12 +36,33 @@ const automationId = z.string().regex(/^[a-z][a-z0-9-]{2,62}$/);
 const secretReference = z.string().regex(/^[A-Z][A-Z0-9_]{2,127}$/);
 
 const forbiddenSecretKey = /(password|passwd|secret(?!_ref$)|token(?!_ref$)|api[_-]?key|private[_-]?key|credential|connection[_-]?string)/i;
-const secretShapedValue = /-----BEGIN [A-Z ]*PRIVATE KEY-----|(?:sk|pk|ghp|xox[baprs])[_-][A-Za-z0-9-]{12,}|(?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?|redis|amqp):\/\/[^\s"\\]+:[^\s"@\\]+@|(?:^|[^a-z0-9])bearer\s+[A-Za-z0-9._~+\/-]{8,}/i;
+const secretShapedValue = /-----BEGIN [A-Z ]*PRIVATE KEY-----|(?:sk|pk|ghp|xox[baprs])[_-][A-Za-z0-9-]{12,}|(?:^|[^a-z0-9])bearer\s+[A-Za-z0-9._~+\/-]{8,}/i;
+const connectionStringSchemes = ['postgres://', 'postgresql://', 'mysql://', 'mongodb://', 'mongodb+srv://', 'redis://', 'amqp://'] as const;
+
+/** Returns whether text embeds a valid supported connection URI with a username and password. */
+function containsCredentialedConnectionString(value: string): boolean {
+  const normalized = value.toLowerCase();
+  for (const scheme of connectionStringSchemes) {
+    let start = normalized.indexOf(scheme);
+    while (start !== -1) {
+      let end = start;
+      while (end < value.length && !/[\s"\\]/.test(value[end])) end += 1;
+      try {
+        const uri = new URL(value.slice(start, end));
+        if (uri.username && uri.password) return true;
+      } catch {
+        // A malformed URI is not treated as a credentialed connection string.
+      }
+      start = normalized.indexOf(scheme, start + scheme.length);
+    }
+  }
+  return false;
+}
 
 /** Rejects recursive key/value structures that could carry a raw credential. */
 export function assertNoSecretShapedContent(value: unknown, path = '$'): void {
   if (typeof value === 'string') {
-    if (secretShapedValue.test(value)) {
+    if (secretShapedValue.test(value) || containsCredentialedConnectionString(value)) {
       throw new Error(`secret-shaped value is forbidden at ${path}`);
     }
     return;
