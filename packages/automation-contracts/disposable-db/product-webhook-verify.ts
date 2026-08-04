@@ -77,7 +77,7 @@ async function closeServer(server: Server): Promise<void> {
 async function send(event: Record<string, unknown>, secret = webhookSecret) {
   const body = JSON.stringify(event);
   const signature = createHmac('sha256', secret).update(body).digest('hex');
-  const response = await fetch(endpoint, { method: 'POST', headers: { 'content-type': 'application/json', 'x-link-webhook-signature': signature }, body });
+  const response = await fetch(endpoint, { method: 'POST', headers: { 'connection': 'close', 'content-type': 'application/json', 'x-link-webhook-signature': signature }, body });
   return { response, body: await response.json() as Record<string, unknown> };
 }
 
