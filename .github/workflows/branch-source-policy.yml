@@ -4,8 +4,12 @@ on:
   pull_request:
     branches: [main, staging, development]
 
+permissions:
+  contents: read
+
 jobs:
   branch-source-policy:
+    name: Enforce allowed PR source branches
     runs-on: ubuntu-latest
     steps:
       - name: Enforce promotion branch flow
@@ -14,10 +18,8 @@ jobs:
           HEAD_BRANCH: ${{ github.head_ref }}
         run: |
           set -euo pipefail
-
           echo "PR source: ${HEAD_BRANCH}"
           echo "PR target: ${BASE_BRANCH}"
-
           case "${BASE_BRANCH}" in
             main)
               if [ "${HEAD_BRANCH}" != "staging" ]; then
@@ -33,11 +35,10 @@ jobs:
               ;;
             development)
               case "${HEAD_BRANCH}" in
-                issue/*|dev/*|feature/*|fix/*|chore/*|codex/*|cursor/*|antigravity/*|dependabot/*)
+                dev/*|issue/*|feature/*|fix/*|chore/*|codex/*|cursor/*|antigravity/*|dependabot/*)
                   ;;
                 *)
                   echo "Only short-lived work branches may be merged into development."
-                  echo "Allowed prefixes: issue/, dev/, feature/, fix/, chore/, codex/, cursor/, antigravity/, dependabot/."
                   exit 1
                   ;;
               esac
