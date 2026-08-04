@@ -1,5 +1,9 @@
 import type { AppEnv } from '../config/env.js';
 import { logWarn } from '../lib/logger.js';
+import type { ExecutionCallback } from '../contracts/execution-callback.js';
+import type { BoundInstance, ExecutionReceipt, ExecutionStore } from '../services/instances/runtime.js';
+import type { ExecutionCallbackCapability, ExecutionRecordResult } from '../services/executions/execution-service.js';
+import type { ProvisioningRecord } from '../services/provisioning/provisioning-service.js';
 
 export type AuditRecord = {
   // Internal name reflects the database reality: the value is written into
@@ -46,7 +50,7 @@ export type ActiveKillSwitch = {
   metadata?: Record<string, unknown>;
 };
 
-export class SupabaseAuditClient {
+export class SupabaseAuditClient implements ExecutionStore {
   constructor(private readonly env: AppEnv) {}
 
   private headers(): Record<string, string> {
@@ -57,11 +61,12 @@ export class SupabaseAuditClient {
     };
   }
 
-  private async callRpc(rpcName: string, body: Record<string, unknown>, label: string): Promise<Response> {
+  private async callRpc(rpcName: string, body: Record<string, unknown>, label: string, runtimeOrgId?: string): Promise<Response> {
+    if (runtimeOrgId && !this.env.SUPABASE_RUNTIME_JWT) throw new Error('organisation-scoped automation runtime credential is not configured');
     const url = `${this.env.SUPABASE_URL}/rest/v1/rpc/${rpcName}`;
     const response = await fetch(url, {
       method: 'POST',
-      headers: this.headers(),
+      headers: runtimeOrgId ? { ...this.headers(), authorization: `Bearer ${this.env.SUPABASE_RUNTIME_JWT}`, 'x-link-org-id': runtimeOrgId } : this.headers(),
       body: JSON.stringify(body),
     });
 
@@ -72,6 +77,37 @@ export class SupabaseAuditClient {
     }
 
     return response;
+  }
+
+  private async table(path: string, init?: RequestInit): Promise<Response> {
+    const response = await fetch(`${this.env.SUPABASE_URL}/rest/v1/${path}`, { ...init, headers: { ...this.headers(), 'Accept-Profile': 'lautowork', 'Content-Profile': 'lautowork', ...(init?.headers ?? {}) } });
+    if (!response.ok) throw new Error(`automation runtime storage failed with status ${response.status}`);
+    return response;
+  }
+
+  async findBoundInstance(orgId: string, service: string, operation: string): Promise<BoundInstance | undefined> {
+    const response = await this.callRpc('linkautowork_resolve_bound_instance', { p_org_id: orgId, p_consumer_system: service, p_operation: operation }, 'resolve-bound-instance', orgId);
+    const payload = await response.json() as BoundInstance | null;
+    return payload ?? undefined;
+  }
+  async acceptExecution(args: { executionId: string; orgId: string; instanceId: string; releaseId: string; deploymentId: string; idempotencyKey: string; inputDigest: string; callbackService: string; callbackTokenDigest: string }): Promise<ExecutionReceipt> {
+    const response = await this.callRpc('linkautowork_accept_execution', {
+      p_execution_id: args.executionId, p_org_id: args.orgId, p_instance_id: args.instanceId,
+      p_release_id: args.releaseId, p_deployment_id: args.deploymentId, p_idempotency_key: args.idempotencyKey,
+      p_input_digest: args.inputDigest, p_callback_service: args.callbackService, p_callback_token_digest: args.callbackTokenDigest,
+    }, 'accept-execution', args.orgId);
+    return await response.json() as ExecutionReceipt;
+  }
+  async beginProvisioning(orgId: string, requestRef: string): Promise<ProvisioningRecord | undefined> {
+    const response = await this.callRpc('linkautowork_begin_provisioning', { p_org_id: orgId, p_request_ref: requestRef }, 'begin-provisioning', orgId);
+    return (await response.json() as ProvisioningRecord | null) ?? undefined;
+  }
+  async markProvisioning(orgId: string, requestId: string, status: string, fields: Record<string, unknown>): Promise<void> {
+    await this.callRpc('linkautowork_mark_provisioning', { p_request_id: requestId, p_status: status, p_fields: fields }, 'mark-provisioning', orgId);
+  }
+  async createProvisioningDeployment(request: ProvisioningRecord, workflowId: string): Promise<string> {
+    const response = await this.callRpc('linkautowork_create_provisioning_deployment', { p_request_id: request.requestId, p_workflow_id: workflowId }, 'create-provisioning-deployment', request.orgId);
+    return await response.json() as string;
   }
 
   async writeAudit(record: AuditRecord): Promise<void> {
@@ -122,6 +158,43 @@ export class SupabaseAuditClient {
       },
       'lifecycle',
     );
+  }
+
+  async appendExecutionEvent(event: ExecutionCallback): Promise<void> {
+    await this.callRpc('linkautowork_append_execution_event', {
+      p_org_id: event.orgId,
+      p_execution_id: event.executionId,
+      p_sequence: event.sequence,
+      p_event_type: event.eventType,
+      p_occurred_at: event.occurredAt,
+      p_payload_digest: event.payloadDigest ?? null,
+      p_evidence_ref: event.evidenceRef ?? null,
+    }, 'execution-event');
+  }
+
+  async recordExecutionCallback(event: ExecutionCallback, capability: ExecutionCallbackCapability): Promise<ExecutionRecordResult> {
+    const response = await this.callRpc('linkautowork_record_execution_callback', {
+      p_org_id: event.orgId, p_execution_id: event.executionId, p_callback_service: capability.service,
+      p_callback_token: capability.token, p_sequence: event.sequence, p_event_type: event.eventType,
+      p_occurred_at: event.occurredAt, p_payload_digest: event.payloadDigest ?? null, p_evidence_ref: event.evidenceRef ?? null,
+    }, 'record-execution-callback', event.orgId);
+    return await response.json() as ExecutionRecordResult;
+  }
+
+  /** Calls an org-scoped Librarian RPC. Only the narrow durable adapter uses this boundary. */
+  async callLibrarianRpc<T>(rpcName: string, body: Record<string, unknown>): Promise<T> {
+    const orgId=body.p_org_id; if(typeof orgId!=='string')throw new Error('Librarian RPC requires an organisation consistency guard');
+    const response = await this.callRpc(rpcName,body,'automation-librarian',orgId);
+    return (await response.json()) as T;
+  }
+
+  /** Narrow durable operations boundary; every RPC re-derives and checks org ownership. */
+  async callOperationsRpc<T>(rpcName: string, body: Record<string, unknown>, explicitOrgId?: string): Promise<T> {
+    const record = body.p_record as Record<string, unknown> | undefined;
+    const orgId = explicitOrgId ?? (typeof body.p_org_id === 'string' ? body.p_org_id : typeof record?.orgId === 'string' ? record.orgId : undefined);
+    const response = await this.callRpc(rpcName, body, 'automation-operations', orgId);
+    if (response.status === 204) return undefined as T;
+    return (await response.json()) as T;
   }
 
   async listActiveKillSwitches(): Promise<ActiveKillSwitch[]> {

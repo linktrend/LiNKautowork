@@ -1,0 +1,46 @@
+# Deployment input template. Replace every <...> value only after authority is recorded.
+http:
+  routers:
+    linkautowork-operator-n8n:
+      rule: "Host(`<OPERATOR_N8N_DNS_NAME>`)"
+      entryPoints: [websecure]
+      middlewares: [linkautowork-tailscale-only]
+      service: linkautowork-n8n
+      tls:
+        certResolver: <APPROVED_TLS_RESOLVER>
+    linkautowork-operator-console:
+      rule: "Host(`<OPERATOR_CONSOLE_DNS_NAME>`)"
+      entryPoints: [websecure]
+      middlewares: [linkautowork-tailscale-only]
+      service: linkautowork-operator-console
+      tls:
+        certResolver: <APPROVED_TLS_RESOLVER>
+    linkautowork-client-web:
+      rule: "Host(`<PUBLIC_CLIENT_DNS_NAME>`)"
+      entryPoints: [websecure]
+      service: linkautowork-client-web
+      tls:
+        certResolver: <APPROVED_TLS_RESOLVER>
+    linkautowork-product-api:
+      rule: "Host(`<PUBLIC_PRODUCT_API_DNS_NAME>`)"
+      entryPoints: [websecure]
+      service: linkautowork-product-api
+      tls:
+        certResolver: <APPROVED_TLS_RESOLVER>
+  middlewares:
+    linkautowork-tailscale-only:
+      ipAllowList:
+        sourceRange: ["<TAILSCALE_CIDR>"]
+  services:
+    linkautowork-n8n:
+      loadBalancer:
+        servers: [{ url: "http://<N8N_PRIVATE_ADDRESS>:5678" }]
+    linkautowork-operator-console:
+      loadBalancer:
+        servers: [{ url: "http://<OPERATOR_CONSOLE_PRIVATE_ADDRESS>:8080" }]
+    linkautowork-client-web:
+      loadBalancer:
+        servers: [{ url: "http://<CLIENT_WEB_PRIVATE_ADDRESS>:8080" }]
+    linkautowork-product-api:
+      loadBalancer:
+        servers: [{ url: "http://<PRODUCT_API_PRIVATE_ADDRESS>:8080" }]

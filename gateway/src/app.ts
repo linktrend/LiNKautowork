@@ -18,13 +18,31 @@ import { logWarn } from './lib/logger.js';
 import { NonceStore } from './lib/nonce-store.js';
 import { verifySlackSignature } from './lib/slack.js';
 import { assertCanonicalTenant } from './lib/tenant.js';
-import { requireControlToken, requireInternalServiceToken, requireSignedIngress } from './middleware/auth.js';
+import { requireControlToken, requireInternalServiceToken, requireLibrarianInstitutionalClaim, requirePlatformInvocationClaim, requireSignedIngress } from './middleware/auth.js';
 import { captureRawBody, ensureRawBody } from './middleware/raw-body.js';
 import { AuditService } from './services/audit.js';
 import { EventBridgeService } from './services/event-bridge.js';
 import { KillSwitchService } from './services/killswitch.js';
 import { type LifecycleApprovals, validateLifecycleTransition } from './services/lifecycle.js';
+import { executionCallbackSchema } from './contracts/execution-callback.js';
+import { ExecutionService } from './services/executions/execution-service.js';
+import { SupabaseExecutionEventStore } from './services/executions/supabase-execution-store.js';
+import { boundInstanceExecuteSchema } from './contracts/instance-runtime.js';
+import { librarianAutomationRequestSchema, librarianReviewSchema } from './contracts/librarian-automation.js';
+import { AutomationLibrarianService, GovernedReceiptVerifierKeys, Wp02PackageValidator, Wp06ReceiptEvaluator } from './services/librarian/automation-librarian.js';
+import { SupabaseLibrarianEvidenceResolver, SupabaseLibrarianStore } from './services/librarian/supabase-librarian-store.js';
+import { validateWp02Package } from './services/librarian/wp02-runtime.js';
+import { InstanceRuntimeService } from './services/instances/runtime.js';
+import { SupabasePauseReader } from './services/instances/supabase-pause-reader.js';
+import { N8nProvisioner } from './integrations/n8n-provisioner.js';
+import { ProvisioningService } from './services/provisioning/provisioning-service.js';
+import { SupabaseProvisioningStore } from './services/provisioning/supabase-provisioning-store.js';
+import { provisioningRequestSchema } from './contracts/instance-runtime.js';
 import { executionOutcome, getMetricsRegistry, ingressLatencyMs, killSwitchEvents } from './services/metrics.js';
+import { deploymentDecisionSchema, incidentTransitionSchema, operationsActionSchema, pauseCommandSchema } from './contracts/operations.js';
+import { OperationsService, type AlertAdapter } from './services/monitoring/operations-service.js';
+import { SupabaseOperationsStore } from './services/monitoring/supabase-operations-store.js';
+import { N8nOperationsExecutor } from './services/deployments/n8n-operations-executor.js';
 
 function parseSchema<T>(schema: z.ZodType<T>, input: unknown): T {
   try {
@@ -56,6 +74,11 @@ export type AppDeps = {
   eventBridgeService: EventBridgeService;
   killSwitchService: KillSwitchService;
   supabaseClient: SupabaseAuditClient;
+  executionService: ExecutionService;
+  instanceRuntimeService: InstanceRuntimeService;
+  librarianService: AutomationLibrarianService;
+  provisioningService: ProvisioningService;
+  operationsService: OperationsService;
 };
 
 export function buildDependencies(env: AppEnv): AppDeps {
@@ -67,6 +90,19 @@ export function buildDependencies(env: AppEnv): AppDeps {
   const auditService = new AuditService(supabaseClient);
   const eventBridgeService = new EventBridgeService(env, natsPublisher);
   const killSwitchService = new KillSwitchService(n8nClient, supabaseClient);
+  const executionService = new ExecutionService(new SupabaseExecutionEventStore(supabaseClient));
+  const instanceRuntimeService = new InstanceRuntimeService(supabaseClient, n8nClient, killSwitchService, new SupabasePauseReader(supabaseClient));
+  const n8nProvisioner = new N8nProvisioner(n8nClient);
+  const provisioningService = new ProvisioningService(new SupabaseProvisioningStore(supabaseClient), n8nProvisioner, (workflowId) => n8nProvisioner.smoke(workflowId));
+  const librarianService = new AutomationLibrarianService(
+    new SupabaseLibrarianStore(supabaseClient), new SupabaseLibrarianEvidenceResolver(supabaseClient),
+    new Wp02PackageValidator(validateWp02Package), new Wp06ReceiptEvaluator(new GovernedReceiptVerifierKeys(env.evalReceiptVerifierKeys)),
+    new Set(env.LIBRARIAN_TRUSTED_AGGREGATE_ISSUERS.split(',').map((value) => value.trim()).filter(Boolean)),
+  );
+  const operationsStore = new SupabaseOperationsStore(supabaseClient);
+  const alertAdapter: AlertAdapter = { deliver: (alert) => supabaseClient.callOperationsRpc<void>('linkautowork_record_alert_delivery', { p_record: alert }) };
+  const operationsExecutor = new N8nOperationsExecutor(n8nClient, supabaseClient);
+  const operationsService = new OperationsService(operationsStore, alertAdapter, operationsExecutor, operationsExecutor, operationsExecutor);
 
   return {
     env,
@@ -78,6 +114,11 @@ export function buildDependencies(env: AppEnv): AppDeps {
     eventBridgeService,
     killSwitchService,
     supabaseClient,
+    executionService,
+    instanceRuntimeService,
+    librarianService,
+    provisioningService,
+    operationsService,
   };
 }
 
@@ -237,6 +278,104 @@ export function createApp(deps: AppDeps) {
     } catch (error) {
       next(error);
     }
+  });
+
+  app.post('/v1/executions/callback', requireSignedIngress(deps.env, deps.nonceStore), async (req, res, next) => {
+    try {
+      const callback = parseSchema(executionCallbackSchema, req.body);
+      const callbackToken = req.header('x-link-execution-callback-token');
+      if (!req.linkService || !callbackToken) throw new HttpError(401, 'missing execution callback capability');
+      const result = await deps.executionService.record(callback, { service: req.linkService, token: callbackToken });
+      res.status(result.disposition === 'out_of_order' ? 202 : 200).json({
+        accepted: result.disposition !== 'out_of_order',
+        disposition: result.disposition,
+        projection: result.projection,
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post('/v2/instances/:instanceId/operations/:operation/execute', ingressRateLimiter, requireInternalServiceToken(deps.env), requirePlatformInvocationClaim(deps.env), async (req, res, next) => {
+    try {
+      const body = parseSchema(boundInstanceExecuteSchema, req.body);
+      const claim = req.platformInvocation!;
+      const receipt = await deps.instanceRuntimeService.execute(claim.orgId, claim.service, req.params.instanceId, req.params.operation, body.input ?? {}, body.idempotencyKey);
+      res.status(receipt.duplicate ? 200 : 202).json(receipt);
+    } catch (error) { next(error); }
+  });
+
+  app.post('/v2/provisioning/run', requireInternalServiceToken(deps.env), requirePlatformInvocationClaim(deps.env), async (req, res, next) => {
+    try {
+      const body = parseSchema(provisioningRequestSchema, req.body);
+      const result = await deps.provisioningService.run(req.platformInvocation!.orgId, body.requestRef, body.environment);
+      res.status(result.status === 'completed' ? 200 : 202).json({ requestId: result.requestId, status: result.status, deploymentId: result.deploymentId, workflowId: result.workflowId });
+    } catch (error) { next(error); }
+  });
+
+  app.post('/v1/operations/monitor/run', requireInternalServiceToken(deps.env), requirePlatformInvocationClaim(deps.env), async (req, res, next) => {
+    try { res.status(200).json({ health: await deps.operationsService.monitor(req.platformInvocation!.orgId) }); } catch (error) { next(error); }
+  });
+
+  app.get('/v1/operations/health', requireInternalServiceToken(deps.env), requirePlatformInvocationClaim(deps.env), async (req, res, next) => {
+    try { res.status(200).json({ health: await deps.operationsService.health(req.platformInvocation!.orgId) }); } catch (error) { next(error); }
+  });
+
+  app.post('/v1/operations/maintenance/run', requireInternalServiceToken(deps.env), requirePlatformInvocationClaim(deps.env), async (req, res, next) => {
+    try { res.status(200).json({ maintenance: await deps.operationsService.maintenance(req.platformInvocation!.orgId) }); } catch (error) { next(error); }
+  });
+
+  app.post('/v1/operations/incidents/transition', requireInternalServiceToken(deps.env), requirePlatformInvocationClaim(deps.env), async (req, res, next) => {
+    try { const body = parseSchema(incidentTransitionSchema, req.body); const claim = req.platformInvocation!; await deps.operationsService.transitionIncident(claim.orgId, body.incidentId, body.status, claim.subject, body.evidenceRef); res.status(200).json({ accepted: true }); } catch (error) { next(error); }
+  });
+
+  app.post('/v1/operations/actions', requireInternalServiceToken(deps.env), requirePlatformInvocationClaim(deps.env), async (req, res, next) => {
+    try { const body = parseSchema(operationsActionSchema, req.body); const claim = req.platformInvocation!; const result = await deps.operationsService.executeAction({ ...body, orgId: claim.orgId, actor: claim.subject }); res.status(result.result === 'succeeded' ? 200 : 409).json(result); } catch (error) { next(error); }
+  });
+
+  app.post('/v1/operations/retries/deliver', requireInternalServiceToken(deps.env), requirePlatformInvocationClaim(deps.env), async (req, res, next) => {
+    try { res.status(200).json(await deps.operationsService.deliverRetry(req.platformInvocation!.orgId)); } catch (error) { next(error); }
+  });
+
+  app.post('/v1/operations/deployments', requireInternalServiceToken(deps.env), requirePlatformInvocationClaim(deps.env), async (req, res, next) => {
+    try { const body = parseSchema(deploymentDecisionSchema, req.body); const claim = req.platformInvocation!; res.status(200).json({ record: await deps.operationsService.deployment({ ...body, orgId: claim.orgId, actor: claim.subject }) }); } catch (error) { next(error); }
+  });
+
+  app.post('/v1/operations/pauses', requireInternalServiceToken(deps.env), requirePlatformInvocationClaim(deps.env), async (req, res, next) => {
+    try { const body = parseSchema(pauseCommandSchema, req.body); const claim = req.platformInvocation!; await deps.operationsService.pause({ ...body, orgId: claim.orgId, actor: claim.subject }); res.status(200).json({ accepted: true }); } catch (error) { next(error); }
+  });
+
+  app.post('/v1/librarian/automation/candidates', requireInternalServiceToken(deps.env), requirePlatformInvocationClaim(deps.env), requireLibrarianInstitutionalClaim(deps.env), async (req, res, next) => {
+    try {
+      const request = parseSchema(librarianAutomationRequestSchema, req.body);
+      if (request.orgId !== req.platformInvocation!.orgId) throw new HttpError(403, 'candidate organisation does not match platform claim');
+      if (request.orgId !== req.librarianInstitutional!.orgId) throw new HttpError(403, 'institutional actor organisation does not match candidate');
+      if (req.librarianInstitutional!.role !== 'proposer') throw new HttpError(403, 'institutional proposer role required');
+      const result = await deps.librarianService.propose(request, req.librarianInstitutional!.actorId);
+      res.status(result.created ? 202 : result.candidate ? 200 : 409).json(result);
+    } catch (error) { next(error); }
+  });
+
+  app.post('/v1/librarian/automation/candidates/:candidateId/review', requireInternalServiceToken(deps.env), requirePlatformInvocationClaim(deps.env), requireLibrarianInstitutionalClaim(deps.env), async (req, res, next) => {
+    try {
+      const review = parseSchema(librarianReviewSchema, req.body); const claim = req.librarianInstitutional!;
+      if (claim.role !== 'independent_reviewer') throw new HttpError(403, 'independent reviewer role required');
+      if (claim.orgId !== req.platformInvocation!.orgId) throw new HttpError(403, 'institutional reviewer organisation mismatch');
+      const candidate = await deps.librarianService.review(req.platformInvocation!.orgId, req.params.candidateId, review, { id: claim.actorId, role: claim.role });
+      res.status(200).json({ candidate });
+    } catch (error) { next(error); }
+  });
+
+  app.post('/v1/control/librarian/automation', requireControlToken(deps.env), async (req, res, next) => {
+    try {
+      const body = parseSchema(z.object({ orgId: z.string().uuid(), action: z.enum(['enable', 'disable', 'pause', 'resume']), automationId: z.string().min(3).max(128).optional() }).strict(), req.body);
+      if ((body.action === 'pause' || body.action === 'resume') && !body.automationId) throw new HttpError(400, 'automationId is required for pause or resume');
+      if (body.action === 'enable') await deps.librarianService.setEnabled(body.orgId, true);
+      if (body.action === 'disable') await deps.librarianService.setEnabled(body.orgId, false);
+      if (body.action === 'pause') await deps.librarianService.setAutomationPaused(body.orgId, body.automationId!, true);
+      if (body.action === 'resume') await deps.librarianService.setAutomationPaused(body.orgId, body.automationId!, false);
+      res.status(200).json({ accepted: true, action: body.action });
+    } catch (error) { next(error); }
   });
 
   app.post('/v1/lifecycle/transition', requireControlToken(deps.env), async (req, res, next) => {

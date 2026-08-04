@@ -1,13 +1,10 @@
 {
-  "name": "AIOS Promotion Review Governance",
+  "name": "LiNKautowork Promotion Review Governance",
   "nodes": [
     {
-      "name": "Promotion Candidate Trigger",
-      "type": "n8n-nodes-base.webhook",
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "aios/promotions/review"
-      }
+      "name": "Governed Promotion Dispatch",
+      "type": "n8n-nodes-base.manualTrigger",
+      "parameters": {}
     },
     {
       "name": "Validate Governance Payload",
@@ -47,7 +44,7 @@
     }
   ],
   "connections": {
-    "Promotion Candidate Trigger": {
+    "Governed Promotion Dispatch": {
       "main": [
         [
           {

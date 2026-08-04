@@ -1,0 +1,8 @@
+{
+  "name": "Sanitized n8n source fixture",
+  "nodes": [
+    { "id": "node-1", "name": "Manual Trigger", "type": "n8n-nodes-base.manualTrigger", "parameters": {} },
+    { "id": "node-2", "name": "Set Result", "type": "n8n-nodes-base.set", "parameters": { "assignments": { "assignments": [] } } }
+  ],
+  "connections": {}
+}

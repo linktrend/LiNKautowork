@@ -14,12 +14,12 @@ LiNKautowork is **not** "n8n with some scripts." It is a small control plane aro
 
 | Layer | Implementation |
 |---|---|
-| **Execution** | Stock Docker image `docker.n8n.io/n8nio/n8n:2.30.0` (Compose-pinned); workflows imported from `automations/templates/` |
+| **Execution** | Stock Docker image `n8nio/n8n:2.30.0` (Compose/evaluator exact-reference pin); workflows imported from `automations/templates/` |
 | **Policy / security** | Express gateway (`gateway/`) — signed ingress, service/control tokens, tenant check, kill-switch, lifecycle, Slack actions |
 | **Secrets** | Google Secret Manager via `SecretsProvider` + env `*_SECRET_NAME` contract |
 | **Control ledger** | Supabase schema `lautowork` — `audit_runs`, `lifecycle_transitions`, `killswitch_events` + public RPCs |
 | **n8n data isolation** | Schema `lautowork_n8n` + role `svc_lautowork_n8n` (n8n owns tables on first boot) |
-| **Events** | NATS JetStream (`nats:2.10-alpine` in Compose); dual subjects `aios.*` + optional `linkautowork.v1.*` |
+| **Events** | persistent NATS JetStream (`nats:2.10.26-alpine` in Compose); `linkautowork.v1.*` subjects |
 | **n8n source of truth** | Upstream `https://github.com/n8n-io/n8n` releases / official Docker images — no LiNKtrend fork in this Program |
 
 ### Process topology (one environment)
@@ -57,8 +57,7 @@ Stage stack: `deploy/dev/docker-compose.yml`. Prod stack: `deploy/prod/docker-co
 | **Kill switch (scoped)** | Blocks ingress for one `tenantId:workflowId` pair |
 | **Kill switch (global)** | Blocks all ingress + deactivates active n8n workflows via Public API |
 | **Ritual windows** | Scheduled Taipei-time gates: 08:00 strategic, 10:45 operational, 14:45 quality |
-| **Primary event subjects** | `aios.*` NATS subjects for cross-Program interoperability |
-| **Mirror subjects** | `linkautowork.v1.*` optional duplicates when `ENABLE_INTERNAL_MIRROR_SUBJECTS=true` |
+| **Event subjects** | `linkautowork.v1.*` NATS subjects for explicitly wired cross-Program interoperability |
 
 ---
 
@@ -70,7 +69,7 @@ Both environments share the same three services:
 
 1. **nats** — `nats:2.10-alpine` with `-js` (JetStream).
 2. **gateway** — built from `deploy/common/gateway.Dockerfile` (repo root context); healthcheck `GET /health` on `:8080`.
-3. **n8n** — `docker.n8n.io/n8nio/n8n:2.30.0`; `DB_POSTGRESDB_SCHEMA=lautowork_n8n`; `GENERIC_TIMEZONE` / `TZ=Asia/Taipei`; `N8N_PUBLIC_API_DISABLED=false` (required for template import + global kill-switch).
+3. **n8n** — `n8nio/n8n:2.30.0`; `DB_POSTGRESDB_SCHEMA=lautowork_n8n`; `GENERIC_TIMEZONE` / `TZ=Asia/Taipei`; `N8N_PUBLIC_API_DISABLED=false` (required for template import + global kill-switch).
 
 Security baseline on containers: `no-new-privileges`, `cap_drop: ALL`. Prod n8n joins external `linktrend-network` for Traefik (`Host(n8n.linktrend.internal)`).
 
@@ -151,7 +150,7 @@ Env separation is at **Supabase project** level (`linkplatform-stage` vs `linkpl
 |---|---|
 | Gateway, templates, deploy, ops, control migrations | **This repo** (`LiNKautowork`) |
 | n8n engine source of truth for upgrades | Upstream `https://github.com/n8n-io/n8n` releases |
-| What Compose runs | Official image `docker.n8n.io/n8nio/n8n:2.30.0` (pinned; never `:latest`) |
+| What Compose runs | Official image `n8nio/n8n:2.30.0` (exactly matches evaluator reference; never `:latest`) |
 | Full upstream tree vendored in this repo | **No** — not needed for MVO; do not add an `n8n-io/n8n` submodule without a concrete build-from-source reason |
 
 **Rules:**
@@ -169,13 +168,11 @@ Authoritative template: `automations/templates/ritual-gates-unified.json` (manif
 
 | Local time (Asia/Taipei) | Gate | Event type |
 |---|---|---|
-| 08:00 | Strategic | `ritual.strategic` → `aios.ritual.strategic` |
-| 10:45 | Operational (COO pulse) | `ritual.operational` → `aios.ritual.operational` |
-| 14:45 | Quality | `ritual.quality` → `aios.ritual.quality` |
+| 08:00 | Strategic | `ritual.strategic` → `linkautowork.v1.ritual.strategic` |
+| 10:45 | Operational (COO pulse) | `ritual.operational` → `linkautowork.v1.ritual.operational` |
+| 14:45 | Quality | `ritual.quality` → `linkautowork.v1.ritual.quality` |
 
 Outputs are designed to publish to Slack + NATS (via gateway) + canonical audit. Degraded source data should still ship on schedule with an explicit confidence flag (template behavior; verify in live export evidence).
-
-Deprecated shim: `daily-chairman-briefing.json` (manifest state `deprecated`) — retained only as a redirect-style legacy id.
 
 ---
 
@@ -202,21 +199,21 @@ Persisted via `writeLifecycleTransition` on `/v1/lifecycle/transition`. Slack pa
 
 ---
 
-## 8. Event interoperability (`aios.*` / `linkautowork.v1.*`)
+## 8. Event interoperability (`linkautowork.v1.*`)
 
 `EventBridgeService` subject map (`gateway/src/services/event-bridge.ts`):
 
-| `eventType` | Primary | Mirror |
-|---|---|---|
-| `ritual.strategic` | `aios.ritual.strategic` | `linkautowork.v1.ritual.strategic` |
-| `ritual.operational` | `aios.ritual.operational` | `linkautowork.v1.ritual.operational` |
-| `ritual.quality` | `aios.ritual.quality` | `linkautowork.v1.ritual.quality` |
-| `workflow.execution` | `aios.workflow.execution` | `linkautowork.v1.workflow.execution` |
-| `security.exception` | `aios.security.exception` | `linkautowork.v1.security.exception` |
-| `killswitch` | `aios.killswitch` | `linkautowork.v1.killswitch` |
-| `lifecycle.transition` | `aios.lifecycle.transition` | `linkautowork.v1.lifecycle.transition` |
+| `eventType` | Subject |
+|---|---|
+| `ritual.strategic` | `linkautowork.v1.ritual.strategic` |
+| `ritual.operational` | `linkautowork.v1.ritual.operational` |
+| `ritual.quality` | `linkautowork.v1.ritual.quality` |
+| `workflow.execution` | `linkautowork.v1.workflow.execution` |
+| `security.exception` | `linkautowork.v1.security.exception` |
+| `killswitch` | `linkautowork.v1.killswitch` |
+| `lifecycle.transition` | `linkautowork.v1.lifecycle.transition` |
 
-Mirrors included when `ENABLE_INTERNAL_MIRROR_SUBJECTS=true` (default). Publish failures are logged as warnings (fail-soft on the event bus, not on ingress auth).
+Publish failures are logged as warnings (fail-soft on the event bus, not on ingress auth).
 
 Payload always includes mission lineage fields + status + nested payload.
 
@@ -238,9 +235,9 @@ Accepted decision (archived at `docs/archive/adr/0001-adopt-shared-platform-org-
 | Program | Relationship |
 |---|---|
 | **LiNKplatform** | Owns `platform.*` foundation; LiNKautowork is a Program schema on the shared stage/prod projects |
-| **LiNKsites / LiNKdeveloper / …** | May publish to gateway ingress or consume `aios.*` when wired; no nested dependency on this repo's packages |
+| **LiNKsites / LiNKdeveloper / …** | May publish to gateway ingress or consume `linkautowork.v1.*` when explicitly wired; no nested dependency on this repo's packages |
 | **LiNKskills / LiNKbrain** | Original PRD described bridges; MVO delivers audit/events, not those products' core logic |
-| **Shelved LiNKaios** | Live templates must not call it; legacy shells archived under `automations/templates/archive/legacy-program-shells-2026-07-18/` |
+| **Historical program shells** | Not a supported dependency; retained only under the non-authoritative template archive |
 
 ---
 
@@ -254,7 +251,6 @@ Accepted decision (archived at `docs/archive/adr/0001-adopt-shared-platform-org-
 | `urgent-event-ingestion.json` | Urgent event intake → gateway publish | critical | ops_approved |
 | `promotion-review-governance.json` | Lifecycle promotion approvals | critical | ops_approved |
 | `restore-authorization-governance.json` | Restore auth + scoped kill-switch | critical | ops_approved |
-| `daily-chairman-briefing.json` | Deprecated shim → unified ritual | non_critical | deprecated |
 
 ### 10.2 Ingress envelope (code)
 

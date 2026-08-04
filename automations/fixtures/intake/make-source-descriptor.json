@@ -1,0 +1,6 @@
+{
+  "platform": "make",
+  "scenario": "Sanitized source descriptor",
+  "modules": ["manual_trigger", "set_result"],
+  "contains_customer_data": false
+}

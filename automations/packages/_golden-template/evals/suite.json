@@ -1,0 +1,73 @@
+{
+  "schema_version": "0.1",
+  "suite_id": "golden-example-validation-suite",
+  "automation_id": "golden-example-validation",
+  "automation_version": "0.1.0",
+  "required_runtime": { "engine": "n8n", "n8n_version": "2.30.0" },
+  "pass_threshold": 1,
+  "cases": [
+    {
+      "case_id": "manual-output-contract",
+      "case_type": "happy_path",
+      "fixture_ref": "fixtures/manual-output-contract.json",
+      "expected": {
+        "outcome": "success",
+        "assertions": ["Output status is exactly ok.", "Output automation_id identifies the release package."],
+        "receipt_fields": ["release_id", "instance_id", "execution_id", "status", "latency_ms"]
+      },
+      "side_effect_mode": "none"
+    },
+    {
+      "case_id": "no-side-effects",
+      "case_type": "side_effect_safety",
+      "fixture_ref": "fixtures/no-side-effects.json",
+      "expected": {
+        "outcome": "no_side_effect",
+        "assertions": ["The workflow has no credentialed or external-action node.", "The workflow remains inactive after evaluation."],
+        "receipt_fields": ["release_id", "execution_id", "status"]
+      },
+      "side_effect_mode": "prohibited"
+    },
+    {
+      "case_id": "invalid-input", "case_type": "validation", "fixture_ref": "fixtures/invalid-input.json",
+      "expected": { "outcome": "controlled_failure", "assertions": ["Invalid input is rejected before execution."] }, "side_effect_mode": "prohibited"
+    },
+    {
+      "case_id": "duplicate-request", "case_type": "idempotency", "fixture_ref": "fixtures/duplicate-request.json",
+      "expected": { "outcome": "controlled_failure", "assertions": ["Duplicate idempotency key has no second side effect."] }, "side_effect_mode": "prohibited"
+    },
+    {
+      "case_id": "upstream-retry-exhausted", "case_type": "upstream_failure", "fixture_ref": "fixtures/upstream-retry-exhausted.json",
+      "expected": { "outcome": "controlled_failure", "assertions": ["Fake upstream failure is classified deterministically."] }, "side_effect_mode": "mocked"
+    },
+    {
+      "case_id": "missing-secret-ref", "case_type": "secret_configuration_failure", "fixture_ref": "fixtures/missing-secret-ref.json",
+      "expected": { "outcome": "controlled_failure", "assertions": ["Missing secret reference fails without a raw secret."] }, "side_effect_mode": "prohibited"
+    },
+    {
+      "case_id": "binding-denied", "case_type": "authorization", "fixture_ref": "fixtures/binding-denied.json",
+      "expected": { "outcome": "controlled_failure", "assertions": ["Unbound caller is denied before dispatch."] }, "side_effect_mode": "prohibited"
+    },
+    {
+      "case_id": "schedule-grace", "case_type": "schedule", "fixture_ref": "fixtures/schedule-grace.json",
+      "expected": { "outcome": "success", "assertions": ["Cadence and grace are declared for monitoring."] }, "side_effect_mode": "none"
+    },
+    {
+      "case_id": "fixed-regression-replay", "case_type": "regression", "fixture_ref": "fixtures/fixed-regression-replay.json",
+      "expected": { "outcome": "success", "assertions": ["Known failure replay is fixed by the current package."] }, "side_effect_mode": "none"
+    },
+    {
+      "case_id": "compatibility-v1", "case_type": "compatibility", "fixture_ref": "fixtures/compatibility-v1.json",
+      "expected": { "outcome": "success", "assertions": ["Versioned invocation compatibility remains stable."] }, "side_effect_mode": "none"
+    },
+    {
+      "case_id": "privacy-redaction", "case_type": "privacy", "fixture_ref": "fixtures/privacy-redaction.json",
+      "expected": { "outcome": "success", "assertions": ["Receipt redacts sensitive fixture fields."] }, "side_effect_mode": "none"
+    }
+  ],
+  "evidence_policy": {
+    "retain": ["case_result", "assertion_result", "release_hash", "runtime_version", "receipt_hash"],
+    "redact": ["Do not persist fixture input values outside the test harness."],
+    "independent_verdict_required": true
+  }
+}

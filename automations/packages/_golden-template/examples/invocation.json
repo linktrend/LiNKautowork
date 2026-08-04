@@ -1,0 +1,6 @@
+{
+  "org_id": "00000000-0000-0000-0000-000000000001",
+  "binding_operation": "linkautowork.golden-package-validation",
+  "idempotency_key": "example-not-for-production",
+  "input": {}
+}

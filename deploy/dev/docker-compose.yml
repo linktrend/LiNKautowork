@@ -1,6 +1,6 @@
 services:
   nats:
-    image: nats:2.10-alpine
+    image: nats:2.10.26-alpine
     command: ["-js"]
     security_opt:
       - no-new-privileges:true
@@ -19,9 +19,11 @@ services:
       context: ../..
       dockerfile: deploy/common/gateway.Dockerfile
     env_file:
-      - .env
+      - path: .env
+        required: false
     depends_on:
-      - nats
+      nats:
+        condition: service_healthy
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -38,9 +40,10 @@ services:
 
   n8n:
     # Pinned official upstream n8n (see deploy/prod and docs/LINKAUTOWORK-TECHNICAL-PRD.md §5).
-    image: docker.n8n.io/n8nio/n8n:2.30.0
+    image: n8nio/n8n:2.30.0
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       - GENERIC_TIMEZONE=Asia/Taipei
       - TZ=Asia/Taipei

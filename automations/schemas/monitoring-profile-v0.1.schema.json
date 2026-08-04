@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.dev/schemas/linkautowork/monitoring-profile-v0.1.schema.json",
+  "title": "LiNKautowork Monitoring Profile v0.1",
+  "description": "Required observable health and SLO declaration. Alert destinations are logical routing keys, not credentials or webhook values.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "profile_id", "slo", "signals", "alerts", "health_checks"],
+  "properties": {
+    "schema_version": { "const": "0.1" },
+    "profile_id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{2,62}$" },
+    "slo": {
+      "type": "object", "additionalProperties": false,
+      "required": ["success_rate_target", "max_latency_ms", "missed_schedule_tolerance"],
+      "properties": {
+        "success_rate_target": { "type": "number", "minimum": 0.9, "maximum": 1 },
+        "max_latency_ms": { "type": "integer", "minimum": 1 },
+        "missed_schedule_tolerance": { "type": "integer", "minimum": 0, "maximum": 100 }
+      }
+    },
+    "signals": {
+      "type": "array", "minItems": 2, "uniqueItems": true,
+      "items": { "enum": ["execution_success", "execution_failure", "latency", "retry_count", "missed_schedule", "dependency_error", "configuration_health", "cost_anomaly", "queue_backlog", "output_contract_failure"] }
+    },
+    "alerts": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["signal", "severity", "condition", "route_key"],
+        "properties": {
+          "signal": { "enum": ["execution_success", "execution_failure", "latency", "retry_count", "missed_schedule", "dependency_error", "configuration_health", "cost_anomaly", "queue_backlog", "output_contract_failure"] },
+          "severity": { "enum": ["info", "warning", "critical"] },
+          "condition": { "type": "string", "minLength": 3, "maxLength": 400 },
+          "route_key": { "type": "string", "pattern": "^[a-z][a-z0-9._-]{2,127}$" }
+        }
+      }
+    },
+    "health_checks": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["check_id", "kind", "interval_seconds"],
+        "properties": {
+          "check_id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{2,62}$" },
+          "kind": { "enum": ["run_completion", "schedule_freshness", "dependency_probe", "configuration_reference", "canary_comparison"] },
+          "interval_seconds": { "type": "integer", "minimum": 30, "maximum": 86400 }
+        }
+      }
+    }
+  }
+}

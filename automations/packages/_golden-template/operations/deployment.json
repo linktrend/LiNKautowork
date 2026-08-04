@@ -1,0 +1,9 @@
+{
+  "schema_version": "0.1",
+  "profile_id": "golden-example-deployment",
+  "supported_environments": ["development", "stage"],
+  "promotion": { "canary_required": false, "independent_approval_required": true },
+  "instance_isolation": { "mode": "logical_shared_n8n", "separate_workflow_copy": true, "separate_credential_scope": true },
+  "configuration": { "configuration_reference_required": true, "secret_values_permitted": false },
+  "rollback": { "previous_certified_release_required": true, "operator_runbook_required": true }
+}

@@ -1,0 +1,17 @@
+{
+  "schema_version": "0.1",
+  "automation_id": "fixture-unresolved-provenance",
+  "sources": [
+    {
+      "source_id": "unresolved-public-workflow",
+      "kind": "n8n_template",
+      "locator": "https://example.invalid/workflow",
+      "revision": "unknown",
+      "content_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "license": "Unknown",
+      "commercial_use": "requires_review",
+      "adaptation_status": "reference_only"
+    }
+  ],
+  "review": { "status": "unresolved", "reviewer_role": "unassigned", "conclusion": "No licence conclusion is available." }
+}

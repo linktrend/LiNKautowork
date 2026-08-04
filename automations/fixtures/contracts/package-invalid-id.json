@@ -1,0 +1,5 @@
+{
+  "schema_version": "0.1",
+  "automation_id": "Invalid Identifier",
+  "release": { "version": "1.2.3", "channel": "development", "lifecycle": "draft", "identity": { "package_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "workflow_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "source_git_sha": "a368a45e164eda92eddf1eccad62e58a7c349399", "n8n_version": "2.30.0" } }
+}

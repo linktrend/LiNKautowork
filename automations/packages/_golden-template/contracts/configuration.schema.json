@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.dev/schemas/linkautowork/golden-example/configuration-v1.json",
+  "title": "Golden Example Configuration v1",
+  "description": "This side-effect-free example requires no instance configuration. Credentials and secret values are never configuration values.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {}
+}
