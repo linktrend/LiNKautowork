@@ -25,8 +25,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install browser used by local UI proof
+        run: npx playwright install --with-deps chromium
+
       - name: Validate templates
         run: npm run validate:templates
+
+      - name: Validate Golden Automation Packages
+        run: npm run validate:automations
+
+      - name: Verify release-readiness surface
+        run: npm run release:check
+
+      - name: Verify generated automation catalogue
+        run: npm run catalog:check
 
       - name: Validate env contract
         run: ops/validate-env-contract.sh
@@ -46,5 +58,74 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Run Automation Architect package tests
+        run: npm run test:automation-architect
+
+      - name: Run Automation Contracts package tests
+        run: npm run test:automation-contracts
+
+      - name: Run Automation Operations package tests
+        run: npm run test:automation-operations
+
+      - name: Run Product API tests
+        run: npm run test:product-api
+
+      - name: Run Operator Console tests
+        run: npm run test:operator-console
+
+      - name: Run Client Product tests
+        run: npm run test:client-product
+
+      - name: Run Automation Librarian tests
+        run: npm run test:automation-librarian
+
+      - name: Verify Automation Librarian durable RPC migration
+        run: npm run verify:automation-librarian-db
+
+      - name: Run executable automation evaluator tests
+        run: npm run test:automation-evals
+
+      - name: Run disposable automation evaluator smoke profile
+        run: npm run eval:smoke
+
+      - name: Run disposable automation evaluator full profile
+        run: npm run eval:full
+
+      - name: Run disposable operations restore rehearsal
+        run: npm run restore:rehearse
+
       - name: Typecheck
         run: npm run typecheck
+
+      - name: Typecheck Automation Architect package
+        run: npm run typecheck:automation-architect
+
+      - name: Typecheck Automation Contracts package
+        run: npm run typecheck:automation-contracts
+
+      - name: Typecheck Automation Operations package
+        run: npm run typecheck:automation-operations
+
+      - name: Typecheck Product API
+        run: npm run typecheck:product-api
+
+      - name: Build Product API
+        run: npm run build:product-api
+
+      - name: Build Operator Console
+        run: npm run build:operator-console
+
+      - name: Typecheck Operator Console
+        run: npm run typecheck:operator-console
+
+      - name: Build Client Product
+        run: npm run build:client-product
+
+      - name: Typecheck Client Product
+        run: npm run typecheck:client-product
+
+      - name: Run real-browser client and operator journey
+        run: npm run test:browser
+
+      - name: Typecheck Automation Librarian gateway adapter
+        run: npm run typecheck:automation-librarian

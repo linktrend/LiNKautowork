@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.dev/schemas/linkautowork/golden-example/output-v1.json",
+  "title": "Golden Example Output v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "automation_id"],
+  "properties": {
+    "status": { "const": "ok" },
+    "automation_id": { "const": "golden-example-validation" }
+  }
+}

@@ -6,6 +6,9 @@ const envSchema = z.object({
   NODE_ENV: z.string().default('development'),
   PORT: z.coerce.number().default(8080),
   REPLAY_WINDOW_SECONDS: z.coerce.number().default(300),
+  PLATFORM_JWT_ISSUER: z.string().url().default('https://platform.test.linktrend.local'),
+  PLATFORM_JWT_AUDIENCE: z.string().default('linkautowork-gateway'),
+  PLATFORM_JWT_TEST_SECRET: z.string().min(32).optional(),
   LINK_HMAC_SHARED_SECRETS: z.string().optional(),
   LINK_HMAC_SHARED_SECRETS_SECRET_NAME: z.string().default('LINKAUTOWORK_LINK_HMAC_SHARED_SECRETS'),
   LINK_SERVICE_TOKENS: z.string().optional(),
@@ -29,6 +32,8 @@ const envSchema = z.object({
     .string()
     .default('LINKAUTOWORK_SUPABASE_SERVICE_ROLE_KEY'),
   SUPABASE_AUDIT_RPC: z.string().default('linkautowork_write_audit_run'),
+  SUPABASE_RUNTIME_JWT: z.string().min(1).optional(),
+  SUPABASE_RUNTIME_JWT_SECRET_NAME: z.string().default('LINKAUTOWORK_SUPABASE_RUNTIME_JWT'),
 
   N8N_BASE_URL: z.string().url(),
   N8N_WEBHOOK_PATH_PREFIX: z.string().default('/webhook'),
@@ -37,7 +42,6 @@ const envSchema = z.object({
   N8N_API_KEY_SECRET_NAME: z.string().default('LINKAUTOWORK_N8N_API_KEY'),
 
   NATS_URL: z.string().default('nats://nats:4222'),
-  ENABLE_INTERNAL_MIRROR_SUBJECTS: z.string().default('true'),
 
   GCP_PROJECT_ID: z.string().optional(),
   GOOGLE_CLOUD_PROJECT: z.string().optional(),
@@ -45,6 +49,14 @@ const envSchema = z.object({
 
   SLACK_SIGNING_SECRET: z.string().optional(),
   SLACK_SIGNING_SECRET_SECRET_NAME: z.string().default('LINKAUTOWORK_SLACK_SIGNING_SECRET'),
+  LIBRARIAN_JWT_ISSUER: z.string().url().default('https://librarian.test.linktrend.local'),
+  LIBRARIAN_JWT_AUDIENCE: z.string().default('linkautowork-librarian'),
+  LIBRARIAN_JWT_TEST_SECRET: z.string().min(32).optional(),
+  LIBRARIAN_JWKS_URL: z.string().url().optional(),
+  LIBRARIAN_JWKS_CACHE_TTL_SECONDS: z.coerce.number().int().min(30).max(300).default(300),
+  LIBRARIAN_TRUSTED_AGGREGATE_ISSUERS: z.string().default(''),
+  EVAL_RECEIPT_VERIFIER_KEYS: z.string().optional(),
+  EVAL_RECEIPT_VERIFIER_KEYS_SECRET_NAME: z.string().default('LINKAUTOWORK_EVAL_RECEIPT_VERIFIER_KEYS'),
 });
 
 function parseKeyValuePairs(raw: string): Map<string, string> {
@@ -64,6 +76,7 @@ export type AppEnv = Omit<
   | 'LINK_CONTROL_TOKEN'
   | 'SUPABASE_SERVICE_ROLE_KEY'
   | 'N8N_API_KEY'
+  | 'EVAL_RECEIPT_VERIFIER_KEYS'
 > & {
   LINK_HMAC_SHARED_SECRETS: string;
   LINK_SERVICE_TOKENS: string;
@@ -72,7 +85,7 @@ export type AppEnv = Omit<
   N8N_API_KEY: string;
   hmacSecrets: Map<string, string>;
   serviceTokens: Map<string, string>;
-  enableInternalMirrorSubjects: boolean;
+  evalReceiptVerifierKeys: Map<string, string>;
 };
 
 export async function loadEnv(
@@ -92,6 +105,8 @@ export async function loadEnv(
     supabaseServiceRoleKey,
     n8nApiKey,
     slackSigningSecret,
+    supabaseRuntimeJwt,
+    evalReceiptVerifierKeys,
   ] = await Promise.all([
     resolveRequiredSecret({
       directValue: parsed.LINK_HMAC_SHARED_SECRETS,
@@ -128,6 +143,12 @@ export async function loadEnv(
       secretName: parsed.SLACK_SIGNING_SECRET_SECRET_NAME,
       projectId: gcpProjectId,
     }),
+    resolveOptionalSecret({
+      directValue: parsed.SUPABASE_RUNTIME_JWT,
+      secretName: parsed.SUPABASE_RUNTIME_JWT_SECRET_NAME,
+      projectId: gcpProjectId,
+    }),
+    resolveOptionalSecret({ directValue: parsed.EVAL_RECEIPT_VERIFIER_KEYS, secretName: parsed.EVAL_RECEIPT_VERIFIER_KEYS_SECRET_NAME, projectId: gcpProjectId }),
   ]);
 
   return {
@@ -139,9 +160,10 @@ export async function loadEnv(
     SUPABASE_SERVICE_ROLE_KEY: supabaseServiceRoleKey,
     N8N_API_KEY: n8nApiKey,
     SLACK_SIGNING_SECRET: slackSigningSecret,
+    SUPABASE_RUNTIME_JWT: supabaseRuntimeJwt,
     hmacSecrets: parseKeyValuePairs(linkHmacSharedSecrets),
     serviceTokens: parseKeyValuePairs(linkServiceTokens),
-    enableInternalMirrorSubjects: parsed.ENABLE_INTERNAL_MIRROR_SUBJECTS === 'true',
+    evalReceiptVerifierKeys: parseKeyValuePairs(evalReceiptVerifierKeys ?? ''),
   };
 }
 

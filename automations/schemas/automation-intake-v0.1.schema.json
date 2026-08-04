@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.dev/schemas/linkautowork/automation-intake-v0.1.schema.json",
+  "title": "LiNKautowork Automation Intake v0.1",
+  "description": "Metadata-only record for a source automation. Raw source content and secret values are forbidden.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "intake_id", "source_kind", "source_locator", "source_digest", "status", "secret_scan_status", "provenance_ref", "target_intent", "source_to_target_map"],
+  "properties": {
+    "schema_version": { "const": "0.1" },
+    "intake_id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{2,62}$" },
+    "source_kind": { "enum": ["n8n_export", "make_blueprint", "zapier_export", "github_repository", "open_source_project", "documented_flow", "manual_specification"] },
+    "source_locator": { "type": "string", "format": "uri", "maxLength": 2048 },
+    "source_revision": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "source_digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "status": { "enum": ["submitted", "quarantined", "assessed", "accepted_for_adaptation", "rejected", "mapped_to_candidate", "archived"] },
+    "secret_scan_status": { "enum": ["pending", "passed", "failed_redacted"] },
+    "provenance_ref": { "type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9][A-Za-z0-9._/-]*$" },
+    "target_intent": { "type": "string", "minLength": 20, "maxLength": 2000 },
+    "source_to_target_map": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["source_component_ref", "target_component_ref", "action", "reason"],
+        "properties": {
+          "source_component_ref": { "type": "string", "minLength": 1, "maxLength": 512 },
+          "target_component_ref": { "type": "string", "minLength": 1, "maxLength": 512 },
+          "action": { "enum": ["reused_as_reference", "reimplemented", "discarded"] },
+          "reason": { "type": "string", "minLength": 3, "maxLength": 1000 }
+        }
+      }
+    }
+  }
+}

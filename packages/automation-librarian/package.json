@@ -1,0 +1,6 @@
+{
+  "name": "@linktrend/automation-librarian",
+  "private": true,
+  "type": "module",
+  "description": "Automation-mode adapter contract; implementation is gateway-owned to preserve gateway policy enforcement."
+}

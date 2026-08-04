@@ -1,13 +1,10 @@
 {
-  "name": "AIOS Urgent Event Ingestion",
+  "name": "LiNKautowork Urgent Event Ingestion",
   "nodes": [
     {
-      "name": "Urgent Event Trigger",
-      "type": "n8n-nodes-base.webhook",
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "aios/urgent-event"
-      }
+      "name": "Governed Urgent Event Dispatch",
+      "type": "n8n-nodes-base.manualTrigger",
+      "parameters": {}
     },
     {
       "name": "Validate Canonical Tenant & Lineage",
@@ -51,7 +48,7 @@
     }
   ],
   "connections": {
-    "Urgent Event Trigger": {
+    "Governed Urgent Event Dispatch": {
       "main": [
         [
           {

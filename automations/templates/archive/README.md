@@ -1,10 +1,12 @@
 # Archived automation templates
 
-**Archived:** 2026-07-15
+**Archived:** 2026-07-15; retirement boundary strengthened 2026-08-04.
 **Reason:** Orphaned / speculative — reference RPCs that were never defined anywhere in this codebase or any sibling Program's applied schema, and serve no current, real Program need.
 **Authority:** Principal instruction (2026-07-15): drop the speculative automations that reference undefined RPCs, and keep only what is actually needed to run the real Programs that exist today (LiNKsites, LiNKplatform, LiNKskills, LiNKbrain, LiNKautowork).
 
 These files were moved here with `git mv` (history preserved, not deleted). They are intentionally **not** listed in `automations/templates/manifest.json` and are **not** scanned by `scripts/validate-templates.mjs` (the validator reads only the top-level `automations/templates/` directory, not this subfolder).
+
+This entire directory is unsupported historical evidence. Nothing below it may be imported, activated, published, or used as a production source. In particular, legacy runtime names, routes, environment variables, and invoke handlers recorded here are prohibited from supported surfaces.
 
 ## What's here and why
 

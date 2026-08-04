@@ -1,7 +1,7 @@
 {
   "source_of_truth": {
     "canonical_directory": "automations/templates",
-    "notes": "LiNKautowork templates are authoritative. Only governance templates that call this repo's gateway are live. Legacy Program shells that depended on shelved LiNKaios invoke handlers were archived 2026-07-18."
+    "notes": "LiNKautowork templates are authoritative. Only governance templates that call this repository's gateway are live. Retired historical runtime material is archive-only and must never be imported or activated."
   },
   "active_tenant": {
     "tenant_uuid": "00000000-0000-0000-0000-000000000001",
@@ -42,12 +42,6 @@
       "workflow_id": "restore-authorization-governance",
       "criticality": "critical",
       "state": "ops_approved"
-    },
-    {
-      "file": "daily-chairman-briefing.json",
-      "workflow_id": "daily-chairman-briefing-legacy",
-      "criticality": "non_critical",
-      "state": "deprecated"
     }
   ]
 }

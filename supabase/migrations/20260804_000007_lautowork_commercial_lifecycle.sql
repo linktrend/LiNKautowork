@@ -1,0 +1,28 @@
+-- Additive durable commercial lifecycle. Payment events are signed local/provider callbacks;
+-- this model never stores payment instruments or selects a provider.
+-- migrate:up
+create table if not exists lautowork.commercial_lifecycles (
+  id uuid primary key default gen_random_uuid(), org_id uuid not null references platform.organizations(id), order_id uuid not null references lautowork.product_orders(id),
+  state text not null check (state in ('initiated','awaiting_payment','payment_not_required','paid','awaiting_configuration','provisioning','active','suspended','cancel_requested','cancelled','failed')),
+  version integer not null default 1, provider_event_sequence bigint not null default 0, unique(order_id), unique(id,org_id));
+create table if not exists lautowork.commercial_lifecycle_events (
+ id bigserial primary key, lifecycle_id uuid not null references lautowork.commercial_lifecycles(id), org_id uuid not null references platform.organizations(id), from_state text, to_state text not null, actor_ref text not null, provider_event_id text, provider_sequence bigint, created_at timestamptz not null default now(), unique(lifecycle_id,provider_event_id));
+create or replace function lautowork.initialize_commercial_lifecycle() returns trigger language plpgsql set search_path=lautowork,pg_temp as $$ declare lid uuid; begin insert into commercial_lifecycles(org_id,order_id,state) values(new.org_id,new.id,'initiated') returning id into lid; insert into commercial_lifecycle_events(lifecycle_id,org_id,to_state,actor_ref) values(lid,new.org_id,'initiated','product-api'); return new; end $$;
+create trigger product_order_commercial_lifecycle after insert on lautowork.product_orders for each row execute function lautowork.initialize_commercial_lifecycle();
+create or replace function public.linkautowork_commercial_transition(p_order_id uuid,p_to_state text,p_actor text,p_provider_event_id text default null,p_provider_sequence bigint default null) returns jsonb language plpgsql security definer set search_path=lautowork,pg_temp as $$
+declare l commercial_lifecycles%rowtype; ok boolean; old_state text; v_org uuid:=lautowork.product_api_org(); begin perform lautowork.assert_product_api_authorized(v_org); select * into l from commercial_lifecycles where order_id=p_order_id and org_id=v_org for update; if not found then raise exception 'commercial lifecycle not found in organization'; end if; old_state:=l.state;
+ if p_provider_event_id is not null and exists(select 1 from commercial_lifecycle_events where lifecycle_id=l.id and provider_event_id=p_provider_event_id) then return jsonb_build_object('id',l.id,'state',l.state,'replay',true,'version',l.version); end if;
+ if p_provider_sequence is not null and p_provider_sequence<=l.provider_event_sequence then raise exception 'provider event out of order'; end if;
+ ok=(l.state='initiated' and p_to_state in ('awaiting_payment','payment_not_required','cancelled')) or (l.state='awaiting_payment' and p_to_state in ('paid','failed','cancel_requested')) or (l.state in ('paid','payment_not_required') and p_to_state in ('awaiting_configuration','cancel_requested')) or (l.state='awaiting_configuration' and p_to_state in ('provisioning','cancel_requested','failed')) or (l.state='provisioning' and p_to_state in ('active','failed','suspended')) or (l.state='active' and p_to_state in ('suspended','cancel_requested','failed')) or (l.state='suspended' and p_to_state in ('active','cancel_requested','cancelled')) or (l.state='cancel_requested' and p_to_state in ('cancelled','active','suspended'));
+ if not ok then raise exception 'invalid commercial transition'; end if;
+ update commercial_lifecycles set state=p_to_state,version=version+1,provider_event_sequence=coalesce(p_provider_sequence,provider_event_sequence) where id=l.id returning * into l; insert into commercial_lifecycle_events(lifecycle_id,org_id,from_state,to_state,actor_ref,provider_event_id,provider_sequence) values(l.id,l.org_id,old_state,p_to_state,p_actor,p_provider_event_id,p_provider_sequence); return jsonb_build_object('id',l.id,'state',l.state,'replay',false,'version',l.version); end $$;
+revoke all on function public.linkautowork_commercial_transition(uuid,text,text,text,bigint) from public;
+grant execute on function public.linkautowork_commercial_transition(uuid,text,text,text,bigint) to service_role,svc_lautowork_runtime;
+create or replace function public.linkautowork_product_accept_terms(p_order_id uuid,p_terms_version text,p_actor text) returns jsonb language plpgsql security definer set search_path=lautowork,pg_temp as $$
+declare v_org uuid:=lautowork.product_api_org(); begin perform lautowork.assert_product_api_authorized(v_org); perform 1 from product_orders where id=p_order_id and org_id=v_org; if not found then raise exception 'order not found in organization'; end if; insert into product_terms_acceptances(org_id,order_id,terms_version,accepted_by) values(v_org,p_order_id,p_terms_version,p_actor) on conflict(order_id,terms_version) do nothing; perform public.linkautowork_commercial_transition(p_order_id,'payment_not_required',p_actor); perform public.linkautowork_commercial_transition(p_order_id,'awaiting_configuration',p_actor); return jsonb_build_object('orderId',p_order_id,'termsVersion',p_terms_version,'accepted',true); end $$;
+-- migrate:down
+drop function if exists public.linkautowork_commercial_transition(uuid,text,text,text,bigint);
+drop trigger if exists product_order_commercial_lifecycle on lautowork.product_orders;
+drop function if exists lautowork.initialize_commercial_lifecycle();
+drop table if exists lautowork.commercial_lifecycle_events;
+drop table if exists lautowork.commercial_lifecycles;

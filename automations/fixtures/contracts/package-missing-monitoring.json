@@ -1,0 +1,5 @@
+{
+  "schema_version": "0.1",
+  "automation_id": "fixture-missing-monitoring",
+  "operations": { "maintenance_ref": "operations/maintenance.json", "deployment_ref": "operations/deployment.json", "runbook_ref": "operations/runbook.md" }
+}

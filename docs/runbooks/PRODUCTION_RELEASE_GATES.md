@@ -3,7 +3,7 @@
 The following gates are mandatory before production promotion.
 
 ## 1. Security gate
-- CI green (`npm run ci`, env contract, secret scan, dependency scan).
+- Fresh clean-checkout evidence is green (`npm run release:check`, `npm run ci`, env contract, secret scan, dependency scan).
 - No raw secrets in committed env files.
 - GSM secret references validated (`ops/render-env-from-gsm.sh prod`).
 - Runtime env rendered from GSM to runtime path outside repo (`ops/render-runtime-env-from-gsm.sh prod --output /opt/linktrend/runtime/linkautowork/prod.env.runtime`).
@@ -24,4 +24,4 @@ The following gates are mandatory before production promotion.
 - Protected actions route via Principal approval protocol.
 - Slack ops/approval channels are configured and tested.
 
-Promotion is blocked until all gates are checked.
+Promotion is blocked until all gates are checked, the VPS Deployment Input Register is complete, the release manifest records the exact image/package hashes and rollback target, and independent audit returns `PASS_PRE_VPS`.

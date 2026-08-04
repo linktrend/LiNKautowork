@@ -4,9 +4,8 @@ import path from 'node:path';
 const root = process.cwd();
 const templateDir = path.join(root, 'automations', 'templates');
 const manifestPath = path.join(templateDir, 'manifest.json');
-// Live set is governance-only (2026-07-18). Legacy LiNKsites / suitegen /
-// linkdeveloper shells that called shelved LiNKaios invoke URLs were archived
-// to automations/templates/archive/legacy-program-shells-2026-07-18/.
+// Live set is governance-only. Historical program shells are non-authoritative
+// archive material and may not be regenerated or imported by this repository.
 const requiredTemplates = [
   'ritual-gates-unified.json',
   'urgent-event-ingestion.json',
@@ -14,7 +13,7 @@ const requiredTemplates = [
   'restore-authorization-governance.json',
 ];
 const tenantUuid = '00000000-0000-0000-0000-000000000001';
-const tenantExemptFiles = new Set(['manifest.json', 'daily-chairman-briefing.json']);
+const tenantExemptFiles = new Set(['manifest.json']);
 
 function fail(message) {
   console.error(`Template validation failed: ${message}`);
@@ -66,6 +65,15 @@ for (const file of topLevelJson) {
   if (file === 'manifest.json') continue;
   if (!manifestFiles.has(file)) {
     fail(`template file not listed in manifest: ${file}`);
+  }
+}
+
+for (const file of requiredTemplates) {
+  const template = JSON.parse(fs.readFileSync(path.join(templateDir, file), 'utf8'));
+  for (const node of template.nodes ?? []) {
+    if (node?.type === 'n8n-nodes-base.webhook') {
+      fail(`unguarded direct n8n webhook is unsupported: ${file}:${node.name ?? 'unnamed'}`);
+    }
   }
 }
 

@@ -1,6 +1,9 @@
 .DS_Store
 node_modules/
 dist/
+.playwright-cli/
+artifacts/
+coverage/
 *.log
 ops/backups/
 deploy/dev/.env
@@ -11,3 +14,4 @@ deploy/prod/.env.runtime
 secrets/
 LiNKdev/factory/STATE.local.md
 LiNKdev/product/reports/**/*.local.md
+supabase/.temp/

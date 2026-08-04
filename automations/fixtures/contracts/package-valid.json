@@ -1,0 +1,17 @@
+{
+  "schema_version": "0.1",
+  "automation_id": "fixture-valid-automation",
+  "display_name": "Fixture Valid Automation",
+  "summary": "A non-deployable schema fixture used to prove the Golden Automation Package v0.1 validation contract.",
+  "ownership": { "owner_kind": "shared_internal", "owning_program": "linkautowork", "classification": "internal_only", "binding_operations": ["linkautowork.fixture-validation"] },
+  "release": { "version": "1.2.3", "channel": "development", "lifecycle": "draft", "identity": { "package_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "workflow_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "source_git_sha": "a368a45e164eda92eddf1eccad62e58a7c349399", "n8n_version": "2.30.0" } },
+  "runtime": { "engine": "n8n", "workflow_ref": "workflow.json", "trigger_mode": "manual", "result_mode": "none" },
+  "contracts": { "input_schema_ref": "contracts/input.schema.json", "output_schema_ref": "contracts/output.schema.json", "configuration_schema_ref": "contracts/configuration.schema.json", "invocation_contract_version": "v1" },
+  "secrets": [],
+  "execution_policy": { "criticality": "low", "side_effects": ["none"], "approval": { "mode": "none" }, "retry": { "max_attempts": 0, "backoff": "none" }, "idempotency": { "required": false, "key_location": "not_applicable" }, "kill_switch_scope": "instance" },
+  "telemetry": { "classification": "internal", "redaction_rules": ["Remove direct input values from retained telemetry."], "retention_days": 30, "required_fields": ["org_id", "instance_id", "release_id", "execution_id"] },
+  "evaluation": { "suite_ref": "evals/suite.json", "required_for_certification": true },
+  "operations": { "monitoring_ref": "operations/monitoring.json", "maintenance_ref": "operations/maintenance.json", "deployment_ref": "operations/deployment.json", "runbook_ref": "operations/runbook.md" },
+  "provenance": { "sources_ref": "provenance/sources.json", "commercial_use_clearance": "not_applicable" },
+  "source_authority": { "kind": "golden_automation_package", "cutover_state": "package_authoritative" }
+}
