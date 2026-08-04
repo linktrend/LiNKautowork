@@ -49,6 +49,7 @@ export class DockerN8nRuntime {
     }
   }
   start(packageDir) {
+    this.commandRunner('docker', ['pull', this.image]);
     const inspect = this.commandRunner('docker', ['image', 'inspect', '--format', '{{.Id}}|{{json .RepoDigests}}', this.image]);
     const [imageId, repoDigests] = inspect.split('|');
     const version = this.commandRunner('docker', ['run', '--rm', '--label', DISPOSABLE_EVAL_LABEL, '--entrypoint', 'n8n', this.image, '--version']);

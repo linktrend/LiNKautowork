@@ -89,6 +89,8 @@ test('Docker runtime labels only its primary and restore disposable volumes', ()
   } });
   const packageDir = path.join(repoRoot, 'automations/packages/_golden-template');
   runtime.start(packageDir);
+  assert.deepEqual(calls[0], ['pull', 'n8nio/n8n:2.30.0']);
+  assert.deepEqual(calls[1].slice(0, 2), ['image', 'inspect']);
   const output = fs.mkdtempSync(path.join(os.tmpdir(), 'wp06-label-'));
   fs.writeFileSync(path.join(output, 'workflows.json'), '[]');
   runtime.restoreAndExecute(path.join(output, 'workflows.json'), 'golden-example-validation-eval');
