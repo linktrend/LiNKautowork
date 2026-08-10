@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "catalogId": "ide-development-managed-core-migrations",
+  "packageVersion": "2.1.0",
+  "description": "Reviewed Wave 1 supersession catalog. Removals require exact identity and contentHash match; mismatches fail closed.",
+  "entries": [
+    {
+      "identity": ".cursor/rules/obsolete-generic-v1.mdc",
+      "path": ".cursor/rules/obsolete-generic-v1.mdc",
+      "contentHash": "sha256:6db131f8918e3603e9daeceb732d377294d198a4a6690a211cffa76f3b876734",
+      "action": "remove",
+      "reason": "Pre-v2 obsolete generic Cursor rule replaced by managed-core physical entrypoints.",
+      "sincePackageVersion": "2.0.0",
+      "knownBytes": "core/managed-core/migrations/known-bytes/obsolete-generic-v1.mdc"
+    },
+    {
+      "identity": ".cursor/rules/obsolete-mac-local-adoption-stub-v1.mdc",
+      "path": ".cursor/rules/obsolete-mac-local-adoption-stub-v1.mdc",
+      "contentHash": "sha256:2f706773006dc7de1c8d49647aee1b0cb3aa0ff595db3cd6f74e0908db4c6bf3",
+      "action": "remove",
+      "reason": "Legacy Mac-local adoption stub superseded by committed .ide-development package.",
+      "sincePackageVersion": "2.0.0",
+      "knownBytes": "core/managed-core/migrations/known-bytes/obsolete-mac-local-adoption-stub-v1.mdc"
+    },
+    {
+      "identity": ".ide-development-upgrade-notes/obsolete-sparse-gitops-note-v1.md",
+      "path": ".ide-development-upgrade-notes/obsolete-sparse-gitops-note-v1.md",
+      "contentHash": "sha256:344820df2427d355f102da2647715c86b53883fbdd1c504c99a3c3dff9a0c348",
+      "action": "remove",
+      "reason": "Sparse GitOps install note superseded by managed-core v2 package identity.",
+      "sincePackageVersion": "2.0.0",
+      "knownBytes": "core/managed-core/migrations/known-bytes/obsolete-sparse-gitops-note-v1.md"
+    }
+  ]
+}

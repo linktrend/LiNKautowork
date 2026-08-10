@@ -1,64 +1,171 @@
 name: LiNKtrend Integrator Merge To Development
 
-# Merge-only Integrator: enable auto-merge when PR targets development and is ready.
-# Branch protection + Bugbot review remain the quality gates.
-on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, labeled]
-    branches: [development]
-  pull_request_review:
-    types: [submitted]
-  check_suite:
-    types: [completed]
+# Privileged jobs checkout the default branch only (never PR head/merge).
+# Resolve (read-only GITHUB_TOKEN) then evaluate (App token) only when relevant.
+#
+# Concurrency: exact candidate head SHA for automatic events; workflow_dispatch may
+# use explicit pr_number when no SHA is present. cancel-in-progress=false.
+#
+# Consumers: workflow_run.workflows is STATIC YAML rendered from
+# .github/linktrend-gitops-consumer.json by scripts/sync-managed-workflows.sh.
 
-permissions:
-  contents: write
-  pull-requests: write
-  checks: read
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [development]
+  workflow_run:
+    workflows:
+      - LiNKautowork CI
+      - Branch Source Policy
+    types: [completed]
+  check_run:
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Optional PR number to evaluate"
+        required: false
+        type: string
+
+permissions: {}
 
 concurrency:
-  group: integrator-${{ github.event.pull_request.number || github.event.check_suite.head_sha || github.run_id }}
-  cancel-in-progress: true
+  group: linktrend-integrator-eval-${{ github.event.pull_request.head.sha || github.event.workflow_run.head_sha || github.event.check_run.head_sha || github.event.inputs.pr_number || format('misc-{0}', github.run_id) }}
+  cancel-in-progress: false
 
 jobs:
-  enable-auto-merge:
+  resolve:
+    name: Resolve candidate (read-only)
     if: >
-      github.event_name == 'pull_request' &&
-      github.event.pull_request.draft == false &&
-      github.event.pull_request.base.ref == 'development'
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'pull_request_target' ||
+      (
+        github.event_name == 'workflow_run' &&
+        github.event.workflow_run.conclusion == 'success'
+      ) ||
+      (
+        github.event_name == 'check_run' &&
+        github.event.check_run.app.slug != 'github-actions' &&
+        github.event.check_run.name != 'evaluate' &&
+        github.event.check_run.name != 'Linktrend Integrator Result' &&
+        github.event.check_run.name != 'Linktrend Packager Result' &&
+        github.event.check_run.name != 'Linktrend Staging Outcome' &&
+        github.event.check_run.name != 'Linktrend Main Outcome' &&
+        github.event.check_run.name != 'enable-auto-merge' &&
+        github.event.check_run.name != 'merge-when-ready'
+      )
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      relevant: ${{ steps.r.outputs.relevant }}
+      pr: ${{ steps.r.outputs.pr }}
+      base: ${{ steps.r.outputs.base }}
+      head_ref: ${{ steps.r.outputs.head_ref }}
+      head_sha: ${{ steps.r.outputs.head_sha }}
+      reason: ${{ steps.r.outputs.reason }}
     steps:
-      - name: Enable auto-merge (squash)
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR: ${{ github.event.pull_request.number }}
-        run: |
-          set -euo pipefail
-          # Soft-enable; merge still waits for required checks + reviews.
-          gh pr merge "${PR}" --auto --squash || \
-            echo "Auto-merge not enabled yet (checks/reviews/policy). Integrator will retry on later events."
+      - name: Checkout trusted default branch only
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
 
-  merge-when-ready:
-    if: >
-      (github.event_name == 'pull_request_review' && github.event.review.state == 'approved' && github.event.pull_request.base.ref == 'development') ||
-      (github.event_name == 'check_suite' && github.event.check_suite.conclusion == 'success')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Merge open development PRs that are green
+      - name: Resolve PR/base/head (no App token)
+        id: r
         env:
           GH_TOKEN: ${{ github.token }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RESOLVE_ROLE: integrator
+        run: python3 scripts/gitops/resolve_event_pr.py
+
+  evaluate:
+    name: evaluate
+    needs: resolve
+    if: needs.resolve.outputs.relevant == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout trusted default branch only
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - name: Mint GitHub App token
+        id: app
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        continue-on-error: true
+        with:
+          app-id: ${{ vars.LINKTREND_GITOPS_APP_ID }}
+          private-key: ${{ secrets.LINKTREND_GITOPS_APP_PRIVATE_KEY }}
+
+      - name: Evaluate and maybe merge
+        env:
+          LINKTREND_GITOPS_APP_ID: ${{ vars.LINKTREND_GITOPS_APP_ID }}
+          LINKTREND_APP_TOKEN: ${{ steps.app.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ needs.resolve.outputs.pr }}
+          HEAD_SHA: ${{ needs.resolve.outputs.head_sha }}
+          REQUIRED_CHECKS: ${{ vars.LINKTREND_INTEGRATOR_REQUIRED_CHECKS || 'Verify IDE Development,Enforce allowed PR source branches' }}
+          BUGBOT_SUCCESS_CHECK_NAME: Cursor Bugbot
+          GATE_WAIT_SECONDS: "120"
+          GATE_POLL_SECONDS: "15"
+          REQUIRE_APP_TOKEN: "1"
         run: |
           set -euo pipefail
-          # For check_suite events, scan open PRs into development from this head SHA when present.
-          mapfile -t prs < <(gh pr list --base development --state open --json number,isDraft,mergeable,url --jq '.[] | select(.isDraft==false) | .number')
-          for pr in "${prs[@]:-}"; do
-            [ -n "${pr}" ] || continue
-            echo "Evaluating PR #${pr}"
-            # Attempt merge; GitHub enforces branch protection (checks + Bugbot review when required).
-            if gh pr merge "${pr}" --squash --auto; then
-              echo "Auto-merge armed or completed for #${pr}"
-            else
-              # If already mergeable and approved path allows, try immediate merge.
-              gh pr merge "${pr}" --squash || echo "PR #${pr} not ready"
-            fi
-          done
+          if ! source scripts/gitops/resolve_automation_token.sh; then
+            # App unavailable: local outcome + failed workflow only — no GITHUB_TOKEN mutations.
+            python3 scripts/gitops/write_outcome.py \
+              --file integrator-result.json \
+              --status automation_credentials_blocked \
+              --detail "Integrator requires GitHub App token for autonomous merge"
+            cp integrator-result.json gitops-outcome.json
+            echo "### Integrator status: \`automation_credentials_blocked\`" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          export AUTOMATION_TOKEN AUTOMATION_TOKEN_SOURCE
+          export GH_TOKEN="${AUTOMATION_TOKEN}"
+          export GITHUB_TOKEN="${AUTOMATION_TOKEN}"
+          bash scripts/gitops/integrator_evaluate.sh
+
+      - name: Upload integrator result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrator-result
+          path: |
+            integrator-result.json
+            gitops-outcome.json
+          if-no-files-found: ignore
+
+          retention-days: 5
+      - name: Summarize honest status
+        if: always()
+        run: |
+          set -euo pipefail
+          f=""
+          if [ -f integrator-result.json ]; then f=integrator-result.json
+          elif [ -f gitops-outcome.json ]; then f=gitops-outcome.json
+          fi
+          if [ -n "$f" ]; then
+            status="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["status"])' "$f")"
+            detail="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("detail",""))' "$f")"
+            echo "### Integrator status: \`${status}\`" >> "$GITHUB_STEP_SUMMARY"
+            echo "${detail}" >> "$GITHUB_STEP_SUMMARY"
+            echo "resolve_reason=${{ needs.resolve.outputs.reason }}" >> "$GITHUB_STEP_SUMMARY"
+            case "${status}" in
+              failed|automation_credentials_blocked) exit 1 ;;
+              *) exit 0 ;;
+            esac
+          else
+            echo "missing outcome file" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi

@@ -1,0 +1,216 @@
+# Managed by IDE Development — do not edit by hand in consumers.
+# Sync: scripts/sync-managed-workflows.sh
+#
+# TRUST BOUNDARY: privileged jobs check out the default branch only.
+# Resolve (read-only) then promote (App token) only when relevant.
+# Empty pull_requests: commits API lookup; fail closed if unresolved.
+name: Development → Staging Promotion
+
+on:
+  schedule:
+    - cron: "0 2 * * 2,5"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "build = create/update candidate; reevaluate = exact promote PR"
+        required: true
+        default: reevaluate
+        type: choice
+        options: [build, reevaluate]
+      promote_pr_number:
+        description: "Exact promote PR number (reevaluate)"
+        required: false
+        type: string
+      expected_head_sha:
+        description: "Expected promote PR head SHA (reevaluate)"
+        required: false
+        type: string
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    branches: [staging]
+  check_run:
+    types: [completed]
+  workflow_run:
+    workflows:
+      - LiNKautowork CI
+      - Branch Source Policy
+    types: [completed]
+
+concurrency:
+  group: development-to-staging
+  cancel-in-progress: false
+
+permissions: {}
+
+# Cost note: never use ${{ env.* }} at job-level env (invalid context → zero-job runs).
+# Skip irrelevant wakes: non-promote PR heads, own outcome checks, failed workflow_run.
+jobs:
+  resolve:
+    name: Resolve candidate (read-only)
+    if: >
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event_name == 'pull_request_target' &&
+        startsWith(github.event.pull_request.head.ref, 'promote/')
+      ) ||
+      (
+        github.event_name == 'workflow_run' &&
+        github.event.workflow_run.conclusion == 'success' &&
+        startsWith(github.event.workflow_run.head_branch, 'promote/')
+      ) ||
+      (
+        github.event_name == 'check_run' &&
+        github.event.check_run.app.slug != 'github-actions' &&
+        github.event.check_run.name != 'Linktrend Staging Outcome' &&
+        github.event.check_run.name != 'Linktrend Main Outcome' &&
+        github.event.check_run.name != 'Linktrend Packager Result' &&
+        github.event.check_run.name != 'Linktrend Integrator Result'
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      relevant: ${{ steps.r.outputs.relevant }}
+      pr: ${{ steps.r.outputs.pr }}
+      head_sha: ${{ steps.r.outputs.head_sha }}
+      reason: ${{ steps.r.outputs.reason }}
+      mode: ${{ steps.mode.outputs.mode }}
+    steps:
+      - name: Checkout trusted default branch only
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - name: Resolve mode
+        id: mode
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_MODE: ${{ github.event.inputs.mode }}
+        run: |
+          set -euo pipefail
+          MODE="reevaluate"
+          case "${EVENT_NAME}" in
+            schedule) MODE="build" ;;
+            workflow_dispatch) MODE="${INPUT_MODE:-reevaluate}" ;;
+          esac
+          echo "mode=${MODE}" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve PR/base/head (no App token)
+        id: r
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RESOLVE_ROLE: staging
+        run: python3 scripts/gitops/resolve_event_pr.py
+
+  promote:
+    needs: resolve
+    if: needs.resolve.outputs.relevant == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      OUTCOME_CHECK_NAME: Linktrend Staging Outcome
+      STAGING_GATE_CHECKS: ${{ vars.LINKTREND_STAGING_GATE_CHECKS || 'Verify IDE Development,Enforce allowed PR source branches' }}
+      REQUIRE_APP_TOKEN: "1"
+      LINKTREND_GITOPS_APP_ID: ${{ vars.LINKTREND_GITOPS_APP_ID }}
+    steps:
+      - name: Checkout trusted default branch only
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Mint GitHub App token
+        id: app
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        continue-on-error: true
+        with:
+          app-id: ${{ vars.LINKTREND_GITOPS_APP_ID }}
+          private-key: ${{ secrets.LINKTREND_GITOPS_APP_PRIVATE_KEY }}
+
+      - name: Check App token minted
+        id: creds
+        env:
+          LINKTREND_APP_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          set -euo pipefail
+          if source scripts/gitops/resolve_automation_token.sh; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Report credentials blocked
+        if: steps.creds.outputs.ready != 'true'
+        env:
+          HEAD_SHA: ${{ needs.resolve.outputs.head_sha || github.sha }}
+        run: |
+          set -euo pipefail
+          # App unavailable: local outcome + failed workflow only — no GITHUB_TOKEN mutations.
+          python3 scripts/gitops/write_outcome.py \
+            --status automation_credentials_blocked \
+            --detail "LINKTREND_GITOPS_APP_ID / minted App token required for autonomous promotion."
+          echo "### Staging outcome: \`automation_credentials_blocked\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "head_sha=${HEAD_SHA}" >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+      - name: Configure git remote for App token pushes
+        if: steps.creds.outputs.ready == 'true'
+        env:
+          LINKTREND_APP_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          set -euo pipefail
+          source scripts/gitops/resolve_automation_token.sh
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin "https://x-access-token:${AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+
+      - name: Run staging promotion
+        if: steps.creds.outputs.ready == 'true'
+        env:
+          MODE: ${{ needs.resolve.outputs.mode }}
+          PROMOTE_PR_NUMBER: ${{ needs.resolve.outputs.pr || github.event.inputs.promote_pr_number }}
+          EXPECTED_PROMOTE_HEAD: ${{ needs.resolve.outputs.head_sha || github.event.inputs.expected_head_sha }}
+          GH_REPO: ${{ github.repository }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          LINKTREND_APP_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          set -euo pipefail
+          source scripts/gitops/resolve_automation_token.sh
+          export GH_TOKEN="${AUTOMATION_TOKEN}"
+          export GITHUB_TOKEN="${AUTOMATION_TOKEN}"
+          bash scripts/gitops/promote_staging.sh
+          status="$(python3 -c 'import json; print(json.load(open("gitops-outcome.json"))["status"])')"
+          detail="$(python3 -c 'import json; print(json.load(open("gitops-outcome.json")).get("detail",""))')"
+          sha="${EXPECTED_PROMOTE_HEAD:-$GITHUB_SHA}"
+          python3 scripts/gitops/write_outcome.py \
+            --status "$status" \
+            --detail "$detail" \
+            --check-name "$OUTCOME_CHECK_NAME" \
+            --head-sha "$sha" \
+            --token-env AUTOMATION_TOKEN
+          echo "### Staging outcome: \`${status}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "${detail}" >> "$GITHUB_STEP_SUMMARY"
+          echo "resolve_reason=${{ needs.resolve.outputs.reason }}" >> "$GITHUB_STEP_SUMMARY"
+          case "${status}" in
+            failed|automation_credentials_blocked) exit 1 ;;
+            *) exit 0 ;;
+          esac
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: staging-promote-report
+          path: |
+            gitops-outcome.json
+          if-no-files-found: ignore
+          retention-days: 5

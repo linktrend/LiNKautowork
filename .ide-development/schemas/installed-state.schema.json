@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/installed-state.schema.json",
+  "title": "IDE Development managed-core installed-state (v2)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "packageVersion",
+    "installedAt",
+    "files"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "packageName": {
+      "type": "string",
+      "const": "ide-development-managed-core"
+    },
+    "packageVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+([.-][0-9A-Za-z.-]+)?$"
+    },
+    "manifestHash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "Optional SHA-256 of the installed package MANIFEST.json bytes."
+    },
+    "installedAt": {
+      "type": "string",
+      "minLength": 1,
+      "description": "UTC timestamp of last successful mutation."
+    },
+    "lastTransactionId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional id of the last successful mutating transaction."
+    },
+    "repositoryId": {
+      "type": "string",
+      "description": "Optional opaque repo identity (remote URL hash or GitHub slug). Must not embed local absolute checkout paths as package payload."
+    },
+    "files": {
+      "type": "object",
+      "description": "Map of destination path -> installed file state.",
+      "additionalProperties": {
+        "$ref": "#/$defs/fileState"
+      }
+    }
+  },
+  "$defs": {
+    "fileState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "sourceHash",
+        "contentHash",
+        "mode"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceHash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "contentHash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "description": "SHA-256 of the full installed destination file bytes after apply (including preserved consumer text outside managed markers)."
+        },
+        "mode": {
+          "type": "string",
+          "pattern": "^0[0-7]{3}$"
+        },
+        "ownershipClass": {
+          "type": "string"
+        },
+        "platform": {
+          "type": "string"
+        },
+        "mergeStrategy": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

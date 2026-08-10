@@ -1,0 +1,9 @@
+---
+description: Obsolete pre-v2 generic Cursor rule (reviewed exact-hash supersession target).
+alwaysApply: true
+---
+
+# Obsolete generic (do not use)
+
+Reviewed Wave 1 supersession target for IDE Development managed-core v2.
+Safe to remove only when identity and content hash match exactly.
