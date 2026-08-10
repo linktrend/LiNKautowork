@@ -582,8 +582,8 @@
     },
     ".ide-development/MANIFEST.json": {
       "id": "package-manifest",
-      "sourceHash": "sha256:2b3c7c26f09ed7ffe78cfc8695e397606454f15ac4a3360d8607a4bf13b4ecab",
-      "contentHash": "sha256:2b3c7c26f09ed7ffe78cfc8695e397606454f15ac4a3360d8607a4bf13b4ecab",
+      "sourceHash": "sha256:7103c4a6bb8dd46dadc2e4566cb3bf54604c1b740eac65d23bb4ac336a988703",
+      "contentHash": "sha256:7103c4a6bb8dd46dadc2e4566cb3bf54604c1b740eac65d23bb4ac336a988703",
       "mode": "0644"
     },
     ".ide-development/README.md": {
@@ -1116,8 +1116,8 @@
     },
     "scripts/gitops/completion_gate.py": {
       "id": "gitops-scripts-gitops-completion-gate-py",
-      "sourceHash": "sha256:1cf9b824347151333d21b0e24e07876c87a9ae2dbf892b032b2f1ea1ccb2fc11",
-      "contentHash": "sha256:1cf9b824347151333d21b0e24e07876c87a9ae2dbf892b032b2f1ea1ccb2fc11",
+      "sourceHash": "sha256:a9fa724f0f0c1093593d0257660ef7735a2ef8f07551d614bc43f998f4f95338",
+      "contentHash": "sha256:a9fa724f0f0c1093593d0257660ef7735a2ef8f07551d614bc43f998f4f95338",
       "mode": "0755"
     },
     "scripts/gitops/conflict_task.py": {
@@ -1140,8 +1140,8 @@
     },
     "scripts/gitops/external_state_audit.py": {
       "id": "gitops-scripts-gitops-external-state-audit-py",
-      "sourceHash": "sha256:7c560b0a9933b7ce7e76b97741733044648b6f063ca22db468d56e954fa6c824",
-      "contentHash": "sha256:7c560b0a9933b7ce7e76b97741733044648b6f063ca22db468d56e954fa6c824",
+      "sourceHash": "sha256:351a029f965d948c0e405a2d52fc5452d341d90748ec3a78f8a6819db7500480",
+      "contentHash": "sha256:351a029f965d948c0e405a2d52fc5452d341d90748ec3a78f8a6819db7500480",
       "mode": "0755"
     },
     "scripts/gitops/integrator_evaluate.sh": {
