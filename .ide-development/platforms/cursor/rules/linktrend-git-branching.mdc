@@ -1,0 +1,23 @@
+---
+description: LiNKtrend managed branching defaults for consumer repos.
+alwaysApply: true
+---
+
+# LiNKtrend git branching (managed)
+
+- Integration branch: **`development`**
+- Studio default work branch: **`issue/<id>-<slug>`** (one short-lived branch per governed issue)
+- Cloud agents may use `cursor/*`; `dev/*` is rare ad-hoc only
+- Merge into `development` only via Review Packager → Integrator (implementers never open/merge that PR)
+- Promotion `development` → `staging` → `main` is automation/Principal only
+
+## Session entrypoints
+
+- **New coding session:** `/agentsetup` → `.cursor/commands/agentsetup.md` → `.cursor/skills/agentsetup/SKILL.md`
+- **Already-open / wrong branch:** `/agentcomply` → `.cursor/commands/agentcomply.md` → `.cursor/skills/agentcomply/SKILL.md`
+- Auto issue/branch: `python3 scripts/gitops/create_issue_branch.py` (never ask humans for issue id/slug)
+
+## Hard stops
+
+- No implementer PRs, no self-merge, no self-review, no staging/main promotion from implementer sessions
+- Ship = checkpoint (commit + push) only

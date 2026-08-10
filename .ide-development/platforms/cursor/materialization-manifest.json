@@ -1,0 +1,330 @@
+{
+  "schemaVersion": 1,
+  "platform": "cursor",
+  "claudeOutOfScope": true,
+  "entries": [
+    {
+      "source": "platforms/cursor/rules/cursor-gitops-bootstrap.mdc",
+      "destination": ".cursor/rules/cursor-gitops-bootstrap.mdc",
+      "mode": "managed-file",
+      "required": true
+    },
+    {
+      "source": "platforms/cursor/rules/linktrend-git-branching.mdc",
+      "destination": ".cursor/rules/linktrend-git-branching.mdc",
+      "mode": "managed-file",
+      "required": true
+    },
+    {
+      "source": "platforms/cursor/commands/agentsetup.md",
+      "destination": ".cursor/commands/agentsetup.md",
+      "mode": "managed-file",
+      "required": true
+    },
+    {
+      "source": "platforms/cursor/commands/agentcomply.md",
+      "destination": ".cursor/commands/agentcomply.md",
+      "mode": "managed-file",
+      "required": true
+    },
+    {
+      "source": "platforms/cursor/skills/agentsetup/SKILL.md",
+      "destination": ".cursor/skills/agentsetup/SKILL.md",
+      "mode": "managed-file",
+      "required": true
+    },
+    {
+      "source": "platforms/cursor/skills/agentcomply/SKILL.md",
+      "destination": ".cursor/skills/agentcomply/SKILL.md",
+      "mode": "managed-file",
+      "required": true
+    },
+    {
+      "source": "skills/action-queue/SKILL.md",
+      "destination": ".cursor/skills/action-queue/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/api-patterns/SKILL.md",
+      "destination": ".cursor/skills/api-patterns/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/app-builder/SKILL.md",
+      "destination": ".cursor/skills/app-builder/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/architecture/SKILL.md",
+      "destination": ".cursor/skills/architecture/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/bash-linux/SKILL.md",
+      "destination": ".cursor/skills/bash-linux/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/ci-cd-and-automation/SKILL.md",
+      "destination": ".cursor/skills/ci-cd-and-automation/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/code-review-and-quality/SKILL.md",
+      "destination": ".cursor/skills/code-review-and-quality/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/code-simplification/SKILL.md",
+      "destination": ".cursor/skills/code-simplification/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/context-engineering/SKILL.md",
+      "destination": ".cursor/skills/context-engineering/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/data-table/SKILL.md",
+      "destination": ".cursor/skills/data-table/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/database-design/SKILL.md",
+      "destination": ".cursor/skills/database-design/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/deployment-procedures/SKILL.md",
+      "destination": ".cursor/skills/deployment-procedures/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/deprecation-and-migration/SKILL.md",
+      "destination": ".cursor/skills/deprecation-and-migration/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/documentation-and-adrs/SKILL.md",
+      "destination": ".cursor/skills/documentation-and-adrs/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/frontend-ui-engineering/SKILL.md",
+      "destination": ".cursor/skills/frontend-ui-engineering/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/git-safeguard/SKILL.md",
+      "destination": ".cursor/skills/git-safeguard/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/i18n-localization/SKILL.md",
+      "destination": ".cursor/skills/i18n-localization/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/incremental-implementation/SKILL.md",
+      "destination": ".cursor/skills/incremental-implementation/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/intelligent-routing/SKILL.md",
+      "destination": ".cursor/skills/intelligent-routing/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/lint-and-validate/SKILL.md",
+      "destination": ".cursor/skills/lint-and-validate/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/mcp-builder/SKILL.md",
+      "destination": ".cursor/skills/mcp-builder/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/mobile-design/SKILL.md",
+      "destination": ".cursor/skills/mobile-design/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/model-routing/SKILL.md",
+      "destination": ".cursor/skills/model-routing/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/nodejs-best-practices/SKILL.md",
+      "destination": ".cursor/skills/nodejs-best-practices/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/observability-and-instrumentation/SKILL.md",
+      "destination": ".cursor/skills/observability-and-instrumentation/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/parallel-agents/SKILL.md",
+      "destination": ".cursor/skills/parallel-agents/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/performance-optimization/SKILL.md",
+      "destination": ".cursor/skills/performance-optimization/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/persistent-qa/SKILL.md",
+      "destination": ".cursor/skills/persistent-qa/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/personal-information-forms/SKILL.md",
+      "destination": ".cursor/skills/personal-information-forms/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/powershell-windows/SKILL.md",
+      "destination": ".cursor/skills/powershell-windows/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/python-patterns/SKILL.md",
+      "destination": ".cursor/skills/python-patterns/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/repository-manager/SKILL.md",
+      "destination": ".cursor/skills/repository-manager/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/rust-pro/SKILL.md",
+      "destination": ".cursor/skills/rust-pro/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/security-and-hardening/SKILL.md",
+      "destination": ".cursor/skills/security-and-hardening/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/server-management/SKILL.md",
+      "destination": ".cursor/skills/server-management/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/skill-template/SKILL.md",
+      "destination": ".cursor/skills/skill-template/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/source-driven-development/SKILL.md",
+      "destination": ".cursor/skills/source-driven-development/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/tailwind-patterns/SKILL.md",
+      "destination": ".cursor/skills/tailwind-patterns/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/testing-patterns/SKILL.md",
+      "destination": ".cursor/skills/testing-patterns/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/tool-architect/SKILL.md",
+      "destination": ".cursor/skills/tool-architect/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    },
+    {
+      "source": "skills/webapp-testing/SKILL.md",
+      "destination": ".cursor/skills/webapp-testing/SKILL.md",
+      "mode": "managed-file",
+      "required": false,
+      "note": "Materialize when packaged under managed-core skills/"
+    }
+  ]
+}

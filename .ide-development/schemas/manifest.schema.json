@@ -1,0 +1,184 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/manifest.schema.json",
+  "title": "IDE Development managed-core package manifest (v2)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "packageName",
+    "packageVersion",
+    "files"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "Manifest schema major version."
+    },
+    "packageName": {
+      "type": "string",
+      "const": "ide-development-managed-core"
+    },
+    "packageVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+([.-][0-9A-Za-z.-]+)?$"
+    },
+    "description": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string",
+      "description": "UTC timestamp when this manifest was produced."
+    },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Ordered managed path entries. Installers may sort deterministically by destination then id.",
+      "items": {
+        "$ref": "#/$defs/manifestEntry"
+      }
+    }
+  },
+  "$defs": {
+    "sha256Digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "repoRelativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/|\\\\)(?!.*\\.\\.(?:/|\\\\|$))(?!.*:)[A-Za-z0-9._@+, \\-]+(?:/[A-Za-z0-9._@+, \\-]+)*$",
+      "description": "POSIX-style relative path inside the repository. Spaces allowed. No absolute paths, drive letters, or .. segments."
+    },
+    "fileMode": {
+      "type": "string",
+      "pattern": "^0[0-7]{3}$",
+      "description": "POSIX mode string such as 0644 or 0755."
+    },
+    "ownershipClass": {
+      "type": "string",
+      "enum": [
+        "managed",
+        "managed-core",
+        "managed-entrypoint",
+        "managed-marker",
+        "optional",
+        "consumer-preserve",
+        "external-state"
+      ]
+    },
+    "platform": {
+      "type": "string",
+      "enum": ["all", "cursor", "codex", "github", "none"],
+      "description": "Discovery/runtime adapter scope. Not an OS filter."
+    },
+    "os": {
+      "type": "string",
+      "enum": ["all", "posix", "windows", "darwin", "linux"],
+      "description": "Optional OS applicability filter. Default when omitted: all."
+    },
+    "mergeStrategy": {
+      "type": "string",
+      "enum": [
+        "replace",
+        "create-only",
+        "remove-if-matches",
+        "marker-upsert",
+        "external-plan-only"
+      ]
+    },
+    "manifestEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "ownershipClass",
+        "source",
+        "sourceHash",
+        "destination",
+        "mode",
+        "platform",
+        "mergeStrategy"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9_.-]*$"
+        },
+        "ownershipClass": {
+          "$ref": "#/$defs/ownershipClass"
+        },
+        "source": {
+          "$ref": "#/$defs/repoRelativePath",
+          "description": "Package-relative source path in the system or installed package tree."
+        },
+        "sourceHash": {
+          "$ref": "#/$defs/sha256Digest"
+        },
+        "destination": {
+          "$ref": "#/$defs/repoRelativePath"
+        },
+        "mode": {
+          "$ref": "#/$defs/fileMode"
+        },
+        "platform": {
+          "$ref": "#/$defs/platform"
+        },
+        "os": {
+          "$ref": "#/$defs/os"
+        },
+        "mergeStrategy": {
+          "$ref": "#/$defs/mergeStrategy"
+        },
+        "markerBegin": {
+          "type": "string",
+          "description": "Required for managed-marker entries."
+        },
+        "markerEnd": {
+          "type": "string",
+          "description": "Required for managed-marker entries."
+        },
+        "supersessionIdentity": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional link to migrations/catalog.json identity. Exact hash match is required before removal."
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "ownershipClass": { "const": "managed-marker" }
+            },
+            "required": ["ownershipClass"]
+          },
+          "then": {
+            "required": ["markerBegin", "markerEnd"],
+            "properties": {
+              "mergeStrategy": { "const": "marker-upsert" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ownershipClass": { "const": "external-state" }
+            },
+            "required": ["ownershipClass"]
+          },
+          "then": {
+            "properties": {
+              "mergeStrategy": { "const": "external-plan-only" },
+              "platform": { "const": "github" }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

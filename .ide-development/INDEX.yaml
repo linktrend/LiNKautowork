@@ -1,0 +1,28 @@
+# Managed-core discovery index
+version: "2.1.0"
+status: wave1-architecture
+contract: docs/contracts/MANAGED-CORE-V2.md
+adr: docs/adr/0004-portable-managed-core-v2.md
+package_root_consumer: ".ide-development"
+schemas:
+  - schemas/manifest.schema.json
+  - schemas/installed-state.schema.json
+  - schemas/transaction.schema.json
+  - schemas/delivery-modes.schema.json
+  - schemas/release-candidate.schema.json
+  - schemas/release-candidate-checksums.schema.json
+  - schemas/managed-core-release.schema.json
+examples:
+  - examples/manifest.example.json
+  - examples/installed-state.example.json
+  - examples/transaction.example.json
+directories:
+  content: managed content payload
+  platforms: Cursor and Codex adapter sources (WP3)
+  migrations: reviewed supersession catalog (WP4) — canonical catalog.json
+  migration: discovery alias pointer only (no duplicate catalog file)
+  MANIFEST.json: live package manifest (deterministic builder)
+out_of_scope:
+  - claude
+  - nested self-install into IDE Development
+  - packaging secrets or absolute host paths
