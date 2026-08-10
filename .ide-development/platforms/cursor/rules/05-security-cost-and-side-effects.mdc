@@ -1,0 +1,28 @@
+---
+description: Security, cost, and side-effect rules for agent development.
+alwaysApply: true
+---
+
+# Security, Cost, And Side Effects
+
+Do not commit secrets, API keys, tokens, private credentials, or real customer data.
+
+Prefer `.env.example` for required variables. Real secrets stay in local `.env`, Supabase, DigitalOcean, GSM, Infisical/OpenBao, or other approved secret stores.
+
+All external side effects must be governed through whatever approval, audit, and permission mechanism the target product's own specification defines — do not invent one and do not assume a specific mechanism (e.g. a capability/lease system) exists unless that product's governing spec says so.
+
+Risky side effects include:
+
+- sending emails
+- publishing public sites
+- writing to CRM
+- creating invoices
+- charging payments
+- modifying production workflows
+- deploying infrastructure
+
+Treat any risky side effect as draft-only or dry-run by default until the target product's approval policy explicitly authorizes a live send/action.
+
+Cost controls are first-class. Agents must avoid unnecessary premium model usage and record any long-running or expensive operation.
+
+Do not introduce major new dependencies, services, or paid tools without recording the decision.
