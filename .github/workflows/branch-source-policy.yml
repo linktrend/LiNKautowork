@@ -12,36 +12,50 @@ jobs:
     name: Enforce allowed PR source branches
     runs-on: ubuntu-latest
     steps:
-      - name: Enforce promotion branch flow
+      - name: Checkout allowlist helper
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/gitops/work-branch-allowlist.sh
+            .github/linktrend-delivery-mode.json
+          sparse-checkout-cone-mode: false
+
+      - name: Enforce promotion and work-branch flow
         env:
           BASE_BRANCH: ${{ github.base_ref }}
           HEAD_BRANCH: ${{ github.head_ref }}
         run: |
           set -euo pipefail
+          # shellcheck source=scripts/gitops/work-branch-allowlist.sh
+          source scripts/gitops/work-branch-allowlist.sh
           echo "PR source: ${HEAD_BRANCH}"
           echo "PR target: ${BASE_BRANCH}"
           case "${BASE_BRANCH}" in
             main)
-              if [ "${HEAD_BRANCH}" != "staging" ]; then
-                echo "Only staging may be merged into main."
-                exit 1
+              if is_main_promote_branch "${HEAD_BRANCH}"; then
+                echo "Allowed: temporary main promote branch."
+                exit 0
               fi
+              echo "Only promote/main/* temporary branches may be merged into main."
+              exit 1
               ;;
             staging)
-              if [ "${HEAD_BRANCH}" != "development" ]; then
-                echo "Only development may be merged into staging."
-                exit 1
+              if is_staging_promote_branch "${HEAD_BRANCH}"; then
+                echo "Allowed: temporary staging promote branch."
+                exit 0
               fi
+              echo "Only promote/staging/* temporary branches may be merged into staging."
+              exit 1
               ;;
             development)
-              case "${HEAD_BRANCH}" in
-                dev/*|issue/*|feature/*|fix/*|chore/*|codex/*|cursor/*|antigravity/*|dependabot/*)
-                  ;;
-                *)
-                  echo "Only short-lived work branches may be merged into development."
-                  exit 1
-                  ;;
-              esac
+              if is_allowed_work_branch "${HEAD_BRANCH}"; then
+                echo "Allowed work branch."
+                exit 0
+              fi
+              echo "Only short-lived work branches may be merged into development."
+              echo "Allowed forms:"
+              allowed_work_branch_globs
+              exit 1
               ;;
             *)
               echo "Unhandled base branch: ${BASE_BRANCH}"
