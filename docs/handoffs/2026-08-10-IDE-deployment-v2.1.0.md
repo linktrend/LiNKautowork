@@ -31,7 +31,8 @@
 
 ## Handoff
 
-- Checkpoint commit: pending local commit; this field is amended with the exact final SHA before push.
+- Installation commit: `b6cd186`.
+- Final checkpoint commit: the follow-up handoff commit containing this record; exact SHA is reported at close-out.
 - Remote state: no PR opened and no protected branch touched. Push target is `origin/feature/IDE-deployment`.
 - Rollback: use the installer rollback command against this worktree, which restores the exact pre-install files and modes from the Git-local transaction journal:
   `python3 /Users/linktrend/Projects/IDE\ Development/scripts/ide-development.py rollback --repo /Users/linktrend/Projects/LiNKautowork-worktrees/IDE-deployment`
