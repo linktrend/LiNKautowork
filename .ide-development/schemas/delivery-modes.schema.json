@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/delivery-modes.schema.json",
+  "title": "IDE Development managed-core delivery modes",
+  "description": "Configurable delivery mode config, Issue PR risk exceptions, and Phase delivery records.",
+  "$defs": {
+    "sha40": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "deliveryModeId": {
+      "type": "string",
+      "enum": ["issue-pr", "phase-integration"]
+    },
+    "riskClass": {
+      "type": "string",
+      "enum": [
+        "security",
+        "authentication",
+        "database_migration",
+        "infrastructure",
+        "major_shared_api",
+        "unusually_large_scope",
+        "cross_phase_impact"
+      ]
+    },
+    "namedGateId": {
+      "type": "string",
+      "enum": ["fast-gate", "staging-gate", "release-gate"]
+    },
+    "gateStatus": {
+      "type": "string",
+      "enum": ["success", "pending", "failed", "missing"]
+    },
+    "deliveryModeConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "deliveryMode"],
+      "properties": {
+        "schemaVersion": { "type": "integer", "const": 1 },
+        "deliveryMode": { "$ref": "#/$defs/deliveryModeId" },
+        "phaseBranchPrefix": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._-]+/$",
+          "default": "phase/"
+        }
+      }
+    },
+    "issuePrException": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "riskClass"],
+      "properties": {
+        "schemaVersion": { "type": "integer", "const": 1 },
+        "riskClass": { "$ref": "#/$defs/riskClass" },
+        "reason": { "type": "string", "minLength": 1 }
+      }
+    },
+    "acceptedIssue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["branch", "sha", "accepted", "included"],
+      "properties": {
+        "branch": { "type": "string", "minLength": 1 },
+        "sha": { "$ref": "#/$defs/sha40" },
+        "accepted": { "type": "boolean" },
+        "included": { "type": "boolean" }
+      }
+    },
+    "namedGateEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gate", "sha", "status", "detail", "checks"],
+      "properties": {
+        "gate": { "$ref": "#/$defs/namedGateId" },
+        "sha": { "type": "string" },
+        "status": { "$ref": "#/$defs/gateStatus" },
+        "detail": { "type": "string" },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "state"],
+            "properties": {
+              "name": { "type": "string" },
+              "state": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "phasePr": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["number", "url", "base"],
+      "properties": {
+        "number": { "type": "integer", "minimum": 1 },
+        "url": { "type": "string", "minLength": 1 },
+        "base": { "type": "string", "const": "development" }
+      }
+    },
+    "riskExceptionIssuePr": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["branch", "sha", "riskClass", "prNumber"],
+      "properties": {
+        "branch": { "type": "string" },
+        "sha": { "$ref": "#/$defs/sha40" },
+        "riskClass": { "$ref": "#/$defs/riskClass" },
+        "prNumber": { "type": "integer", "minimum": 1 },
+        "prUrl": { "type": "string" }
+      }
+    },
+    "phaseDeliveryRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "deliveryMode",
+        "phaseBranch",
+        "baseSha",
+        "headSha",
+        "mergeSha",
+        "acceptedIssues",
+        "namedGateEvidence"
+      ],
+      "properties": {
+        "schemaVersion": { "type": "integer", "const": 1 },
+        "deliveryMode": { "type": "string", "const": "phase-integration" },
+        "phaseBranch": { "type": "string", "minLength": 1 },
+        "baseSha": { "$ref": "#/$defs/sha40" },
+        "headSha": { "$ref": "#/$defs/sha40" },
+        "mergeSha": {
+          "anyOf": [{ "$ref": "#/$defs/sha40" }, { "type": "null" }]
+        },
+        "phasePr": { "$ref": "#/$defs/phasePr" },
+        "acceptedIssues": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/acceptedIssue" }
+        },
+        "namedGateEvidence": { "$ref": "#/$defs/namedGateEvidence" },
+        "riskExceptionIssuePrs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/riskExceptionIssuePr" }
+        }
+      }
+    }
+  },
+  "oneOf": [
+    { "$ref": "#/$defs/deliveryModeConfig" },
+    { "$ref": "#/$defs/issuePrException" },
+    { "$ref": "#/$defs/phaseDeliveryRecord" }
+  ]
+}

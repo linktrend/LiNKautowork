@@ -1,0 +1,95 @@
+name: LiNKtrend Repair Observer
+
+# Observes LiNKautowork CI / Branch Source Policy / Cursor Bugbot lifecycle events and
+# maintains durable repair tasks via the LiNKtrend GitOps GitHub App.
+# Does NOT spawn Cursor.
+#
+# Trust boundary:
+#   - checkout repository default branch only (never PR head)
+#   - durable repair mutations use AUTOMATION_TOKEN (GitHub App) only
+#   - App unavailable → local automation_credentials_blocked outcome + failed workflow
+#   - ordinary github.token is never used for Issue/check/comment/PR mutations
+#   - repair_observer.py proves current PR/branch head before resolving
+
+on:
+  workflow_run:
+    workflows:
+      - LiNKautowork CI
+      - Branch Source Policy
+    types: [completed]
+  check_run:
+    types: [completed]
+
+permissions: {}
+
+concurrency:
+  group: linktrend-repair-observer-${{ github.event.workflow_run.head_sha || github.event.check_run.head_sha || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  observe:
+    name: Observe repair lifecycle
+    if: >
+      (
+        github.event_name == 'workflow_run' &&
+        (
+          github.event.workflow_run.conclusion == 'failure' ||
+          github.event.workflow_run.conclusion == 'success'
+        ) &&
+        (
+          github.event.workflow_run.name == 'LiNKautowork CI' ||
+          github.event.workflow_run.name == 'Branch Source Policy'
+        )
+      ) ||
+      (
+        github.event_name == 'check_run' &&
+        github.event.check_run.name == 'Cursor Bugbot' &&
+        (
+          github.event.check_run.conclusion == 'failure' ||
+          github.event.check_run.conclusion == 'success' ||
+          github.event.check_run.conclusion == 'neutral'
+        )
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout trusted default branch only
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - name: Mint GitHub App token
+        id: app
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        continue-on-error: true
+        with:
+          app-id: ${{ vars.LINKTREND_GITOPS_APP_ID }}
+          private-key: ${{ secrets.LINKTREND_GITOPS_APP_PRIVATE_KEY }}
+
+      - name: Observe repair lifecycle
+        env:
+          LINKTREND_GITOPS_APP_ID: ${{ vars.LINKTREND_GITOPS_APP_ID }}
+          LINKTREND_APP_TOKEN: ${{ steps.app.outputs.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+          LINKTREND_CI_WORKFLOW_NAME: LiNKautowork CI
+          LINKTREND_BRANCH_POLICY_WORKFLOW_NAME: Branch Source Policy
+          LINKTREND_BUGBOT_CHECK_NAME: Cursor Bugbot
+          REQUIRE_APP_TOKEN: "1"
+        run: |
+          set -euo pipefail
+          if ! source scripts/gitops/resolve_automation_token.sh; then
+            # App unavailable: local outcome + failed workflow only — no github.token mutations.
+            python3 scripts/gitops/write_outcome.py \
+              --status automation_credentials_blocked \
+              --detail "Repair Observer requires GitHub App token for durable repair mutations"
+            echo "### Repair Observer: \`automation_credentials_blocked\`" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          export AUTOMATION_TOKEN AUTOMATION_TOKEN_SOURCE
+          export GH_TOKEN="${AUTOMATION_TOKEN}"
+          export GITHUB_TOKEN="${AUTOMATION_TOKEN}"
+          python3 scripts/gitops/repair_observer.py handle-event --event-path "$GITHUB_EVENT_PATH" --repo "$GITHUB_REPOSITORY"

@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/migrations/catalog.schema.json",
+  "title": "IDE Development managed-core migration catalog (v2)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "entries"],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "catalogId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "packageVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+([.-][0-9A-Za-z.-]+)?$"
+    },
+    "description": {
+      "type": "string"
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/migrationEntry"
+      }
+    }
+  },
+  "$defs": {
+    "sha256Digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "repoRelativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/|\\\\)(?!.*\\.\\.(?:/|\\\\|$))(?!.*:)[A-Za-z0-9._@+, \\-]+(?:/[A-Za-z0-9._@+, \\-]+)*$",
+      "description": "POSIX-style relative path inside the repository. Spaces allowed. No absolute paths, drive letters, or .. segments."
+    },
+    "migrationEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "path", "contentHash", "action"],
+      "properties": {
+        "identity": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Stable obsolete identity (usually former destination path)."
+        },
+        "path": {
+          "$ref": "#/$defs/repoRelativePath",
+          "description": "Repo-relative path eligible for exact-hash removal."
+        },
+        "contentHash": {
+          "$ref": "#/$defs/sha256Digest"
+        },
+        "action": {
+          "type": "string",
+          "const": "remove"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "sincePackageVersion": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+([.-][0-9A-Za-z.-]+)?$"
+        },
+        "knownBytes": {
+          "$ref": "#/$defs/repoRelativePath",
+          "description": "Optional package-relative path to reviewed exact bytes used to derive contentHash."
+        }
+      }
+    }
+  }
+}

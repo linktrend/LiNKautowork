@@ -1,0 +1,390 @@
+# Linktrend Review Ready Publisher — App-backed completion bridge
+# Sync: scripts/sync-managed-workflows.sh
+#
+# Privileged status publication for context "Linktrend Review Ready".
+# Workflow YAML and validation/publish scripts come from the protected default
+# branch only. The target issue branch / SHA is checked out as data only —
+# never execute untrusted tip code with write credentials.
+#
+# Identity: GitHub App installation token only. No human fallback.
+# Refuse GITHUB_TOKEN publish fallback for status publish. Fail closed when
+# App mint/resolve fails.
+#
+# Trigger: workflow_dispatch (manual / agent-driven). Dry-run validates without
+# publishing or withdrawing. action=publish (default) or action=withdraw.
+# Input validation: scripts/gitops/review_ready_dispatch.py
+
+name: Linktrend Review Ready Publisher
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Exact issue/<number>-<slug> or configured phase/<slug> branch whose remote tip will be marked or cleared"
+        required: true
+        type: string
+      sha:
+        description: "Immutable 40-char tip SHA (must equal remote heads/<branch>)"
+        required: true
+        type: string
+      action:
+        description: "publish (default) or withdraw Linktrend Review Ready"
+        required: false
+        type: choice
+        options:
+          - publish
+          - withdraw
+        default: publish
+      reason:
+        description: "Withdrawal reason (action=withdraw only)"
+        required: false
+        type: string
+        default: withdrawn
+      dry_run:
+        description: "Validate only; do not publish or withdraw Linktrend Review Ready"
+        required: false
+        type: boolean
+        default: false
+      evidence_path:
+        description: "Relative path to completion evidence JSON in the tip tree (publish only)"
+        required: false
+        type: string
+        default: ".linktrend/completion-evidence.json"
+      evidence_json:
+        description: "Optional inline evidence JSON when the tip file is unavailable (publish only)"
+        required: false
+        type: string
+        default: ""
+      issue_number:
+        description: "Optional explicit issue number; must match branch"
+        required: false
+        type: string
+        default: ""
+
+permissions: {}
+
+concurrency:
+  group: linktrend-review-ready-publisher-${{ inputs.sha }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Validate and publish Review Ready
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout trusted default branch only (scripts)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - name: Validate dispatch inputs
+        id: inputs
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          INPUT_BRANCH: ${{ inputs.branch }}
+          INPUT_SHA: ${{ inputs.sha }}
+          INPUT_ACTION: ${{ inputs.action }}
+          INPUT_REASON: ${{ inputs.reason }}
+          INPUT_DRY_RUN: ${{ inputs.dry_run }}
+          INPUT_EVIDENCE_PATH: ${{ inputs.evidence_path }}
+          INPUT_EVIDENCE_JSON: ${{ inputs.evidence_json }}
+          INPUT_ISSUE_NUMBER: ${{ inputs.issue_number }}
+        run: |
+          set -euo pipefail
+          python3 scripts/gitops/review_ready_dispatch.py validate \
+            --branch "${INPUT_BRANCH}" \
+            --sha "${INPUT_SHA}" \
+            --action "${INPUT_ACTION}" \
+            --reason "${INPUT_REASON}" \
+            --dry-run "${INPUT_DRY_RUN}" \
+            --evidence-path "${INPUT_EVIDENCE_PATH}" \
+            --evidence-json-env INPUT_EVIDENCE_JSON \
+            --issue-number "${INPUT_ISSUE_NUMBER}" \
+            --github-repository "${GITHUB_REPOSITORY}" \
+            --github-output
+
+      - name: Checkout target SHA as data only
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.inputs.outputs.sha }}
+          path: untrusted-branch-data
+          persist-credentials: false
+
+      - name: Mint GitHub App token
+        id: app
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        continue-on-error: true
+        with:
+          app-id: ${{ vars.LINKTREND_GITOPS_APP_ID }}
+          private-key: ${{ secrets.LINKTREND_GITOPS_APP_PRIVATE_KEY }}
+
+      - name: Resolve App token; verify remote tip equals immutable SHA; publish or withdraw
+        env:
+          LINKTREND_GITOPS_APP_ID: ${{ vars.LINKTREND_GITOPS_APP_ID }}
+          LINKTREND_APP_TOKEN: ${{ steps.app.outputs.token }}
+          REQUIRE_APP_TOKEN: "1"
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          BRANCH: ${{ steps.inputs.outputs.branch }}
+          SHA: ${{ steps.inputs.outputs.sha }}
+          ACTION: ${{ steps.inputs.outputs.action }}
+          REASON: ${{ steps.inputs.outputs.reason }}
+          ISSUE_NUMBER: ${{ steps.inputs.outputs.issue_number }}
+          BRANCH_KIND: ${{ steps.inputs.outputs.branch_kind }}
+          ISSUE_SLUG: ${{ steps.inputs.outputs.issue_slug }}
+          EVIDENCE_PATH: ${{ steps.inputs.outputs.evidence_path }}
+          DRY_RUN: ${{ steps.inputs.outputs.dry_run }}
+          HAS_EVIDENCE_JSON: ${{ steps.inputs.outputs.has_evidence_json }}
+          EVIDENCE_JSON: ${{ steps.inputs.outputs.evidence_json }}
+        run: |
+          set -euo pipefail
+          if ! source scripts/gitops/resolve_automation_token.sh; then
+            python3 scripts/gitops/write_outcome.py \
+              --status automation_credentials_blocked \
+              --detail "App token unavailable for Review Ready publisher"
+            echo "### Review Ready publisher: \`automation_credentials_blocked\`" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          export AUTOMATION_TOKEN AUTOMATION_TOKEN_SOURCE AUTOMATION_CREDENTIALS_STATUS
+          # Privileged identity is App only — refuse GITHUB_TOKEN publish fallback.
+          if [ -z "${AUTOMATION_TOKEN:-}" ]; then
+            echo "FAIL: AUTOMATION_TOKEN missing; refuse GITHUB_TOKEN publish fallback" >&2
+            exit 1
+          fi
+          export GH_TOKEN="${AUTOMATION_TOKEN}"
+          export GITHUB_TOKEN="${AUTOMATION_TOKEN}"
+          export LINKTREND_APP_TOKEN="${AUTOMATION_TOKEN}"
+          echo "AUTOMATION_TOKEN_SOURCE=${AUTOMATION_TOKEN_SOURCE}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Verify remote tip equals immutable SHA" >> "$GITHUB_STEP_SUMMARY"
+
+          python3 <<'PY'
+          import json
+          import os
+          import sys
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+          from pathlib import Path
+
+          sys.path.insert(0, str(Path("scripts/gitops").resolve()))
+          import completion_gate as cg
+          import readiness_status as rs
+
+          token = (os.environ.get("AUTOMATION_TOKEN") or "").strip()
+          if not token:
+              raise SystemExit("FAIL: AUTOMATION_TOKEN missing after resolve")
+
+          repo = os.environ["GITHUB_REPOSITORY"]
+          branch = os.environ["BRANCH"]
+          sha = os.environ["SHA"].lower()
+          action = (os.environ.get("ACTION") or "publish").strip().lower() or "publish"
+          reason = (os.environ.get("REASON") or "withdrawn").strip() or "withdrawn"
+          issue_number = os.environ.get("ISSUE_NUMBER") or "0"
+          branch_kind = (os.environ.get("BRANCH_KIND") or "issue").strip().lower() or "issue"
+          issue_slug = (os.environ.get("ISSUE_SLUG") or "").strip()
+          evidence_rel = os.environ["EVIDENCE_PATH"]
+          dry_run = os.environ.get("DRY_RUN", "false").lower() == "true"
+          has_inline = os.environ.get("HAS_EVIDENCE_JSON", "false").lower() == "true"
+          inline = os.environ.get("EVIDENCE_JSON") or ""
+          data_root = Path("untrusted-branch-data").resolve()
+          trusted_root = Path(".").resolve()
+
+          if data_root == trusted_root:
+              raise SystemExit("FAIL: untrusted data path collapsed into trusted root")
+
+          def api(url: str):
+              req = urllib.request.Request(
+                  url,
+                  headers={
+                      "Authorization": f"Bearer {token}",
+                      "Accept": "application/vnd.github+json",
+                      "X-GitHub-Api-Version": "2022-11-28",
+                      "User-Agent": "linktrend-review-ready-publisher",
+                  },
+              )
+              try:
+                  with urllib.request.urlopen(req) as resp:
+                      return json.loads(resp.read().decode("utf-8"))
+              except urllib.error.HTTPError as e:
+                  detail = e.read().decode("utf-8", errors="replace")
+                  raise SystemExit(f"FAIL: API {url} -> {e.code}: {detail}") from e
+
+          enc_branch = urllib.parse.quote(branch, safe="")
+          tip_payload = api(f"https://api.github.com/repos/{repo}/branches/{enc_branch}")
+          tip = ((tip_payload.get("commit") or {}).get("sha") or "").lower()
+          if not tip or len(tip) != 40:
+              raise SystemExit("FAIL: remote tip SHA missing or malformed")
+          if tip != sha:
+              raise SystemExit(
+                  f"FAIL: sha_mismatch requested={sha} remote_tip={tip} branch={branch}"
+              )
+
+          issue_state = None
+          status_issue_id = issue_number
+          if branch_kind == "issue":
+              issue = api(f"https://api.github.com/repos/{repo}/issues/{issue_number}")
+              if int(issue.get("number") or 0) != int(issue_number):
+                  raise SystemExit("FAIL: issue_number mismatch from API")
+              issue_state = issue.get("state")
+              status_issue_id = str(issue_number)
+          elif branch_kind == "phase":
+              # Phase tips have no GitHub Issues binding; keep issue safeguards intact.
+              status_issue_id = f"phase:{issue_slug or branch.split('/', 1)[-1]}"
+          else:
+              raise SystemExit(f"FAIL: branch_kind_invalid:{branch_kind}")
+
+          outcome = {
+              "mode": "review-ready-publisher",
+              "branch": branch,
+              "sha": sha,
+              "action": action,
+              "branchKind": branch_kind,
+              "issue": status_issue_id,
+              "issueState": issue_state,
+              "dryRun": dry_run,
+              "published": False,
+              "withdrawn": False,
+              "automationTokenSource": os.environ.get("AUTOMATION_TOKEN_SOURCE"),
+          }
+
+          if action == "withdraw":
+              outcome["reason"] = reason[:140]
+              if dry_run:
+                  outcome["status"] = "dry_run_ok"
+                  outcome["detail"] = (
+                      "Validation passed; dry_run=true so Linktrend Review Ready was not withdrawn"
+                  )
+                  Path("gitops-outcome.json").write_text(
+                      json.dumps(outcome, indent=2) + "\n", encoding="utf-8"
+                  )
+                  print(json.dumps(outcome, indent=2))
+                  sys.exit(0)
+              try:
+                  st = rs.withdraw_sha(sha, reason[:140], branch=branch)
+              except Exception as e:  # noqa: BLE001
+                  outcome["status"] = "withdraw_failed"
+                  outcome["error"] = str(e)
+                  Path("gitops-outcome.json").write_text(
+                      json.dumps(outcome, indent=2) + "\n", encoding="utf-8"
+                  )
+                  print(json.dumps(outcome, indent=2))
+                  raise SystemExit(f"FAIL: withdraw_failed:{e}") from e
+              ok, detail = rs.is_sha_review_ready(sha)
+              if ok:
+                  outcome["status"] = "post_withdraw_verify_failed"
+                  outcome["error"] = detail
+                  Path("gitops-outcome.json").write_text(
+                      json.dumps(outcome, indent=2) + "\n", encoding="utf-8"
+                  )
+                  print(json.dumps(outcome, indent=2))
+                  raise SystemExit(f"FAIL: post_withdraw_verify_failed:{detail}")
+              outcome["withdrawn"] = True
+              outcome["status"] = "withdrawn"
+              outcome["description"] = getattr(st, "description", "") or reason
+              outcome["detail"] = "Linktrend Review Ready withdrawn on immutable SHA"
+              Path("gitops-outcome.json").write_text(
+                  json.dumps(outcome, indent=2) + "\n", encoding="utf-8"
+              )
+              print(json.dumps(outcome, indent=2))
+              sys.exit(0)
+
+          if action != "publish":
+              raise SystemExit(f"FAIL: action_invalid:{action}")
+
+          evidence = None
+          source = ""
+          if has_inline and inline.strip():
+              try:
+                  evidence = json.loads(inline)
+              except json.JSONDecodeError as e:
+                  raise SystemExit(f"FAIL: evidence_json_unreadable:{e}") from e
+              source = "dispatch_input"
+          else:
+              ev_path = (data_root / evidence_rel).resolve()
+              try:
+                  ev_path.relative_to(data_root)
+              except ValueError as e:
+                  raise SystemExit("FAIL: evidence_path_escapes_data_checkout") from e
+              if not ev_path.is_file():
+                  raise SystemExit(
+                      "FAIL: evidence_missing:"
+                      f"{evidence_rel} not in tip tree and evidence_json not provided"
+                  )
+              try:
+                  evidence = cg.load_evidence(ev_path)
+              except Exception as e:  # noqa: BLE001
+                  raise SystemExit(f"FAIL: evidence_unreadable:{e}") from e
+              source = "tip_tree"
+
+          if not isinstance(evidence, dict):
+              raise SystemExit("FAIL: evidence_not_object")
+          missing = cg.validate_evidence(evidence, sha)
+          if missing:
+              raise SystemExit("FAIL: evidence_invalid:" + ",".join(missing))
+
+          outcome["evidenceSource"] = source
+
+          if dry_run:
+              outcome["status"] = "dry_run_ok"
+              outcome["detail"] = (
+                  "Validation passed; dry_run=true so Linktrend Review Ready was not published"
+              )
+              Path("gitops-outcome.json").write_text(
+                  json.dumps(outcome, indent=2) + "\n", encoding="utf-8"
+              )
+              print(json.dumps(outcome, indent=2))
+              sys.exit(0)
+
+          try:
+              st = rs.publish_review_ready(
+                  sha,
+                  str(status_issue_id),
+                  notes="app-backed-publisher",
+                  branch=branch,
+              )
+          except Exception as e:  # noqa: BLE001
+              outcome["status"] = "publish_failed"
+              outcome["error"] = str(e)
+              Path("gitops-outcome.json").write_text(
+                  json.dumps(outcome, indent=2) + "\n", encoding="utf-8"
+              )
+              print(json.dumps(outcome, indent=2))
+              raise SystemExit(f"FAIL: publish_failed:{e}") from e
+
+          ok, detail = rs.is_sha_review_ready(sha)
+          if not ok:
+              outcome["status"] = "post_publish_verify_failed"
+              outcome["error"] = detail
+              Path("gitops-outcome.json").write_text(
+                  json.dumps(outcome, indent=2) + "\n", encoding="utf-8"
+              )
+              print(json.dumps(outcome, indent=2))
+              raise SystemExit(f"FAIL: post_publish_verify_failed:{detail}")
+
+          outcome["published"] = True
+          outcome["status"] = "review_ready"
+          outcome["description"] = getattr(st, "description", "") or detail
+          outcome["detail"] = "Linktrend Review Ready published on immutable SHA"
+          Path("gitops-outcome.json").write_text(
+              json.dumps(outcome, indent=2) + "\n", encoding="utf-8"
+          )
+          print(json.dumps(outcome, indent=2))
+          PY
+
+          status="$(python3 -c 'import json; print(json.load(open("gitops-outcome.json"))["status"])')"
+          echo "### Review Ready publisher: \`${status}\`" >> "$GITHUB_STEP_SUMMARY"
+          case "${status}" in
+            review_ready|withdrawn|dry_run_ok) exit 0 ;;
+            *) exit 1 ;;
+          esac
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: review-ready-publisher-report
+          path: gitops-outcome.json
+          if-no-files-found: ignore
+          retention-days: 5

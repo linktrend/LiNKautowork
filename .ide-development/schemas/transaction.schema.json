@@ -1,0 +1,169 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/transaction.schema.json",
+  "title": "IDE Development managed-core transaction journal (v2)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schemaVersion",
+    "transactionId",
+    "operation",
+    "status",
+    "packageVersion",
+    "createdAt",
+    "dryRun"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "transactionId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "operation": {
+      "type": "string",
+      "enum": ["install", "update", "rollback", "recover", "plan", "drift", "verify"]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "planned",
+        "in_progress",
+        "completed",
+        "rolled_back",
+        "failed",
+        "interrupted"
+      ]
+    },
+    "phase": {
+      "type": "string",
+      "description": "Optional apply phase marker (backup|apply|state|complete)."
+    },
+    "packageName": {
+      "type": "string",
+      "const": "ide-development-managed-core"
+    },
+    "packageVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+([.-][0-9A-Za-z.-]+)?$"
+    },
+    "createdAt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "updatedAt": {
+      "type": "string"
+    },
+    "dryRun": {
+      "type": "boolean",
+      "description": "When true, no repository or Git metadata writes are allowed."
+    },
+    "resultCode": {
+      "type": "string",
+      "enum": [
+        "clean",
+        "drift",
+        "conflict",
+        "invalid_package",
+        "rollback_failure",
+        "unexpected_failure"
+      ]
+    },
+    "exitCode": {
+      "type": "integer",
+      "description": "Installer exit code: 0 clean, 10 drift, 11 conflict, 12 invalid package, 13 rollback failure, 1 other."
+    },
+    "backups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "existed"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "existed": { "type": "boolean" },
+          "mode": { "type": "string" },
+          "contentHash": { "type": "string" },
+          "backupName": { "type": "string" }
+        }
+      }
+    },
+    "operations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/planOperation"
+      }
+    },
+    "errorMessage": {
+      "type": "string"
+    }
+  },
+  "$defs": {
+    "planOperation": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "op",
+        "path",
+        "classification"
+      ],
+      "properties": {
+        "op": {
+          "type": "string",
+          "enum": [
+            "create",
+            "replace",
+            "marker_upsert",
+            "remove",
+            "chmod",
+            "backup",
+            "noop",
+            "external_plan"
+          ]
+        },
+        "entryId": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?!/|\\\\)(?!.*\\.\\.(?:/|\\\\|$))(?!.*:)[A-Za-z0-9._@+, \\-]+(?:/[A-Za-z0-9._@+, \\-]+)*$"
+        },
+        "classification": {
+          "type": "string",
+          "enum": [
+            "missing",
+            "match",
+            "managed_upgrade",
+            "consumer_owned",
+            "unknown_conflict",
+            "unsafe_link",
+            "marker_conflict",
+            "supersede_exact",
+            "supersede_mismatch",
+            "unrelated_dirty",
+            "recoverable",
+            "invalid_package"
+          ]
+        },
+        "beforeHash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "afterHash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "beforeMode": {
+          "type": "string",
+          "pattern": "^0[0-7]{3}$"
+        },
+        "afterMode": {
+          "type": "string",
+          "pattern": "^0[0-7]{3}$"
+        }
+      }
+    }
+  }
+}

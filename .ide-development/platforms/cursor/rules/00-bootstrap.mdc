@@ -1,0 +1,29 @@
+---
+description: Bootstrap the local shared Cursor system before task work.
+alwaysApply: true
+---
+
+# Bootstrap
+
+This repository's `.cursor/` directory is the active source of truth for the shared development system.
+
+Do not depend on `LiNKdev`, chat memory, IDE memory, or unstated assumptions.
+
+## Read Order
+
+1. `.cursor/README.md`
+2. applicable files in `.cursor/rules/`
+3. for program/module/phase/issue/proof/review/integration work, `.cursor/execution/INDEX.yaml`
+4. the relevant doctrine files in `.cursor/execution/`
+5. `.cursor/templates/INDEX.yaml` when execution artifacts are involved
+6. `.cursor/skills/SKILLS_CATALOG.md`
+7. the specific prompt, skill, template, workflow, or checklist needed for the current task
+
+## Operating Rules
+
+- Prefer local `.cursor` files over any historical external source.
+- Use progressive disclosure. Open only the files required for the current task.
+- Treat commands in `.cursor/commands/` as entrypoints into local prompts.
+- Prefer revising existing assets over adding duplicates.
+- If a required capability is missing, build it locally rather than restoring an external dependency.
+- Do not scan the entire system unless the current task genuinely requires it.

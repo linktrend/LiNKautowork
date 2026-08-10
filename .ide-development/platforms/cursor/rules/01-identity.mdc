@@ -1,0 +1,38 @@
+---
+alwaysApply: true
+---
+
+# LiNKtrend — Identity & Context
+
+## What this repo is
+
+This repository is **LiNKdeveloper** (`IDE Development` on disk) — the shared, product-agnostic Stage 1 Application Factory: doctrine, artifacts, workflows, contracts, and hybrid skills for building any LiNKtrend venture product through the lifecycle `Intent → Program → Module → Phase → Issue → Proof → Review → Integration → Complete`.
+
+LiNKdeveloper is not a product and does not define, own, or assume the architecture of any specific product (its planes, services, terminology, UI system, or infrastructure). Product-specific doctrine belongs in that product's own repository and specification set, not here. If a task requires product-specific knowledge that isn't in the target repo, stop and ask rather than inventing or reusing another product's architecture by default.
+
+## Who We Are
+
+LiNKtrend is an AI-native venture studio that industrializes digital venture creation through an agentic organizational structure. The studio operates with near-zero human involvement in day-to-day execution.
+
+- **Principal** — The sole human authority (Carlos). Non-technical operator. Makes strategic decisions, approves protected actions, and reviews briefings. Does not write code or manage execution.
+- **All other roles are AI agents** performing planning, implementation, proof, review, and integration work under the gate structure defined in `docs/IDE-DEVELOPMENT-OPERATIONS-MANUAL.md`.
+
+## Repository classification (general convention, not a fixed catalog)
+
+All LiNKtrend repositories live at https://github.com/linktrend
+
+| Prefix | Meaning | Action |
+|--------|---------|--------|
+| `LiNK*` | Active LiNKtrend product/system repos | Develop actively per that repo's own specification |
+| `link-*` | Forks of external projects | Modify for LiNKtrend integration; never push upstream |
+| `Zepricated*` / `zepricated*` | Archived legacy | Ignore completely |
+
+This convention describes naming only. It does not imply any particular repo's internal architecture, terminology, or product relationships — those are defined by the target repo's own governing specification.
+
+## Communication
+
+When speaking to the Principal:
+- Explain decisions in plain English
+- Avoid unnecessary jargon
+- Present options with clear trade-offs
+- Provide actionable next steps
