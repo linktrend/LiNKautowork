@@ -3,7 +3,7 @@
 
 Trusted scripts only (caller must checkout default branch). Race-safe head rereads.
 Readiness is re-checked on the exact live head SHA (``Linktrend Review Ready``),
-whether that status came from the local gate or the normal-token publisher.
+whether that status came from the local gate or the App-backed publisher.
 
 Credentials:
   - GitHub App (AUTOMATION_TOKEN): reads, undraft, freeze comment, check-runs, repair
@@ -384,17 +384,17 @@ def evaluate_pr(pr: int, app_token: str) -> dict:
 def main() -> int:
     token = os.environ.get("AUTOMATION_TOKEN") or ""
     source = os.environ.get("AUTOMATION_TOKEN_SOURCE") or ""
-    if source != "github_token" or not token:
+    if source != "github_app" or not token:
         # Fail closed: no GITHUB_TOKEN mutations when App is unavailable.
         write_outcome(
             Path("gitops-outcome.json"),
             "automation_credentials_blocked",
-            "Packager evaluate requires normal GitHub automation token",
+            "Packager evaluate requires GitHub App token",
         )
         return 0
 
     # Fail closed early: Bugbot comment path requires Carlos user token.
-    # automation token is available → repair/check use automation token only (never workflow GITHUB_TOKEN).
+    # App is available → repair/check use App token only (never workflow GITHUB_TOKEN).
     try:
         require_bugbot_user_token("bugbot_comment")
     except BugbotUserCredentialsError as e:
@@ -424,7 +424,7 @@ def main() -> int:
     detail = report.get("detail") or ""
     write_outcome(Path("gitops-outcome.json"), status, detail, report=report)
     head = report.get("headSha") or os.environ.get("HEAD_SHA") or ""
-    # Check-run always uses automation token (AUTOMATION_TOKEN), never workflow GITHUB_TOKEN.
+    # Check-run always uses App token (AUTOMATION_TOKEN), never workflow GITHUB_TOKEN.
     post_check_run(
         name="Linktrend Packager Result",
         head_sha=head,

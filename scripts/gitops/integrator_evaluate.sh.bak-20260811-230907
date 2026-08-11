@@ -15,12 +15,12 @@ GATE_POLL_SECONDS="${GATE_POLL_SECONDS:-15}"
 GH_REPO="${GH_REPO:-${GITHUB_REPOSITORY:-}}"
 
 TOKEN="${AUTOMATION_TOKEN:-}"
-if [ -z "${TOKEN}" ] || [ "${AUTOMATION_TOKEN_SOURCE:-}" != "github_token" ]; then
-  # automation token unavailable: local outcome only — no repair/check mutation via workflow token.
+if [ -z "${TOKEN}" ] || [ "${AUTOMATION_TOKEN_SOURCE:-}" != "github_app" ]; then
+  # App unavailable: local outcome only — no repair/check mutation via workflow token.
   python3 "${SCRIPT_DIR}/write_outcome.py" \
     --file integrator-result.json \
     --status automation_credentials_blocked \
-    --detail "Integrator requires normal GitHub automation token for autonomous merge"
+    --detail "Integrator requires GitHub App token for autonomous merge"
   cp integrator-result.json gitops-outcome.json 2>/dev/null || true
   exit 0
 fi

@@ -3,7 +3,7 @@
 #
 # Remote-only cleanup of merged/abandoned work + promote branches.
 # Never deletes local worktrees (Lisa local cleanup is a separate handoff).
-# TRUST BOUNDARY: checkout default branch only; App token fail-closed.
+# TRUST BOUNDARY: checkout default branch only; normal automation token fail-closed.
 name: LiNKtrend Cleanup Merged Branches
 
 on:
@@ -35,20 +35,11 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Mint GitHub App token
-        id: app
-        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
-        continue-on-error: true
-        with:
-          app-id: ${{ vars.LINKTREND_GITOPS_APP_ID }}
-          private-key: ${{ secrets.LINKTREND_GITOPS_APP_PRIVATE_KEY }}
-
-      - name: Check App token minted
+      - name: Check automation token
         id: creds
         env:
-          LINKTREND_APP_TOKEN: ${{ steps.app.outputs.token }}
-          LINKTREND_GITOPS_APP_ID: ${{ vars.LINKTREND_GITOPS_APP_ID }}
-          REQUIRE_APP_TOKEN: "1"
+          LINKTREND_AUTOMATION_TOKEN: ${{ secrets.LINKTREND_AUTOMATION_TOKEN }}
+          REQUIRE_AUTOMATION_TOKEN: "1"
         run: |
           set -euo pipefail
           if source scripts/gitops/resolve_automation_token.sh; then
@@ -62,8 +53,7 @@ jobs:
       - name: Dry-run remote cleanup
         if: steps.creds.outputs.ready == 'true'
         env:
-          LINKTREND_APP_TOKEN: ${{ steps.app.outputs.token }}
-          LINKTREND_GITOPS_APP_ID: ${{ vars.LINKTREND_GITOPS_APP_ID }}
+          LINKTREND_AUTOMATION_TOKEN: ${{ secrets.LINKTREND_AUTOMATION_TOKEN }}
         run: |
           set -euo pipefail
           source scripts/gitops/resolve_automation_token.sh
@@ -97,19 +87,10 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Mint GitHub App token
-        id: app
-        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
-        continue-on-error: true
-        with:
-          app-id: ${{ vars.LINKTREND_GITOPS_APP_ID }}
-          private-key: ${{ secrets.LINKTREND_GITOPS_APP_PRIVATE_KEY }}
-
       - name: Apply remote cleanup
         env:
-          LINKTREND_APP_TOKEN: ${{ steps.app.outputs.token }}
-          LINKTREND_GITOPS_APP_ID: ${{ vars.LINKTREND_GITOPS_APP_ID }}
-          REQUIRE_APP_TOKEN: "1"
+          LINKTREND_AUTOMATION_TOKEN: ${{ secrets.LINKTREND_AUTOMATION_TOKEN }}
+          REQUIRE_AUTOMATION_TOKEN: "1"
         run: |
           set -euo pipefail
           source scripts/gitops/resolve_automation_token.sh

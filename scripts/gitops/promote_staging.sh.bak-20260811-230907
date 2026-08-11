@@ -101,9 +101,9 @@ write_out() {
   python3 "${SCRIPT_DIR}/write_outcome.py" --file "${OUTCOME}" --status "$1" --detail "$2"
 }
 
-if [ -z "${TOKEN}" ] || [ "${AUTOMATION_TOKEN_SOURCE:-}" != "github_token" ]; then
-  # automation token unavailable: local outcome only — no repair/check mutation via workflow token.
-  write_out "automation_credentials_blocked" "staging promote requires normal GitHub automation token"
+if [ -z "${TOKEN}" ] || [ "${AUTOMATION_TOKEN_SOURCE:-}" != "github_app" ]; then
+  # App unavailable: local outcome only — no repair/check mutation via workflow token.
+  write_out "automation_credentials_blocked" "staging promote requires GitHub App token"
   exit 0
 fi
 

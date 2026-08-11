@@ -104,7 +104,7 @@ except ImportError:  # pragma: no cover
     def app_branch_migration_remediation(branch: str) -> str:
         br = (branch or "").strip() or "<current-branch>"
         return (
-            "normal-token publisher requires issue/<number>-<slug> or configured "
+            "App-backed publisher requires issue/<number>-<slug> or configured "
             f"phase/<slug>. Migrate {br!r} via create_issue_branch.py or /agentcomply."
         )
 
@@ -250,7 +250,7 @@ def app_backed_route(
     *,
     workdir: Path | None = None,
 ) -> str:
-    """Exact safe normal-token publication route when local credentials are absent.
+    """Exact safe App-backed publication route when local credentials are absent.
 
     Returns empty string when the branch is not App-eligible so callers never
     advertise a dispatch command that review_ready_dispatch would reject.
@@ -297,8 +297,8 @@ def _review_ready_publish_failure_payload(
         route = app_backed_route(branch, sha, workdir=workdir)
         payload["appBackedRoute"] = route
         payload["detail"] = (
-            "Local review-ready publish is fail-closed without normal GitHub automation "
-            "credentials; use the normal-token workflow route"
+            "Local review-ready publish is fail-closed without GitHub App "
+            "credentials; use the App-backed workflow route"
         )
     else:
         remediation = app_branch_migration_remediation(branch)
@@ -324,8 +324,8 @@ def publish_ready(
         return True, str(st)
     except Exception as e:  # noqa: BLE001
         detail = str(e)
-        # Ensure fail-closed credential errors always name the normal-token route.
-        if "privileged_publish_requires_github_token" not in detail:
+        # Ensure fail-closed credential errors always name the App-backed route.
+        if "privileged_publish_requires_github_app" not in detail:
             if any(
                 key in detail
                 for key in (
@@ -337,7 +337,7 @@ def publish_ready(
                 )
             ):
                 detail = (
-                    f"{detail}; Use normal-token route: "
+                    f"{detail}; Use App-backed route: "
                     f"{app_backed_route(branch, sha, workdir=workdir)}"
                 )
         return False, detail

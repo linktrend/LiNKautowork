@@ -1,7 +1,7 @@
 name: LiNKtrend Integrator Merge To Development
 
 # Privileged jobs checkout the default branch only (never PR head/merge).
-# Resolve (read-only GITHUB_TOKEN) then evaluate (App token) only when relevant.
+# Resolve (read-only GITHUB_TOKEN) then evaluate (normal automation token) only when relevant.
 #
 # Concurrency: exact candidate head SHA for automatic events; workflow_dispatch may
 # use explicit pr_number when no SHA is present. cancel-in-progress=false.
@@ -69,7 +69,7 @@ jobs:
           ref: ${{ github.event.repository.default_branch }}
           persist-credentials: false
 
-      - name: Resolve PR/base/head (no App token)
+      - name: Resolve PR/base/head (no normal automation token)
         id: r
         env:
           GH_TOKEN: ${{ github.token }}
@@ -94,18 +94,9 @@ jobs:
           ref: ${{ github.event.repository.default_branch }}
           persist-credentials: false
 
-      - name: Mint GitHub App token
-        id: app
-        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
-        continue-on-error: true
-        with:
-          app-id: ${{ vars.LINKTREND_GITOPS_APP_ID }}
-          private-key: ${{ secrets.LINKTREND_GITOPS_APP_PRIVATE_KEY }}
-
       - name: Evaluate and maybe merge
         env:
-          LINKTREND_GITOPS_APP_ID: ${{ vars.LINKTREND_GITOPS_APP_ID }}
-          LINKTREND_APP_TOKEN: ${{ steps.app.outputs.token }}
+          LINKTREND_AUTOMATION_TOKEN: ${{ secrets.LINKTREND_AUTOMATION_TOKEN }}
           GH_REPO: ${{ github.repository }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           PR_NUMBER: ${{ needs.resolve.outputs.pr }}
@@ -114,15 +105,15 @@ jobs:
           BUGBOT_SUCCESS_CHECK_NAME: Cursor Bugbot
           GATE_WAIT_SECONDS: "120"
           GATE_POLL_SECONDS: "15"
-          REQUIRE_APP_TOKEN: "1"
+          REQUIRE_AUTOMATION_TOKEN: "1"
         run: |
           set -euo pipefail
           if ! source scripts/gitops/resolve_automation_token.sh; then
-            # App unavailable: local outcome + failed workflow only — no GITHUB_TOKEN mutations.
+            # automation token unavailable: local outcome + failed workflow only — no GITHUB_TOKEN mutations.
             python3 scripts/gitops/write_outcome.py \
               --file integrator-result.json \
               --status automation_credentials_blocked \
-              --detail "Integrator requires GitHub App token for autonomous merge"
+              --detail "Integrator requires GitHub automation token for autonomous merge"
             cp integrator-result.json gitops-outcome.json
             echo "### Integrator status: \`automation_credentials_blocked\`" >> "$GITHUB_STEP_SUMMARY"
             exit 1

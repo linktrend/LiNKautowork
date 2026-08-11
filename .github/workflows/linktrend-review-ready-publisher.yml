@@ -1,4 +1,4 @@
-# Linktrend Review Ready Publisher — App-backed completion bridge
+# Linktrend Review Ready Publisher — normal-token completion bridge
 # Sync: scripts/sync-managed-workflows.sh
 #
 # Privileged status publication for context "Linktrend Review Ready".
@@ -6,7 +6,7 @@
 # branch only. The target issue branch / SHA is checked out as data only —
 # never execute untrusted tip code with write credentials.
 #
-# Identity: GitHub App installation token only. No human fallback.
+# Identity: normal GitHub automation installation token only. No human fallback.
 # Refuse GITHUB_TOKEN publish fallback for status publish. Fail closed when
 # App mint/resolve fails.
 #
@@ -114,19 +114,10 @@ jobs:
           path: untrusted-branch-data
           persist-credentials: false
 
-      - name: Mint GitHub App token
-        id: app
-        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
-        continue-on-error: true
-        with:
-          app-id: ${{ vars.LINKTREND_GITOPS_APP_ID }}
-          private-key: ${{ secrets.LINKTREND_GITOPS_APP_PRIVATE_KEY }}
-
-      - name: Resolve App token; verify remote tip equals immutable SHA; publish or withdraw
+      - name: Resolve normal automation token; verify remote tip equals immutable SHA; publish or withdraw
         env:
-          LINKTREND_GITOPS_APP_ID: ${{ vars.LINKTREND_GITOPS_APP_ID }}
-          LINKTREND_APP_TOKEN: ${{ steps.app.outputs.token }}
-          REQUIRE_APP_TOKEN: "1"
+          LINKTREND_AUTOMATION_TOKEN: ${{ secrets.LINKTREND_AUTOMATION_TOKEN }}
+          REQUIRE_AUTOMATION_TOKEN: "1"
           GITHUB_REPOSITORY: ${{ github.repository }}
           BRANCH: ${{ steps.inputs.outputs.branch }}
           SHA: ${{ steps.inputs.outputs.sha }}
@@ -144,12 +135,12 @@ jobs:
           if ! source scripts/gitops/resolve_automation_token.sh; then
             python3 scripts/gitops/write_outcome.py \
               --status automation_credentials_blocked \
-              --detail "App token unavailable for Review Ready publisher"
+              --detail "normal automation token unavailable for Review Ready publisher"
             echo "### Review Ready publisher: \`automation_credentials_blocked\`" >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
           export AUTOMATION_TOKEN AUTOMATION_TOKEN_SOURCE AUTOMATION_CREDENTIALS_STATUS
-          # Privileged identity is App only — refuse GITHUB_TOKEN publish fallback.
+          # Privileged identity is normal-token only — refuse GITHUB_TOKEN publish fallback.
           if [ -z "${AUTOMATION_TOKEN:-}" ]; then
             echo "FAIL: AUTOMATION_TOKEN missing; refuse GITHUB_TOKEN publish fallback" >&2
             exit 1

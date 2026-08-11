@@ -6,7 +6,7 @@ Used by a resolve job that:
   - uses ordinary GITHUB_TOKEN (read-only)
   - exposes only non-secret outputs (relevant, pr, base, head_ref, head_sha, reason)
 
-The privileged mutation job must depend on this job and mint the automation token only when
+The privileged mutation job must depend on this job and mint the App token only when
 relevant=true. Empty pull_requests arrays are resolved via the commits/pulls API
 (fail closed if zero or ambiguous matches).
 

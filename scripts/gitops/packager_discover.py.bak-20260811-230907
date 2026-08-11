@@ -3,11 +3,11 @@
 
 Eligibility is the successful GitHub commit status ``Linktrend Review Ready`` on
 the **exact** branch tip SHA (same contract whether published by the local gate
-or the normal-token publisher). Later tips without that status are not eligible.
+or the App-backed publisher). Later tips without that status are not eligible.
 
 Updates only a delimited managed section. No Bugbot. No serial CI wait.
 Requires:
-  - GitHub automation token for reads / draft body refresh / non-create mutations
+  - GitHub App token for reads / draft body refresh / non-create mutations
   - Carlos BUGBOT_USER_TOKEN for feature PR *creation* only (fail closed)
   - Existing/open Packager PRs must be authored by ``linktrend`` (fail closed)
 """
@@ -239,7 +239,7 @@ def record_author_blocked_repair(
 def ensure_draft_pr(app_token: str, branch: str, sha: str) -> dict:
     """Ensure an open development draft PR exists for branch@sha.
 
-    Reads and draft-body refresh use the GitHub automation token.
+    Reads and draft-body refresh use the GitHub App token.
     PR *creation* uses BUGBOT_USER_TOKEN only (Carlos identity) — fail closed.
     Existing PRs must already be authored by ``linktrend``.
     """
@@ -352,11 +352,11 @@ def ensure_draft_pr(app_token: str, branch: str, sha: str) -> dict:
 
 def main() -> int:
     token = os.environ.get("AUTOMATION_TOKEN") or ""
-    if not token or os.environ.get("AUTOMATION_TOKEN_SOURCE") != "github_token":
+    if not token or os.environ.get("AUTOMATION_TOKEN_SOURCE") != "github_app":
         write_outcome(
             Path("gitops-outcome.json"),
             "automation_credentials_blocked",
-            "Packager discover requires LINKTREND_AUTOMATION_TOKEN",
+            "Packager discover requires GitHub App token (LINKTREND_GITOPS_APP_*)",
         )
         return 0
 

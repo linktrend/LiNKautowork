@@ -7,7 +7,7 @@
 #   - workflow_run / external check_run → resolve (read-only) then evaluate
 #
 # Empty pull_requests arrays: trusted resolve job uses GITHUB_TOKEN + commits API
-# and fails closed if zero/ambiguous. App token is minted only in evaluate when relevant.
+# and fails closed if zero/ambiguous. normal automation token is minted only in evaluate when relevant.
 #
 # Consumers: workflow_run.workflows is STATIC YAML rendered from
 # .github/linktrend-gitops-consumer.json by scripts/sync-managed-workflows.sh.
@@ -60,35 +60,26 @@ jobs:
           ref: ${{ github.event.repository.default_branch }}
           persist-credentials: false
 
-      - name: Mint GitHub App token
-        id: app
-        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
-        continue-on-error: true
-        with:
-          app-id: ${{ vars.LINKTREND_GITOPS_APP_ID }}
-          private-key: ${{ secrets.LINKTREND_GITOPS_APP_PRIVATE_KEY }}
-
       - name: Discover
         env:
-          LINKTREND_GITOPS_APP_ID: ${{ vars.LINKTREND_GITOPS_APP_ID }}
-          LINKTREND_APP_TOKEN: ${{ steps.app.outputs.token }}
+          LINKTREND_AUTOMATION_TOKEN: ${{ secrets.LINKTREND_AUTOMATION_TOKEN }}
           LINKTREND_BUGBOT_USER_TOKEN: ${{ secrets.LINKTREND_BUGBOT_USER_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          REQUIRE_APP_TOKEN: "1"
+          REQUIRE_AUTOMATION_TOKEN: "1"
           REQUIRE_BUGBOT_USER_TOKEN: "1"
         run: |
           set -euo pipefail
           if ! source scripts/gitops/resolve_automation_token.sh; then
-            # App unavailable: fail closed on workflow result only — no GITHUB_TOKEN mutations.
+            # automation token unavailable: fail closed on workflow result only — no GITHUB_TOKEN mutations.
             python3 scripts/gitops/write_outcome.py \
               --status automation_credentials_blocked \
-              --detail "App token unavailable for Packager discover"
+              --detail "normal automation token unavailable for Packager discover"
             echo "### Packager discover: \`automation_credentials_blocked\`" >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
           export AUTOMATION_TOKEN AUTOMATION_TOKEN_SOURCE AUTOMATION_CREDENTIALS_STATUS
           if ! source scripts/gitops/resolve_bugbot_user_token.sh; then
-            # App present: durable repair + outcome via App token only.
+            # automation token present: durable repair + outcome via normal automation token only.
             GH_TOKEN="${AUTOMATION_TOKEN}" GITHUB_TOKEN="${AUTOMATION_TOKEN}" \
               python3 scripts/gitops/repair_task.py upsert \
               --repo "${GITHUB_REPOSITORY}" \
@@ -161,7 +152,7 @@ jobs:
           ref: ${{ github.event.repository.default_branch }}
           persist-credentials: false
 
-      - name: Resolve PR/base/head (no App token)
+      - name: Resolve PR/base/head (no normal automation token)
         id: r
         env:
           GH_TOKEN: ${{ github.token }}
@@ -188,39 +179,30 @@ jobs:
           ref: ${{ github.event.repository.default_branch }}
           persist-credentials: false
 
-      - name: Mint GitHub App token
-        id: app
-        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
-        continue-on-error: true
-        with:
-          app-id: ${{ vars.LINKTREND_GITOPS_APP_ID }}
-          private-key: ${{ secrets.LINKTREND_GITOPS_APP_PRIVATE_KEY }}
-
       - name: Evaluate one PR
         env:
-          LINKTREND_GITOPS_APP_ID: ${{ vars.LINKTREND_GITOPS_APP_ID }}
-          LINKTREND_APP_TOKEN: ${{ steps.app.outputs.token }}
+          LINKTREND_AUTOMATION_TOKEN: ${{ secrets.LINKTREND_AUTOMATION_TOKEN }}
           LINKTREND_BUGBOT_USER_TOKEN: ${{ secrets.LINKTREND_BUGBOT_USER_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           PR_NUMBER: ${{ needs.resolve.outputs.pr }}
           HEAD_SHA: ${{ needs.resolve.outputs.head_sha }}
           BUGBOT_REVIEW_COMMAND: ${{ env.BUGBOT_REVIEW_COMMAND }}
           FAST_GATE_CHECKS: ${{ env.FAST_GATE_CHECKS }}
-          REQUIRE_APP_TOKEN: "1"
+          REQUIRE_AUTOMATION_TOKEN: "1"
           REQUIRE_BUGBOT_USER_TOKEN: "1"
         run: |
           set -euo pipefail
           if ! source scripts/gitops/resolve_automation_token.sh; then
-            # App unavailable: fail closed on workflow result only — no GITHUB_TOKEN mutations.
+            # automation token unavailable: fail closed on workflow result only — no GITHUB_TOKEN mutations.
             python3 scripts/gitops/write_outcome.py \
               --status automation_credentials_blocked \
-              --detail "App token unavailable for Packager evaluate"
+              --detail "normal automation token unavailable for Packager evaluate"
             echo "### Packager evaluate: \`automation_credentials_blocked\`" >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
           export AUTOMATION_TOKEN AUTOMATION_TOKEN_SOURCE AUTOMATION_CREDENTIALS_STATUS
           if ! source scripts/gitops/resolve_bugbot_user_token.sh; then
-            # App present: repair + check-run via App token only.
+            # automation token present: repair + check-run via normal automation token only.
             GH_TOKEN="${AUTOMATION_TOKEN}" GITHUB_TOKEN="${AUTOMATION_TOKEN}" \
               python3 scripts/gitops/repair_task.py upsert \
               --repo "${GITHUB_REPOSITORY}" \

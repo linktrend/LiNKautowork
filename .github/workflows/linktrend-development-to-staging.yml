@@ -2,7 +2,7 @@
 # Sync: scripts/sync-managed-workflows.sh
 #
 # TRUST BOUNDARY: privileged jobs check out the default branch only.
-# Resolve (read-only) then promote (App token) only when relevant.
+# Resolve (read-only) then promote (normal automation token) only when relevant.
 # Empty pull_requests: commits API lookup; fail closed if unresolved.
 name: Development → Staging Promotion
 
@@ -99,7 +99,7 @@ jobs:
           esac
           echo "mode=${MODE}" >> "$GITHUB_OUTPUT"
 
-      - name: Resolve PR/base/head (no App token)
+      - name: Resolve PR/base/head (no normal automation token)
         id: r
         env:
           GH_TOKEN: ${{ github.token }}
@@ -119,8 +119,7 @@ jobs:
     env:
       OUTCOME_CHECK_NAME: Linktrend Staging Outcome
       STAGING_GATE_CHECKS: ${{ vars.LINKTREND_STAGING_GATE_CHECKS || 'Verify IDE Development,Enforce allowed PR source branches' }}
-      REQUIRE_APP_TOKEN: "1"
-      LINKTREND_GITOPS_APP_ID: ${{ vars.LINKTREND_GITOPS_APP_ID }}
+      REQUIRE_AUTOMATION_TOKEN: "1"
     steps:
       - name: Checkout trusted default branch only
         uses: actions/checkout@v4
@@ -129,18 +128,10 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Mint GitHub App token
-        id: app
-        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
-        continue-on-error: true
-        with:
-          app-id: ${{ vars.LINKTREND_GITOPS_APP_ID }}
-          private-key: ${{ secrets.LINKTREND_GITOPS_APP_PRIVATE_KEY }}
-
-      - name: Check App token minted
+      - name: Check automation token
         id: creds
         env:
-          LINKTREND_APP_TOKEN: ${{ steps.app.outputs.token }}
+          LINKTREND_AUTOMATION_TOKEN: ${{ secrets.LINKTREND_AUTOMATION_TOKEN }}
         run: |
           set -euo pipefail
           if source scripts/gitops/resolve_automation_token.sh; then
@@ -155,18 +146,18 @@ jobs:
           HEAD_SHA: ${{ needs.resolve.outputs.head_sha || github.sha }}
         run: |
           set -euo pipefail
-          # App unavailable: local outcome + failed workflow only — no GITHUB_TOKEN mutations.
+          # automation token unavailable: local outcome + failed workflow only — no GITHUB_TOKEN mutations.
           python3 scripts/gitops/write_outcome.py \
             --status automation_credentials_blocked \
-            --detail "LINKTREND_GITOPS_APP_ID / minted App token required for autonomous promotion."
+            --detail "LINKTREND_AUTOMATION_TOKEN required for autonomous promotion."
           echo "### Staging outcome: \`automation_credentials_blocked\`" >> "$GITHUB_STEP_SUMMARY"
           echo "head_sha=${HEAD_SHA}" >> "$GITHUB_STEP_SUMMARY"
           exit 1
 
-      - name: Configure git remote for App token pushes
+      - name: Configure git remote for automation token pushes
         if: steps.creds.outputs.ready == 'true'
         env:
-          LINKTREND_APP_TOKEN: ${{ steps.app.outputs.token }}
+          LINKTREND_AUTOMATION_TOKEN: ${{ secrets.LINKTREND_AUTOMATION_TOKEN }}
         run: |
           set -euo pipefail
           source scripts/gitops/resolve_automation_token.sh
@@ -182,7 +173,7 @@ jobs:
           EXPECTED_PROMOTE_HEAD: ${{ needs.resolve.outputs.head_sha || github.event.inputs.expected_head_sha }}
           GH_REPO: ${{ github.repository }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          LINKTREND_APP_TOKEN: ${{ steps.app.outputs.token }}
+          LINKTREND_AUTOMATION_TOKEN: ${{ secrets.LINKTREND_AUTOMATION_TOKEN }}
         run: |
           set -euo pipefail
           source scripts/gitops/resolve_automation_token.sh

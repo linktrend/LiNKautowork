@@ -1,13 +1,13 @@
 name: LiNKtrend Repair Observer
 
 # Observes LiNKautowork CI / Branch Source Policy / Cursor Bugbot lifecycle events and
-# maintains durable repair tasks via the LiNKtrend GitOps GitHub App.
+# maintains durable repair tasks via the LiNKtrend GitOps normal GitHub automation.
 # Does NOT spawn Cursor.
 #
 # Trust boundary:
 #   - checkout repository default branch only (never PR head)
-#   - durable repair mutations use AUTOMATION_TOKEN (GitHub App) only
-#   - App unavailable → local automation_credentials_blocked outcome + failed workflow
+#   - durable repair mutations use AUTOMATION_TOKEN (normal GitHub automation) only
+#   - automation token unavailable → local automation_credentials_blocked outcome + failed workflow
 #   - ordinary github.token is never used for Issue/check/comment/PR mutations
 #   - repair_observer.py proves current PR/branch head before resolving
 
@@ -61,31 +61,22 @@ jobs:
           ref: ${{ github.event.repository.default_branch }}
           persist-credentials: false
 
-      - name: Mint GitHub App token
-        id: app
-        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
-        continue-on-error: true
-        with:
-          app-id: ${{ vars.LINKTREND_GITOPS_APP_ID }}
-          private-key: ${{ secrets.LINKTREND_GITOPS_APP_PRIVATE_KEY }}
-
       - name: Observe repair lifecycle
         env:
-          LINKTREND_GITOPS_APP_ID: ${{ vars.LINKTREND_GITOPS_APP_ID }}
-          LINKTREND_APP_TOKEN: ${{ steps.app.outputs.token }}
+          LINKTREND_AUTOMATION_TOKEN: ${{ secrets.LINKTREND_AUTOMATION_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_EVENT_PATH: ${{ github.event_path }}
           LINKTREND_CI_WORKFLOW_NAME: LiNKautowork CI
           LINKTREND_BRANCH_POLICY_WORKFLOW_NAME: Branch Source Policy
           LINKTREND_BUGBOT_CHECK_NAME: Cursor Bugbot
-          REQUIRE_APP_TOKEN: "1"
+          REQUIRE_AUTOMATION_TOKEN: "1"
         run: |
           set -euo pipefail
           if ! source scripts/gitops/resolve_automation_token.sh; then
-            # App unavailable: local outcome + failed workflow only — no github.token mutations.
+            # automation token unavailable: local outcome + failed workflow only — no github.token mutations.
             python3 scripts/gitops/write_outcome.py \
               --status automation_credentials_blocked \
-              --detail "Repair Observer requires GitHub App token for durable repair mutations"
+              --detail "Repair Observer requires GitHub automation token for durable repair mutations"
             echo "### Repair Observer: \`automation_credentials_blocked\`" >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
