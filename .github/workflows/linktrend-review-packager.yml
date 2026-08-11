@@ -4,7 +4,7 @@
 #
 # Wake paths:
 #   - schedule / workflow_dispatch → discover (draft PRs only)
-#   - pull_request_target / workflow_run / check_run → resolve (read-only) then evaluate
+#   - workflow_run / external check_run → resolve (read-only) then evaluate
 #
 # Empty pull_requests arrays: trusted resolve job uses GITHUB_TOKEN + commits API
 # and fails closed if zero/ambiguous. App token is minted only in evaluate when relevant.
@@ -23,9 +23,6 @@ on:
         description: "Why this packaging run is needed"
         required: false
         default: "manual"
-  pull_request_target:
-    types: [opened, synchronize, reopened, ready_for_review]
-    branches: [development]
   workflow_run:
     workflows:
       - LiNKautowork CI
@@ -132,7 +129,6 @@ jobs:
   resolve:
     name: Resolve candidate (read-only)
     if: >
-      github.event_name == 'pull_request_target' ||
       (
         github.event_name == 'workflow_run' &&
         github.event.workflow_run.conclusion == 'success'

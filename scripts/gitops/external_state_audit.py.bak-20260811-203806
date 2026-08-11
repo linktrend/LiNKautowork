@@ -279,7 +279,7 @@ def _secret_env_leak_warnings() -> list[str]:
         raw = os.environ.get(name)
         if raw is not None and str(raw).strip():
             warnings.append(
-                f"{name}=present_in_process_env (value redacted; audit must not print it)"
+                "sensitive environment variable present (value redacted; audit must not print it)"
             )
     return warnings
 

@@ -34,6 +34,7 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlsplit
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
@@ -566,14 +567,16 @@ def resolve_repository(workdir: Path) -> tuple[str | None, str]:
         scheme, rest = sanitized.split("://", 1)
         sanitized = f"{scheme}://" + rest.split("@", 1)[1]
     owner_repo = ""
-    if sanitized.startswith("git@") and ":" in sanitized:
-        # git@github.com:owner/repo.git
-        path = sanitized.split(":", 1)[1]
+    if sanitized.startswith("git@github.com:"):
+        # SCP-style GitHub remote: git@github.com:owner/repo.git
+        path = sanitized.removeprefix("git@github.com:")
         owner_repo = path
-    elif "github.com/" in sanitized:
-        owner_repo = sanitized.split("github.com/", 1)[1]
-    elif "github.com:" in sanitized:
-        owner_repo = sanitized.split("github.com:", 1)[1]
+    elif "://" in sanitized:
+        # Parse the host; substring matching could accept an attacker-controlled URL.
+        parsed = urlsplit(sanitized)
+        if parsed.hostname != "github.com":
+            return None, "origin_not_github_or_unrecognized"
+        owner_repo = parsed.path
     else:
         return None, "origin_not_github_or_unrecognized"
     owner_repo = owner_repo.strip()

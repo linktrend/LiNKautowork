@@ -10,7 +10,7 @@ Operational summary:
 - ask only if needed for **task description** (helper creates issue id/slug) or target repo if ambiguous
 - run `python3 scripts/gitops/create_issue_branch.py` when filing/reusing an issue branch from latest `development`
 - move dirty work safely (stash/checkout/pop, worktree, or equivalent); never dump onto development/staging/main
-- push the branch as a **checkpoint** (no PR). When finished, mark review-ready via completion gate (App-backed publisher if local privileged publish fails closed; never `.linktrend/review-ready.json`) — Review Packager opens the PR
+- push the branch as a **checkpoint** (no PR). When finished, mark review-ready via completion gate — Review Packager opens the PR
 - plain English summary of what was done
 
 For a brand-new clean session, use agentsetup instead.

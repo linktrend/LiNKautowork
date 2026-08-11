@@ -10,6 +10,8 @@ permissions:
 jobs:
   branch-source-policy:
     name: Enforce allowed PR source branches
+    # This workflow checks out the pull-request merge ref, so private consumers
+    # must route it to the isolated candidate runner, never the privileged Mac.
     runs-on: ubuntu-latest
     steps:
       - name: Checkout allowlist helper

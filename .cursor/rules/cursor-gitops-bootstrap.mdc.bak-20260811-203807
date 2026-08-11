@@ -1,9 +1,11 @@
 ---
-description: LiNKtrend GitOps bootstrap for managed consumer repos (Ship/Packager/completion/repair).
+description: LiNKtrend managed bootstrap for installed consumer repos (Ship/Packager/completion/repair).
 alwaysApply: true
 ---
 
-# LiNKtrend GitOps bootstrap (managed)
+# LiNKtrend managed bootstrap (v2)
+
+Installed managed core: `.ide-development/`.
 
 ## Ship checkpoint
 
@@ -22,10 +24,8 @@ alwaysApply: true
 - Use `python3 scripts/gitops/completion_gate.py` for checkpoint / review-ready / blocked / status / write-evidence.
 - Finished work must run appropriate tests/checks and auto-repair ordinary failures with at most **3** bounded repair cycles.
 - Write machine-readable evidence with `python3 scripts/gitops/completion_gate.py write-evidence`, tied to the exact `HEAD` SHA.
-- Call `python3 scripts/gitops/completion_gate.py review-ready` only after validation succeeds. It is fail-closed and authoritative for completion.
-- Production publish **and withdraw** of **Linktrend Review Ready** is GitHub App only. When local privileged credentials are unavailable, follow the gate's App-backed route diagnostics and dispatch `linktrend-review-ready-publisher` for this repo's exact `issue/<n>-<slug>` branch and immutable SHA (`action=publish` or `action=withdraw`). Never fall back to a user token or ordinary `GITHUB_TOKEN`. Legacy allowlist branches (`feature/`, `dev/`, …) are not App-eligible: migrate to `issue/<n>-<slug>` via `create_issue_branch.py` / `/agentcomply` — the gate fails closed with that remediation and must not invent a doomed dispatch command.
-- Do not call `mark-review-ready.sh` as a pre-gate publisher. It is only a compatibility wrapper that requires evidence and delegates to the gate. `clear-review-ready.sh` fails closed without App credentials and prints the App-backed withdraw route.
-- Do **not** create or use `.linktrend/review-ready.json` (commit status only).
+- Call `python3 scripts/gitops/completion_gate.py review-ready` only after validation succeeds. It is fail-closed and authoritative for publishing **Linktrend Review Ready**.
+- Do not call `mark-review-ready.sh` as a pre-gate publisher. It is only a compatibility wrapper that requires evidence and delegates to the gate.
 - If validation or repair cannot complete, call `python3 scripts/gitops/completion_gate.py blocked`.
   - `.linktrend/completion-blocker.json` is only a **local cache**.
   - The durable record is the GitHub repair issue (when authenticated repo resolution succeeds).

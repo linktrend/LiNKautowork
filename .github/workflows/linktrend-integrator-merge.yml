@@ -10,9 +10,6 @@ name: LiNKtrend Integrator Merge To Development
 # .github/linktrend-gitops-consumer.json by scripts/sync-managed-workflows.sh.
 
 on:
-  pull_request_target:
-    types: [opened, synchronize, reopened, ready_for_review]
-    branches: [development]
   workflow_run:
     workflows:
       - LiNKautowork CI
@@ -38,7 +35,6 @@ jobs:
     name: Resolve candidate (read-only)
     if: >
       github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'pull_request_target' ||
       (
         github.event_name == 'workflow_run' &&
         github.event.workflow_run.conclusion == 'success'
