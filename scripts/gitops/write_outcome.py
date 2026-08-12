@@ -37,13 +37,17 @@ def write_outcome(path: Path, status: str, detail: str, **extra: Any) -> dict[st
     return payload
 
 
-def commit_status_state(status: str) -> str:
+def commit_status_state(status: str) -> str | None:
     """Map an internal outcome to an honest terminal GitHub commit status."""
     if status in {"merged", "bugbot_requested", "packaged"}:
         return "success"
     if status == "waiting":
         return "pending"
-    if status in {"skipped", "blocked"}:
+    if status == "skipped":
+        # A stale-event skip says nothing about the live head. Publishing any
+        # terminal state would overwrite valid evidence for that head.
+        return None
+    if status == "blocked":
         return "error"
     return "failure"
 
@@ -69,10 +73,16 @@ def post_check_run(
     env = scrub_carlos_token_env(os.environ)
     env["GH_TOKEN"] = token
     env["GITHUB_TOKEN"] = token
-    # A skipped or blocked operation is terminal but not successful. Publishing
-    # either as success would create false gate evidence; leaving either pending
-    # would keep the combined status yellow forever.
+    # Blocked is terminal and unsuccessful. A stale-event skip is not evidence
+    # about the live head at all, so it must leave that head's status untouched.
     state = commit_status_state(status)
+    if state is None:
+        print(
+            f"SKIP_STATUS_POST context={name} head_sha={head_sha} "
+            f"outcome={status}",
+            file=sys.stderr,
+        )
+        return
     body = {
         "state": state,
         "context": name,
