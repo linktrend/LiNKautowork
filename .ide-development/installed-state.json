@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "packageName": "ide-development-managed-core",
-  "packageVersion": "2.1.4",
-  "installedAt": "2026-08-12T15:00:08Z",
+  "packageVersion": "2.1.8",
+  "installedAt": "2026-08-12T19:52:59Z",
   "files": {
     ".agents/skills/action-queue/SKILL.md": {
       "id": "codex-skill-action-queue",
@@ -292,10 +292,40 @@
       "contentHash": "sha256:344bfb890a4e28f378a6e079823a305f7fd3b8a29009679f2d3e7533b6bec2e5",
       "mode": "0644"
     },
+    ".cursor/library/dependencies/NOTICE.md": {
+      "id": "library-cursor-dependencies-notice-md",
+      "sourceHash": "sha256:8bb0aa96c38ee65660037f50f4768f08861bc00665fe3efd284aea5ca57f4b0e",
+      "contentHash": "sha256:8bb0aa96c38ee65660037f50f4768f08861bc00665fe3efd284aea5ca57f4b0e",
+      "mode": "0644"
+    },
+    ".cursor/library/dependencies/spdx-exceptions.json": {
+      "id": "library-cursor-dependencies-spdx-exceptions-json",
+      "sourceHash": "sha256:05079063787565a9c14278d09144df3430cd353aab5c2db2a372b9230cf04594",
+      "contentHash": "sha256:05079063787565a9c14278d09144df3430cd353aab5c2db2a372b9230cf04594",
+      "mode": "0644"
+    },
+    ".cursor/library/dependencies/spdx-expression-validate.mjs": {
+      "id": "library-cursor-dependencies-spdx-expression-validate-mjs",
+      "sourceHash": "sha256:b159caceed95671aacfa6adb939856cd9df800b327cf01590f0f439b73075d9c",
+      "contentHash": "sha256:b159caceed95671aacfa6adb939856cd9df800b327cf01590f0f439b73075d9c",
+      "mode": "0644"
+    },
+    ".cursor/library/dependencies/spdx-license-ids-deprecated.json": {
+      "id": "library-cursor-dependencies-spdx-license-ids-deprecated-json",
+      "sourceHash": "sha256:58657e9b38a85b4ab2ea56115738590ee06d28c87667efaa5b83737657d43094",
+      "contentHash": "sha256:58657e9b38a85b4ab2ea56115738590ee06d28c87667efaa5b83737657d43094",
+      "mode": "0644"
+    },
+    ".cursor/library/dependencies/spdx-license-ids.json": {
+      "id": "library-cursor-dependencies-spdx-license-ids-json",
+      "sourceHash": "sha256:01229f894127ed2c09222de370817e7128340d89fc10a521f0d309dd89647873",
+      "contentHash": "sha256:01229f894127ed2c09222de370817e7128340d89fc10a521f0d309dd89647873",
+      "mode": "0644"
+    },
     ".cursor/library/library-client.mjs": {
       "id": "library-cursor-library-client-mjs",
-      "sourceHash": "sha256:e4a721274c28d42f089483dab39cecd4b8ce17d67a092561ea550e735c55a7d4",
-      "contentHash": "sha256:e4a721274c28d42f089483dab39cecd4b8ce17d67a092561ea550e735c55a7d4",
+      "sourceHash": "sha256:f52238711e407a39db7f2baa8796784ce95ae1c3f1bcba3a45f4ca9b6be98ec3",
+      "contentHash": "sha256:f52238711e407a39db7f2baa8796784ce95ae1c3f1bcba3a45f4ca9b6be98ec3",
       "mode": "0644"
     },
     ".cursor/library/library-contract.json": {
@@ -314,36 +344,6 @@
       "id": "library-cursor-schemas-library-entry-schema-json",
       "sourceHash": "sha256:7097b8e8b390410865891978c2c68f0ee75c5599c1651ff1e22e168e0234e457",
       "contentHash": "sha256:7097b8e8b390410865891978c2c68f0ee75c5599c1651ff1e22e168e0234e457",
-      "mode": "0644"
-    },
-    ".cursor/library/vendor/NOTICE.md": {
-      "id": "library-cursor-vendor-notice-md",
-      "sourceHash": "sha256:8bb0aa96c38ee65660037f50f4768f08861bc00665fe3efd284aea5ca57f4b0e",
-      "contentHash": "sha256:8bb0aa96c38ee65660037f50f4768f08861bc00665fe3efd284aea5ca57f4b0e",
-      "mode": "0644"
-    },
-    ".cursor/library/vendor/spdx-exceptions.json": {
-      "id": "library-cursor-vendor-spdx-exceptions-json",
-      "sourceHash": "sha256:05079063787565a9c14278d09144df3430cd353aab5c2db2a372b9230cf04594",
-      "contentHash": "sha256:05079063787565a9c14278d09144df3430cd353aab5c2db2a372b9230cf04594",
-      "mode": "0644"
-    },
-    ".cursor/library/vendor/spdx-expression-validate.mjs": {
-      "id": "library-cursor-vendor-spdx-expression-validate-mjs",
-      "sourceHash": "sha256:b159caceed95671aacfa6adb939856cd9df800b327cf01590f0f439b73075d9c",
-      "contentHash": "sha256:b159caceed95671aacfa6adb939856cd9df800b327cf01590f0f439b73075d9c",
-      "mode": "0644"
-    },
-    ".cursor/library/vendor/spdx-license-ids-deprecated.json": {
-      "id": "library-cursor-vendor-spdx-license-ids-deprecated-json",
-      "sourceHash": "sha256:58657e9b38a85b4ab2ea56115738590ee06d28c87667efaa5b83737657d43094",
-      "contentHash": "sha256:58657e9b38a85b4ab2ea56115738590ee06d28c87667efaa5b83737657d43094",
-      "mode": "0644"
-    },
-    ".cursor/library/vendor/spdx-license-ids.json": {
-      "id": "library-cursor-vendor-spdx-license-ids-json",
-      "sourceHash": "sha256:01229f894127ed2c09222de370817e7128340d89fc10a521f0d309dd89647873",
-      "contentHash": "sha256:01229f894127ed2c09222de370817e7128340d89fc10a521f0d309dd89647873",
       "mode": "0644"
     },
     ".cursor/rules/00-bootstrap.mdc": {
@@ -648,14 +648,14 @@
     },
     ".ide-development/INDEX.yaml": {
       "id": "core-index-yaml",
-      "sourceHash": "sha256:ac36262769b2e51359cd2ad0ba0fd1aa86b81d1118378b5920bf8999f1ce47f5",
-      "contentHash": "sha256:ac36262769b2e51359cd2ad0ba0fd1aa86b81d1118378b5920bf8999f1ce47f5",
+      "sourceHash": "sha256:55b28b5d3b76b6c5fb6581978227395a0db54aba15b212c3a6c838211bdf3095",
+      "contentHash": "sha256:55b28b5d3b76b6c5fb6581978227395a0db54aba15b212c3a6c838211bdf3095",
       "mode": "0644"
     },
     ".ide-development/MANIFEST.json": {
       "id": "package-manifest",
-      "sourceHash": "sha256:89dd7e254d3bc59338fff7157211c09848f45d76c281c25dea6547449162baf1",
-      "contentHash": "sha256:89dd7e254d3bc59338fff7157211c09848f45d76c281c25dea6547449162baf1",
+      "sourceHash": "sha256:e6a574de4c7449ad8093257be54ce587f78940c9146a9fbda3bfeffe82c756b1",
+      "contentHash": "sha256:e6a574de4c7449ad8093257be54ce587f78940c9146a9fbda3bfeffe82c756b1",
       "mode": "0644"
     },
     ".ide-development/README.md": {
@@ -666,8 +666,8 @@
     },
     ".ide-development/VERSION": {
       "id": "core-version",
-      "sourceHash": "sha256:d9dfaecfc0eef124084749758c52bbfcf103fdff00723e3d3b75de29e8f69f2f",
-      "contentHash": "sha256:d9dfaecfc0eef124084749758c52bbfcf103fdff00723e3d3b75de29e8f69f2f",
+      "sourceHash": "sha256:4b0b575867a34ab4fff0dc076a5f543ab829be1ee0b172fdc58015f3f67cf521",
+      "contentHash": "sha256:4b0b575867a34ab4fff0dc076a5f543ab829be1ee0b172fdc58015f3f67cf521",
       "mode": "0644"
     },
     ".ide-development/content/README.md": {
@@ -708,8 +708,8 @@
     },
     ".ide-development/content/doctrine/MANAGED-CORE-V2.md": {
       "id": "doctrine-managed-core-v2-md",
-      "sourceHash": "sha256:e5368c2d4b79eaeb0435d6e61f798f1b42f78a36cb95004c62928181488d506c",
-      "contentHash": "sha256:e5368c2d4b79eaeb0435d6e61f798f1b42f78a36cb95004c62928181488d506c",
+      "sourceHash": "sha256:4561b32331ebc54220929806db976b7215c9e57fc283d76852ebf5fed3dd982b",
+      "contentHash": "sha256:4561b32331ebc54220929806db976b7215c9e57fc283d76852ebf5fed3dd982b",
       "mode": "0644"
     },
     ".ide-development/content/doctrine/REPOSITORY-PROTECTION.md": {
@@ -724,10 +724,40 @@
       "contentHash": "sha256:344bfb890a4e28f378a6e079823a305f7fd3b8a29009679f2d3e7533b6bec2e5",
       "mode": "0644"
     },
+    ".ide-development/library/dependencies/NOTICE.md": {
+      "id": "library-package-dependencies-notice-md",
+      "sourceHash": "sha256:8bb0aa96c38ee65660037f50f4768f08861bc00665fe3efd284aea5ca57f4b0e",
+      "contentHash": "sha256:8bb0aa96c38ee65660037f50f4768f08861bc00665fe3efd284aea5ca57f4b0e",
+      "mode": "0644"
+    },
+    ".ide-development/library/dependencies/spdx-exceptions.json": {
+      "id": "library-package-dependencies-spdx-exceptions-json",
+      "sourceHash": "sha256:05079063787565a9c14278d09144df3430cd353aab5c2db2a372b9230cf04594",
+      "contentHash": "sha256:05079063787565a9c14278d09144df3430cd353aab5c2db2a372b9230cf04594",
+      "mode": "0644"
+    },
+    ".ide-development/library/dependencies/spdx-expression-validate.mjs": {
+      "id": "library-package-dependencies-spdx-expression-validate-mjs",
+      "sourceHash": "sha256:b159caceed95671aacfa6adb939856cd9df800b327cf01590f0f439b73075d9c",
+      "contentHash": "sha256:b159caceed95671aacfa6adb939856cd9df800b327cf01590f0f439b73075d9c",
+      "mode": "0644"
+    },
+    ".ide-development/library/dependencies/spdx-license-ids-deprecated.json": {
+      "id": "library-package-dependencies-spdx-license-ids-deprecated-json",
+      "sourceHash": "sha256:58657e9b38a85b4ab2ea56115738590ee06d28c87667efaa5b83737657d43094",
+      "contentHash": "sha256:58657e9b38a85b4ab2ea56115738590ee06d28c87667efaa5b83737657d43094",
+      "mode": "0644"
+    },
+    ".ide-development/library/dependencies/spdx-license-ids.json": {
+      "id": "library-package-dependencies-spdx-license-ids-json",
+      "sourceHash": "sha256:01229f894127ed2c09222de370817e7128340d89fc10a521f0d309dd89647873",
+      "contentHash": "sha256:01229f894127ed2c09222de370817e7128340d89fc10a521f0d309dd89647873",
+      "mode": "0644"
+    },
     ".ide-development/library/library-client.mjs": {
       "id": "library-package-library-client-mjs",
-      "sourceHash": "sha256:e4a721274c28d42f089483dab39cecd4b8ce17d67a092561ea550e735c55a7d4",
-      "contentHash": "sha256:e4a721274c28d42f089483dab39cecd4b8ce17d67a092561ea550e735c55a7d4",
+      "sourceHash": "sha256:f52238711e407a39db7f2baa8796784ce95ae1c3f1bcba3a45f4ca9b6be98ec3",
+      "contentHash": "sha256:f52238711e407a39db7f2baa8796784ce95ae1c3f1bcba3a45f4ca9b6be98ec3",
       "mode": "0644"
     },
     ".ide-development/library/library-contract.json": {
@@ -750,38 +780,8 @@
     },
     ".ide-development/library/tests/library-client.test.mjs": {
       "id": "library-package-tests-library-client-test-mjs",
-      "sourceHash": "sha256:95f10d3ebe1ab322b87cf5c2c1e360e057e12312e1d9fd638ae11348735b54cf",
-      "contentHash": "sha256:95f10d3ebe1ab322b87cf5c2c1e360e057e12312e1d9fd638ae11348735b54cf",
-      "mode": "0644"
-    },
-    ".ide-development/library/vendor/NOTICE.md": {
-      "id": "library-package-vendor-notice-md",
-      "sourceHash": "sha256:8bb0aa96c38ee65660037f50f4768f08861bc00665fe3efd284aea5ca57f4b0e",
-      "contentHash": "sha256:8bb0aa96c38ee65660037f50f4768f08861bc00665fe3efd284aea5ca57f4b0e",
-      "mode": "0644"
-    },
-    ".ide-development/library/vendor/spdx-exceptions.json": {
-      "id": "library-package-vendor-spdx-exceptions-json",
-      "sourceHash": "sha256:05079063787565a9c14278d09144df3430cd353aab5c2db2a372b9230cf04594",
-      "contentHash": "sha256:05079063787565a9c14278d09144df3430cd353aab5c2db2a372b9230cf04594",
-      "mode": "0644"
-    },
-    ".ide-development/library/vendor/spdx-expression-validate.mjs": {
-      "id": "library-package-vendor-spdx-expression-validate-mjs",
-      "sourceHash": "sha256:b159caceed95671aacfa6adb939856cd9df800b327cf01590f0f439b73075d9c",
-      "contentHash": "sha256:b159caceed95671aacfa6adb939856cd9df800b327cf01590f0f439b73075d9c",
-      "mode": "0644"
-    },
-    ".ide-development/library/vendor/spdx-license-ids-deprecated.json": {
-      "id": "library-package-vendor-spdx-license-ids-deprecated-json",
-      "sourceHash": "sha256:58657e9b38a85b4ab2ea56115738590ee06d28c87667efaa5b83737657d43094",
-      "contentHash": "sha256:58657e9b38a85b4ab2ea56115738590ee06d28c87667efaa5b83737657d43094",
-      "mode": "0644"
-    },
-    ".ide-development/library/vendor/spdx-license-ids.json": {
-      "id": "library-package-vendor-spdx-license-ids-json",
-      "sourceHash": "sha256:01229f894127ed2c09222de370817e7128340d89fc10a521f0d309dd89647873",
-      "contentHash": "sha256:01229f894127ed2c09222de370817e7128340d89fc10a521f0d309dd89647873",
+      "sourceHash": "sha256:4ae5ce4e275e881e23e9bbeae49237d5bec1e19ca2e5d164e9e6669e4bf1998d",
+      "contentHash": "sha256:4ae5ce4e275e881e23e9bbeae49237d5bec1e19ca2e5d164e9e6669e4bf1998d",
       "mode": "0644"
     },
     ".ide-development/migrations/README.md": {
@@ -792,8 +792,8 @@
     },
     ".ide-development/migrations/catalog.json": {
       "id": "core-migrations-catalog-json",
-      "sourceHash": "sha256:905c47c5bba8a46f89148d54909d2cadadf83d3f7d7384a7f80108c019a2240a",
-      "contentHash": "sha256:905c47c5bba8a46f89148d54909d2cadadf83d3f7d7384a7f80108c019a2240a",
+      "sourceHash": "sha256:7ca6aae8ea6ba11c09a16327df3ca1d21ad95d4320e20356186bf7ee6400cd33",
+      "contentHash": "sha256:7ca6aae8ea6ba11c09a16327df3ca1d21ad95d4320e20356186bf7ee6400cd33",
       "mode": "0644"
     },
     ".ide-development/migrations/known-bytes/obsolete-generic-v1.mdc": {
@@ -876,8 +876,8 @@
     },
     ".ide-development/platforms/cursor/materialization-manifest.json": {
       "id": "core-platforms-cursor-materialization-manifest-json",
-      "sourceHash": "sha256:b9c5c06d6b62bfba62c9aa76621ecaa3a961d22b0b0374658ab8da3455be585c",
-      "contentHash": "sha256:b9c5c06d6b62bfba62c9aa76621ecaa3a961d22b0b0374658ab8da3455be585c",
+      "sourceHash": "sha256:2eefffa39c64ee479e12cd0da29b0374e2c3f57faa89a7b4fd43ce7ca5540055",
+      "contentHash": "sha256:2eefffa39c64ee479e12cd0da29b0374e2c3f57faa89a7b4fd43ce7ca5540055",
       "mode": "0644"
     },
     ".ide-development/platforms/cursor/rules/00-bootstrap.mdc": {
@@ -1404,8 +1404,8 @@
     },
     "scripts/gitops/write_outcome.py": {
       "id": "gitops-scripts-gitops-write-outcome-py",
-      "sourceHash": "sha256:1416a1b858d6a0868c6e1fd824b28607bd08f1cb5b0ae4c102240d1ad5b169b8",
-      "contentHash": "sha256:1416a1b858d6a0868c6e1fd824b28607bd08f1cb5b0ae4c102240d1ad5b169b8",
+      "sourceHash": "sha256:ba088c7a0dc9c22224adfef3bc382c4032c65caa181be3876d27b4fc105ed2b7",
+      "contentHash": "sha256:ba088c7a0dc9c22224adfef3bc382c4032c65caa181be3876d27b4fc105ed2b7",
       "mode": "0755"
     },
     "scripts/ide-development.py": {
@@ -1416,8 +1416,8 @@
     },
     "scripts/ide_development/__init__.py": {
       "id": "installer-scripts-ide-development-init-py",
-      "sourceHash": "sha256:1e03a4ea299a2d54947214691342061f190c2b05ce225f4d274e012e7c03580e",
-      "contentHash": "sha256:1e03a4ea299a2d54947214691342061f190c2b05ce225f4d274e012e7c03580e",
+      "sourceHash": "sha256:49b33fa22fd11275a3c8cc43af318f7b2a91416ffa5eeca078dc9b3169bb91c1",
+      "contentHash": "sha256:49b33fa22fd11275a3c8cc43af318f7b2a91416ffa5eeca078dc9b3169bb91c1",
       "mode": "0644"
     },
     "scripts/ide_development/__main__.py": {
@@ -1428,20 +1428,20 @@
     },
     "scripts/ide_development/build_manifest.py": {
       "id": "installer-scripts-ide-development-build-manifest-py",
-      "sourceHash": "sha256:b6dce42933a1ba8c703898a2ff0ee677d21de68ae2a01c5faa545c1a1cd9fce2",
-      "contentHash": "sha256:b6dce42933a1ba8c703898a2ff0ee677d21de68ae2a01c5faa545c1a1cd9fce2",
+      "sourceHash": "sha256:7c34f32f6ef5d0d0bfa7a21f8f8f4d18f66d0fe89f214e10588002c0df090da7",
+      "contentHash": "sha256:7c34f32f6ef5d0d0bfa7a21f8f8f4d18f66d0fe89f214e10588002c0df090da7",
       "mode": "0644"
     },
     "scripts/ide_development/cli.py": {
       "id": "installer-scripts-ide-development-cli-py",
-      "sourceHash": "sha256:856a7768474e68a2270465e1b6ed89fa2b0aa21fe22bfddb102c6eeae46b2e41",
-      "contentHash": "sha256:856a7768474e68a2270465e1b6ed89fa2b0aa21fe22bfddb102c6eeae46b2e41",
+      "sourceHash": "sha256:74174ce2ec92ea3d7b60ca315a60cce4153181e5f83b854d27c4036540179c58",
+      "contentHash": "sha256:74174ce2ec92ea3d7b60ca315a60cce4153181e5f83b854d27c4036540179c58",
       "mode": "0644"
     },
     "scripts/ide_development/constants.py": {
       "id": "installer-scripts-ide-development-constants-py",
-      "sourceHash": "sha256:17352ff36eb8dd5c45feb922d9e25cd86b9666ca24d2ae209c2a106e0bf340af",
-      "contentHash": "sha256:17352ff36eb8dd5c45feb922d9e25cd86b9666ca24d2ae209c2a106e0bf340af",
+      "sourceHash": "sha256:5879138c3ec63fd9a3987e23b04a53052ada0c09fd8fbedb0a78c41d0dc97a04",
+      "contentHash": "sha256:5879138c3ec63fd9a3987e23b04a53052ada0c09fd8fbedb0a78c41d0dc97a04",
       "mode": "0644"
     },
     "scripts/ide_development/engine.py": {
