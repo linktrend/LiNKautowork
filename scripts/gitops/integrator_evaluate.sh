@@ -2,7 +2,7 @@
 # Integrator evaluate/merge for PRs into development.
 # Requires GitHub normal automation token (fail closed).
 # Emits integrator-result.json + gitops-outcome.json with honest status.
-# Posts check run "Linktrend Integrator Result" (success only when merged).
+# Posts commit status "Linktrend Integrator Result" (success only when merged).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "canonicalRemote": "https://github.com/linktrend/LiNKlibraries.git",
+  "canonicalBranch": "development",
+  "catalogPath": "indexes/catalog.json",
+  "entryPathTemplate": "entries/<entry-id>/",
+  "accessPattern": {
+    "catalogFetch": "on-demand at Module 2 library-query; cache with fetch commit SHA",
+    "entryFetch": "sparse checkout of entries/<entry-id>/ only when selected",
+    "cacheKey": "entryId@commitSHA",
+    "cacheAuthoritative": false
+  },
+  "publication": {
+    "method": "branch + pull request",
+    "mergeAuthority": "Librarian GitHub Action in LiNKlibraries (or Principal override)",
+    "defaultStatus": "publication_pending"
+  },
+  "offline": "read-only from last verified cache; report stale with commit SHA; never invent"
+}
