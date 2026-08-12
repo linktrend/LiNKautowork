@@ -4,6 +4,88 @@
   "claudeOutOfScope": true,
   "entries": [
     {
+      "source": "library/library-client.mjs",
+      "destination": ".cursor/library/library-client.mjs",
+      "mode": "managed-file",
+      "required": true,
+      "note": "Physical versioned LiNKlibraries client; never a system-repository symlink."
+    },
+    {
+      "source": "library/library-contract.json",
+      "destination": ".cursor/library/library-contract.json",
+      "mode": "managed-file",
+      "required": true,
+      "note": "Library authority and publication contract."
+    },
+    {
+      "source": "library/README.md",
+      "destination": ".cursor/library/README.md",
+      "mode": "managed-file",
+      "required": true,
+      "note": "Consumer command/report documentation."
+    },
+    {
+      "source": "library/schemas/catalog.schema.json",
+      "destination": ".cursor/library/schemas/catalog.schema.json",
+      "mode": "managed-file",
+      "required": true,
+      "note": "Packaged catalog schema executed by the physical Library client."
+    },
+    {
+      "source": "library/schemas/library-entry.schema.json",
+      "destination": ".cursor/library/schemas/library-entry.schema.json",
+      "mode": "managed-file",
+      "required": true,
+      "note": "Packaged entry schema executed by the physical Library client."
+    },
+    {
+      "source": "library/vendor/NOTICE.md",
+      "destination": ".cursor/library/vendor/NOTICE.md",
+      "mode": "managed-file",
+      "required": true,
+      "note": "Attribution for the package-local SPDX authority data and parser."
+    },
+    {
+      "source": "library/vendor/spdx-exceptions.json",
+      "destination": ".cursor/library/vendor/spdx-exceptions.json",
+      "mode": "managed-file",
+      "required": true,
+      "note": "Locked LiNKlibraries SPDX exception set."
+    },
+    {
+      "source": "library/vendor/spdx-expression-validate.mjs",
+      "destination": ".cursor/library/vendor/spdx-expression-validate.mjs",
+      "mode": "managed-file",
+      "required": true,
+      "note": "Package-local SPDX parser/validator authority."
+    },
+    {
+      "source": "library/vendor/spdx-license-ids-deprecated.json",
+      "destination": ".cursor/library/vendor/spdx-license-ids-deprecated.json",
+      "mode": "managed-file",
+      "required": true,
+      "note": "Locked LiNKlibraries deprecated SPDX license set."
+    },
+    {
+      "source": "library/vendor/spdx-license-ids.json",
+      "destination": ".cursor/library/vendor/spdx-license-ids.json",
+      "mode": "managed-file",
+      "required": true,
+      "note": "Locked LiNKlibraries current SPDX license set."
+    },
+    {
+      "source": "platforms/cursor/commands/library-search.md",
+      "destination": ".cursor/commands/library-search.md",
+      "mode": "managed-file",
+      "required": true
+    },
+    {
+      "source": "platforms/cursor/commands/library-report.md",
+      "destination": ".cursor/commands/library-report.md",
+      "mode": "managed-file",
+      "required": true
+    },
+    {
       "source": "platforms/cursor/rules/cursor-gitops-bootstrap.mdc",
       "destination": ".cursor/rules/cursor-gitops-bootstrap.mdc",
       "mode": "managed-file",
