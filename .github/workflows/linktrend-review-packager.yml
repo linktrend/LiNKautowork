@@ -49,13 +49,13 @@ jobs:
   discover:
     name: Discover ready tips (draft PRs only)
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, macOS, ARM64, linktrend-privileged]
     timeout-minutes: 20
     permissions:
       contents: read
     steps:
       - name: Checkout trusted default branch only
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ github.event.repository.default_branch }}
           persist-credentials: false
@@ -107,7 +107,7 @@ jobs:
             *) exit 0 ;;
           esac
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: packager-discover-report
@@ -133,7 +133,7 @@ jobs:
         github.event.check_run.name != 'Linktrend Main Outcome' &&
         github.event.check_run.name != 'evaluate'
       )
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, macOS, ARM64, linktrend-privileged]
     timeout-minutes: 5
     permissions:
       contents: read
@@ -147,7 +147,7 @@ jobs:
       reason: ${{ steps.r.outputs.reason }}
     steps:
       - name: Checkout trusted default branch only
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ github.event.repository.default_branch }}
           persist-credentials: false
@@ -166,7 +166,7 @@ jobs:
     name: Evaluate draft PR after gates
     needs: resolve
     if: needs.resolve.outputs.relevant == 'true'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, macOS, ARM64, linktrend-privileged]
     timeout-minutes: 15
     permissions:
       contents: read
@@ -174,7 +174,7 @@ jobs:
       pull-requests: read
     steps:
       - name: Checkout trusted default branch only
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ github.event.repository.default_branch }}
           persist-credentials: false
@@ -236,7 +236,7 @@ jobs:
             *) exit 0 ;;
           esac
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: packager-evaluate-report
