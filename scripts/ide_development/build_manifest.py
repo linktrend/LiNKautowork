@@ -412,6 +412,7 @@ def build_entries() -> list[dict[str, Any]]:
     ]
     for src_tail, dest in cursor_required:
         source = f"core/managed-core/{src_tail}"
+        digest = _hash_rel(source)
         entries.append(
             _entry(
                 entry_id=f"cursor-{_slug(dest)}",
@@ -421,7 +422,22 @@ def build_entries() -> list[dict[str, Any]]:
                 mode="0644",
                 platform="cursor",
                 merge="replace",
-                source_hash=_hash_rel(source),
+                source_hash=digest,
+            )
+        )
+        # The installed materialization manifest is package-relative and its
+        # required Cursor sources must remain available inside the versioned
+        # `.ide-development/` tree as well as at the physical discovery path.
+        entries.append(
+            _entry(
+                entry_id=f"pkg-{_slug(src_tail)}",
+                ownership="managed-core",
+                source=source,
+                destination=f".ide-development/{src_tail}",
+                mode="0644",
+                platform="all",
+                merge="replace",
+                source_hash=digest,
             )
         )
 

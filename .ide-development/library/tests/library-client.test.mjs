@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -16,7 +16,7 @@ function git(cwd, args) {
   return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
 }
 
-function entry({ id, state = 'usable', selectable = true, framework = 'react', nodeRequirement = '>=20', dependencyVersion = '19.1.1' }) {
+function entry({ id, state = 'usable', selectable = true, framework = 'react', nodeRequirement = '>=20', dependencyVersion = '19.1.1', operatingSystems }) {
   const readme = `# ${id}\n\nA verified test component.\n`
   return {
     schemaVersion: 2,
@@ -31,7 +31,7 @@ function entry({ id, state = 'usable', selectable = true, framework = 'react', n
     state,
     contentMode: state === 'metadata_only' ? 'documentation' : 'executable',
     selectable,
-    compatibility: { node: nodeRequirement, runtimes: ['node'] },
+    compatibility: { node: nodeRequirement, runtimes: ['node'], ...(operatingSystems ? { operatingSystems } : {}) },
     dependencies: { packages: state === 'metadata_only' ? [] : [{ name: 'react', version: dependencyVersion, ecosystem: 'npm' }], services: [] },
     ...(state === 'metadata_only' ? {} : { testContract: { runner: 'node:test', files: ['tests/example.test.mjs'], timeoutMs: 30000 } }),
     license: { spdx: 'MIT', redistributionAllowed: true },
@@ -134,6 +134,21 @@ test('rejects metadata-only selection and incompatible dependencies', () => {
     const instance = client(authority, cache)
     assert.throws(() => instance.selectEntry('historical-note'), (error) => error.code === 'entry_not_selectable')
     assert.throws(() => instance.selectEntry('hello-world', { nodeVersion: '19.0.0', frameworks: ['vue'], dependencies: {} }), (error) => error.code === 'entry_incompatible' && error.details.errors.length >= 2)
+  } finally { rmSync(authority.root, { recursive: true, force: true }); rmSync(cache, { recursive: true, force: true }) }
+})
+
+test('accepts catalog OS constraints and rejects an incompatible consumer OS', () => {
+  const constrained = entry({ id: 'linux-only', operatingSystems: ['linux'] })
+  const authority = createAuthority([constrained])
+  const cache = mkdtempSync(join(tmpdir(), 'linklibraries-os-'))
+  try {
+    const instance = client(authority, cache)
+    const selected = instance.selectEntry('linux-only', { operatingSystem: 'linux', dependencies: { react: '19.1.1' }, frameworks: ['react'] })
+    assert.equal(selected.compatibility.operatingSystem, 'linux')
+    assert.throws(
+      () => instance.selectEntry('linux-only', { operatingSystem: 'darwin', dependencies: { react: '19.1.1' }, frameworks: ['react'] }),
+      (error) => error.code === 'entry_incompatible' && error.details.errors.some((item) => item.code === 'operating_system_incompatible'),
+    )
   } finally { rmSync(authority.root, { recursive: true, force: true }); rmSync(cache, { recursive: true, force: true }) }
 })
 
@@ -292,6 +307,45 @@ test('fails closed on tampered cache and only reuses revalidated offline evidenc
     assert.equal(reused.stale, true)
     rmSync(join(cache, 'entries', `hello-world@${authority.sha}`, 'verification.json'))
     assert.throws(() => offline.fetchEntry('hello-world'), (error) => error.code === 'offline_verification_missing')
+  } finally { rmSync(authority.root, { recursive: true, force: true }); rmSync(cache, { recursive: true, force: true }) }
+})
+
+test('repairs an incomplete online cache entry but preserves offline fail-closed behavior', () => {
+  const authority = createAuthority()
+  const cache = mkdtempSync(join(tmpdir(), 'linklibraries-incomplete-cache-'))
+  const partial = join(cache, 'entries', `hello-world@${authority.sha}`)
+  try {
+    mkdirSync(partial, { recursive: true })
+    writeFileSync(join(partial, 'partial-download'), 'unverified\n')
+    const repaired = client(authority, cache).fetchEntry('hello-world')
+    assert.equal(repaired.cacheStatus, 'verified')
+    assert.equal(existsSync(join(partial, 'partial-download')), false)
+    rmSync(join(partial, 'verification.json'))
+    assert.throws(() => client(authority, cache, { offline: true }).fetchEntry('hello-world'), (error) => error.code === 'offline_verification_missing')
+  } finally { rmSync(authority.root, { recursive: true, force: true }); rmSync(cache, { recursive: true, force: true }) }
+})
+
+test('CLI select discovers package compatibility from the consumer working directory', () => {
+  const authority = createAuthority()
+  const cache = mkdtempSync(join(tmpdir(), 'linklibraries-cli-select-'))
+  const consumer = join(cache, 'consumer')
+  mkdirSync(consumer)
+  writeFileSync(join(consumer, 'package.json'), json({ dependencies: { react: '19.1.1' } }))
+  try {
+    const output = execFileSync(
+      process.execPath,
+      [fileURLToPath(new URL('../library-client.mjs', import.meta.url)), 'select', '--entry', 'hello-world'],
+      {
+        cwd: consumer,
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          LINKTREND_SHARED_LIBRARY_REPO_URL: authority.root,
+          LINKTREND_SHARED_LIBRARY_CHECKOUT: join(cache, 'cli-cache'),
+        },
+      },
+    )
+    assert.equal(JSON.parse(output).compatibility.ok, true)
   } finally { rmSync(authority.root, { recursive: true, force: true }); rmSync(cache, { recursive: true, force: true }) }
 })
 

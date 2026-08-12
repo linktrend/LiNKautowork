@@ -24,7 +24,10 @@ Same mechanism as LiNKdeveloper `@linkdeveloper/shared-library` (do not invent a
 node .cursor/library/library-client.mjs sync
 node .cursor/library/library-client.mjs search --query <text> [--kind <kind>]
 node .cursor/library/library-client.mjs show --entry <id>
-node .cursor/library/library-client.mjs select --entry <id>
+node .cursor/library/library-client.mjs select --entry <id> \
+  [--consumer-root <path>] [--framework <name>] \
+  [--dependency <name=version>] [--service <name>] \
+  [--runtime <name>] [--node-version <version>] [--operating-system <name>]
 node .cursor/library/library-client.mjs report --entry <id>
 node .cursor/library/library-client.mjs verify-cache --entry <id>
 node .cursor/library/library-client.mjs prepare-contribution --bundle <path>
@@ -35,6 +38,9 @@ node .cursor/library/library-client.mjs publish-contribution --bundle <path>
 `select` is the only selection path. It rejects metadata-only, quarantined,
 superseded, and non-selectable records, then checks Node/runtime/framework/
 dependency compatibility. `report` and `verify-cache` expose durable evidence.
+By default, CLI selection reads `package.json` from the current working
+directory. Repeat `--framework`, `--dependency`, or `--service` to supply
+explicit consumer context when it is not represented by that package file.
 
 Publication never mutates GitHub from this client. It reports
 `publication_disabled`, `publication_missing_authority`, or

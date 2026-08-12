@@ -38,6 +38,13 @@
             "type": "string",
             "minLength": 1
           }
+        },
+        "operatingSystems": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       }
     },

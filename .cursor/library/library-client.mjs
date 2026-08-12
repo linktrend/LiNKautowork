@@ -546,9 +546,12 @@ function packageMap(packageJson) {
   return Object.assign({}, packageJson?.dependencies ?? {}, packageJson?.devDependencies ?? {}, packageJson?.peerDependencies ?? {})
 }
 
-function compatibilityReport(entry, { consumerRoot, runtime = 'node', nodeVersion = process.versions.node, frameworks, dependencies, services } = {}) {
+function compatibilityReport(entry, { consumerRoot, runtime = 'node', nodeVersion = process.versions.node, operatingSystem = process.platform, frameworks, dependencies, services } = {}) {
   const errors = []
   if (!entry.compatibility.runtimes.includes(runtime)) errors.push({ code: 'runtime_incompatible', runtime, supported: entry.compatibility.runtimes })
+  if (entry.compatibility.operatingSystems?.length && !entry.compatibility.operatingSystems.includes(operatingSystem)) {
+    errors.push({ code: 'operating_system_incompatible', operatingSystem, supported: entry.compatibility.operatingSystems })
+  }
   const nodeRange = parseVersionRange(entry.compatibility.node)
   if (!nodeRange.ok) errors.push(rangeCompatibilityError(`node_range_${nodeRange.kind}`, 'node', entry.compatibility.node, undefined, nodeRange.detail))
   else if (!parseVersion(nodeVersion)) errors.push({ code: 'node_version_malformed', nodeVersion })
@@ -587,7 +590,7 @@ function compatibilityReport(entry, { consumerRoot, runtime = 'node', nodeVersio
   }
   const availableServices = new Set((services ?? []).map((item) => String(item)))
   for (const dependency of entry.dependencies.services) if (dependency.required && !availableServices.has(dependency.name)) errors.push({ code: 'service_missing', name: dependency.name })
-  return { ok: errors.length === 0, errors, nodeVersion, runtime, frameworkCount: entry.frameworks.length, dependencyCount: entry.dependencies.packages.length }
+  return { ok: errors.length === 0, errors, nodeVersion, runtime, operatingSystem, frameworkCount: entry.frameworks.length, dependencyCount: entry.dependencies.packages.length }
 }
 
 export class LibraryClient {
@@ -708,7 +711,14 @@ export class LibraryClient {
     const sha = commitSha ?? snapshot.catalogCommitSha
     if (sha !== snapshot.catalogCommitSha) fail('entry_catalog_sha_mismatch', `Entry ${entryId} must be fetched at catalog commit ${snapshot.catalogCommitSha}`, { catalogCommitSha: snapshot.catalogCommitSha, requested: sha })
     const localPath = this.cachePath(entryId, sha)
-    if (existsSync(localPath)) return this.verifyCachedEntry(entryId, sha, { snapshot })
+    if (existsSync(localPath)) {
+      if (existsSync(join(localPath, 'verification.json'))) return this.verifyCachedEntry(entryId, sha, { snapshot })
+      if (this.offline) fail('offline_verification_missing', `Offline verification record is missing for ${entryId}@${sha}`)
+      // A failed online fetch may leave a partial directory. It has no
+      // verification authority, so discard only this validated cache key and
+      // rebuild it from the immutable authority commit.
+      rmSync(localPath, { recursive: true, force: true })
+    }
     if (this.offline) fail('offline_verification_missing', `Offline verification record is missing for ${entryId}@${sha}`)
     const row = snapshot.catalog.entries.find((candidate) => candidate.entryId === entryId)
     if (!row) fail('entry_not_found', `Entry not found in catalog: ${entryId}`)
@@ -733,7 +743,7 @@ export class LibraryClient {
   selectEntry(entryId, options = {}) {
     const fetched = this.fetchEntry(entryId, options.commitSha)
     if (!fetched.entryJson.selectable || !['usable', 'deprecated'].includes(fetched.entryJson.state)) fail('entry_not_selectable', `Entry is not selectable: ${entryId}`, { state: fetched.entryJson.state, selectable: fetched.entryJson.selectable })
-    const compatibility = compatibilityReport(fetched.entryJson, { consumerRoot: options.consumerRoot ?? this.consumerRoot, runtime: options.runtime, nodeVersion: options.nodeVersion, frameworks: options.frameworks, dependencies: options.dependencies, services: options.services })
+    const compatibility = compatibilityReport(fetched.entryJson, { consumerRoot: options.consumerRoot ?? this.consumerRoot, runtime: options.runtime, nodeVersion: options.nodeVersion, operatingSystem: options.operatingSystem, frameworks: options.frameworks, dependencies: options.dependencies, services: options.services })
     if (!compatibility.ok) fail('entry_incompatible', `Entry is incompatible with the consumer: ${entryId}`, compatibility)
     const provenance = this.recordProvenance(fetched, { selected: true, compatibility })
     return { ...fetched, compatibility, provenance }
@@ -790,13 +800,49 @@ function option(args, name) {
   return index >= 0 ? args[index + 1] : undefined
 }
 
+function options(args, name) {
+  const values = []
+  for (let index = 0; index < args.length; index += 1) {
+    if (args[index] === name) {
+      const value = args[index + 1]
+      if (!value || value.startsWith('--')) fail('argument_required', `${name} requires a value`)
+      values.push(value)
+    }
+  }
+  return values
+}
+
+function dependencyOptions(args) {
+  const values = options(args, '--dependency')
+  if (!values.length) return undefined
+  const dependencies = {}
+  for (const value of values) {
+    const separator = value.indexOf('=')
+    if (separator < 1 || separator === value.length - 1) fail('argument_invalid', '--dependency must use name=version')
+    dependencies[value.slice(0, separator)] = value.slice(separator + 1)
+  }
+  return dependencies
+}
+
 function main(argv) {
   const [command, ...args] = argv
   const client = new LibraryClient()
   if (command === 'sync') return printJson(client.fetchCatalog())
   if (command === 'search') return printJson(client.search({ query: option(args, '--query') ?? '', kind: option(args, '--kind'), selectable: option(args, '--selectable') === undefined ? undefined : option(args, '--selectable') === 'true' }))
   if (command === 'show') return printJson(client.fetchEntry(option(args, '--entry') ?? fail('argument_required', '--entry required')))
-  if (command === 'select') return printJson(client.selectEntry(option(args, '--entry') ?? fail('argument_required', '--entry required')))
+  if (command === 'select') {
+    const frameworks = options(args, '--framework')
+    const services = options(args, '--service')
+    return printJson(client.selectEntry(option(args, '--entry') ?? fail('argument_required', '--entry required'), {
+      consumerRoot: option(args, '--consumer-root') ?? process.cwd(),
+      runtime: option(args, '--runtime'),
+      nodeVersion: option(args, '--node-version'),
+      operatingSystem: option(args, '--operating-system'),
+      frameworks: frameworks.length ? frameworks : undefined,
+      dependencies: dependencyOptions(args),
+      services: services.length ? services : undefined,
+    }))
+  }
   if (command === 'verify-cache') return printJson(client.verifyCachedEntry(option(args, '--entry') ?? fail('argument_required', '--entry required'), client.fetchCatalog().catalogCommitSha))
   if (command === 'report') return printJson(client.report(option(args, '--entry')))
   if (command === 'prepare-contribution') return printJson(client.prepareContribution(option(args, '--bundle') ?? fail('argument_required', '--bundle required')))
