@@ -22,7 +22,7 @@ Installed managed core: **`.ide-development/`** (versioned package; treat as rea
 - Ship = checkpoint (commit + push). Packager opens PRs. Max 3 ordinary repairs.
 - Completion: `python3 scripts/gitops/completion_gate.py` (`checkpoint` | `review-ready` | `blocked` | `status` | `write-evidence`).
 - Finished work: run appropriate tests/checks, auto-repair ordinary failures (≤3 cycles), `write-evidence`, then `review-ready`.
-- `review-ready` validates evidence then publishes **Linktrend Review Ready** only via the privileged App path (or fails closed with App-backed dispatch diagnostics). Do not call `mark-review-ready.sh` as a pre-gate publisher.
+- `review-ready` validates evidence then publishes **Linktrend Review Ready** only via the privileged normal-token path (or fails closed with normal-token dispatch diagnostics). Do not call `mark-review-ready.sh` as a pre-gate publisher.
 - If completion cannot pass, call `completion_gate.py blocked`.
 - Hard stops: no implementer PR, no self-merge, no self-review, no staging/main promotion, no prefer-incoming.
 

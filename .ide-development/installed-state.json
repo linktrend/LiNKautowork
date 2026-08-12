@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "packageName": "ide-development-managed-core",
   "packageVersion": "2.1.0",
-  "installedAt": "2026-08-10T03:41:13Z",
+  "installedAt": "2026-08-12T09:25:26Z",
   "files": {
     ".agents/skills/action-queue/SKILL.md": {
       "id": "codex-skill-action-queue",
@@ -264,14 +264,86 @@
     },
     ".cursor/commands/agentcomply.md": {
       "id": "cursor-cursor-commands-agentcomply-md",
-      "sourceHash": "sha256:ea2fd2d934048ecddc63aebb0e19345b1702fa6f8590589426e884aa785653eb",
-      "contentHash": "sha256:ea2fd2d934048ecddc63aebb0e19345b1702fa6f8590589426e884aa785653eb",
+      "sourceHash": "sha256:8ab8e20d52e636ca91f48d4a7e58f186660a454acad16bb836fea9778fa28d4c",
+      "contentHash": "sha256:8ab8e20d52e636ca91f48d4a7e58f186660a454acad16bb836fea9778fa28d4c",
       "mode": "0644"
     },
     ".cursor/commands/agentsetup.md": {
       "id": "cursor-cursor-commands-agentsetup-md",
-      "sourceHash": "sha256:1f17ee86b38c8d07d02d304faa2e1a512cff8c9d901e987e15a1d2d7ad5d818a",
-      "contentHash": "sha256:1f17ee86b38c8d07d02d304faa2e1a512cff8c9d901e987e15a1d2d7ad5d818a",
+      "sourceHash": "sha256:179d2163dbb01f4a25d9a6cb4c76e34a41405353f67ccec99eacfd916c0fdc47",
+      "contentHash": "sha256:179d2163dbb01f4a25d9a6cb4c76e34a41405353f67ccec99eacfd916c0fdc47",
+      "mode": "0644"
+    },
+    ".cursor/commands/library-report.md": {
+      "id": "cursor-cursor-commands-library-report-md",
+      "sourceHash": "sha256:779b891b2c877b85ce9bf63713c886ad78fb77ac23a3c1e43cb4949170face7d",
+      "contentHash": "sha256:779b891b2c877b85ce9bf63713c886ad78fb77ac23a3c1e43cb4949170face7d",
+      "mode": "0644"
+    },
+    ".cursor/commands/library-search.md": {
+      "id": "cursor-cursor-commands-library-search-md",
+      "sourceHash": "sha256:1df5c8ac10de1956e6702bde3e78b2c11a2b9247bd54b5cfe1eece9f910c4536",
+      "contentHash": "sha256:1df5c8ac10de1956e6702bde3e78b2c11a2b9247bd54b5cfe1eece9f910c4536",
+      "mode": "0644"
+    },
+    ".cursor/library/README.md": {
+      "id": "library-cursor-readme-md",
+      "sourceHash": "sha256:27af0dec684db80dd1ad2bc2532956fe166a9882d3ec5287f7b7d1dacab28641",
+      "contentHash": "sha256:27af0dec684db80dd1ad2bc2532956fe166a9882d3ec5287f7b7d1dacab28641",
+      "mode": "0644"
+    },
+    ".cursor/library/library-client.mjs": {
+      "id": "library-cursor-library-client-mjs",
+      "sourceHash": "sha256:0303727f88b9d97977c620e8b0651738ace0e49cb26dd57d6843a88fa27c94d0",
+      "contentHash": "sha256:0303727f88b9d97977c620e8b0651738ace0e49cb26dd57d6843a88fa27c94d0",
+      "mode": "0644"
+    },
+    ".cursor/library/library-contract.json": {
+      "id": "library-cursor-library-contract-json",
+      "sourceHash": "sha256:81c0c45ae21d185d494624634eea9ad213226c47e07b0e2be1e1354bf2951ff8",
+      "contentHash": "sha256:81c0c45ae21d185d494624634eea9ad213226c47e07b0e2be1e1354bf2951ff8",
+      "mode": "0644"
+    },
+    ".cursor/library/schemas/catalog.schema.json": {
+      "id": "library-cursor-schemas-catalog-schema-json",
+      "sourceHash": "sha256:88f64092d92cfabb96d43c47e4d448c7d058bf72f8cb61ea8074cdc85d7092e1",
+      "contentHash": "sha256:88f64092d92cfabb96d43c47e4d448c7d058bf72f8cb61ea8074cdc85d7092e1",
+      "mode": "0644"
+    },
+    ".cursor/library/schemas/library-entry.schema.json": {
+      "id": "library-cursor-schemas-library-entry-schema-json",
+      "sourceHash": "sha256:7097b8e8b390410865891978c2c68f0ee75c5599c1651ff1e22e168e0234e457",
+      "contentHash": "sha256:7097b8e8b390410865891978c2c68f0ee75c5599c1651ff1e22e168e0234e457",
+      "mode": "0644"
+    },
+    ".cursor/library/vendor/NOTICE.md": {
+      "id": "library-cursor-vendor-notice-md",
+      "sourceHash": "sha256:8bb0aa96c38ee65660037f50f4768f08861bc00665fe3efd284aea5ca57f4b0e",
+      "contentHash": "sha256:8bb0aa96c38ee65660037f50f4768f08861bc00665fe3efd284aea5ca57f4b0e",
+      "mode": "0644"
+    },
+    ".cursor/library/vendor/spdx-exceptions.json": {
+      "id": "library-cursor-vendor-spdx-exceptions-json",
+      "sourceHash": "sha256:05079063787565a9c14278d09144df3430cd353aab5c2db2a372b9230cf04594",
+      "contentHash": "sha256:05079063787565a9c14278d09144df3430cd353aab5c2db2a372b9230cf04594",
+      "mode": "0644"
+    },
+    ".cursor/library/vendor/spdx-expression-validate.mjs": {
+      "id": "library-cursor-vendor-spdx-expression-validate-mjs",
+      "sourceHash": "sha256:b159caceed95671aacfa6adb939856cd9df800b327cf01590f0f439b73075d9c",
+      "contentHash": "sha256:b159caceed95671aacfa6adb939856cd9df800b327cf01590f0f439b73075d9c",
+      "mode": "0644"
+    },
+    ".cursor/library/vendor/spdx-license-ids-deprecated.json": {
+      "id": "library-cursor-vendor-spdx-license-ids-deprecated-json",
+      "sourceHash": "sha256:58657e9b38a85b4ab2ea56115738590ee06d28c87667efaa5b83737657d43094",
+      "contentHash": "sha256:58657e9b38a85b4ab2ea56115738590ee06d28c87667efaa5b83737657d43094",
+      "mode": "0644"
+    },
+    ".cursor/library/vendor/spdx-license-ids.json": {
+      "id": "library-cursor-vendor-spdx-license-ids-json",
+      "sourceHash": "sha256:01229f894127ed2c09222de370817e7128340d89fc10a521f0d309dd89647873",
+      "contentHash": "sha256:01229f894127ed2c09222de370817e7128340d89fc10a521f0d309dd89647873",
       "mode": "0644"
     },
     ".cursor/rules/00-bootstrap.mdc": {
@@ -288,8 +360,8 @@
     },
     ".cursor/rules/02-autonomous-ship-pull.mdc": {
       "id": "cursor-rule-02-autonomous-ship-pull-mdc",
-      "sourceHash": "sha256:a2cc19e9bb8488860662ae397bb7722f3ed72122b1dd26496a5830e8ad2e49c6",
-      "contentHash": "sha256:a2cc19e9bb8488860662ae397bb7722f3ed72122b1dd26496a5830e8ad2e49c6",
+      "sourceHash": "sha256:e515d2b3d15edf4a678db8146e59e8f5e19b19bdfc241a2d44f71efe2473c741",
+      "contentHash": "sha256:e515d2b3d15edf4a678db8146e59e8f5e19b19bdfc241a2d44f71efe2473c741",
       "mode": "0644"
     },
     ".cursor/rules/03-secrets-security.mdc": {
@@ -306,8 +378,8 @@
     },
     ".cursor/rules/cursor-gitops-bootstrap.mdc": {
       "id": "cursor-cursor-rules-cursor-gitops-bootstrap-mdc",
-      "sourceHash": "sha256:e98e67e2ba7ec8e69a2c8910b8c5136ca9b2d69bc1356b150b79cf1fd05fc10d",
-      "contentHash": "sha256:e98e67e2ba7ec8e69a2c8910b8c5136ca9b2d69bc1356b150b79cf1fd05fc10d",
+      "sourceHash": "sha256:0765604ad1110ec0689bee05d7cb8d6fe5ba3f232d481b3a9a1738360114f6b8",
+      "contentHash": "sha256:0765604ad1110ec0689bee05d7cb8d6fe5ba3f232d481b3a9a1738360114f6b8",
       "mode": "0644"
     },
     ".cursor/rules/linktrend-git-branching.mdc": {
@@ -324,14 +396,14 @@
     },
     ".cursor/skills/agentcomply/SKILL.md": {
       "id": "cursor-cursor-skills-agentcomply-skill-md",
-      "sourceHash": "sha256:bfaaaf64fc8a20771af78413bc674f62d118536973cb6710b5510249797ea278",
-      "contentHash": "sha256:bfaaaf64fc8a20771af78413bc674f62d118536973cb6710b5510249797ea278",
+      "sourceHash": "sha256:f835f4e920be744c40c49453b175da2797c3eaa4ca5cfea48551cc5bfe0c22c1",
+      "contentHash": "sha256:f835f4e920be744c40c49453b175da2797c3eaa4ca5cfea48551cc5bfe0c22c1",
       "mode": "0644"
     },
     ".cursor/skills/agentsetup/SKILL.md": {
       "id": "cursor-cursor-skills-agentsetup-skill-md",
-      "sourceHash": "sha256:c085c6d088b7dfa03e86c6a1728e66e917cfb6a9fd9f2f458c3b4bab2b2902a9",
-      "contentHash": "sha256:c085c6d088b7dfa03e86c6a1728e66e917cfb6a9fd9f2f458c3b4bab2b2902a9",
+      "sourceHash": "sha256:096651aa03ff3f3e62d7adf7e8b8096bd50aef764ae77826c72a287e07c04474",
+      "contentHash": "sha256:096651aa03ff3f3e62d7adf7e8b8096bd50aef764ae77826c72a287e07c04474",
       "mode": "0644"
     },
     ".cursor/skills/api-patterns/SKILL.md": {
@@ -582,8 +654,8 @@
     },
     ".ide-development/MANIFEST.json": {
       "id": "package-manifest",
-      "sourceHash": "sha256:7103c4a6bb8dd46dadc2e4566cb3bf54604c1b740eac65d23bb4ac336a988703",
-      "contentHash": "sha256:7103c4a6bb8dd46dadc2e4566cb3bf54604c1b740eac65d23bb4ac336a988703",
+      "sourceHash": "sha256:6912d93b2e7b636ebe452c2c3072fde93cbc317e3f6ed3b203f081c8f5ae8398",
+      "contentHash": "sha256:6912d93b2e7b636ebe452c2c3072fde93cbc317e3f6ed3b203f081c8f5ae8398",
       "mode": "0644"
     },
     ".ide-development/README.md": {
@@ -618,20 +690,20 @@
     },
     ".ide-development/content/doctrine/AGENT-COMPLETION.md": {
       "id": "doctrine-agent-completion-md",
-      "sourceHash": "sha256:34e9edaa201d3a1774191669a54fad8736b8b9871ae38aa37962ed64d2fd76d2",
-      "contentHash": "sha256:34e9edaa201d3a1774191669a54fad8736b8b9871ae38aa37962ed64d2fd76d2",
+      "sourceHash": "sha256:e5944c7767733aad93c01ef56769c9535084728345ee9134f2bbab3055e70287",
+      "contentHash": "sha256:e5944c7767733aad93c01ef56769c9535084728345ee9134f2bbab3055e70287",
       "mode": "0644"
     },
     ".ide-development/content/doctrine/AUTONOMOUS-GIT-OPERATIONS.md": {
       "id": "doctrine-autonomous-git-operations-md",
-      "sourceHash": "sha256:168b848797a2ebf1b76e9c934223f66b54605b928aa7848f901a58c1b437ca70",
-      "contentHash": "sha256:168b848797a2ebf1b76e9c934223f66b54605b928aa7848f901a58c1b437ca70",
+      "sourceHash": "sha256:b8c927d40d3afd5200795a5b3a162b3a1458a52af1ac952d90215b17db568cfc",
+      "contentHash": "sha256:b8c927d40d3afd5200795a5b3a162b3a1458a52af1ac952d90215b17db568cfc",
       "mode": "0644"
     },
     ".ide-development/content/doctrine/DELIVERY-MODES.md": {
       "id": "doctrine-delivery-modes-md",
-      "sourceHash": "sha256:84ca961defcd767bd9c266cc5d455c516493d14ead11d26f35feba69608515e0",
-      "contentHash": "sha256:84ca961defcd767bd9c266cc5d455c516493d14ead11d26f35feba69608515e0",
+      "sourceHash": "sha256:f1d07dbc28d7552eedb97cd9ba2f591b8e895499d646d84c6070d61a5ea4fe70",
+      "contentHash": "sha256:f1d07dbc28d7552eedb97cd9ba2f591b8e895499d646d84c6070d61a5ea4fe70",
       "mode": "0644"
     },
     ".ide-development/content/doctrine/MANAGED-CORE-V2.md": {
@@ -644,6 +716,72 @@
       "id": "doctrine-repository-protection-md",
       "sourceHash": "sha256:15bed85b01e8a319db94c5ceb0f4c4750eb0a5db037502f4ebb69b47627221c1",
       "contentHash": "sha256:15bed85b01e8a319db94c5ceb0f4c4750eb0a5db037502f4ebb69b47627221c1",
+      "mode": "0644"
+    },
+    ".ide-development/library/README.md": {
+      "id": "library-package-readme-md",
+      "sourceHash": "sha256:27af0dec684db80dd1ad2bc2532956fe166a9882d3ec5287f7b7d1dacab28641",
+      "contentHash": "sha256:27af0dec684db80dd1ad2bc2532956fe166a9882d3ec5287f7b7d1dacab28641",
+      "mode": "0644"
+    },
+    ".ide-development/library/library-client.mjs": {
+      "id": "library-package-library-client-mjs",
+      "sourceHash": "sha256:0303727f88b9d97977c620e8b0651738ace0e49cb26dd57d6843a88fa27c94d0",
+      "contentHash": "sha256:0303727f88b9d97977c620e8b0651738ace0e49cb26dd57d6843a88fa27c94d0",
+      "mode": "0644"
+    },
+    ".ide-development/library/library-contract.json": {
+      "id": "library-package-library-contract-json",
+      "sourceHash": "sha256:81c0c45ae21d185d494624634eea9ad213226c47e07b0e2be1e1354bf2951ff8",
+      "contentHash": "sha256:81c0c45ae21d185d494624634eea9ad213226c47e07b0e2be1e1354bf2951ff8",
+      "mode": "0644"
+    },
+    ".ide-development/library/schemas/catalog.schema.json": {
+      "id": "library-package-schemas-catalog-schema-json",
+      "sourceHash": "sha256:88f64092d92cfabb96d43c47e4d448c7d058bf72f8cb61ea8074cdc85d7092e1",
+      "contentHash": "sha256:88f64092d92cfabb96d43c47e4d448c7d058bf72f8cb61ea8074cdc85d7092e1",
+      "mode": "0644"
+    },
+    ".ide-development/library/schemas/library-entry.schema.json": {
+      "id": "library-package-schemas-library-entry-schema-json",
+      "sourceHash": "sha256:7097b8e8b390410865891978c2c68f0ee75c5599c1651ff1e22e168e0234e457",
+      "contentHash": "sha256:7097b8e8b390410865891978c2c68f0ee75c5599c1651ff1e22e168e0234e457",
+      "mode": "0644"
+    },
+    ".ide-development/library/tests/library-client.test.mjs": {
+      "id": "library-package-tests-library-client-test-mjs",
+      "sourceHash": "sha256:c1e76d41bdfe65e74da9870e671bd557190adbf43a72414330844eb4b49b5efb",
+      "contentHash": "sha256:c1e76d41bdfe65e74da9870e671bd557190adbf43a72414330844eb4b49b5efb",
+      "mode": "0644"
+    },
+    ".ide-development/library/vendor/NOTICE.md": {
+      "id": "library-package-vendor-notice-md",
+      "sourceHash": "sha256:8bb0aa96c38ee65660037f50f4768f08861bc00665fe3efd284aea5ca57f4b0e",
+      "contentHash": "sha256:8bb0aa96c38ee65660037f50f4768f08861bc00665fe3efd284aea5ca57f4b0e",
+      "mode": "0644"
+    },
+    ".ide-development/library/vendor/spdx-exceptions.json": {
+      "id": "library-package-vendor-spdx-exceptions-json",
+      "sourceHash": "sha256:05079063787565a9c14278d09144df3430cd353aab5c2db2a372b9230cf04594",
+      "contentHash": "sha256:05079063787565a9c14278d09144df3430cd353aab5c2db2a372b9230cf04594",
+      "mode": "0644"
+    },
+    ".ide-development/library/vendor/spdx-expression-validate.mjs": {
+      "id": "library-package-vendor-spdx-expression-validate-mjs",
+      "sourceHash": "sha256:b159caceed95671aacfa6adb939856cd9df800b327cf01590f0f439b73075d9c",
+      "contentHash": "sha256:b159caceed95671aacfa6adb939856cd9df800b327cf01590f0f439b73075d9c",
+      "mode": "0644"
+    },
+    ".ide-development/library/vendor/spdx-license-ids-deprecated.json": {
+      "id": "library-package-vendor-spdx-license-ids-deprecated-json",
+      "sourceHash": "sha256:58657e9b38a85b4ab2ea56115738590ee06d28c87667efaa5b83737657d43094",
+      "contentHash": "sha256:58657e9b38a85b4ab2ea56115738590ee06d28c87667efaa5b83737657d43094",
+      "mode": "0644"
+    },
+    ".ide-development/library/vendor/spdx-license-ids.json": {
+      "id": "library-package-vendor-spdx-license-ids-json",
+      "sourceHash": "sha256:01229f894127ed2c09222de370817e7128340d89fc10a521f0d309dd89647873",
+      "contentHash": "sha256:01229f894127ed2c09222de370817e7128340d89fc10a521f0d309dd89647873",
       "mode": "0644"
     },
     ".ide-development/migrations/README.md": {
@@ -684,14 +822,14 @@
     },
     ".ide-development/platforms/README.md": {
       "id": "core-platforms-readme-md",
-      "sourceHash": "sha256:c8541bbbe668588d14638f7ba1406385bf1e719a80e5ecd72c41408910f09f2b",
-      "contentHash": "sha256:c8541bbbe668588d14638f7ba1406385bf1e719a80e5ecd72c41408910f09f2b",
+      "sourceHash": "sha256:d48c7cc867cb391c17d8845935d33a270f177e5deb69e2a0a3e63bf7c43a3c96",
+      "contentHash": "sha256:d48c7cc867cb391c17d8845935d33a270f177e5deb69e2a0a3e63bf7c43a3c96",
       "mode": "0644"
     },
     ".ide-development/platforms/codex/AGENTS.managed-section.md": {
       "id": "core-platforms-codex-agents-managed-section-md",
-      "sourceHash": "sha256:0891561f45f100f36c86ea21abfb36bc047f3e4f397f27f6c06d2321f41124da",
-      "contentHash": "sha256:0891561f45f100f36c86ea21abfb36bc047f3e4f397f27f6c06d2321f41124da",
+      "sourceHash": "sha256:a9ca873bddaaedfab4625d766a828b87b3c88db707265210fb04ab54bba558a2",
+      "contentHash": "sha256:a9ca873bddaaedfab4625d766a828b87b3c88db707265210fb04ab54bba558a2",
       "mode": "0644"
     },
     ".ide-development/platforms/codex/README.md": {
@@ -724,10 +862,22 @@
       "contentHash": "sha256:1f17ee86b38c8d07d02d304faa2e1a512cff8c9d901e987e15a1d2d7ad5d818a",
       "mode": "0644"
     },
+    ".ide-development/platforms/cursor/commands/library-report.md": {
+      "id": "pkg-platforms-cursor-commands-library-report-md",
+      "sourceHash": "sha256:779b891b2c877b85ce9bf63713c886ad78fb77ac23a3c1e43cb4949170face7d",
+      "contentHash": "sha256:779b891b2c877b85ce9bf63713c886ad78fb77ac23a3c1e43cb4949170face7d",
+      "mode": "0644"
+    },
+    ".ide-development/platforms/cursor/commands/library-search.md": {
+      "id": "pkg-platforms-cursor-commands-library-search-md",
+      "sourceHash": "sha256:1df5c8ac10de1956e6702bde3e78b2c11a2b9247bd54b5cfe1eece9f910c4536",
+      "contentHash": "sha256:1df5c8ac10de1956e6702bde3e78b2c11a2b9247bd54b5cfe1eece9f910c4536",
+      "mode": "0644"
+    },
     ".ide-development/platforms/cursor/materialization-manifest.json": {
       "id": "core-platforms-cursor-materialization-manifest-json",
-      "sourceHash": "sha256:43441c701571bf43b00384ec44f429a9cb7879f8a61bdae175d047fbde839e51",
-      "contentHash": "sha256:43441c701571bf43b00384ec44f429a9cb7879f8a61bdae175d047fbde839e51",
+      "sourceHash": "sha256:b9c5c06d6b62bfba62c9aa76621ecaa3a961d22b0b0374658ab8da3455be585c",
+      "contentHash": "sha256:b9c5c06d6b62bfba62c9aa76621ecaa3a961d22b0b0374658ab8da3455be585c",
       "mode": "0644"
     },
     ".ide-development/platforms/cursor/rules/00-bootstrap.mdc": {
@@ -744,8 +894,8 @@
     },
     ".ide-development/platforms/cursor/rules/02-autonomous-ship-pull.mdc": {
       "id": "pkg-rule-02-autonomous-ship-pull-mdc",
-      "sourceHash": "sha256:a2cc19e9bb8488860662ae397bb7722f3ed72122b1dd26496a5830e8ad2e49c6",
-      "contentHash": "sha256:a2cc19e9bb8488860662ae397bb7722f3ed72122b1dd26496a5830e8ad2e49c6",
+      "sourceHash": "sha256:e515d2b3d15edf4a678db8146e59e8f5e19b19bdfc241a2d44f71efe2473c741",
+      "contentHash": "sha256:e515d2b3d15edf4a678db8146e59e8f5e19b19bdfc241a2d44f71efe2473c741",
       "mode": "0644"
     },
     ".ide-development/platforms/cursor/rules/03-secrets-security.mdc": {
@@ -1086,8 +1236,8 @@
     },
     "AGENTS.md": {
       "id": "agents-managed-section",
-      "sourceHash": "sha256:0891561f45f100f36c86ea21abfb36bc047f3e4f397f27f6c06d2321f41124da",
-      "contentHash": "sha256:fc4ad678c87e12ca84c90954b3d49329b13efe1c6da660a9cdb1559743417ac3",
+      "sourceHash": "sha256:a9ca873bddaaedfab4625d766a828b87b3c88db707265210fb04ab54bba558a2",
+      "contentHash": "sha256:fce445fba28267bb5f90e201cb2064c6575f6129fbddce1257032894663c2166",
       "mode": "0644"
     },
     "scripts/apply-development-merge-ruleset.sh": {
@@ -1104,20 +1254,20 @@
     },
     "scripts/clear-review-ready.sh": {
       "id": "gitops-scripts-clear-review-ready-sh",
-      "sourceHash": "sha256:5d3ac4ee49f28c7986762b9b740e64170ea13778d084c93620a2c2bd7981e539",
-      "contentHash": "sha256:5d3ac4ee49f28c7986762b9b740e64170ea13778d084c93620a2c2bd7981e539",
+      "sourceHash": "sha256:d3958d904a8c23ff7d64de5947cfc73d1c23dd035af0cb223027d69a6624e4eb",
+      "contentHash": "sha256:d3958d904a8c23ff7d64de5947cfc73d1c23dd035af0cb223027d69a6624e4eb",
       "mode": "0755"
     },
     "scripts/gitops/bugbot_user_credentials.py": {
       "id": "gitops-scripts-gitops-bugbot-user-credentials-py",
-      "sourceHash": "sha256:20a47b1c45d9796478c917d3058781f122b063ee00fd79276bd809294298b646",
-      "contentHash": "sha256:20a47b1c45d9796478c917d3058781f122b063ee00fd79276bd809294298b646",
+      "sourceHash": "sha256:d79d08f5e03fa5b0a0fa9580890c5bd39c5aa3c7219fb81ad2df4b9f531947e2",
+      "contentHash": "sha256:d79d08f5e03fa5b0a0fa9580890c5bd39c5aa3c7219fb81ad2df4b9f531947e2",
       "mode": "0755"
     },
     "scripts/gitops/completion_gate.py": {
       "id": "gitops-scripts-gitops-completion-gate-py",
-      "sourceHash": "sha256:a9fa724f0f0c1093593d0257660ef7735a2ef8f07551d614bc43f998f4f95338",
-      "contentHash": "sha256:a9fa724f0f0c1093593d0257660ef7735a2ef8f07551d614bc43f998f4f95338",
+      "sourceHash": "sha256:9e3088a444b5851a7e0f6b3bffe45670a7e32b679d1241abdc879bffa024d00e",
+      "contentHash": "sha256:9e3088a444b5851a7e0f6b3bffe45670a7e32b679d1241abdc879bffa024d00e",
       "mode": "0755"
     },
     "scripts/gitops/conflict_task.py": {
@@ -1140,14 +1290,14 @@
     },
     "scripts/gitops/external_state_audit.py": {
       "id": "gitops-scripts-gitops-external-state-audit-py",
-      "sourceHash": "sha256:351a029f965d948c0e405a2d52fc5452d341d90748ec3a78f8a6819db7500480",
-      "contentHash": "sha256:351a029f965d948c0e405a2d52fc5452d341d90748ec3a78f8a6819db7500480",
+      "sourceHash": "sha256:d5636130d2fea9af45808b60270b230efdbb12da1464d56cf9f78acb19c8012a",
+      "contentHash": "sha256:d5636130d2fea9af45808b60270b230efdbb12da1464d56cf9f78acb19c8012a",
       "mode": "0755"
     },
     "scripts/gitops/integrator_evaluate.sh": {
       "id": "gitops-scripts-gitops-integrator-evaluate-sh",
-      "sourceHash": "sha256:9dc0d0a3c4290b0eb6897e3395ea11ca5271d58ca8a682b9ee812886141fe0eb",
-      "contentHash": "sha256:9dc0d0a3c4290b0eb6897e3395ea11ca5271d58ca8a682b9ee812886141fe0eb",
+      "sourceHash": "sha256:028edbf1a28f294358e3e6cae2cfc1c65328bcea25efcf1653512421eb9aabfe",
+      "contentHash": "sha256:028edbf1a28f294358e3e6cae2cfc1c65328bcea25efcf1653512421eb9aabfe",
       "mode": "0755"
     },
     "scripts/gitops/main_approve_package_discover.py": {
@@ -1164,14 +1314,14 @@
     },
     "scripts/gitops/packager_discover.py": {
       "id": "gitops-scripts-gitops-packager-discover-py",
-      "sourceHash": "sha256:dcd89d7f3bc4ffe1a557a46024c9fbc13c8068c083ba11bdbfe402dd5eb362a5",
-      "contentHash": "sha256:dcd89d7f3bc4ffe1a557a46024c9fbc13c8068c083ba11bdbfe402dd5eb362a5",
+      "sourceHash": "sha256:31ac7f060324bb19a505877ce0dfe1dc7ee0439d7a6c87b0bfceec04976be845",
+      "contentHash": "sha256:31ac7f060324bb19a505877ce0dfe1dc7ee0439d7a6c87b0bfceec04976be845",
       "mode": "0755"
     },
     "scripts/gitops/packager_evaluate.py": {
       "id": "gitops-scripts-gitops-packager-evaluate-py",
-      "sourceHash": "sha256:512ae7b8f02cedc20eb38718aefc8b9a3767f257641fae12258b3d7539ad9ccb",
-      "contentHash": "sha256:512ae7b8f02cedc20eb38718aefc8b9a3767f257641fae12258b3d7539ad9ccb",
+      "sourceHash": "sha256:76f16f4ece3ae27d939d839b8e670acf6e6d6adc453e26a182e4b5ab22877ca3",
+      "contentHash": "sha256:76f16f4ece3ae27d939d839b8e670acf6e6d6adc453e26a182e4b5ab22877ca3",
       "mode": "0755"
     },
     "scripts/gitops/packager_logic.py": {
@@ -1182,20 +1332,20 @@
     },
     "scripts/gitops/promote_main.sh": {
       "id": "gitops-scripts-gitops-promote-main-sh",
-      "sourceHash": "sha256:0223c6471f521d59265dd3ec818b197187d2066f51b962d3530db0c65e85401c",
-      "contentHash": "sha256:0223c6471f521d59265dd3ec818b197187d2066f51b962d3530db0c65e85401c",
+      "sourceHash": "sha256:2b578454f05435ef363001ccb0aba13757937f9c27b735c6711b5a9b14436ec4",
+      "contentHash": "sha256:2b578454f05435ef363001ccb0aba13757937f9c27b735c6711b5a9b14436ec4",
       "mode": "0755"
     },
     "scripts/gitops/promote_staging.sh": {
       "id": "gitops-scripts-gitops-promote-staging-sh",
-      "sourceHash": "sha256:d388a1bbfb23adee3a3c373157e8eb61a6f17c8d9975cc58297eda0f8fd7d97b",
-      "contentHash": "sha256:d388a1bbfb23adee3a3c373157e8eb61a6f17c8d9975cc58297eda0f8fd7d97b",
+      "sourceHash": "sha256:891ad53da10d9995b2971f3d661bc3113e6c64a22e45c5d300948e65d1bf412e",
+      "contentHash": "sha256:891ad53da10d9995b2971f3d661bc3113e6c64a22e45c5d300948e65d1bf412e",
       "mode": "0755"
     },
     "scripts/gitops/readiness_status.py": {
       "id": "gitops-scripts-gitops-readiness-status-py",
-      "sourceHash": "sha256:df0ee489c54c227a8d6521e0f86004aa3c32a54a329a6c9da01c73ddcfa0e61a",
-      "contentHash": "sha256:df0ee489c54c227a8d6521e0f86004aa3c32a54a329a6c9da01c73ddcfa0e61a",
+      "sourceHash": "sha256:e933a06bc40f8a2c8cade2e6821774611ff911da717648a0e4d6e02041dc587a",
+      "contentHash": "sha256:e933a06bc40f8a2c8cade2e6821774611ff911da717648a0e4d6e02041dc587a",
       "mode": "0755"
     },
     "scripts/gitops/repair_observer.py": {
@@ -1218,26 +1368,26 @@
     },
     "scripts/gitops/resolve_automation_token.sh": {
       "id": "gitops-scripts-gitops-resolve-automation-token-sh",
-      "sourceHash": "sha256:e8f7407d0d25b7c2e38bf396723e29d218200d406aabfafabd6964e1dedfc114",
-      "contentHash": "sha256:e8f7407d0d25b7c2e38bf396723e29d218200d406aabfafabd6964e1dedfc114",
+      "sourceHash": "sha256:f3d575f4340fb4f8f647c5e476abd3bb95f8f25d76a78804fcadafded52f264e",
+      "contentHash": "sha256:f3d575f4340fb4f8f647c5e476abd3bb95f8f25d76a78804fcadafded52f264e",
       "mode": "0755"
     },
     "scripts/gitops/resolve_bugbot_user_token.sh": {
       "id": "gitops-scripts-gitops-resolve-bugbot-user-token-sh",
-      "sourceHash": "sha256:8c80d17d8957f17723675e71b7b4625b2251408c3d06f49933e1bee70af91ede",
-      "contentHash": "sha256:8c80d17d8957f17723675e71b7b4625b2251408c3d06f49933e1bee70af91ede",
+      "sourceHash": "sha256:dfb3497e63359a2fa404ab0c8de23f79022b4259d63c586800eec630c6aa9456",
+      "contentHash": "sha256:dfb3497e63359a2fa404ab0c8de23f79022b4259d63c586800eec630c6aa9456",
       "mode": "0755"
     },
     "scripts/gitops/resolve_event_pr.py": {
       "id": "gitops-scripts-gitops-resolve-event-pr-py",
-      "sourceHash": "sha256:32aff3016c879f2dac331fbb3664cc61f22aef78c29cf3a1532af6db5cb3fa78",
-      "contentHash": "sha256:32aff3016c879f2dac331fbb3664cc61f22aef78c29cf3a1532af6db5cb3fa78",
+      "sourceHash": "sha256:0a2f7044ade0ac0b257e6436419d1e3d2568b764f0f29b67b1585f38c2cc1af4",
+      "contentHash": "sha256:0a2f7044ade0ac0b257e6436419d1e3d2568b764f0f29b67b1585f38c2cc1af4",
       "mode": "0755"
     },
     "scripts/gitops/review_ready_dispatch.py": {
       "id": "gitops-scripts-gitops-review-ready-dispatch-py",
-      "sourceHash": "sha256:31d2e412f959700423073b042bc408ad9212f3c0053079dee1147cc632d10f27",
-      "contentHash": "sha256:31d2e412f959700423073b042bc408ad9212f3c0053079dee1147cc632d10f27",
+      "sourceHash": "sha256:6c6168773ef10a5de7ad9840acd09da7412d6e6d53bd9a52addf5740eb207229",
+      "contentHash": "sha256:6c6168773ef10a5de7ad9840acd09da7412d6e6d53bd9a52addf5740eb207229",
       "mode": "0755"
     },
     "scripts/gitops/wait_named_gate.py": {
@@ -1278,8 +1428,8 @@
     },
     "scripts/ide_development/build_manifest.py": {
       "id": "installer-scripts-ide-development-build-manifest-py",
-      "sourceHash": "sha256:93b4799abc9298bc2d21362044a921ddc410b5f1730f18deda409ba2729c6de7",
-      "contentHash": "sha256:93b4799abc9298bc2d21362044a921ddc410b5f1730f18deda409ba2729c6de7",
+      "sourceHash": "sha256:08f70e019b86a554bf32cdc1c8df79494d66b8e5a5df92da4811fb403ea7e534",
+      "contentHash": "sha256:08f70e019b86a554bf32cdc1c8df79494d66b8e5a5df92da4811fb403ea7e534",
       "mode": "0644"
     },
     "scripts/ide_development/cli.py": {
