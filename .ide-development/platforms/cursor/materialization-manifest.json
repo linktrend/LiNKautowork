@@ -39,36 +39,36 @@
       "note": "Packaged entry schema executed by the physical Library client."
     },
     {
-      "source": "library/vendor/NOTICE.md",
-      "destination": ".cursor/library/vendor/NOTICE.md",
+      "source": "library/dependencies/NOTICE.md",
+      "destination": ".cursor/library/dependencies/NOTICE.md",
       "mode": "managed-file",
       "required": true,
       "note": "Attribution for the package-local SPDX authority data and parser."
     },
     {
-      "source": "library/vendor/spdx-exceptions.json",
-      "destination": ".cursor/library/vendor/spdx-exceptions.json",
+      "source": "library/dependencies/spdx-exceptions.json",
+      "destination": ".cursor/library/dependencies/spdx-exceptions.json",
       "mode": "managed-file",
       "required": true,
       "note": "Locked LiNKlibraries SPDX exception set."
     },
     {
-      "source": "library/vendor/spdx-expression-validate.mjs",
-      "destination": ".cursor/library/vendor/spdx-expression-validate.mjs",
+      "source": "library/dependencies/spdx-expression-validate.mjs",
+      "destination": ".cursor/library/dependencies/spdx-expression-validate.mjs",
       "mode": "managed-file",
       "required": true,
       "note": "Package-local SPDX parser/validator authority."
     },
     {
-      "source": "library/vendor/spdx-license-ids-deprecated.json",
-      "destination": ".cursor/library/vendor/spdx-license-ids-deprecated.json",
+      "source": "library/dependencies/spdx-license-ids-deprecated.json",
+      "destination": ".cursor/library/dependencies/spdx-license-ids-deprecated.json",
       "mode": "managed-file",
       "required": true,
       "note": "Locked LiNKlibraries deprecated SPDX license set."
     },
     {
-      "source": "library/vendor/spdx-license-ids.json",
-      "destination": ".cursor/library/vendor/spdx-license-ids.json",
+      "source": "library/dependencies/spdx-license-ids.json",
+      "destination": ".cursor/library/dependencies/spdx-license-ids.json",
       "mode": "managed-file",
       "required": true,
       "note": "Locked LiNKlibraries current SPDX license set."
