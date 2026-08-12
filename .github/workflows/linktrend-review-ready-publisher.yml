@@ -70,7 +70,7 @@ concurrency:
 jobs:
   publish:
     name: Validate and publish Review Ready
-    runs-on: [self-hosted, macOS, ARM64, linktrend-privileged]
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read

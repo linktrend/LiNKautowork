@@ -50,7 +50,7 @@ jobs:
         github.event.check_run.name != 'enable-auto-merge' &&
         github.event.check_run.name != 'merge-when-ready'
       )
-    runs-on: [self-hosted, macOS, ARM64, linktrend-privileged]
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: read
@@ -83,7 +83,7 @@ jobs:
     name: evaluate
     needs: resolve
     if: needs.resolve.outputs.relevant == 'true'
-    runs-on: [self-hosted, macOS, ARM64, linktrend-privileged]
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read
