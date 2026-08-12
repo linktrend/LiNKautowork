@@ -179,8 +179,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     rc_verify.add_argument(
         "--expected-version",
-        default="2.1.2",
-        help="Expected package version (default 2.1.2)",
+        default="2.1.3",
+        help="Expected package version (default 2.1.3)",
     )
     return parser
 
