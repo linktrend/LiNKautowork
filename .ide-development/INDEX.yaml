@@ -1,5 +1,5 @@
 # Managed-core discovery index
-version: "2.1.0"
+version: "2.1.4"
 status: wave1-architecture
 contract: docs/contracts/MANAGED-CORE-V2.md
 adr: docs/adr/0004-portable-managed-core-v2.md

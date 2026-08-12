@@ -81,15 +81,15 @@ ACP prompts and absolute paths: openclaw_prime `linkbots/lisa/Personality files/
 | Action | When | Opens PR? | Bugbot? |
 |---|---|---|---|
 | Checkpoint | Ship waves, EOD, anytime | No | No |
-| Mark review-ready | Issue finished + proof + evidence; App publishes status | No (agent) | No (agent) |
+| Mark review-ready | Issue finished + proof + evidence; normal-token publisher posts status | No (agent) | No (agent) |
 | Review Packager | Tue/Fri 08:00 | Yes | Yes, once per SHA |
 | Urgent package | `workflow_dispatch` on packager | Yes | Yes, once per SHA |
 
 Record: GitHub commit status context `Linktrend Review Ready` on the exact tip SHA — see `core/github/REVIEW-READY.md`.
 
-**Production publish path:** GitHub App only, via trusted `workflow_dispatch` on `linktrend-review-ready-publisher.yml` (default-branch workflow source; issue branch is data only). Local `scripts/gitops/completion_gate.py review-ready` validates first and fails closed with App-backed route diagnostics when privileged credentials are unavailable. Carlos's restricted user identity must not publish this status.
+**Production publish path:** normal GitHub automation token only, via trusted `workflow_dispatch` on `linktrend-review-ready-publisher.yml` (default-branch workflow source; issue branch is data only). Local `scripts/gitops/completion_gate.py review-ready` validates first and fails closed with normal-token route diagnostics when privileged credentials are unavailable. Carlos's restricted user identity must not publish this status.
 
-Helpers: `scripts/mark-review-ready.sh` (compatibility wrapper → gate), `scripts/validate-review-ready.sh`, `scripts/clear-review-ready.sh` (fail-closed withdraw helper; App-backed `action=withdraw` dispatch when local App credentials are unavailable).
+Helpers: `scripts/mark-review-ready.sh` (compatibility wrapper → gate), `scripts/validate-review-ready.sh`, `scripts/clear-review-ready.sh` (fail-closed withdraw helper; normal-token `action=withdraw` dispatch when local normal automation credentials are unavailable).
 Do **not** create or use `.linktrend/review-ready.json`.
 Bugbot mention-only: `docs/contracts/BUGBOT-MENTION-ONLY.md` (required before consumer rollout).
 Completion contract: `docs/contracts/AGENT-COMPLETION.md`.
@@ -188,7 +188,7 @@ No lists or links in those lines. Detail stays in `memory/pipeline-status.md` (L
 2. Start from latest `development` (Pull waves enforce sync).
 3. Work on **`issue/*`** by default.
 4. Commit with conventional commits; **push often (checkpoints)**.
-5. When finished: push clean tip → `completion_gate.py write-evidence` → `completion_gate.py review-ready` (or App-backed publisher dispatch if local publish fails closed); do **not** open PR yourself (Packager does); do **not** write `.linktrend/review-ready.json`.
+5. When finished: push clean tip → `completion_gate.py write-evidence` → `completion_gate.py review-ready` (or normal-token publisher dispatch if local publish fails closed); do **not** open PR yourself (Packager does); do **not** write `.linktrend/review-ready.json`.
 6. Do **not** self-merge; do **not** promote to `staging`/`main`.
 7. Do **not** review your own PR (Bugbot is Reviewer).
 8. During review freeze: continue only on another issue branch/worktree.
@@ -210,7 +210,7 @@ Allowed. Caps: **12** worktrees, **20 GB** total Cursor-managed. Delete after me
 
 - Rules: `.cursor/rules/linktrend-git-branching.mdc`, `.cursor/rules/02-autonomous-ship-pull.mdc` (system source also keeps `.cursor/rules/01-git-branching.mdc` as local mirror; consumers install `linktrend-git-branching.mdc`)
 - Skills/commands: `/agentsetup`, `/agentcomply`
-- Review-ready: `core/github/REVIEW-READY.md` (App-backed publisher + rollback)
+- Review-ready: `core/github/REVIEW-READY.md` (normal-token publisher + rollback)
 - Completion: `docs/contracts/AGENT-COMPLETION.md`
 - CI gates: `core/github/CI-GATE-CONTRACTS.md`
 - Managed workflows: `core/github/managed-workflows/`
@@ -220,4 +220,4 @@ Allowed. Caps: **12** worktrees, **20 GB** total Cursor-managed. Delete after me
 - Cursor Automations (optional backup): `docs/CURSOR-AUTOMATIONS-SETUP.md`
 - Lisa contracts: `docs/contracts/LISA-OPENCLAW-FOLLOW-UP.md`, `docs/contracts/LISA-MAIN-APPROVE-DISPATCH.md`
 - Consumer rollout: `docs/GITOPS-CONSUMER-ROLLOUT.md`
-- App credentials (ops only): `docs/contracts/GITHUB-APP-GITOPS-CREDENTIALS.md`
+- normal automation credentials (ops only): `docs/contracts/GITHUB-APP-GITOPS-CREDENTIALS.md`
