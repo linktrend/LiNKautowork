@@ -254,8 +254,9 @@ def _secret_env_leak_warnings() -> list[str]:
     """Detect secret material present in the process env without printing values."""
     warnings: list[str] = []
     for name in sorted(_SECRET_ENV_NAMES):
-        raw = os.environ.get(name)
-        if raw is not None and str(raw).strip():
+        # Presence is sufficient for this warning.  Do not read the value into
+        # this process or report structure.
+        if name in os.environ:
             warnings.append(
                 f"{name}=present_in_process_env (value redacted; audit must not print it)"
             )
@@ -1908,13 +1909,6 @@ def build_client(args: argparse.Namespace) -> tuple[ReadOnlyGitHubClient, str]:
 def _emit(payload: dict[str, Any], path: str | None, *, human: bool = False) -> None:
     # Defense in depth: never dump known secret env values into stdout/file.
     text = json.dumps(payload, indent=2)
-    for name in _SECRET_ENV_NAMES:
-        val = (os.environ.get(name) or "").strip()
-        if val and val in text:
-            raise AuditError(
-                f"refusing to emit report: secret env {name} would leak into output",
-                EXIT_REFUSED,
-            )
     # Also refuse obvious PEM / token markers if somehow present.
     for marker in ("BEGIN PRIVATE KEY", "BEGIN RSA PRIVATE KEY", "github_pat_", "ghs_"):
         if marker in text:

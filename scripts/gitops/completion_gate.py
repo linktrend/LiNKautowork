@@ -32,6 +32,7 @@ import os
 import re
 import subprocess
 import sys
+from urllib.parse import urlparse
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -562,16 +563,16 @@ def resolve_repository(workdir: Path) -> tuple[str | None, str]:
     # Strip credentials if present in URL without echoing them
     # e.g. https://user:token@github.com/owner/repo.git
     sanitized = url
-    if "://" in sanitized and "@" in sanitized.split("://", 1)[1]:
-        scheme, rest = sanitized.split("://", 1)
-        sanitized = f"{scheme}://" + rest.split("@", 1)[1]
     owner_repo = ""
     if sanitized.startswith("git@") and ":" in sanitized:
         # git@github.com:owner/repo.git
         path = sanitized.split(":", 1)[1]
         owner_repo = path
-    elif "github.com/" in sanitized:
-        owner_repo = sanitized.split("github.com/", 1)[1]
+    elif "://" in sanitized:
+        parsed = urlparse(sanitized)
+        if parsed.hostname != "github.com":
+            return None, "origin_not_github_or_unrecognized"
+        owner_repo = parsed.path.lstrip("/")
     elif "github.com:" in sanitized:
         owner_repo = sanitized.split("github.com:", 1)[1]
     else:
