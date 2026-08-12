@@ -21,7 +21,7 @@ concurrency:
 jobs:
   dry-run:
     name: Dry-run remote cleanup
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, macOS, ARM64, linktrend-privileged]
     timeout-minutes: 15
     permissions:
       contents: read
@@ -75,7 +75,7 @@ jobs:
     name: Apply remote cleanup
     needs: dry-run
     if: needs.dry-run.outputs.ready == 'true'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, macOS, ARM64, linktrend-privileged]
     timeout-minutes: 20
     permissions:
       contents: read
