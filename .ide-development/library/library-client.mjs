@@ -22,7 +22,7 @@ import {
 } from 'node:fs'
 import { dirname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { validSpdxExpression } from './vendor/spdx-expression-validate.mjs'
+import { validSpdxExpression } from './dependencies/spdx-expression-validate.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const DEFAULT_REPO = process.env.LINKTREND_SHARED_LIBRARY_REPO_URL ?? 'https://github.com/linktrend/LiNKlibraries.git'
@@ -524,8 +524,8 @@ function listPayloadFiles(root) {
   return files
 }
 
-function verifyEntryPayload(entry, entryRoot) {
-  if (!pathInside(entryRoot, entryRoot)) fail('path_escape', 'entry root is unsafe')
+function verifyEntryPayload(entry, entryRoot, allowedRoot) {
+  if (!pathInside(allowedRoot, entryRoot)) fail('path_escape', 'entry root escapes its allowed cache or contribution root')
   const actual = listPayloadFiles(entryRoot)
   const declared = new Map(entry.files.map((file) => [file.path, file.sha256]))
   for (const file of actual) {
@@ -608,7 +608,7 @@ export class LibraryClient {
     this.baseBranch = baseBranch
     this.cacheRoot = resolve(cacheRoot)
     this.offline = offline
-    this.consumerRoot = consumerRoot ? resolve(consumerRoot) : undefined
+    this.consumerRoot = resolve(consumerRoot ?? process.cwd())
     this.consumerId = consumerId
     this.runId = runId
     this.mirrorDir = join(this.cacheRoot, 'mirror')
@@ -699,7 +699,7 @@ export class LibraryClient {
     const entry = readJson(entryPath, 'cached entry')
     validateEntryDocument(entry, `cached ${entryId}`)
     if (sha256File(entryPath) !== metadata.entryJsonSha256) fail('cache_integrity_failure', `Cached entry metadata was tampered: ${entryId}@${sha}`)
-    const payloadHashes = verifyEntryPayload(entry, localPath)
+    const payloadHashes = verifyEntryPayload(entry, localPath, this.entryCacheDir)
     if (JSON.stringify(payloadHashes) !== JSON.stringify(metadata.payloadHashes)) fail('cache_integrity_failure', `Cached payload evidence was tampered: ${entryId}@${sha}`)
     const row = snapshot.catalog.entries.find((candidate) => candidate.entryId === entryId)
     if (!row || JSON.stringify(projectCatalogEntry(entry)) !== JSON.stringify(row)) fail('catalog_entry_mismatch', `Cached entry metadata does not match the catalog row: ${entryId}`)
@@ -735,7 +735,7 @@ export class LibraryClient {
     const entry = readJson(join(localPath, 'entry.json'), 'authority entry')
     validateEntryDocument(entry, `entry ${entryId}`)
     if (entry.entryId !== entryId || JSON.stringify(projectCatalogEntry(entry)) !== JSON.stringify(row)) fail('catalog_entry_mismatch', `Entry does not match its catalog row: ${entryId}`)
-    const payloadHashes = verifyEntryPayload(entry, localPath)
+    const payloadHashes = verifyEntryPayload(entry, localPath, this.entryCacheDir)
     const metadata = { schemaVersion: 1, entryId, entryCommitSha: sha, catalogCommitSha: sha, catalogEntriesSha256: snapshot.catalog.entriesSha256, entryJsonSha256: sha256File(join(localPath, 'entry.json')), payloadHashes, verified: true }
     writeJsonAtomic(join(localPath, 'verification.json'), metadata)
     return this.verifyCachedEntry(entryId, sha, { snapshot })
@@ -743,7 +743,7 @@ export class LibraryClient {
 
   selectEntry(entryId, options = {}) {
     const fetched = this.fetchEntry(entryId, options.commitSha)
-    if (!fetched.entryJson.selectable || !['usable', 'deprecated'].includes(fetched.entryJson.state)) fail('entry_not_selectable', `Entry is not selectable: ${entryId}`, { state: fetched.entryJson.state, selectable: fetched.entryJson.selectable })
+    if (!fetched.entryJson.selectable || fetched.entryJson.state !== 'usable') fail('entry_not_selectable', `Entry is not selectable: ${entryId}`, { state: fetched.entryJson.state, selectable: fetched.entryJson.selectable })
     const compatibility = compatibilityReport(fetched.entryJson, { consumerRoot: options.consumerRoot ?? this.consumerRoot, runtime: options.runtime, nodeVersion: options.nodeVersion, operatingSystem: options.operatingSystem, frameworks: options.frameworks, dependencies: options.dependencies, services: options.services })
     if (!compatibility.ok) fail('entry_incompatible', `Entry is incompatible with the consumer: ${entryId}`, compatibility)
     const provenance = this.recordProvenance(fetched, { selected: true, compatibility })
@@ -767,8 +767,9 @@ export class LibraryClient {
 
   prepareContribution(bundlePath) {
     const abs = resolve(bundlePath)
-    if (!pathInside(abs, abs) || !existsSync(join(abs, 'entry.json'))) fail('invalid_contribution', 'Contribution bundle must contain entry.json')
-    const entry = readJson(join(abs, 'entry.json'), 'contribution entry')
+    const entryPath = join(abs, 'entry.json')
+    if (!pathInside(this.consumerRoot, abs) || !existsSync(entryPath) || !lstatSync(abs).isDirectory() || lstatSync(entryPath).isSymbolicLink()) fail('invalid_contribution', 'Contribution bundle must be a real directory inside the consumer root and contain a regular entry.json')
+    const entry = readJson(entryPath, 'contribution entry')
     validateEntryDocument(entry, 'contribution entry')
     return { bundlePath: abs, entryId: entry.entryId }
   }
@@ -778,7 +779,7 @@ export class LibraryClient {
       const prepared = this.prepareContribution(bundlePath)
       const entryPath = join(prepared.bundlePath, 'entry.json')
       const entry = readJson(entryPath, 'contribution entry')
-      const payloadHashes = verifyEntryPayload(entry, prepared.bundlePath)
+      const payloadHashes = verifyEntryPayload(entry, prepared.bundlePath, this.consumerRoot)
       return { ok: true, entryId: prepared.entryId, payloadHashes }
     } catch (error) {
       return { ok: false, errors: [{ code: error.code ?? 'invalid_contribution', message: error.message }] }

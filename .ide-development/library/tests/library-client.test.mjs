@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { LibraryClient, LibraryClientError } from '../library-client.mjs'
-import { validSpdxExpression } from '../vendor/spdx-expression-validate.mjs'
+import { validSpdxExpression } from '../dependencies/spdx-expression-validate.mjs'
 
 const sha256 = (value) => createHash('sha256').update(value).digest('hex')
 const json = (value) => `${JSON.stringify(value, null, 2)}\n`
@@ -83,7 +83,7 @@ function createAuthority(extraEntries = []) {
 }
 
 function client(authority, cacheRoot, options = {}) {
-  return new LibraryClient({ repoUrl: authority.root, baseBranch: 'development', cacheRoot, runId: 'test-run', consumerId: 'test-consumer', ...options })
+  return new LibraryClient({ repoUrl: authority.root, baseBranch: 'development', cacheRoot, consumerRoot: cacheRoot, runId: 'test-run', consumerId: 'test-consumer', ...options })
 }
 
 function writeBundle(root, item) {
@@ -188,7 +188,7 @@ test('executes packaged v2 schema conditionals, additionalProperties, formats, a
 })
 
 test('matches locked LiNKlibraries SPDX current, deprecated, and exception sets', () => {
-  const vendor = fileURLToPath(new URL('../vendor/', import.meta.url))
+  const vendor = fileURLToPath(new URL('../dependencies/', import.meta.url))
   const load = (name) => JSON.parse(readFileSync(join(vendor, name), 'utf8'))
   const current = load('spdx-license-ids.json')
   const deprecated = load('spdx-license-ids-deprecated.json')
@@ -268,6 +268,28 @@ test('rejects schema-invalid deprecated selectable entries before selection', ()
     assert.throws(() => client(authority, cache).fetchEntry(broken.entryId), (error) => error.code === 'schema_validation_failed')
     assert.throws(() => client(authority, selectionCache).selectEntry(broken.entryId), (error) => error.code === 'schema_validation_failed')
   } finally { rmSync(authority.root, { recursive: true, force: true }); rmSync(cache, { recursive: true, force: true }); rmSync(selectionCache, { recursive: true, force: true }) }
+})
+
+test('treats valid deprecated entries as searchable metadata but never selectable', () => {
+  const deprecated = entry({ id: 'deprecated-valid', state: 'deprecated', selectable: false })
+  deprecated.deprecation = { reason: 'Replaced by a maintained entry.', deprecatedAt: '2026-08-04T00:00:00.000Z' }
+  const authority = createAuthority([deprecated])
+  const cache = mkdtempSync(join(tmpdir(), 'linklibraries-deprecated-valid-'))
+  try {
+    const instance = client(authority, cache)
+    assert.equal(instance.fetchEntry(deprecated.entryId).entryJson.state, 'deprecated')
+    assert.throws(() => instance.selectEntry(deprecated.entryId), (error) => error.code === 'entry_not_selectable')
+  } finally { rmSync(authority.root, { recursive: true, force: true }); rmSync(cache, { recursive: true, force: true }) }
+})
+
+test('rejects contribution bundles that escape the declared consumer root', () => {
+  const authority = createAuthority()
+  const consumer = mkdtempSync(join(tmpdir(), 'linklibraries-contribution-root-'))
+  const outside = mkdtempSync(join(tmpdir(), 'linklibraries-contribution-outside-'))
+  try {
+    writeBundle(outside, entry({ id: 'outside-contribution' }))
+    assert.throws(() => client(authority, consumer, { consumerRoot: consumer }).prepareContribution(outside), (error) => error.code === 'invalid_contribution')
+  } finally { rmSync(authority.root, { recursive: true, force: true }); rmSync(consumer, { recursive: true, force: true }); rmSync(outside, { recursive: true, force: true }) }
 })
 
 test('enforces exact, caret, tilde, comparator conjunction, malformed, and unsupported npm ranges', () => {

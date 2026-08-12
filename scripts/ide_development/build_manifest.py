@@ -462,7 +462,7 @@ def build_entries() -> list[dict[str, Any]]:
                 notes="Portable LiNKlibraries client, contract, schemas, and tests.",
             )
         )
-        if library_rel.startswith("vendor/") or library_rel in {
+        if library_rel.startswith("dependencies/") or library_rel in {
             "library-client.mjs",
             "library-contract.json",
             "README.md",
