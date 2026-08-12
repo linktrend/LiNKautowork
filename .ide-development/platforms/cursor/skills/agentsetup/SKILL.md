@@ -55,7 +55,7 @@ python3 scripts/gitops/create_issue_branch.py --issue-number N
 ```
 
 3. Confirm on the printed `BRANCH=` / `WORKTREE=` / `ISSUE_NUMBER=`
-4. Remind: no implementer PR; when finished use `completion_gate.py write-evidence` then `review-ready`
+4. Remind: no implementer PR; when finished use `completion_gate.py write-evidence` then `review-ready` (normal-token publisher if local privileged publish fails closed; never write `.linktrend/review-ready.json`)
 5. Report branch, issue, and next step in plain English
 
 ## Fail closed

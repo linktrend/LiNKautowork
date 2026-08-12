@@ -4,7 +4,7 @@ description: >-
   Bootstrap a NEW agent session onto a short-lived issue/* work branch from
   latest development for this consumer repo. Use for /agentsetup or equivalent
   "start on the correct governed branch" requests.
-version: 1.0.0-managed
+version: 2.0.0-managed
 status: active
 tags: [git, agent, bootstrap, branching]
 related_commands:
@@ -13,7 +13,7 @@ related_skills:
   - agentcomply
 ---
 
-# Agent Setup (NEW session) — managed consumer package
+# Agent Setup (NEW session) — Cursor managed adapter
 
 Bootstrap a **new agent** onto `issue/<id>-<slug>` for **this repository**.
 Do not use for already-open dirty/wrong-branch work — use `agentcomply`.
@@ -22,10 +22,13 @@ Do not use for already-open dirty/wrong-branch work — use `agentcomply`.
 
 - `.cursor/rules/cursor-gitops-bootstrap.mdc`
 - `.cursor/rules/linktrend-git-branching.mdc`
+- `.cursor/commands/agentsetup.md`
+- `.cursor/skills/agentsetup/SKILL.md` (this file)
 - `scripts/gitops/create_issue_branch.py`
 - `scripts/gitops/completion_gate.py`
+- Managed core (optional deeper doctrine): `.ide-development/`
 
-Do **not** require the IDE Development checkout path. All required files are installed into this consumer.
+Do **not** require the IDE Development checkout path.
 
 ## House rules
 
@@ -52,7 +55,7 @@ python3 scripts/gitops/create_issue_branch.py --issue-number N
 ```
 
 3. Confirm on the printed `BRANCH=` / `WORKTREE=` / `ISSUE_NUMBER=`
-4. Remind: no implementer PR; when finished use completion gate `write-evidence` then `review-ready` (normal-token publisher if local privileged publish fails closed; never write `.linktrend/review-ready.json`)
+4. Remind: no implementer PR; when finished use `completion_gate.py write-evidence` then `review-ready` (normal-token publisher if local privileged publish fails closed; never write `.linktrend/review-ready.json`)
 5. Report branch, issue, and next step in plain English
 
 ## Fail closed
