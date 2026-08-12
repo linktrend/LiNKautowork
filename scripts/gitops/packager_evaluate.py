@@ -6,7 +6,7 @@ Readiness is re-checked on the exact live head SHA (``Linktrend Review Ready``),
 whether that status came from the local gate or the normal-token publisher.
 
 Credentials:
-  - GitHub App (AUTOMATION_TOKEN): reads, undraft, freeze comment, check-runs, repair
+  - normal automation token (AUTOMATION_TOKEN): reads, undraft, freeze comment, check-runs, repair
   - Carlos BUGBOT_USER_TOKEN: the single `@cursor review` comment only (fail closed)
 
 PR author must be exactly ``linktrend`` before undraft or Bugbot request.
@@ -47,7 +47,7 @@ _RUN_HOOK: Callable[[list[str], dict[str, str]], str] | None = None
 _API_HOOK: Callable[[str, str, str, Any, dict[str, str]], Any] | None = None
 
 
-def run(args: list[str], token: str, *, role: str = "app") -> str:
+def run(args: list[str], token: str, *, role: str = "automation") -> str:
     env = subprocess_env_for_token(token, role=role)
     if _RUN_HOOK is not None:
         return _RUN_HOOK(list(args), dict(env)).strip()
@@ -96,7 +96,7 @@ def pr_head(pr: int, token: str) -> str:
     return run(
         ["gh", "pr", "view", str(pr), "--json", "headRefOid", "--jq", ".headRefOid"],
         token,
-        role="app",
+        role="automation",
     ).lower()
 
 
@@ -112,7 +112,7 @@ def pr_meta(pr: int, token: str) -> dict:
                 "number,url,isDraft,headRefOid,baseRefName,state,headRefName,author",
             ],
             token,
-            role="app",
+            role="automation",
         )
     )
 
@@ -122,7 +122,7 @@ def pr_checks(pr: int, token: str) -> list[dict]:
         run(
             ["gh", "pr", "checks", str(pr), "--json", "name,state,completedAt,startedAt"],
             token,
-            role="app",
+            role="automation",
         )
         or "[]"
     )
@@ -154,7 +154,7 @@ def record_author_blocked_repair(
     head_sha: str,
     detail: str,
 ) -> None:
-    env = subprocess_env_for_token(app_token, role="app")
+    env = subprocess_env_for_token(app_token, role="automation")
     script = str(Path(__file__).resolve().parent / "repair_task.py")
     cmd = [
         sys.executable,
@@ -206,7 +206,7 @@ def resolve_pr_number(token: str) -> int | None:
                 f'[.[] | select(.headRefOid=="{head}")][0].number // empty',
             ],
             token,
-            role="app",
+            role="automation",
         )
         return int(out) if out else None
     return None
@@ -304,7 +304,7 @@ def evaluate_pr(pr: int, app_token: str) -> dict:
         result["detail"] = "readiness_lost"
         return result
 
-    # Live author reread before undraft — never undraft a bot/App PR.
+    # Live author reread before undraft — never undraft a bot/automation PR.
     pre_ready = pr_meta(pr, app_token)
     ok_author, author_detail = require_packager_pr_author(pre_ready)
     if not ok_author:
@@ -319,7 +319,7 @@ def evaluate_pr(pr: int, app_token: str) -> dict:
         )
 
     if pre_ready.get("isDraft"):
-        run(["gh", "pr", "ready", str(pr)], app_token, role="app")
+        run(["gh", "pr", "ready", str(pr)], app_token, role="automation")
 
     sha3 = pr_head(pr, app_token)
     if sha3 != sha1:
@@ -367,7 +367,7 @@ def evaluate_pr(pr: int, app_token: str) -> dict:
     result["headSha"] = sha3
     result["author"] = author_detail
     result["bugbot_comment_token"] = "bugbot_user"
-    # Freeze comment remains App-authored (not a Bugbot trigger).
+    # Freeze comment remains automation-authored (not a Bugbot trigger).
     post_comment(
         app_token,
         repo,
@@ -385,7 +385,7 @@ def main() -> int:
     token = os.environ.get("AUTOMATION_TOKEN") or ""
     source = os.environ.get("AUTOMATION_TOKEN_SOURCE") or ""
     if source != "github_token" or not token:
-        # Fail closed: no GITHUB_TOKEN mutations when App is unavailable.
+        # Fail closed: no GITHUB_TOKEN mutations when normal automation credentials are unavailable.
         write_outcome(
             Path("gitops-outcome.json"),
             "automation_credentials_blocked",

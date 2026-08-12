@@ -8,7 +8,7 @@
 #
 # Identity: normal GitHub automation installation token only. No human fallback.
 # Refuse GITHUB_TOKEN publish fallback for status publish. Fail closed when
-# App mint/resolve fails.
+# normal-token resolution fails.
 #
 # Trigger: workflow_dispatch (manual / agent-driven). Dry-run validates without
 # publishing or withdrawing. action=publish (default) or action=withdraw.
@@ -147,7 +147,6 @@ jobs:
           fi
           export GH_TOKEN="${AUTOMATION_TOKEN}"
           export GITHUB_TOKEN="${AUTOMATION_TOKEN}"
-          export LINKTREND_APP_TOKEN="${AUTOMATION_TOKEN}"
           echo "AUTOMATION_TOKEN_SOURCE=${AUTOMATION_TOKEN_SOURCE}" >> "$GITHUB_STEP_SUMMARY"
           echo "Verify remote tip equals immutable SHA" >> "$GITHUB_STEP_SUMMARY"
 
@@ -333,7 +332,7 @@ jobs:
               st = rs.publish_review_ready(
                   sha,
                   str(status_issue_id),
-                  notes="app-backed-publisher",
+                  notes="normal-token-publisher",
                   branch=branch,
               )
           except Exception as e:  # noqa: BLE001

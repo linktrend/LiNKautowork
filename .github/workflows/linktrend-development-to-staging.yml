@@ -25,12 +25,12 @@ on:
         description: "Expected promote PR head SHA (reevaluate)"
         required: false
         type: string
-  pull_request_target:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] trusted default-branch promotion code only; candidate ref is metadata and exact-SHA checked
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: [staging]
   check_run:
     types: [completed]
-  workflow_run:
+  workflow_run: # zizmor: ignore[dangerous-triggers] trusted CI metadata only; no promotion-head code executes with credentials
     workflows:
       - LiNKautowork CI
       - Branch Source Policy

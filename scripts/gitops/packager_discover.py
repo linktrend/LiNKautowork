@@ -64,8 +64,8 @@ class PackagerAuthorError(RuntimeError):
     """Open Packager PR is not authored by the required Carlos identity."""
 
 
-def run(args: list[str], token: str, *, role: str = "app") -> str:
-    """Run a command with a scrubbed env; Carlos secret names never leak to App kids."""
+def run(args: list[str], token: str, *, role: str = "automation") -> str:
+    """Run a command with a scrubbed env; Carlos secret names never leak to automation child processes."""
     env = subprocess_env_for_token(token, role=role)
     if _RUN_HOOK is not None:
         return _RUN_HOOK(list(args), dict(env)).strip()
@@ -202,8 +202,8 @@ def record_author_blocked_repair(
     head_sha: str,
     detail: str,
 ) -> None:
-    """Durable App-authored repair; never auto-close/recreate the unexpected PR."""
-    env = subprocess_env_for_token(app_token, role="app")
+    """Durable automation-authored repair; never auto-close/recreate the unexpected PR."""
+    env = subprocess_env_for_token(app_token, role="automation")
     script = str(Path(__file__).resolve().parent / "repair_task.py")
     cmd = [
         sys.executable,
@@ -259,7 +259,7 @@ def ensure_draft_pr(app_token: str, branch: str, sha: str) -> dict:
                 "number,url,isDraft,headRefOid,title,body,author",
             ],
             app_token,
-            role="app",
+            role="automation",
         )
         or "[]"
     )
@@ -287,7 +287,7 @@ def ensure_draft_pr(app_token: str, branch: str, sha: str) -> dict:
             run(
                 ["gh", "pr", "edit", str(pr["number"]), "--body", new_body],
                 app_token,
-                role="app",
+                role="automation",
             )
         # Never overwrite title
         return {
@@ -300,7 +300,7 @@ def ensure_draft_pr(app_token: str, branch: str, sha: str) -> dict:
             "author_token": "preexisting",
         }
 
-    # Create path — Carlos user token only. Never App / GITHUB_TOKEN.
+    # Create path — Carlos user token only. Never normal automation or GITHUB_TOKEN.
     user_token = require_bugbot_user_token("pr_create")
     title = f"Review: {branch}"
     body = merge_body("", sha, branch)
@@ -333,7 +333,7 @@ def ensure_draft_pr(app_token: str, branch: str, sha: str) -> dict:
                 "number,author,headRefOid",
             ],
             app_token,
-            role="app",
+            role="automation",
         )
     )
     ok_author, author_detail = require_packager_pr_author(meta)
@@ -444,7 +444,7 @@ def main() -> int:
                         "headRefOid,author",
                     ],
                     token,
-                    role="app",
+                    role="automation",
                 )
             )
             head = (viewed.get("headRefOid") or "").lower()

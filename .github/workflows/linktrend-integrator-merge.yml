@@ -10,7 +10,7 @@ name: LiNKtrend Integrator Merge To Development
 # .github/linktrend-gitops-consumer.json by scripts/sync-managed-workflows.sh.
 
 on:
-  workflow_run:
+  workflow_run: # zizmor: ignore[dangerous-triggers] trusted workflow completion metadata only; no candidate checkout or execution
     workflows:
       - LiNKautowork CI
       - Branch Source Policy

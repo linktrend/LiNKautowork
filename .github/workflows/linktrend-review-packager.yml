@@ -23,7 +23,7 @@ on:
         description: "Why this packaging run is needed"
         required: false
         default: "manual"
-  workflow_run:
+  workflow_run: # zizmor: ignore[dangerous-triggers] trusted CI metadata only; resolver binds current PR and exact head before mutation
     workflows:
       - LiNKautowork CI
       - Branch Source Policy
@@ -95,7 +95,7 @@ jobs:
             exit 1
           fi
           export BUGBOT_USER_TOKEN BUGBOT_USER_TOKEN_SOURCE BUGBOT_USER_CREDENTIALS_STATUS
-          # Default GH identity is App; packager_discover scrubs Carlos env for App kids
+          # Default GH identity is normal automation; packager_discover scrubs Carlos env for automation child processes
           # and injects Carlos token only into the exact gh pr create child.
           export GH_TOKEN="${AUTOMATION_TOKEN}"
           export GITHUB_TOKEN="${AUTOMATION_TOKEN}"
@@ -221,7 +221,7 @@ jobs:
             exit 1
           fi
           export BUGBOT_USER_TOKEN BUGBOT_USER_TOKEN_SOURCE BUGBOT_USER_CREDENTIALS_STATUS
-          # Default GH identity is App; evaluate scrubs Carlos env for App kids;
+          # Default GH identity is normal automation; evaluate scrubs Carlos env for automation child processes;
           # @cursor review uses Carlos token only via dedicated API Authorization header.
           export GH_TOKEN="${AUTOMATION_TOKEN}"
           export GITHUB_TOKEN="${AUTOMATION_TOKEN}"

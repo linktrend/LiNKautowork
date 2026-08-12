@@ -253,7 +253,7 @@ def app_backed_route(
 ) -> str:
     """Exact safe normal-token publication route when local credentials are absent.
 
-    Returns empty string when the branch is not App-eligible so callers never
+    Returns empty string when the branch is not publisher-eligible so callers never
     advertise a dispatch command that review_ready_dispatch would reject.
     Prefix eligibility follows the explicit --workdir repository config.
     """
@@ -283,7 +283,7 @@ def _review_ready_publish_failure_payload(
     error: str,
     workdir: Path | None = None,
 ) -> dict:
-    """Build fail-closed diagnostics: valid App route or truthful migration path."""
+    """Build fail-closed diagnostics: valid normal-token route or migration path."""
     payload: dict = {
         "mode": "review-ready",
         "state": "failed",
@@ -296,7 +296,7 @@ def _review_ready_publish_failure_payload(
     phase_prefix = _phase_prefix_for_workdir(workdir)
     if is_app_backed_publish_branch(branch, phase_prefix):
         route = app_backed_route(branch, sha, workdir=workdir)
-        payload["appBackedRoute"] = route
+        payload["normalTokenRoute"] = route
         payload["detail"] = (
             "Local review-ready publish is fail-closed without normal GitHub automation "
             "credentials; use the normal-token workflow route"
@@ -331,7 +331,6 @@ def publish_ready(
                 key in detail
                 for key in (
                     "AUTOMATION_TOKEN",
-                    "LINKTREND_APP_TOKEN",
                     "GITHUB_TOKEN",
                     "token",
                     "credentials",
@@ -431,9 +430,9 @@ def cmd_review_ready(args: argparse.Namespace) -> int:
     elif _status_backend_name() != "file" and not is_app_backed_publish_branch(
         br, phase_prefix
     ):
-        # Production / GitHub backend: App publisher is the only privileged path.
+        # Production / GitHub backend: the normal-token publisher is the privileged path.
         # Issue slug safeguards stay; Phase tips under configured prefix are eligible.
-        # Do not pretend feature/dev/cursor branches can dispatch the App route.
+        # Do not pretend feature/dev/cursor branches can dispatch the publisher route.
         # File backend remains available for offline unit fixtures.
         missing.append(f"app_publish_requires_issue_branch:{br}")
 

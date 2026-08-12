@@ -12,7 +12,7 @@ name: LiNKtrend Repair Observer
 #   - repair_observer.py proves current PR/branch head before resolving
 
 on:
-  workflow_run:
+  workflow_run: # zizmor: ignore[dangerous-triggers] trusted default-branch observer; consumes status metadata and never executes candidate code
     workflows:
       - LiNKautowork CI
       - Branch Source Policy

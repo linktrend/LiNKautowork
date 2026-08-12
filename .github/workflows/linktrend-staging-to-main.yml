@@ -34,12 +34,12 @@ on:
         description: "reevaluate / approve-merge: exact promote PR number"
         required: false
         type: string
-  pull_request_target:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] trusted default-branch release code only; promote head is exact-SHA bound before token use
     types: [opened, synchronize, reopened, ready_for_review]
     branches: [main]
   check_run:
     types: [completed]
-  workflow_run:
+  workflow_run: # zizmor: ignore[dangerous-triggers] trusted CI metadata only; no untrusted candidate checkout or execution
     workflows:
       - LiNKautowork CI
       - Branch Source Policy

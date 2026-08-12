@@ -75,14 +75,14 @@ def scrub_carlos_token_env(env: Mapping[str, str] | None = None) -> dict[str, st
 
 
 def subprocess_env_for_token(token: str, *, role: str) -> dict[str, str]:
-    """Build a child env for an App or PR-create gh invocation.
+    """Build a child env for a normal-automation or PR-create gh invocation.
 
     Roles:
-      - ``app``: GH_TOKEN=App; Carlos secret names scrubbed
+      - ``automation``: GH_TOKEN=normal automation token; Carlos secret names scrubbed
       - ``pr_create``: GH_TOKEN=Carlos token value only; Carlos secret *names*
         still scrubbed so the child does not inherit residual secret env keys
     """
-    if role not in {"app", "pr_create"}:
+    if role not in {"automation", "pr_create"}:
         raise ValueError(f"unsupported subprocess token role: {role}")
     if not token:
         raise BugbotUserCredentialsError("empty_token_for_subprocess")
