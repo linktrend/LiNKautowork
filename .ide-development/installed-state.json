@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "packageName": "ide-development-managed-core",
   "packageVersion": "2.1.0",
-  "installedAt": "2026-08-12T09:25:26Z",
+  "installedAt": "2026-08-12T09:41:33Z",
   "files": {
     ".agents/skills/action-queue/SKILL.md": {
       "id": "codex-skill-action-queue",
@@ -654,8 +654,8 @@
     },
     ".ide-development/MANIFEST.json": {
       "id": "package-manifest",
-      "sourceHash": "sha256:6912d93b2e7b636ebe452c2c3072fde93cbc317e3f6ed3b203f081c8f5ae8398",
-      "contentHash": "sha256:6912d93b2e7b636ebe452c2c3072fde93cbc317e3f6ed3b203f081c8f5ae8398",
+      "sourceHash": "sha256:a2fea514f0cf78b16f07990c6dca51e866b004c44bfd33e70f443122e6c6dce5",
+      "contentHash": "sha256:a2fea514f0cf78b16f07990c6dca51e866b004c44bfd33e70f443122e6c6dce5",
       "mode": "0644"
     },
     ".ide-development/README.md": {
@@ -1290,8 +1290,8 @@
     },
     "scripts/gitops/external_state_audit.py": {
       "id": "gitops-scripts-gitops-external-state-audit-py",
-      "sourceHash": "sha256:d5636130d2fea9af45808b60270b230efdbb12da1464d56cf9f78acb19c8012a",
-      "contentHash": "sha256:d5636130d2fea9af45808b60270b230efdbb12da1464d56cf9f78acb19c8012a",
+      "sourceHash": "sha256:802bc679b44ee51a58238e89b82aa889185cc68fdf4b8c336f0e927e73033aa1",
+      "contentHash": "sha256:802bc679b44ee51a58238e89b82aa889185cc68fdf4b8c336f0e927e73033aa1",
       "mode": "0755"
     },
     "scripts/gitops/integrator_evaluate.sh": {

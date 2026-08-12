@@ -2318,7 +2318,7 @@
       "id": "gitops-scripts-gitops-external-state-audit-py",
       "ownershipClass": "managed",
       "source": "scripts/gitops/external_state_audit.py",
-      "sourceHash": "sha256:d5636130d2fea9af45808b60270b230efdbb12da1464d56cf9f78acb19c8012a",
+      "sourceHash": "sha256:802bc679b44ee51a58238e89b82aa889185cc68fdf4b8c336f0e927e73033aa1",
       "destination": "scripts/gitops/external_state_audit.py",
       "mode": "0755",
       "platform": "github",
