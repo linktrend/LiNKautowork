@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Read-only external-state plan / verify / report for App-backed GitOps.
+"""Read-only external-state plan / verify / report for normal-token GitOps.
 
-Covers GitHub App authority, variables/secrets (names only), Bugbot mention-only,
+Checks the normal automation credential by name only, Bugbot mention-only,
 Carlos restricted user-token boundary, three-branch protections (union-preserving),
 promotion-source policy, and required workflow posture/conclusions.
 
@@ -30,8 +30,7 @@ EXIT_NOT_READY = 3
 EXIT_UNAVAILABLE = 4
 EXIT_REFUSED = 5
 
-APP_ID_VAR = "LINKTREND_GITOPS_APP_ID"
-APP_PRIVATE_KEY_SECRET = "LINKTREND_GITOPS_APP_PRIVATE_KEY"
+AUTOMATION_TOKEN_SECRET = "LINKTREND_AUTOMATION_TOKEN"
 BUGBOT_USER_TOKEN_SECRET = "LINKTREND_BUGBOT_USER_TOKEN"
 BUGBOT_CHECK_NAME = "Cursor Bugbot"
 SOURCE_POLICY_CHECK = "Enforce allowed PR source branches"
@@ -74,7 +73,7 @@ CARLOS_FORBIDDEN_OPS = (
 # Env names that must never appear in report output as values.
 _SECRET_ENV_NAMES = frozenset(
     {
-        APP_PRIVATE_KEY_SECRET,
+        AUTOMATION_TOKEN_SECRET,
         BUGBOT_USER_TOKEN_SECRET,
         "LINKTREND_APP_TOKEN",
         "AUTOMATION_TOKEN",
@@ -127,33 +126,12 @@ def required_checklist() -> list[dict[str, Any]]:
     """Canonical required external-state items (contract + WP1 surface)."""
     return [
         {
-            "id": "github_app.app_id_variable",
-            "category": "github_app",
-            "required": True,
-            "expected": f"{APP_ID_VAR} repository/org variable present and numeric",
-        },
-        {
-            "id": "github_app.private_key_secret",
-            "category": "github_app",
+            "id": "github_auth.automation_token_secret",
+            "category": "github_auth",
             "required": True,
             "expected": (
-                f"{APP_PRIVATE_KEY_SECRET} Actions secret name present "
+                f"{AUTOMATION_TOKEN_SECRET} Actions secret name present "
                 "(value never read)"
-            ),
-        },
-        {
-            "id": "github_app.installation",
-            "category": "github_app",
-            "required": True,
-            "expected": "GitHub App installation present on the repository",
-        },
-        {
-            "id": "github_app.authority_scope",
-            "category": "github_app",
-            "required": True,
-            "expected": (
-                "App narrowly scoped (no admin/members/secrets); "
-                "privileged automation App-backed only"
             ),
         },
         {
@@ -266,7 +244,7 @@ def required_checklist() -> list[dict[str, Any]]:
             "required": True,
             "expected": (
                 f"Privileged publish context remains {STATUS_CONTEXT!r} "
-                "(App-backed publisher only)"
+                "(normal-token publisher from trusted workflow context only)"
             ),
         },
     ]
@@ -276,10 +254,11 @@ def _secret_env_leak_warnings() -> list[str]:
     """Detect secret material present in the process env without printing values."""
     warnings: list[str] = []
     for name in sorted(_SECRET_ENV_NAMES):
-        raw = os.environ.get(name)
-        if raw is not None and str(raw).strip():
+        # Presence is sufficient for this warning.  Do not read the value into
+        # this process or report structure.
+        if name in os.environ:
             warnings.append(
-                "sensitive environment variable present (value redacted; audit must not print it)"
+                f"{name}=present_in_process_env (value redacted; audit must not print it)"
             )
     return warnings
 
@@ -797,74 +776,25 @@ def evaluate(client: ReadOnlyGitHubClient, *, source: str) -> list[dict[str, Any
     variables: list[dict[str, Any]] = []
     secret_names: list[str] = []
 
-    # --- github_app.app_id_variable ---
+    # --- github_auth.automation_token_secret ---
     if unchecked:
         results.append(
             _unchecked(
-                "github_app.app_id_variable",
-                "github_app",
-                f"{APP_ID_VAR} repository/org variable present and numeric",
-            )
-        )
-    else:
-        variables = client.list_actions_variables()
-        var = _find_variable(variables, APP_ID_VAR)
-        if var is None:
-            results.append(
-                _check(
-                    check_id="github_app.app_id_variable",
-                    category="github_app",
-                    required=True,
-                    expected=f"{APP_ID_VAR} repository/org variable present and numeric",
-                    observed="missing",
-                    status="missing",
-                    detail=f"{APP_ID_VAR} not listed in Actions variables",
-                )
-            )
-        elif not _is_numeric_app_id(var.get("value")):
-            results.append(
-                _check(
-                    check_id="github_app.app_id_variable",
-                    category="github_app",
-                    required=True,
-                    expected=f"{APP_ID_VAR} repository/org variable present and numeric",
-                    observed="non_numeric",
-                    status="drift",
-                    detail=f"{APP_ID_VAR} present but value is not a numeric App ID",
-                )
-            )
-        else:
-            results.append(
-                _check(
-                    check_id="github_app.app_id_variable",
-                    category="github_app",
-                    required=True,
-                    expected=f"{APP_ID_VAR} repository/org variable present and numeric",
-                    observed="present_numeric",
-                    status="ok",
-                    detail=f"{APP_ID_VAR} present (numeric; value not echoed)",
-                )
-            )
-
-    # --- github_app.private_key_secret ---
-    if unchecked:
-        results.append(
-            _unchecked(
-                "github_app.private_key_secret",
-                "github_app",
-                f"{APP_PRIVATE_KEY_SECRET} Actions secret name present (value never read)",
+                "github_auth.automation_token_secret",
+                "github_auth",
+                f"{AUTOMATION_TOKEN_SECRET} Actions secret name present (value never read)",
             )
         )
     else:
         secret_names = client.list_actions_secret_names()
-        if APP_PRIVATE_KEY_SECRET in secret_names:
+        if AUTOMATION_TOKEN_SECRET in secret_names:
             results.append(
                 _check(
-                    check_id="github_app.private_key_secret",
-                    category="github_app",
+                    check_id="github_auth.automation_token_secret",
+                    category="github_auth",
                     required=True,
                     expected=(
-                        f"{APP_PRIVATE_KEY_SECRET} Actions secret name present "
+                        f"{AUTOMATION_TOKEN_SECRET} Actions secret name present "
                         "(value never read)"
                     ),
                     observed="name_present",
@@ -875,153 +805,18 @@ def evaluate(client: ReadOnlyGitHubClient, *, source: str) -> list[dict[str, Any
         else:
             results.append(
                 _check(
-                    check_id="github_app.private_key_secret",
-                    category="github_app",
+                    check_id="github_auth.automation_token_secret",
+                    category="github_auth",
                     required=True,
                     expected=(
-                        f"{APP_PRIVATE_KEY_SECRET} Actions secret name present "
+                        f"{AUTOMATION_TOKEN_SECRET} Actions secret name present "
                         "(value never read)"
                     ),
                     observed="missing",
                     status="credential-missing",
-                    detail=f"{APP_PRIVATE_KEY_SECRET} not listed among Actions secret names",
+                    detail=f"{AUTOMATION_TOKEN_SECRET} not listed among Actions secret names",
                 )
             )
-
-    # --- github_app.installation ---
-    if unchecked:
-        results.append(
-            _unchecked(
-                "github_app.installation",
-                "github_app",
-                "GitHub App installation present on the repository",
-            )
-        )
-    else:
-        inst = client.get_installation()
-        if getattr(client, "_installation_blocked", False):
-            results.append(
-                _check(
-                    check_id="github_app.installation",
-                    category="github_app",
-                    required=True,
-                    expected="GitHub App installation present on the repository",
-                    observed="blocked",
-                    status="blocked",
-                    detail=(
-                        "installation probe blocked by auth/permissions; "
-                        "never assume compliant"
-                    ),
-                )
-            )
-        elif inst:
-            app_slug = ""
-            app = inst.get("app_slug") or (inst.get("app") or {}).get("slug")
-            if app:
-                app_slug = str(app)
-            results.append(
-                _check(
-                    check_id="github_app.installation",
-                    category="github_app",
-                    required=True,
-                    expected="GitHub App installation present on the repository",
-                    observed="installed",
-                    status="ok",
-                    detail=(
-                        "installation id present"
-                        + (f"; app_slug={app_slug}" if app_slug else "")
-                    ),
-                )
-            )
-        else:
-            results.append(
-                _check(
-                    check_id="github_app.installation",
-                    category="github_app",
-                    required=True,
-                    expected="GitHub App installation present on the repository",
-                    observed="missing",
-                    status="missing",
-                    detail="no GitHub App installation found for repository",
-                )
-            )
-
-    # --- github_app.authority_scope ---
-    if unchecked:
-        results.append(
-            _unchecked(
-                "github_app.authority_scope",
-                "github_app",
-                "App narrowly scoped (no admin/members/secrets); privileged automation App-backed only",
-                observed="unknown",
-                status="unknown",
-                detail="dry-run default: pass --live or --fixture-dir to observe",
-            )
-        )
-    else:
-        perms = client.get_app_permissions_observation()
-        if perms is None:
-            results.append(
-                _check(
-                    check_id="github_app.authority_scope",
-                    category="github_app",
-                    required=True,
-                    expected=(
-                        "App narrowly scoped (no admin/members/secrets); "
-                        "privileged automation App-backed only"
-                    ),
-                    observed="unknown",
-                    status="unknown",
-                    detail=(
-                        "App permission matrix not observable via this audit path; "
-                        "never assume compliant"
-                    ),
-                )
-            )
-        else:
-            forbidden = []
-            for key in ("admin", "members", "secrets"):
-                level = str(perms.get(key) or "none").lower()
-                if level not in {"none", "", "read"} and key != "none":
-                    # admin/members/secrets must be absent/none
-                    if key in ("admin", "members", "secrets") and level not in {
-                        "none",
-                        "",
-                    }:
-                        forbidden.append(f"{key}={level}")
-            # Explicit forbidden flag from fixture
-            if perms.get("forbidden") is True or perms.get("hasAdmin") is True:
-                forbidden.append("fixture_marked_overprivileged")
-            if forbidden:
-                results.append(
-                    _check(
-                        check_id="github_app.authority_scope",
-                        category="github_app",
-                        required=True,
-                        expected=(
-                            "App narrowly scoped (no admin/members/secrets); "
-                            "privileged automation App-backed only"
-                        ),
-                        observed="overprivileged",
-                        status="forbidden",
-                        detail="forbidden permission posture: " + ", ".join(forbidden),
-                    )
-                )
-            else:
-                results.append(
-                    _check(
-                        check_id="github_app.authority_scope",
-                        category="github_app",
-                        required=True,
-                        expected=(
-                            "App narrowly scoped (no admin/members/secrets); "
-                            "privileged automation App-backed only"
-                        ),
-                        observed="narrow",
-                        status="matched",
-                        detail="fixture reports narrow App permissions (names/levels only)",
-                    )
-                )
 
     # --- bugbot.user_token_secret ---
     if unchecked:
@@ -1872,13 +1667,13 @@ def evaluate(client: ReadOnlyGitHubClient, *, source: str) -> list[dict[str, Any
             required=True,
             expected=(
                 f"Privileged publish context remains {STATUS_CONTEXT!r} "
-                "(App-backed publisher only)"
+                "(normal-token publisher from trusted workflow context only)"
             ),
             observed=STATUS_CONTEXT,
             status="ok",
             detail=(
-                "contract constant; privileged publish must use the GitHub App "
-                "from protected workflow context only"
+                "contract constant; privileged publish must use the normal automation "
+                "credential from protected workflow context only"
             ),
         )
     )
@@ -2062,7 +1857,7 @@ def build_report(
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Read-only plan/verify/report of required external GitHub App / Bugbot / "
+            "Read-only plan/verify/report of required external automation credential / Bugbot / "
             "protection / workflow state. Apply is refused."
         )
     )
@@ -2114,13 +1909,6 @@ def build_client(args: argparse.Namespace) -> tuple[ReadOnlyGitHubClient, str]:
 def _emit(payload: dict[str, Any], path: str | None, *, human: bool = False) -> None:
     # Defense in depth: never dump known secret env values into stdout/file.
     text = json.dumps(payload, indent=2)
-    for name in _SECRET_ENV_NAMES:
-        val = (os.environ.get(name) or "").strip()
-        if val and val in text:
-            raise AuditError(
-                f"refusing to emit report: secret env {name} would leak into output",
-                EXIT_REFUSED,
-            )
     # Also refuse obvious PEM / token markers if somehow present.
     for marker in ("BEGIN PRIVATE KEY", "BEGIN RSA PRIVATE KEY", "github_pat_", "ghs_"):
         if marker in text:

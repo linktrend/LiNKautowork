@@ -5,7 +5,7 @@
 # Workflow contract:
 #   - Secret LINKTREND_BUGBOT_USER_TOKEN is the ONLY accepted input.
 #   - This script exports BUGBOT_USER_TOKEN for the two allowed Python call sites.
-#   - Must not equal AUTOMATION_TOKEN / LINKTREND_APP_TOKEN / GITHUB_TOKEN / GH_TOKEN.
+#   - May be the same normal GitHub automation identity when a separate Bot token is not configured.
 #   - Never write the token to outputs, artifacts, summaries, or files.
 #
 # See docs/contracts/GITHUB-APP-GITOPS-CREDENTIALS.md (dual-credential section).
@@ -22,19 +22,9 @@ if [ -z "${RAW}" ]; then
   BUGBOT_USER_TOKEN_SOURCE="none"
   BUGBOT_USER_CREDENTIALS_STATUS="missing"
 else
-  # Fail closed if the "user" token is actually the App/workflow token.
-  if { [ -n "${AUTOMATION_TOKEN:-}" ] && [ "${RAW}" = "${AUTOMATION_TOKEN}" ]; } ||
-     { [ -n "${LINKTREND_APP_TOKEN:-}" ] && [ "${RAW}" = "${LINKTREND_APP_TOKEN}" ]; } ||
-     { [ -n "${GITHUB_TOKEN:-}" ] && [ "${RAW}" = "${GITHUB_TOKEN}" ]; } ||
-     { [ -n "${GH_TOKEN:-}" ] && [ "${RAW}" = "${GH_TOKEN}" ]; }; then
-    BUGBOT_USER_TOKEN=""
-    BUGBOT_USER_TOKEN_SOURCE="invalid"
-    BUGBOT_USER_CREDENTIALS_STATUS="must_not_equal_automation_or_github_token"
-  else
-    BUGBOT_USER_TOKEN="${RAW}"
-    BUGBOT_USER_TOKEN_SOURCE="user_secret"
-    BUGBOT_USER_CREDENTIALS_STATUS="configured"
-  fi
+  BUGBOT_USER_TOKEN="${RAW}"
+  BUGBOT_USER_TOKEN_SOURCE="user_secret"
+  BUGBOT_USER_CREDENTIALS_STATUS="configured"
 fi
 
 export BUGBOT_USER_TOKEN
