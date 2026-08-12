@@ -6,10 +6,10 @@ Success on exact SHA ⇒ branch tip is packager-eligible.
 Later commits are automatically unready (new SHA has no success status).
 Withdrawal posts a non-success status for the same context.
 
-Privileged publish (mark/withdraw) requires a minted GitHub App token in
-AUTOMATION_TOKEN or LINKTREND_APP_TOKEN. Ordinary GH_TOKEN / GITHUB_TOKEN must
-never authorize status publication. Local implementers without App credentials
-use the App-backed workflow dispatch route (see app_backed_review_ready_route;
+Privileged publish (mark/withdraw) requires the normal automation token in
+AUTOMATION_TOKEN. Ordinary GH_TOKEN / GITHUB_TOKEN must never authorize status
+publication. Local implementers without automation credentials
+use the normal-token workflow dispatch route (see app_backed_review_ready_route;
 action=publish or action=withdraw).
 """
 
@@ -29,10 +29,10 @@ from typing import Any
 CONTEXT = "Linktrend Review Ready"
 DEFAULT_BACKEND = "github"  # or "file" for tests (LINKTREND_STATUS_DIR)
 
-# Exact safe App-backed publication route (trusted workflow on default branch).
+# Exact safe normal-token publication route (trusted workflow on default branch).
 REVIEW_READY_PUBLISHER_WORKFLOW = "linktrend-review-ready-publisher.yml"
 REVIEW_READY_PUBLISHER_WORKFLOW_NAME = "Linktrend Review Ready Publisher"
-APP_PUBLISH_TOKEN_ENVS = ("AUTOMATION_TOKEN", "LINKTREND_APP_TOKEN")
+APP_PUBLISH_TOKEN_ENVS = ("AUTOMATION_TOKEN",)
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
@@ -72,7 +72,7 @@ except ImportError:  # pragma: no cover
     def app_branch_migration_remediation(branch: str) -> str:
         br = (branch or "").strip() or "<current-branch>"
         return (
-            "App-backed Linktrend Review Ready publisher accepts verified "
+            "normal-token Linktrend Review Ready publisher accepts verified "
             "issue/<number>-<slug> branches and configured phase/<slug> tips. "
             f"Migrate branch {br!r} via create_issue_branch.py or /agentcomply."
         )
@@ -92,7 +92,7 @@ class ReadyStatus:
 
 
 def resolve_app_publish_token() -> str:
-    """Return App installation token for privileged status publish only.
+    """Return the normal automation token for privileged status publish only.
 
     Never falls back to GH_TOKEN, GITHUB_TOKEN, or other ambient credentials.
     """
@@ -125,7 +125,7 @@ def app_backed_review_ready_route(
     reason: str = "",
     phase_prefix: str | None = None,
 ) -> str:
-    """Exact safe App-backed route for publishing or withdrawing Review Ready.
+    """Exact safe normal-token route for publishing or withdrawing Review Ready.
 
     Only embeds a concrete branch when it matches verified issue/<number>-<slug>
     or a configured phase/<slug> tip. Legacy allowed prefixes (feature/, dev/, …)
@@ -170,7 +170,7 @@ def missing_app_publish_token_error(
     reason: str = "",
     phase_prefix: str | None = None,
 ) -> str:
-    """Fail-closed diagnostic when local privileged status write lacks App credentials."""
+    """Fail closed when the local status write lacks automation credentials."""
     act = normalize_status_action(action)
     raw = (branch or "").strip()
     prefix = (
@@ -179,8 +179,8 @@ def missing_app_publish_token_error(
         else resolve_phase_branch_prefix()
     )
     prefix_msg = (
-        "privileged_publish_requires_github_app: "
-        "AUTOMATION_TOKEN or LINKTREND_APP_TOKEN required; "
+        "privileged_publish_requires_github_token: "
+        "AUTOMATION_TOKEN required; "
         "no GH_TOKEN/GITHUB_TOKEN fallback for Linktrend Review Ready status writes. "
     )
     if raw and not is_app_backed_publish_branch(raw, prefix):
@@ -196,11 +196,11 @@ def missing_app_publish_token_error(
         reason=reason,
         phase_prefix=prefix,
     )
-    return prefix_msg + f"Use App-backed route: {route}"
+    return prefix_msg + f"Use normal-token route: {route}"
 
 
 def _read_status_token() -> str:
-    """Token for status reads only. Prefer App; ambient tokens allowed for get."""
+    """Token for status reads only. Prefer automation; ambient tokens allowed for get."""
     return (
         resolve_app_publish_token()
         or (os.environ.get("GH_TOKEN") or "").strip()
@@ -209,7 +209,7 @@ def _read_status_token() -> str:
 
 
 def _gh_token() -> str:
-    """Backward-compatible alias: prefer App token, then ambient read tokens.
+    """Backward-compatible alias: prefer normal automation token, then ambient read tokens.
 
     Privileged publish must call resolve_app_publish_token() — never this helper
     alone — so GH_TOKEN/GITHUB_TOKEN cannot authorize mark/withdraw.
@@ -319,7 +319,7 @@ class GitHubStatusBackend:
         if not self._read_token:
             raise RuntimeError(
                 "status read token missing "
-                "(AUTOMATION_TOKEN/LINKTREND_APP_TOKEN preferred; "
+                "(AUTOMATION_TOKEN preferred; "
                 "GH_TOKEN/GITHUB_TOKEN allowed for reads only)"
             )
         url = f"https://api.github.com/repos/{self.repo}/commits/{sha}/statuses"
@@ -347,7 +347,7 @@ class GitHubStatusBackend:
         action: str = "publish",
         reason: str = "",
     ) -> ReadyStatus:
-        # Privileged publish/withdraw: App env vars only — never constructor/ambient human tokens.
+        # Privileged publish/withdraw: normal automation env only — never constructor/ambient human tokens.
         pub = resolve_app_publish_token()
         if not pub:
             raise RuntimeError(
@@ -403,7 +403,7 @@ def publish_review_ready(
     *,
     branch: str = "",
 ) -> ReadyStatus:
-    """Reusable privileged publication helper (App token or file backend only)."""
+    """Reusable privileged publication helper (normal automation token or file backend only)."""
     desc = f"issue={issue_id}"
     if notes:
         desc = f"{desc}; {notes}"[:140]
@@ -506,7 +506,7 @@ def main(argv: list[str]) -> int:
                 "error": str(e),
             }
             if is_app_backed_publish_branch(branch, phase_prefix):
-                payload["appBackedRoute"] = app_backed_review_ready_route(
+                payload["normalTokenRoute"] = app_backed_review_ready_route(
                     branch=branch,
                     sha=sha,
                     action="publish",
@@ -532,7 +532,7 @@ def main(argv: list[str]) -> int:
                 "error": str(e),
             }
             if is_app_backed_publish_branch(branch, phase_prefix):
-                payload["appBackedRoute"] = app_backed_review_ready_route(
+                payload["normalTokenRoute"] = app_backed_review_ready_route(
                     branch=branch,
                     sha=sha,
                     action="withdraw",

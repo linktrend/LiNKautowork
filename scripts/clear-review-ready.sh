@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 # Withdraw Linktrend Review Ready for the current tip (or given SHA).
 #
-# Privileged status writes require a minted GitHub App token
-# (AUTOMATION_TOKEN / LINKTREND_APP_TOKEN). Ordinary GH_TOKEN / GITHUB_TOKEN
-# must never authorize withdraw. Without App credentials this script fails
-# closed and prints the App-backed workflow_dispatch route
+# Privileged status writes require AUTOMATION_TOKEN. Ordinary GH_TOKEN / GITHUB_TOKEN
+# must never authorize withdraw. Without normal automation credentials this script
+# fails closed and prints the normal-token workflow_dispatch route
 # (action=withdraw) for operators/agents to run.
 set -euo pipefail
 
@@ -26,7 +25,7 @@ RC=$?
 set -e
 printf '%s\n' "$OUT"
 if [ "$RC" -ne 0 ]; then
-  echo "FAIL: withdrew Linktrend Review Ready requires GitHub App token; use App-backed route above (never GH_TOKEN/GITHUB_TOKEN)." >&2
+  echo "FAIL: withdrawing Linktrend Review Ready requires AUTOMATION_TOKEN; use the normal-token route above (never GH_TOKEN/GITHUB_TOKEN)." >&2
   exit "$RC"
 fi
 echo "PASS: withdrew Linktrend Review Ready for ${SHA}"

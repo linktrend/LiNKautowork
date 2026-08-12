@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate workflow_dispatch inputs for App-backed Review Ready publisher.
+"""Validate workflow_dispatch inputs for normal-token Review Ready publisher.
 
 Pure, unit-testable input validation only. Does not mint tokens, publish
 statuses, read secrets, or execute untrusted branch code.
@@ -18,7 +18,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-# Studio App-backed publisher accepts verified issue/<number>-<slug> (digits)
+# Studio normal-token publisher accepts verified issue/<number>-<slug> (digits)
 # and configured phase/<slug> Phase-integration tips. Legacy allowlist prefixes
 # (feature/, dev/, …) remain rejected.
 ISSUE_BRANCH_RE = re.compile(r"^issue/([1-9][0-9]{0,8})-([a-z0-9]+(?:-[a-z0-9]+)*)$")
@@ -70,17 +70,17 @@ def is_app_backed_phase_branch(
 def is_app_backed_publish_branch(
     name: str, phase_prefix: str = DEFAULT_PHASE_PREFIX
 ) -> bool:
-    """True when App publisher may bind this branch (issue slug or Phase tip)."""
+    """True when the normal-token publisher may bind this branch (issue slug or Phase tip)."""
     return is_app_backed_issue_branch(name) or is_app_backed_phase_branch(
         name, phase_prefix
     )
 
 
 def app_branch_migration_remediation(branch: str) -> str:
-    """Actionable migration path when a legacy allowed branch cannot use App publish."""
+    """Actionable migration path when a legacy allowed branch cannot use normal-token publish."""
     br = (branch or "").strip() or "<current-branch>"
     return (
-        "App-backed Linktrend Review Ready publisher accepts verified "
+        "normal-token Linktrend Review Ready publisher accepts verified "
         "issue/<number>-<slug> branches (digits + lowercase slug) and configured "
         "phase/<slug> Phase-integration tips. "
         f"Branch {br!r} may still be allowed for ordinary work/Pull but cannot "
@@ -500,21 +500,21 @@ def _self_test() -> int:
     expect_err("branch_not_issue_slug", branch="dev/macmini", sha=good_sha)
     expect_err("branch_not_issue_slug", branch="issue/44-Bad_Slug", sha=good_sha)
     if is_app_backed_issue_branch("feature/44-x") or is_app_backed_issue_branch("dev/x"):
-        failures.append("legacy allowed prefixes must not be App-eligible")
+        failures.append("legacy allowed prefixes must not be publisher-eligible")
     if not is_app_backed_issue_branch(
         "issue/44-add-app-backed-review-ready-publisher-and-produc"
     ):
-        failures.append("canonical issue branch must be App-eligible")
+        failures.append("canonical issue branch must be publisher-eligible")
     if not is_app_backed_phase_branch("phase/wp-01-demo"):
-        failures.append("default phase branch must be App-eligible")
+        failures.append("default phase branch must be publisher-eligible")
     if not is_app_backed_publish_branch("phase/wp-01-demo"):
-        failures.append("phase tip must be App publish eligible")
+        failures.append("phase tip must be normal-token publish eligible")
     if is_app_backed_phase_branch("wave/wp-01-demo"):
         failures.append("custom prefix wave/ must not match default phase/")
     if not is_app_backed_phase_branch("wave/wp-01-demo", phase_prefix="wave/"):
-        failures.append("custom phaseBranchPrefix must be App-eligible")
+        failures.append("custom phaseBranchPrefix must be publisher-eligible")
     if is_app_backed_publish_branch("feature/44-x"):
-        failures.append("feature/* must remain App-ineligible")
+        failures.append("feature/* must remain publisher-ineligible")
     phase_ok = expect_ok(branch="phase/wp-01-demo", sha=good_sha, dry_run="false")
     if phase_ok:
         if phase_ok.branch_kind != BRANCH_KIND_PHASE:

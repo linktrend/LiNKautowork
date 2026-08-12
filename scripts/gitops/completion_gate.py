@@ -32,9 +32,9 @@ import os
 import re
 import subprocess
 import sys
+from urllib.parse import urlparse
 from datetime import datetime, timezone
 from pathlib import Path
-from urllib.parse import urlsplit
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
@@ -105,7 +105,7 @@ except ImportError:  # pragma: no cover
     def app_branch_migration_remediation(branch: str) -> str:
         br = (branch or "").strip() or "<current-branch>"
         return (
-            "App-backed publisher requires issue/<number>-<slug> or configured "
+            "normal-token publisher requires issue/<number>-<slug> or configured "
             f"phase/<slug>. Migrate {br!r} via create_issue_branch.py or /agentcomply."
         )
 
@@ -251,9 +251,9 @@ def app_backed_route(
     *,
     workdir: Path | None = None,
 ) -> str:
-    """Exact safe App-backed publication route when local credentials are absent.
+    """Exact safe normal-token publication route when local credentials are absent.
 
-    Returns empty string when the branch is not App-eligible so callers never
+    Returns empty string when the branch is not publisher-eligible so callers never
     advertise a dispatch command that review_ready_dispatch would reject.
     Prefix eligibility follows the explicit --workdir repository config.
     """
@@ -283,7 +283,7 @@ def _review_ready_publish_failure_payload(
     error: str,
     workdir: Path | None = None,
 ) -> dict:
-    """Build fail-closed diagnostics: valid App route or truthful migration path."""
+    """Build fail-closed diagnostics: valid normal-token route or migration path."""
     payload: dict = {
         "mode": "review-ready",
         "state": "failed",
@@ -296,10 +296,10 @@ def _review_ready_publish_failure_payload(
     phase_prefix = _phase_prefix_for_workdir(workdir)
     if is_app_backed_publish_branch(branch, phase_prefix):
         route = app_backed_route(branch, sha, workdir=workdir)
-        payload["appBackedRoute"] = route
+        payload["normalTokenRoute"] = route
         payload["detail"] = (
-            "Local review-ready publish is fail-closed without GitHub App "
-            "credentials; use the App-backed workflow route"
+            "Local review-ready publish is fail-closed without normal GitHub automation "
+            "credentials; use the normal-token workflow route"
         )
     else:
         remediation = app_branch_migration_remediation(branch)
@@ -325,20 +325,19 @@ def publish_ready(
         return True, str(st)
     except Exception as e:  # noqa: BLE001
         detail = str(e)
-        # Ensure fail-closed credential errors always name the App-backed route.
-        if "privileged_publish_requires_github_app" not in detail:
+        # Ensure fail-closed credential errors always name the normal-token route.
+        if "privileged_publish_requires_github_token" not in detail:
             if any(
                 key in detail
                 for key in (
                     "AUTOMATION_TOKEN",
-                    "LINKTREND_APP_TOKEN",
                     "GITHUB_TOKEN",
                     "token",
                     "credentials",
                 )
             ):
                 detail = (
-                    f"{detail}; Use App-backed route: "
+                    f"{detail}; Use normal-token route: "
                     f"{app_backed_route(branch, sha, workdir=workdir)}"
                 )
         return False, detail
@@ -431,9 +430,9 @@ def cmd_review_ready(args: argparse.Namespace) -> int:
     elif _status_backend_name() != "file" and not is_app_backed_publish_branch(
         br, phase_prefix
     ):
-        # Production / GitHub backend: App publisher is the only privileged path.
+        # Production / GitHub backend: the normal-token publisher is the privileged path.
         # Issue slug safeguards stay; Phase tips under configured prefix are eligible.
-        # Do not pretend feature/dev/cursor branches can dispatch the App route.
+        # Do not pretend feature/dev/cursor branches can dispatch the publisher route.
         # File backend remains available for offline unit fixtures.
         missing.append(f"app_publish_requires_issue_branch:{br}")
 
@@ -563,20 +562,18 @@ def resolve_repository(workdir: Path) -> tuple[str | None, str]:
     # Strip credentials if present in URL without echoing them
     # e.g. https://user:token@github.com/owner/repo.git
     sanitized = url
-    if "://" in sanitized and "@" in sanitized.split("://", 1)[1]:
-        scheme, rest = sanitized.split("://", 1)
-        sanitized = f"{scheme}://" + rest.split("@", 1)[1]
     owner_repo = ""
-    if sanitized.startswith("git@github.com:"):
-        # SCP-style GitHub remote: git@github.com:owner/repo.git
-        path = sanitized.removeprefix("git@github.com:")
+    if sanitized.startswith("git@") and ":" in sanitized:
+        # git@github.com:owner/repo.git
+        path = sanitized.split(":", 1)[1]
         owner_repo = path
     elif "://" in sanitized:
-        # Parse the host; substring matching could accept an attacker-controlled URL.
-        parsed = urlsplit(sanitized)
+        parsed = urlparse(sanitized)
         if parsed.hostname != "github.com":
             return None, "origin_not_github_or_unrecognized"
-        owner_repo = parsed.path
+        owner_repo = parsed.path.lstrip("/")
+    elif "github.com:" in sanitized:
+        owner_repo = sanitized.split("github.com:", 1)[1]
     else:
         return None, "origin_not_github_or_unrecognized"
     owner_repo = owner_repo.strip()
