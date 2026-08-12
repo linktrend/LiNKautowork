@@ -164,7 +164,19 @@ def fast_gate_status(
 
 
 def parse_required_checks(raw: str) -> list[str]:
-    return [p.strip() for p in (raw or "").split(",") if p.strip()]
+    text = (raw or "").strip()
+    if not text:
+        return []
+    if text.startswith("["):
+        try:
+            value = json.loads(text)
+        except json.JSONDecodeError:
+            return []
+        if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+            return []
+        return [item.strip() for item in value if item.strip()]
+    separator = ";" if ";" in text else ","
+    return [part.strip() for part in text.split(separator) if part.strip()]
 
 
 def is_allowed_work_branch(

@@ -1,9 +1,89 @@
 {
   "schemaVersion": 1,
   "catalogId": "ide-development-managed-core-migrations",
-  "packageVersion": "2.1.0",
+  "packageVersion": "2.1.10",
   "description": "Reviewed Wave 1 supersession catalog. Removals require exact identity and contentHash match; mismatches fail closed.",
   "entries": [
+    {
+      "identity": ".cursor/library/vendor/NOTICE.md",
+      "path": ".cursor/library/vendor/NOTICE.md",
+      "contentHash": "sha256:8bb0aa96c38ee65660037f50f4768f08861bc00665fe3efd284aea5ca57f4b0e",
+      "action": "remove",
+      "reason": "v2.1.7 renamed the locked SPDX dependency directory so broad consumer vendor ignore rules cannot omit managed files.",
+      "sincePackageVersion": "2.1.7"
+    },
+    {
+      "identity": ".cursor/library/vendor/spdx-exceptions.json",
+      "path": ".cursor/library/vendor/spdx-exceptions.json",
+      "contentHash": "sha256:05079063787565a9c14278d09144df3430cd353aab5c2db2a372b9230cf04594",
+      "action": "remove",
+      "reason": "Remove the exact superseded managed SPDX dependency path after the v2.1.7 rename.",
+      "sincePackageVersion": "2.1.7"
+    },
+    {
+      "identity": ".cursor/library/vendor/spdx-expression-validate.mjs",
+      "path": ".cursor/library/vendor/spdx-expression-validate.mjs",
+      "contentHash": "sha256:b159caceed95671aacfa6adb939856cd9df800b327cf01590f0f439b73075d9c",
+      "action": "remove",
+      "reason": "Remove the exact superseded managed SPDX dependency path after the v2.1.7 rename.",
+      "sincePackageVersion": "2.1.7"
+    },
+    {
+      "identity": ".cursor/library/vendor/spdx-license-ids-deprecated.json",
+      "path": ".cursor/library/vendor/spdx-license-ids-deprecated.json",
+      "contentHash": "sha256:58657e9b38a85b4ab2ea56115738590ee06d28c87667efaa5b83737657d43094",
+      "action": "remove",
+      "reason": "Remove the exact superseded managed SPDX dependency path after the v2.1.7 rename.",
+      "sincePackageVersion": "2.1.7"
+    },
+    {
+      "identity": ".cursor/library/vendor/spdx-license-ids.json",
+      "path": ".cursor/library/vendor/spdx-license-ids.json",
+      "contentHash": "sha256:01229f894127ed2c09222de370817e7128340d89fc10a521f0d309dd89647873",
+      "action": "remove",
+      "reason": "Remove the exact superseded managed SPDX dependency path after the v2.1.7 rename.",
+      "sincePackageVersion": "2.1.7"
+    },
+    {
+      "identity": ".ide-development/library/vendor/NOTICE.md",
+      "path": ".ide-development/library/vendor/NOTICE.md",
+      "contentHash": "sha256:8bb0aa96c38ee65660037f50f4768f08861bc00665fe3efd284aea5ca57f4b0e",
+      "action": "remove",
+      "reason": "v2.1.7 renamed the locked SPDX dependency directory so broad consumer vendor ignore rules cannot omit managed files.",
+      "sincePackageVersion": "2.1.7"
+    },
+    {
+      "identity": ".ide-development/library/vendor/spdx-exceptions.json",
+      "path": ".ide-development/library/vendor/spdx-exceptions.json",
+      "contentHash": "sha256:05079063787565a9c14278d09144df3430cd353aab5c2db2a372b9230cf04594",
+      "action": "remove",
+      "reason": "Remove the exact superseded managed SPDX dependency path after the v2.1.7 rename.",
+      "sincePackageVersion": "2.1.7"
+    },
+    {
+      "identity": ".ide-development/library/vendor/spdx-expression-validate.mjs",
+      "path": ".ide-development/library/vendor/spdx-expression-validate.mjs",
+      "contentHash": "sha256:b159caceed95671aacfa6adb939856cd9df800b327cf01590f0f439b73075d9c",
+      "action": "remove",
+      "reason": "Remove the exact superseded managed SPDX dependency path after the v2.1.7 rename.",
+      "sincePackageVersion": "2.1.7"
+    },
+    {
+      "identity": ".ide-development/library/vendor/spdx-license-ids-deprecated.json",
+      "path": ".ide-development/library/vendor/spdx-license-ids-deprecated.json",
+      "contentHash": "sha256:58657e9b38a85b4ab2ea56115738590ee06d28c87667efaa5b83737657d43094",
+      "action": "remove",
+      "reason": "Remove the exact superseded managed SPDX dependency path after the v2.1.7 rename.",
+      "sincePackageVersion": "2.1.7"
+    },
+    {
+      "identity": ".ide-development/library/vendor/spdx-license-ids.json",
+      "path": ".ide-development/library/vendor/spdx-license-ids.json",
+      "contentHash": "sha256:01229f894127ed2c09222de370817e7128340d89fc10a521f0d309dd89647873",
+      "action": "remove",
+      "reason": "Remove the exact superseded managed SPDX dependency path after the v2.1.7 rename.",
+      "sincePackageVersion": "2.1.7"
+    },
     {
       "identity": ".cursor/rules/obsolete-generic-v1.mdc",
       "path": ".cursor/rules/obsolete-generic-v1.mdc",

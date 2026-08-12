@@ -6,7 +6,7 @@ Readiness is re-checked on the exact live head SHA (``Linktrend Review Ready``),
 whether that status came from the local gate or the normal-token publisher.
 
 Credentials:
-  - normal automation token (AUTOMATION_TOKEN): reads, undraft, freeze comment, check-runs, repair
+  - normal automation token (AUTOMATION_TOKEN): reads, undraft, freeze comment, commit statuses, repair
   - Carlos BUGBOT_USER_TOKEN: the single `@cursor review` comment only (fail closed)
 
 PR author must be exactly ``linktrend`` before undraft or Bugbot request.

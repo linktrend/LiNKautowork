@@ -55,7 +55,7 @@ python3 scripts/gitops/create_issue_branch.py "<task description>" --prefer-work
 
 4. Move dirty work safely (stash → checkout/worktree → pop). Never force onto protected branches.
 5. Push checkpoint only when asked or clearly ready
-6. When the issue is finished later: `completion_gate.py write-evidence` then `review-ready`
+6. When the issue is finished later: `completion_gate.py write-evidence` then `review-ready` (normal-token publisher if local privileged publish fails closed; never write `.linktrend/review-ready.json`)
 7. Summarize what moved and the active branch/issue
 
 ## Fail closed
