@@ -49,7 +49,7 @@ jobs:
   discover:
     name: Discover ready tips (draft PRs only)
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, macOS, ARM64, linktrend-privileged]
     timeout-minutes: 20
     permissions:
       contents: read
@@ -133,7 +133,7 @@ jobs:
         github.event.check_run.name != 'Linktrend Main Outcome' &&
         github.event.check_run.name != 'evaluate'
       )
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, macOS, ARM64, linktrend-privileged]
     timeout-minutes: 5
     permissions:
       contents: read
@@ -166,7 +166,7 @@ jobs:
     name: Evaluate draft PR after gates
     needs: resolve
     if: needs.resolve.outputs.relevant == 'true'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, macOS, ARM64, linktrend-privileged]
     timeout-minutes: 15
     permissions:
       contents: read
