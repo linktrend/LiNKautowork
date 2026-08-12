@@ -563,10 +563,11 @@ def resolve_repository(workdir: Path) -> tuple[str | None, str]:
     # e.g. https://user:token@github.com/owner/repo.git
     sanitized = url
     owner_repo = ""
-    if sanitized.startswith("git@github.com:"):
-        # git@github.com:owner/repo.git
-        path = sanitized.split(":", 1)[1]
-        owner_repo = path
+    scp_match = re.fullmatch(r"[A-Za-z0-9._-]+@github\.com:(.+)", sanitized)
+    if scp_match:
+        # GitHub supports both git@github.com and certificate-authority SSH
+        # usernames such as org-123@github.com.
+        owner_repo = scp_match.group(1)
     elif "://" in sanitized:
         parsed = urlparse(sanitized)
         if parsed.hostname != "github.com":
