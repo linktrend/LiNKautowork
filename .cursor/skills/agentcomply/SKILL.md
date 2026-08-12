@@ -4,7 +4,7 @@ description: >-
   Migrate an ALREADY-OPEN agent onto a proper short-lived issue/* branch for
   this consumer repo, safely moving dirty work. Use for /agentcomply or
   equivalent compliance requests.
-version: 2.0.0-managed
+version: 1.0.0-managed
 status: active
 tags: [git, agent, migration, compliance, branching]
 related_commands:
@@ -13,7 +13,7 @@ related_skills:
   - agentsetup
 ---
 
-# Agent Comply (ALREADY-OPEN session) — Cursor managed adapter
+# Agent Comply (ALREADY-OPEN session) — managed consumer package
 
 Migrate an **already-open agent** onto `issue/<id>-<slug>` for **this repository**, preserving dirty work.
 
@@ -21,11 +21,8 @@ Migrate an **already-open agent** onto `issue/<id>-<slug>` for **this repository
 
 - `.cursor/rules/cursor-gitops-bootstrap.mdc`
 - `.cursor/rules/linktrend-git-branching.mdc`
-- `.cursor/commands/agentcomply.md`
-- `.cursor/skills/agentcomply/SKILL.md` (this file)
 - `scripts/gitops/create_issue_branch.py`
 - `scripts/gitops/completion_gate.py`
-- Managed core (optional deeper doctrine): `.ide-development/`
 
 Do **not** require the IDE Development checkout path.
 
@@ -55,7 +52,7 @@ python3 scripts/gitops/create_issue_branch.py "<task description>" --prefer-work
 
 4. Move dirty work safely (stash → checkout/worktree → pop). Never force onto protected branches.
 5. Push checkpoint only when asked or clearly ready
-6. When the issue is finished later: `completion_gate.py write-evidence` then `review-ready`
+6. When the issue is finished later: `completion_gate.py write-evidence` then `review-ready` (normal-token publisher if local privileged publish fails closed; never write `.linktrend/review-ready.json`)
 7. Summarize what moved and the active branch/issue
 
 ## Fail closed

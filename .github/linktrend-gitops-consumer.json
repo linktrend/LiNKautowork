@@ -2,5 +2,6 @@
   "schemaVersion": 1,
   "ciWorkflowName": "LiNKautowork CI",
   "branchPolicyWorkflowName": "Branch Source Policy",
-  "bugbotCheckName": "Cursor Bugbot"
+  "bugbotCheckName": "Cursor Bugbot",
+  "runnerType": "github-hosted"
 }
