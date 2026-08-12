@@ -563,7 +563,7 @@ def resolve_repository(workdir: Path) -> tuple[str | None, str]:
     # e.g. https://user:token@github.com/owner/repo.git
     sanitized = url
     owner_repo = ""
-    if sanitized.startswith("git@") and ":" in sanitized:
+    if sanitized.startswith("git@github.com:"):
         # git@github.com:owner/repo.git
         path = sanitized.split(":", 1)[1]
         owner_repo = path
@@ -572,7 +572,7 @@ def resolve_repository(workdir: Path) -> tuple[str | None, str]:
         if parsed.hostname != "github.com":
             return None, "origin_not_github_or_unrecognized"
         owner_repo = parsed.path.lstrip("/")
-    elif "github.com:" in sanitized:
+    elif sanitized.startswith("github.com:"):
         owner_repo = sanitized.split("github.com:", 1)[1]
     else:
         return None, "origin_not_github_or_unrecognized"
@@ -580,7 +580,12 @@ def resolve_repository(workdir: Path) -> tuple[str | None, str]:
     if owner_repo.endswith(".git"):
         owner_repo = owner_repo[:-4]
     owner_repo = owner_repo.strip("/")
-    if owner_repo.count("/") != 1 or " " in owner_repo:
+    segments = owner_repo.split("/")
+    if (
+        len(segments) != 2
+        or any(segment in {"", ".", ".."} for segment in segments)
+        or any(not re.fullmatch(r"[A-Za-z0-9_.-]+", segment) for segment in segments)
+    ):
         return None, "origin_ambiguous_owner_repo"
     # Reject if both origin and upstream exist and disagree (ambiguous fork layout)
     upstream = run(["git", "remote", "get-url", "upstream"], cwd=workdir)
