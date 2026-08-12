@@ -286,6 +286,9 @@ test('enforces exact, caret, tilde, comparator conjunction, malformed, and unsup
     for (const id of ['range-exact', 'range-caret', 'range-tilde', 'range-comparator']) {
       assert.doesNotThrow(() => instance.selectEntry(id, { nodeVersion: '20.2.3', dependencies: { react: '^20.1.0' } }))
     }
+    assert.doesNotThrow(() => instance.selectEntry('range-caret', { nodeVersion: '20.2.3', dependencies: { react: '>=20.0.0' } }))
+    assert.doesNotThrow(() => instance.selectEntry('range-tilde', { nodeVersion: '20.2.3', dependencies: { react: '>=20.2.0' } }))
+    assert.throws(() => instance.selectEntry('range-caret', { nodeVersion: '20.2.3', dependencies: { react: '>=21.0.0' } }), (error) => error.code === 'entry_incompatible' && error.details.errors.some((item) => item.code === 'dependency_incompatible'))
     assert.throws(() => instance.selectEntry('range-caret', { nodeVersion: '20.2.3', dependencies: { react: '19.1.1' } }), (error) => error.code === 'entry_incompatible' && error.details.errors.some((item) => item.code === 'dependency_incompatible'))
     assert.throws(() => instance.selectEntry('range-malformed', { nodeVersion: '20.2.3', dependencies: { react: '20.2.3' } }), (error) => error.code === 'entry_incompatible' && error.details.errors.some((item) => item.code === 'dependency_range_malformed'))
     assert.throws(() => instance.selectEntry('range-unsupported', { nodeVersion: '20.2.3', dependencies: { react: '20.2.3' } }), (error) => error.code === 'entry_incompatible' && error.details.errors.some((item) => item.code === 'dependency_range_unsupported'))

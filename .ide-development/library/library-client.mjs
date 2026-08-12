@@ -285,6 +285,7 @@ function bound(version, inclusive) {
 
 function intersectBounds(current, next, lower) {
   if (!current) return next
+  if (!next) return current
   const comparison = compareVersions(current.version, next.version)
   if ((lower && comparison < 0) || (!lower && comparison > 0)) return next
   if (comparison !== 0) return current
