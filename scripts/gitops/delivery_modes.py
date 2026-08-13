@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Configurable delivery modes: issue-pr (default) vs phase-integration.
+"""Configurable delivery modes: issue-pr compatibility and Phase integration.
 
 Pure helpers for Packager discover and Phase fixtures. Checkpoint pushes never
 open PRs. Risk-class Issue PR exceptions are explicit under phase-integration.
@@ -17,6 +17,7 @@ from typing import Any, Callable
 MODE_ISSUE_PR = "issue-pr"
 MODE_PHASE_INTEGRATION = "phase-integration"
 DEFAULT_DELIVERY_MODE = MODE_ISSUE_PR
+RECOMMENDED_V2_DELIVERY_MODE = MODE_PHASE_INTEGRATION
 DEFAULT_PHASE_PREFIX = "phase/"
 
 CONFIG_REL = Path(".github/linktrend-delivery-mode.json")
@@ -59,6 +60,28 @@ class PrOpenDecision:
     open_pr: bool
     reason: str
     risk_class: str | None = None
+
+
+def recommended_v2_delivery_config() -> DeliveryConfig:
+    """Return the recommended new-install profile without changing v1 behavior.
+
+    Version-1/no-config consumers remain ``issue-pr``.  Installers creating a
+    complete v2 policy should use this profile unless the consumer explicitly
+    selects ``issue-pr``.
+    """
+
+    return DeliveryConfig(delivery_mode=RECOMMENDED_V2_DELIVERY_MODE)
+
+
+def effective_delivery_mode(config: DeliveryConfig, *, explicit_mode: str | None = None) -> str:
+    """Resolve a new-install recommendation while preserving explicit choice."""
+
+    selected = (explicit_mode or config.delivery_mode or "").strip()
+    if selected == MODE_ISSUE_PR:
+        return MODE_ISSUE_PR
+    if selected == MODE_PHASE_INTEGRATION:
+        return MODE_PHASE_INTEGRATION
+    return RECOMMENDED_V2_DELIVERY_MODE
 
 
 def normalize_sha(value: str | None) -> str:
@@ -110,32 +133,10 @@ def load_delivery_config(
     *,
     env: dict[str, str] | None = None,
 ) -> DeliveryConfig:
-    """Resolve delivery mode: env override, then config file, else issue-pr."""
-    environ = env if env is not None else os.environ
-    raw_mode = (environ.get("LINKTREND_DELIVERY_MODE") or "").strip()
-    prefix = DEFAULT_PHASE_PREFIX
-    mode = DEFAULT_DELIVERY_MODE
+    """Resolve and strictly validate v1/v2 delivery configuration."""
+    from coordinator.config import load_delivery_config as load_runtime_config
 
-    cfg_path = None
-    if repo_root is not None:
-        cfg_path = Path(repo_root) / CONFIG_REL
-    if cfg_path is not None and cfg_path.is_file():
-        try:
-            data = json.loads(cfg_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            data = None
-        if isinstance(data, dict):
-            file_mode = str(data.get("deliveryMode") or "").strip()
-            if file_mode in {MODE_ISSUE_PR, MODE_PHASE_INTEGRATION}:
-                mode = file_mode
-            file_prefix = str(data.get("phaseBranchPrefix") or "").strip()
-            if file_prefix:
-                prefix = file_prefix if file_prefix.endswith("/") else f"{file_prefix}/"
-
-    if raw_mode in {MODE_ISSUE_PR, MODE_PHASE_INTEGRATION}:
-        mode = raw_mode
-
-    return DeliveryConfig(delivery_mode=mode, phase_branch_prefix=prefix)
+    return load_runtime_config(repo_root, env=env)  # type: ignore[return-value]
 
 
 def should_open_pr_for_branch(
@@ -344,6 +345,13 @@ def build_phase_delivery_record(
     merge_sha: str | None = None,
     phase_pr: dict[str, Any] | None = None,
     risk_exception_issue_prs: list[dict[str, Any]] | None = None,
+    phase_id: str | None = None,
+    immutable_base_sha: str | None = None,
+    seal_revision: int | None = None,
+    sealed_sha: str | None = None,
+    candidate_identity: dict[str, Any] | None = None,
+    gate_results: dict[str, Any] | None = None,
+    stop_reason: str | None = None,
 ) -> dict[str, Any]:
     """Assemble a machine-readable Phase delivery record."""
     if not is_valid_sha(base_sha) or not is_valid_sha(head_sha):
@@ -367,6 +375,30 @@ def build_phase_delivery_record(
         record["phasePr"] = phase_pr
     if risk_exception_issue_prs:
         record["riskExceptionIssuePrs"] = risk_exception_issue_prs
+    # W2 lifecycle fields are optional so the W1 delivery-record shape remains
+    # readable.  The Integrator supplies them for Phase records it owns.
+    if phase_id is not None:
+        record["phaseId"] = phase_id
+    if immutable_base_sha is not None:
+        if not is_valid_sha(immutable_base_sha):
+            raise ValueError("immutable_base_sha must be a non-zero 40-hex SHA")
+        record["immutableBaseSha"] = normalize_sha(immutable_base_sha)
+    if seal_revision is not None:
+        if seal_revision not in {0, 1, 2}:
+            raise ValueError("seal_revision must be 0, 1, or 2")
+        record["sealRevision"] = seal_revision
+        record["sealedCandidateRevisions"] = seal_revision
+    if sealed_sha is not None:
+        if not is_valid_sha(sealed_sha):
+            raise ValueError("sealed_sha must be a non-zero 40-hex SHA")
+        record["sealedSha"] = normalize_sha(sealed_sha)
+        record["sealed"] = True
+    if candidate_identity is not None:
+        record["candidateIdentity"] = candidate_identity
+    if gate_results is not None:
+        record.update({key: value for key, value in gate_results.items() if key in {"fast", "bugbot", "full", "staging", "release"}})
+    if stop_reason is not None:
+        record["stopReason"] = stop_reason
     return record
 
 
@@ -374,14 +406,54 @@ def phase_ready_for_pr(accepted_issues: list[dict[str, Any]]) -> tuple[bool, str
     """True when every required Issue SHA is accepted and included on the Phase branch."""
     if len(accepted_issues) < 1:
         return False, "no_accepted_issues"
+    seen_issue_numbers: set[str] = set()
+    seen_branches: set[str] = set()
     for row in accepted_issues:
+        branch = str(row.get("branch") or "")
+        if branch in seen_branches:
+            return False, f"duplicate_issue:{branch}"
+        seen_branches.add(branch)
+        issue_match = re.match(r"^issue/([1-9][0-9]{0,8})-", branch)
+        if issue_match:
+            number = issue_match.group(1)
+            if number in seen_issue_numbers:
+                return False, f"duplicate_issue:{number}"
+            seen_issue_numbers.add(number)
         if not row.get("accepted"):
-            return False, f"issue_not_accepted:{row.get('branch')}"
+            return False, f"issue_not_accepted:{branch}"
         if not row.get("included"):
-            return False, f"issue_not_included:{row.get('branch')}"
+            return False, f"issue_not_included:{branch}"
         if not is_valid_sha(row.get("sha")):
-            return False, f"issue_sha_invalid:{row.get('branch')}"
+            return False, f"issue_sha_invalid:{branch}"
+        accepted_sha = row.get("acceptanceSha", row.get("acceptedSha"))
+        if accepted_sha is not None and normalize_sha(str(accepted_sha)) != normalize_sha(str(row.get("sha"))):
+            return False, f"acceptance_sha_mismatch:{branch}"
+        live_sha = row.get("liveSha", row.get("tipSha"))
+        if live_sha is not None and normalize_sha(str(live_sha)) != normalize_sha(str(row.get("sha"))):
+            return False, f"stale_issue_tip:{branch}"
     return True, "all_required_issues_accepted_and_included"
+
+
+def phase_draft_record_ready(record: dict[str, Any] | None, *, branch: str, head_sha: str, phase_branch_prefix: str = DEFAULT_PHASE_PREFIX) -> tuple[bool, str]:
+    """Validate an early visibility draft without admitting candidate gates."""
+
+    if not isinstance(record, dict):
+        return False, "phase_delivery_record_missing"
+    if record.get("schemaVersion") != 1 or record.get("deliveryMode") != MODE_PHASE_INTEGRATION:
+        return False, "phase_delivery_schema_or_mode_invalid"
+    if not is_phase_branch(branch, phase_branch_prefix):
+        return False, "phase_delivery_branch_prefix_mismatch"
+    if normalize_sha(str(record.get("phaseBranch") or "")) != branch:
+        return False, "phase_delivery_branch_mismatch"
+    if normalize_sha(str(record.get("headSha") or "")) != normalize_sha(head_sha):
+        return False, "phase_delivery_head_sha_mismatch"
+    accepted = record.get("acceptedIssues")
+    if not isinstance(accepted, list) or not accepted:
+        return False, "no_accepted_issues"
+    for row in accepted:
+        if not row.get("accepted") or not is_valid_sha(row.get("sha")):
+            return False, f"issue_not_accepted:{row.get('branch')}"
+    return True, "early_phase_draft"
 
 
 def validate_phase_delivery_record(

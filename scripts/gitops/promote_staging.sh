@@ -32,6 +32,10 @@ PROMOTE_PR_NUMBER="${PROMOTE_PR_NUMBER:-}"
 EXPECTED_PROMOTE_HEAD="${EXPECTED_PROMOTE_HEAD:-}"
 
 OUTCOME="${OUTCOME_FILE:-gitops-outcome.json}"
+RECEIPT_GATE="${SCRIPT_DIR}/promotion_receipt_gate.py"
+RECEIPT_PATH="${RECEIPT_PATH:-${LINKTREND_RECEIPT_PATH:-}}"
+RECEIPT_DEPENDENCY_FILES="${RECEIPT_DEPENDENCY_FILES:-}"
+COORDINATOR_RECEIPT_ROOT="${LINKTREND_COORDINATOR_RECEIPT_ROOT:-${HOME}/.linktrend/ide-coordinator/receipts}"
 
 
 repair_task_upsert() {
@@ -99,6 +103,31 @@ gh_retry() {
 
 write_out() {
   python3 "${SCRIPT_DIR}/write_outcome.py" --file "${OUTCOME}" --status "$1" --detail "$2"
+}
+
+receipt_identity_args() {
+  local raw dep
+  RECEIPT_IDENTITY_ARGS=()
+  raw="$(printf '%s' "${RECEIPT_DEPENDENCY_FILES}" | tr ',' '\n')"
+  while IFS= read -r dep; do
+    [ -n "${dep}" ] && RECEIPT_IDENTITY_ARGS+=(--dependency "${dep}")
+  done <<< "${raw}"
+}
+
+verify_receipt_before_mutation() {
+  local candidate_repo="$1"
+  local profile="${2:-full}"
+  if [ -z "${RECEIPT_PATH}" ] || [ ! -f "${RECEIPT_PATH}" ]; then
+    write_out "blocked" "promotion receipt missing; protected staging was not mutated"
+    return 1
+  fi
+  receipt_identity_args
+  python3 "${RECEIPT_GATE}" verify \
+    --receipt "${RECEIPT_PATH}" \
+    --repo "${candidate_repo}" \
+    --profile "${profile}" \
+    --gate full-gate \
+    "${RECEIPT_IDENTITY_ARGS[@]}"
 }
 
 if [ -z "${TOKEN}" ] || [ "${AUTOMATION_TOKEN_SOURCE:-}" != "github_token" ]; then
@@ -266,7 +295,7 @@ PROMOTE_BRANCH="promote/staging/${SHORT}"
 
 # If open PR already exists for this exact source/target pair, reevaluate it — do not rebuild
 existing_json="$(gh_retry gh pr list --base staging --state open --json number,headRefName,headRefOid,body)"
-exist_pr="$(echo "${existing_json}" | python3 -c '
+existing_prs="$(echo "${existing_json}" | python3 -c '
 import json,re,sys
 dev,stg=sys.argv[1],sys.argv[2]
 for r in json.load(sys.stdin):
@@ -274,10 +303,15 @@ for r in json.load(sys.stdin):
     if not m: continue
     meta=json.loads(m.group(1))
     if meta.get("sourceSha")==dev and meta.get("targetSha")==stg:
-        print(r["number"]); break
+        print(r["number"])
 ' "${DEV_SHA}" "${STG_SHA}" || true)"
-if [ -n "${exist_pr}" ]; then
-  PROMOTE_PR_NUMBER="${exist_pr}"
+existing_count="$(printf '%s\n' "${existing_prs}" | sed '/^$/d' | wc -l | tr -d ' ')"
+if [ "${existing_count}" -gt 1 ]; then
+  write_out "blocked" "duplicate staging promotion candidates: ${existing_prs//$'\n'/, }"
+  exit 0
+fi
+if [ "${existing_count}" -eq 1 ]; then
+  PROMOTE_PR_NUMBER="$(printf '%s\n' "${existing_prs}" | sed -n '1p')"
   MODE=reevaluate
   reevaluate_exact "${PROMOTE_PR_NUMBER}"
 fi
@@ -285,7 +319,11 @@ fi
 START_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 START_SHA="$(git rev-parse HEAD)"
 WT="$(mktemp -d "${TMPDIR:-/tmp}/stg-promote.XXXXXX")"
-cleanup() { git worktree remove --force "${WT}" >/dev/null 2>&1 || rm -rf "${WT}"; }
+RECEIPT_IDENTITY_FILE="$(mktemp "${TMPDIR:-/tmp}/staging-identity.XXXXXX.json")"
+cleanup() {
+  git worktree remove --force "${WT}" >/dev/null 2>&1 || rm -rf "${WT}"
+  rm -f "${RECEIPT_IDENTITY_FILE}"
+}
 trap cleanup EXIT
 
 git worktree add --detach "${WT}" origin/staging >/dev/null
@@ -307,6 +345,15 @@ if ! git -C "${WT}" merge --no-ff origin/development -m "chore(promote): merge d
 fi
 
 CANDIDATE="$(git -C "${WT}" rev-parse HEAD)"
+CANDIDATE_TREE="$(git -C "${WT}" rev-parse HEAD^{tree})"
+if [ -z "${RECEIPT_PATH}" ]; then
+  RECEIPT_PATH="${COORDINATOR_RECEIPT_ROOT}/${CANDIDATE_TREE}-full-gate.json"
+fi
+receipt_identity_args
+python3 "${SCRIPT_DIR}/gate_receipt.py" identity \
+  --repo "${WT}" --profile full \
+  "${RECEIPT_IDENTITY_ARGS[@]}" >"${RECEIPT_IDENTITY_FILE}"
+verify_receipt_before_mutation "${WT}" full || exit 0
 git -C "${WT}" push -u origin "HEAD:refs/heads/${PROMOTE_BRANCH}"
 
 MARKER="$(marker_json "${DEV_SHA}" "${STG_SHA}" "${CANDIDATE}" "${PROMOTE_BRANCH}")"
