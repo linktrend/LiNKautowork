@@ -1,0 +1,4 @@
+import { describe, expect, it } from 'vitest';
+import { transitionProviderRun } from '../src/services/provider-lifecycle.js';
+const base = { current: 'queued', next: 'running', expectedVersion: 1, actualVersion: 1, existingFingerprint: 'sha256:a', incomingFingerprint: 'sha256:a' };
+describe('provider lifecycle', () => { it('allows deterministic start', () => expect(transitionProviderRun(base)).toEqual({ replay: false })); it('fails closed for conflict, CAS, terminal and kill switch', () => { expect(() => transitionProviderRun({ ...base, incomingFingerprint: 'sha256:b' })).toThrow(/idempotency/); expect(() => transitionProviderRun({ ...base, actualVersion: 2 })).toThrow(/expected/); expect(() => transitionProviderRun({ ...base, current: 'succeeded' })).toThrow(/terminal/); expect(() => transitionProviderRun({ ...base, killSwitch: true })).toThrow(/kill/); }); });
