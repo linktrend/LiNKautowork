@@ -2480,7 +2480,7 @@
       "id": "workflow-linktrend-integrator-merge-yml",
       "ownershipClass": "managed-core",
       "source": "core/github/managed-workflows/linktrend-integrator-merge.yml",
-      "sourceHash": "sha256:a10d84081dcd9accf647100d614b8c1a1219426f7eab0e97031bdfe39e024f32",
+      "sourceHash": "sha256:ace8f1a4970d97eba0d45d7cfbbc53c0e1c57ff79fb1454768733ea3655d4336",
       "destination": ".ide-development/workflows/linktrend-integrator-merge.yml",
       "mode": "0644",
       "platform": "github",

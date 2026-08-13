@@ -201,7 +201,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: linktrend-full-suite-receipt-${{ github.event.pull_request.number }}-${{ github.run_id }}
+          name: linktrend-full-suite-receipt-${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}-${{ github.run_id }}
           path: |
             full-suite-receipt.json
             full-suite-summary.txt
@@ -218,7 +218,7 @@ jobs:
       pull-requests: write
     env:
       GH_TOKEN: ${{ github.token }}
-      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
     steps:
       - name: Request Bugbot once for the sealed candidate
         run: |
