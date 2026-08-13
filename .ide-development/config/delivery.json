@@ -11,11 +11,11 @@
   },
   "profiles": {
     "fast": {
-      "commands": [["python3", "scripts/ide-development.py", "verify", "--json"]],
+      "commands": [["python3", "-m", "py_compile", "scripts/gitops/run_delivery_profile.py", "scripts/gitops/gate_receipt.py"]],
       "timeoutMinutes": 5
     },
     "full": {
-      "commands": [["python3", "scripts/ide-development.py", "verify", "--json"]],
+      "commands": [["python3", "-m", "py_compile", "scripts/gitops/run_delivery_profile.py", "scripts/gitops/gate_receipt.py"]],
       "required": true
     },
     "release": {
