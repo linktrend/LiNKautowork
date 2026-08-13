@@ -128,7 +128,6 @@ verify_receipt_before_mutation() {
     --receipt "${RECEIPT_PATH}" \
     --repo "${candidate_repo}" \
     --profile "${profile}" \
-    --profile-file .github/linktrend-delivery-mode.json \
     --gate full-gate \
     ${RECEIPT_IDENTITY_ARGS[@]+"${RECEIPT_IDENTITY_ARGS[@]}"}
 }
@@ -356,7 +355,6 @@ fi
 receipt_identity_args
 python3 "${SCRIPT_DIR}/gate_receipt.py" identity \
   --repo "${WT}" --profile full \
-  --profile-file .github/linktrend-delivery-mode.json \
   ${RECEIPT_IDENTITY_ARGS[@]+"${RECEIPT_IDENTITY_ARGS[@]}"} >"${RECEIPT_IDENTITY_FILE}"
 verify_receipt_before_mutation "${WT}" full || exit 0
 git -C "${WT}" push -u origin "HEAD:refs/heads/${PROMOTE_BRANCH}"

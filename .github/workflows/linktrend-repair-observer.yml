@@ -1,0 +1,79 @@
+name: LiNKtrend Repair Observer
+
+# Observes LiNKautowork CI / Branch Source Policy / Cursor Bugbot lifecycle events and
+# maintains durable repair tasks with the built-in least-privilege workflow token.
+# Does NOT spawn Cursor.
+#
+# Trust boundary:
+#   - checkout repository default branch only (never PR head)
+#   - durable repair mutations use the job-scoped built-in token
+#   - repair_observer.py proves current PR/branch head before resolving
+# Profiles: github-actions preserves the event-driven fallback below; local-coordinator
+# is rendered with bounded manual recovery only.
+# Frozen coordinator contexts: Linktrend Coordinator and the named gate contexts;
+# external Cursor Bugbot is unchanged.
+
+on:
+  workflow_run: # zizmor: ignore[dangerous-triggers] trusted default-branch observer; consumes status metadata and never executes candidate code
+    workflows:
+      - LiNKautowork CI
+      - Branch Source Policy
+    types: [completed]
+  check_run:
+    types: [completed]
+
+permissions: {}
+
+concurrency:
+  group: linktrend-repair-observer-${{ github.event.workflow_run.head_sha || github.event.check_run.head_sha || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  observe:
+    name: Observe repair lifecycle
+    if: >
+      (
+        github.event_name == 'workflow_run' &&
+        (
+          github.event.workflow_run.conclusion == 'failure' ||
+          github.event.workflow_run.conclusion == 'success'
+        ) &&
+        (
+          github.event.workflow_run.name == 'LiNKautowork CI' ||
+          github.event.workflow_run.name == 'Branch Source Policy'
+        )
+      ) ||
+      (
+        github.event_name == 'check_run' &&
+        github.event.check_run.name == 'Cursor Bugbot' &&
+        (
+          github.event.check_run.conclusion == 'failure' ||
+          github.event.check_run.conclusion == 'success' ||
+          github.event.check_run.conclusion == 'neutral'
+        )
+      )
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+    steps:
+      - name: Checkout trusted default branch only
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - name: Observe repair lifecycle
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+          LINKTREND_CI_WORKFLOW_NAME: LiNKautowork CI
+          LINKTREND_BRANCH_POLICY_WORKFLOW_NAME: Branch Source Policy
+          LINKTREND_BUGBOT_CHECK_NAME: Cursor Bugbot
+        run: |
+          set -euo pipefail
+          python3 scripts/gitops/repair_observer.py handle-event --event-path "$GITHUB_EVENT_PATH" --repo "$GITHUB_REPOSITORY"

@@ -65,8 +65,8 @@ jobs:
           }
           actual="$(git rev-parse HEAD)"
           test "${actual}" = "${live}" || { echo "full_suite_stale_seal: live=${live} actual=${actual}"; exit 1; }
-          fast="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?event=pull_request&head_sha=${live}&per_page=100" --jq '[.workflow_runs[] | select(.name == "Linktrend Fast Checks" and .conclusion == "success")] | length')"
-          test "${fast}" -gt 0 || { echo "full_suite_fast_check_missing_for_exact_head"; exit 1; }
+          python3 scripts/gitops/require_exact_ci_success.py \
+            --repository "${GITHUB_REPOSITORY}" --head "${live}" --config-key fastWorkflowName
           tree="$(git rev-parse 'HEAD^{tree}')"
           derived="$(python3 - "${GITHUB_REPOSITORY}" "${live_branch}" "${live}" "${tree}" <<'PY'
           import hashlib
@@ -118,9 +118,8 @@ jobs:
           set -euo pipefail
           git diff --check
           python3 scripts/gitops/run_delivery_profile.py full
-          ci_name="$(python3 -c 'import json; print(json.load(open(".github/linktrend-gitops-consumer.json"))["ciWorkflowName"])')"
-          successes="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?event=pull_request&head_sha=${EXPECTED_HEAD}&per_page=100" | jq --arg name "${ci_name}" '[.workflow_runs[] | select(.name == $name and .conclusion == "success")] | length')"
-          test "${successes}" -gt 0 || { echo "full_suite_required_ci_missing_for_exact_head=${EXPECTED_HEAD} workflow=${ci_name}"; exit 1; }
+          python3 scripts/gitops/require_exact_ci_success.py \
+            --repository "${GITHUB_REPOSITORY}" --head "${EXPECTED_HEAD}"
 
       - name: Write exact full-suite receipt
         if: success()
@@ -148,13 +147,16 @@ jobs:
           started, completed = __import__("sys").argv[1:]
           from scripts.gitops.run_delivery_profile import load_profile
           config_path, commands = load_profile(Path.cwd(), "full")
-          ci_name = json.loads(Path(".github/linktrend-gitops-consumer.json").read_text())["ciWorkflowName"]
-          commands = commands + [["require-successful-workflow", ci_name]]
+          checks = json.loads(Path(".github/linktrend-gitops-consumer.json").read_text())
+          commands = commands + [
+              ["require-successful-workflow", checks["fastWorkflowName"]],
+              ["require-successful-workflow", checks["ciWorkflowName"]],
+          ]
           identity = compute_candidate_identity(
               Path("."),
               [],
               "full",
-              profile_files=[".github/linktrend-delivery-mode.json"],
+              profile_files=[str(config_path.relative_to(Path.cwd()))],
               source_branch=os.environ["SOURCE_BRANCH"],
           )
           summary = Path("full-suite-summary.txt")

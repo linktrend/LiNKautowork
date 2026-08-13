@@ -108,7 +108,6 @@ jobs:
             --receipt receipt-artifact/full-suite-receipt.json \
             --repo "${candidate_dir}" \
             --profile full \
-            --profile-file .github/linktrend-delivery-mode.json \
             --workflow-run-id "${RECEIPT_RUN_ID}" \
             --gate full-gate
           echo "Linktrend Receipt Gate passed: exact tree/dependency/profile/workflow identity reused; no full suite rerun."
