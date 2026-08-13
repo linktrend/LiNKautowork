@@ -100,7 +100,7 @@ if [ -z "${pr}" ]; then
   exit 0
 fi
 
-meta="$(gh pr view "${pr}" --json baseRefName,isDraft,state,headRefOid,mergeable)"
+meta="$(gh pr view "${pr}" --json baseRefName,isDraft,state,headRefOid,headRefName,mergeable)"
 echo "${meta}" | jq -e '.baseRefName=="development" and .isDraft==false and .state=="OPEN"' >/dev/null \
   || {
     write_result "blocked" "PR #${pr} is not an open non-draft development PR" "${pr}" "$(echo "${meta}" | jq -r .headRefOid)"
@@ -129,7 +129,7 @@ if [ "${head_sha}" != "${reviewed}" ]; then
 fi
 
 mergeable="$(echo "${meta}" | jq -r .mergeable)"
-if [ "${mergeable}" = "CONFLICTING" ]; then
+if [ "${mergeable}" != "MERGEABLE" ]; then
   head_ref="$(echo "${meta}" | jq -r .headRefName)"
   python3 "${SCRIPT_DIR}/repair_task.py" upsert \
     --repo "${GH_REPO}" \
@@ -139,7 +139,7 @@ if [ "${mergeable}" = "CONFLICTING" ]; then
     --head-sha "${head_sha}" \
     --next-action "Resolve merge conflict on PR #${pr}; Lisa may dispatch ordinary repair." \
     >/dev/null || true
-  write_result "blocked" "PR #${pr}: conflict_blocked" "${pr}" "${head_sha}"
+  write_result "blocked" "PR #${pr}: conflict_or_mergeability_unproven:${mergeable}" "${pr}" "${head_sha}"
   post_check "blocked" "merge conflict" "${head_sha}"
   exit 0
 fi
@@ -182,6 +182,29 @@ print(json.dumps({"status":status,"detail":detail}))
       write_result "skipped" "head changed before merge" "${pr}" "${live_head}"
       post_check "skipped" "head changed before merge" "${live_head}"
       exit 0
+    fi
+    head_ref="$(echo "${meta}" | jq -r .headRefName)"
+    phase_prefix="${LINKTREND_PHASE_BRANCH_PREFIX:-phase/}"
+    if [[ "${head_ref}" == "${phase_prefix}"* ]]; then
+      # Phase merges require the exact sealed record, including full-gate
+      # success or an explicit repository-level not-required result.  The
+      # record is read at the live head; it is never taken from the event.
+      phase_record_file="$(mktemp)"
+      phase_record_cleanup() { rm -f "${phase_record_file}"; }
+      trap phase_record_cleanup EXIT
+      if ! gh api "repos/${GH_REPO}/contents/.linktrend/phase-delivery-record.json?ref=${head_sha}" \
+        --jq '.content' | base64 --decode >"${phase_record_file}" 2>/dev/null; then
+        write_result "blocked" "PR #${pr}: phase_record_missing" "${pr}" "${head_sha}"
+        post_check "blocked" "Phase record missing" "${head_sha}"
+        exit 0
+      fi
+      phase_gate_json="$(python3 "${SCRIPT_DIR}/phase_integrator.py" eligible "${phase_record_file}" "${head_sha}" 2>/dev/null || true)"
+      if [ "$(echo "${phase_gate_json}" | jq -r '.eligible // false')" != "true" ]; then
+        phase_detail="$(echo "${phase_gate_json}" | jq -r '.detail // "phase_candidate_not_eligible"')"
+        write_result "blocked" "PR #${pr}: ${phase_detail}" "${pr}" "${head_sha}"
+        post_check "blocked" "Phase candidate not eligible: ${phase_detail}" "${head_sha}"
+        exit 0
+      fi
     fi
     if gh pr merge "${pr}" --squash --auto || gh pr merge "${pr}" --squash; then
       write_result "merged" "PR #${pr} merged at ${head_sha}" "${pr}" "${head_sha}"

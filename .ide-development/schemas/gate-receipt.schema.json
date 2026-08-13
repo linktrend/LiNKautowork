@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/gate-receipt.schema.json",
+  "title": "LiNKtrend exact-content gate receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "status",
+    "repository",
+    "gate",
+    "sourceSha",
+    "testedCheckoutSha",
+    "gitTreeSha",
+    "dependencyDigests",
+    "testProfile",
+    "attempt",
+    "coordinatorVersion",
+    "startedAt",
+    "completedAt",
+    "evidenceDigests",
+    "github"
+  ],
+  "properties": {
+    "schemaVersion": {"type": "integer", "const": 1},
+    "status": {"type": "string", "const": "passed"},
+    "repository": {"type": "string", "pattern": "^[^/\\s]+/[^/\\s]+$"},
+    "gate": {
+      "type": "string",
+      "enum": ["fast-gate", "full-gate", "staging-gate", "release-gate"]
+    },
+    "sourceSha": {"$ref": "#/$defs/sha"},
+    "testedCheckoutSha": {"$ref": "#/$defs/sha"},
+    "gitTreeSha": {"$ref": "#/$defs/sha"},
+    "dependencyDigests": {
+      "type": "object",
+      "propertyNames": {"$ref": "#/$defs/repoRelativePath"},
+      "additionalProperties": {"$ref": "#/$defs/digest"}
+    },
+    "testProfile": {"type": "string", "enum": ["fast", "full", "release"]},
+    "attempt": {"type": "integer", "minimum": 1},
+    "coordinatorVersion": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$"
+    },
+    "startedAt": {"$ref": "#/$defs/rfc3339Utc"},
+    "completedAt": {"$ref": "#/$defs/rfc3339Utc"},
+    "evidenceDigests": {
+      "type": "object",
+      "propertyNames": {"$ref": "#/$defs/repoRelativePath"},
+      "additionalProperties": {"$ref": "#/$defs/digest"}
+    },
+    "github": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pullRequest", "runUrl"],
+      "properties": {
+        "pullRequest": {"type": ["integer", "null"], "minimum": 1},
+        "runUrl": {"type": ["string", "null"]}
+      }
+    },
+    "workerId": {"type": ["string", "null"], "minLength": 1},
+    "workerCapabilities": {
+      "type": "array",
+      "items": {"type": "string", "enum": ["fast", "heavy", "nestedDocker"]},
+      "uniqueItems": true
+    },
+    "workerTrust": {"type": ["string", "null"], "enum": ["isolated-candidate", null]},
+    "coordinatorIdentity": {"type": ["string", "null"], "minLength": 1},
+    "executionEnvironment": {"type": "object", "additionalProperties": true}
+  },
+  "$defs": {
+    "sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "repoRelativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/|\\\\)(?!.*\\.\\.(?:/|\\\\|$))(?!.*:)[A-Za-z0-9._@+, -]+(?:/[A-Za-z0-9._@+, -]+)*$"
+    },
+    "rfc3339Utc": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?Z$"
+    }
+  }
+}
