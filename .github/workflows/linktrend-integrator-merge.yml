@@ -8,6 +8,16 @@ on:
   pull_request:
     branches: [development]
     types: [labeled]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Existing same-repository Phase PR number for canary-only Full"
+        required: true
+        type: string
+      expected_head:
+        description: "Exact 40-character Phase PR head for canary-only Full"
+        required: true
+        type: string
 
 permissions: {}
 
@@ -19,9 +29,8 @@ jobs:
   full:
     name: Linktrend Full Suite
     if: >-
-      github.event.label.name == 'linktrend-full-suite' &&
-      startsWith(github.event.pull_request.head.ref, 'phase/') &&
-      github.event.pull_request.head.repo.full_name == github.repository
+      (github.event_name == 'workflow_dispatch' || github.event.label.name == 'linktrend-full-suite') &&
+      (github.event_name == 'workflow_dispatch' || (startsWith(github.event.pull_request.head.ref, 'phase/') && github.event.pull_request.head.repo.full_name == github.repository))
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 60
     permissions:
@@ -29,9 +38,9 @@ jobs:
       pull-requests: read
       actions: read
     env:
-      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
       EXPECTED_SOURCE_BRANCH: ${{ github.event.pull_request.head.ref }}
-      EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+      EXPECTED_HEAD: ${{ github.event_name == 'workflow_dispatch' && inputs.expected_head || github.event.pull_request.head.sha }}
     steps:
       - name: Capture start time
         id: clock
@@ -53,6 +62,8 @@ jobs:
           live="$(jq -r .head.sha <<<"${pr}")"
           live_branch="$(jq -r .head.ref <<<"${pr}")"
           live_repo="$(jq -r .head.repo.full_name <<<"${pr}")"
+          [[ "${PR_NUMBER}" =~ ^[1-9][0-9]*$ ]] || { echo "full_suite_canary_pr_invalid"; exit 1; }
+          [[ "${EXPECTED_HEAD}" =~ ^[0-9a-f]{40}$ ]] || { echo "full_suite_canary_head_invalid"; exit 1; }
           case "${live_branch}" in phase/*) ;; *) echo "full_suite_requires_phase_branch=${live_branch}"; exit 1;; esac
           test "${EXPECTED_SOURCE_BRANCH}" = "${live_branch}" || {
             echo "full_suite_source_branch_mismatch: expected=${EXPECTED_SOURCE_BRANCH} live=${live_branch}"; exit 1;
