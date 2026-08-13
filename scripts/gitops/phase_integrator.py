@@ -19,17 +19,17 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-try:  # Script execution puts scripts/gitops on sys.path; unittest uses package imports.
-    from coordinator.state import CandidateIdentity
-    from delivery_modes import (
+try:  # Prefer the package path so unittest and CLI share one class identity.
+    from scripts.gitops.coordinator.state import CandidateIdentity
+    from scripts.gitops.delivery_modes import (
         DEFAULT_PHASE_PREFIX,
         MODE_PHASE_INTEGRATION,
         is_valid_sha,
         normalize_sha,
     )
 except ModuleNotFoundError:  # pragma: no cover - exercised by package-style tests
-    from scripts.gitops.coordinator.state import CandidateIdentity
-    from scripts.gitops.delivery_modes import (
+    from coordinator.state import CandidateIdentity
+    from delivery_modes import (
         DEFAULT_PHASE_PREFIX,
         MODE_PHASE_INTEGRATION,
         is_valid_sha,
@@ -190,7 +190,7 @@ def _digest_set(identity: CandidateIdentity) -> str:
 
 
 def candidate_identity_for(
-    *, repository: str, source_sha: str, git_tree_sha: str, dependency_digests: Mapping[str, str], test_profile: str = "fast"
+    *, repository: str, source_sha: str, git_tree_sha: str, dependency_digests: Mapping[str, str], test_profile: str = "full"
 ) -> CandidateIdentity:
     return CandidateIdentity(repository, normalize_sha(source_sha), normalize_sha(git_tree_sha), dict(dependency_digests), test_profile)
 
@@ -202,6 +202,7 @@ def invalidate_candidate_gates(record: Mapping[str, Any], *, old_head_sha: str, 
     result["headSha"] = normalize_sha(new_head_sha)
     result["sealed"] = False
     result["candidateIdentity"] = None
+    result["candidateId"] = None
     result["sealedSha"] = None
     result["sealRevision"] = result.get("sealRevision", result.get("sealedCandidateRevisions", 0))
     result["invalidatedFromSha"] = normalize_sha(old_head_sha)
@@ -235,6 +236,49 @@ def phase_bugbot_request_allowed(record: Mapping[str, Any], *, live_head_sha: st
     if bugbot.get("status") in {"requested", "passed"}:
         return False, "bugbot_already_requested"
     return True, "current_sealed_fast_pass"
+
+
+def phase_full_suite_dispatch_allowed(
+    record: Mapping[str, Any], *, live_head_sha: str, pr_number: int
+) -> tuple[bool, str, dict[str, str] | None]:
+    """Build the only valid Full Suite dispatch for the current sealed head.
+
+    The caller still performs the explicit GitHub dispatch.  Keeping the
+    decision pure makes it testable and prevents a draft or superseded head
+    from waking the expensive workflow.  Bugbot is requested by the Full Suite
+    workflow after the receipt succeeds, so both actions remain final-candidate
+    only without introducing a second trigger path.
+    """
+
+    allowed, detail = phase_bugbot_request_allowed(record, live_head_sha=live_head_sha)
+    if not allowed:
+        return False, detail, None
+    if not isinstance(pr_number, int) or isinstance(pr_number, bool) or pr_number < 1:
+        return False, "invalid_pr_number", None
+    full = record.get("full") if isinstance(record.get("full"), Mapping) else {}
+    if full.get("status") in {"requested", "running", "passed"}:
+        return False, "full_suite_already_requested", None
+    try:
+        prior_attempt = int(full.get("attempt") or 0)
+    except (TypeError, ValueError):
+        return False, "full_suite_attempt_invalid", None
+    if prior_attempt >= 2:
+        return False, "full_suite_attempt_limit", None
+    candidate_id = str(record.get("candidateId") or "").strip()
+    if not re.fullmatch(r"sha256:[0-9a-f]{64}", candidate_id):
+        return False, "candidate_id_missing", None
+    head = normalize_sha(live_head_sha)
+    revision = str(record.get("sealRevision") or record.get("sealedCandidateRevisions") or "")
+    if revision not in {"1", "2"}:
+        return False, "invalid_seal_revision", None
+    return True, "current_sealed_candidate", {
+        "pr_number": str(pr_number),
+        "source_branch": str(record.get("phaseBranch") or ""),
+        "head_sha": head,
+        "candidate_id": candidate_id,
+        "seal_revision": revision,
+        "attempt": str(prior_attempt + 1),
+    }
 
 
 def phase_merge_eligibility(
@@ -356,6 +400,7 @@ class PhaseIntegrator:
             "sealRevision": 0,
             "sealedCandidateRevisions": 0,
             "sealedSha": None,
+            "candidateId": None,
             "candidateIdentity": None,
             "fast": {"status": "not-run"},
             "bugbot": {"status": "not-run"},
@@ -508,6 +553,8 @@ class PhaseIntegrator:
         candidate = candidate_identity if isinstance(candidate_identity, CandidateIdentity) else CandidateIdentity.from_dict(candidate_identity)
         if normalize_sha(candidate.source_sha) != head:
             raise PhaseLifecycleError("candidate_head_mismatch", "candidate sourceSha must equal sealed Phase head")
+        if candidate.test_profile != "full":
+            raise PhaseLifecycleError("candidate_profile_mismatch", "sealed candidate identity must use the full test profile")
         revisions = int(record.get("sealRevision", record.get("sealedCandidateRevisions", 0)) or 0)
         if revisions >= 2:
             raise PhaseLifecycleError("third_seal", "a third sealed candidate requires principal authorization")
@@ -519,6 +566,7 @@ class PhaseIntegrator:
         record["sealRevision"] = revisions + 1
         record["sealedCandidateRevisions"] = revisions + 1
         record["sealedSha"] = head
+        record["candidateId"] = "sha256:" + _digest_set(candidate)
         record["candidateIdentity"] = candidate.to_dict()
         record["namedGateEvidence"] = {"gate": "fast-gate", "sha": head, "status": "missing", "detail": "sealed_candidate", "checks": []}
         return self._write(record)

@@ -7,7 +7,7 @@
 
 ## Purpose
 
-`core/managed-core/` is the **system-source package root** for the portable IDE Development v2 managed core, including the shared streamlined-delivery coordinator interfaces.
+`core/managed-core/` is the **system-source package root** for the portable IDE Development v2 managed core, including the shared GitHub-hosted Phase delivery interfaces.
 
 When installed into a consumer repository, the committed package root is `.ide-development/`.
 This directory is the authoring source inside the IDE Development system repository. It is **not** a nested install of IDE Development into itself.
@@ -18,8 +18,9 @@ This directory is the authoring source inside the IDE Development system reposit
 core/managed-core/
   README.md                 # this file
   INDEX.yaml                # discovery index
-  VERSION                   # package semver (2.2.0 target)
+  VERSION                   # package semver (2.3.0 target)
   MANIFEST.json             # live install set (built by scripts/ide_development/build_manifest.py)
+  config/                   # versioned hosted delivery defaults; commands remain consumer-owned
   schemas/                  # authoritative JSON Schemas
   examples/                 # minimal valid examples for focused validation
   content/                  # managed content payload (doctrine/skills/…)
@@ -59,6 +60,7 @@ core/managed-core/
 - Physical files by default; no absolute/external/checkout-to-checkout symlinks.
 - No credentials, tokens, or absolute host checkout paths in package payloads.
 - No Claude / `.claude` / root `CLAUDE.md` surfaces in this package.
+- No custom App, self-hosted runner, Mac coordinator, or host installer is installable from this package.
 - Unknown conflicts fail closed.
 - Supersession removals require exact reviewed identity + hash match.
 

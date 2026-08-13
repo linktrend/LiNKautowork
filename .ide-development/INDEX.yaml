@@ -1,6 +1,6 @@
 # Managed-core discovery index
-version: "2.2.0"
-status: v2-streamlined-delivery
+version: "2.3.0"
+status: v2-github-hosted-phase-delivery
 contract: docs/contracts/MANAGED-CORE-V2.md
 adr: docs/adr/0004-portable-managed-core-v2.md
 package_root_consumer: ".ide-development"
@@ -14,14 +14,19 @@ schemas:
   - schemas/release-candidate.schema.json
   - schemas/release-candidate-checksums.schema.json
   - schemas/managed-core-release.schema.json
+  - schemas/candidate-lifecycle.schema.json
+  - schemas/external-state-fixture.schema.json
+  - schemas/external-state-plan.schema.json
+  - schemas/external-state-verify.schema.json
 examples:
   - examples/manifest.example.json
   - examples/installed-state.example.json
   - examples/transaction.example.json
 directories:
+  config: versioned GitHub-hosted delivery defaults
   content: managed content payload
   platforms: Cursor and Codex adapter sources (WP3)
-  migrations: reviewed supersession catalog (WP4) — canonical catalog.json
+  migrations: reviewed supersession catalog and redacted external cleanup plan
   migration: discovery alias pointer only (no duplicate catalog file)
   MANIFEST.json: live package manifest (deterministic builder)
 out_of_scope:

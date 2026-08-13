@@ -192,13 +192,6 @@ def is_allowed_work_branch(
     prefixes = (
         "issue/",
         phase,
-        "feature/",
-        "fix/",
-        "chore/",
-        "codex/",
-        "cursor/",
-        "antigravity/",
-        "dependabot/",
         "dev/",
     )
     return any(name.startswith(p) for p in prefixes)
