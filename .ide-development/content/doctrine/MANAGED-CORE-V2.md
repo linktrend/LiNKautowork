@@ -2,7 +2,7 @@
 
 **Status:** Active (Wave 1 — Issue #43; WP1–WP03 complete for stated scopes; WP04 consumer rollout prepared / not executed — Issue #72 status surface)
 **Date:** 2026-08-02
-**Package version target:** `2.3.3` (identity only; no tag/release claimed by packaging alone — RC archive proof + authorized publication)
+**Package version target:** `2.3.4` (identity only; no tag/release claimed by packaging alone — RC archive proof + authorized publication)
 **ADR:** `docs/adr/0004-portable-managed-core-v2.md`
 **Schemas:** `core/managed-core/schemas/`
 **Layout:** `core/managed-core/README.md`
@@ -38,7 +38,7 @@ This contract does **not** implement the installer, adapters, migration catalog 
 ```text
 <repo>/
   .ide-development/                 # committed physical managed package (required)
-    VERSION                         # package semver string, e.g. 2.3.3
+    VERSION                         # package semver string, e.g. 2.3.4
     MANIFEST.json                   # installed package manifest (copy)
     installed-state.json            # committed installed hashes (portable verify)
     content/                        # managed doctrine/skills/templates/...
@@ -89,7 +89,7 @@ Top-level required fields:
 |---|---|
 | `schemaVersion` | Manifest schema major version (`1`) |
 | `packageName` | Stable package id (`ide-development-managed-core`) |
-| `packageVersion` | Semver package version (`2.3.3`) |
+| `packageVersion` | Semver package version (`2.3.4`) |
 | `files` | Non-empty list of managed path entries |
 
 Each `files[]` item requires:

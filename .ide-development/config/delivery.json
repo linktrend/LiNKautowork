@@ -11,11 +11,11 @@
   },
   "profiles": {
     "fast": {
-      "commands": [],
+      "commands": [["python3", "scripts/ide-development.py", "verify", "--json"]],
       "timeoutMinutes": 5
     },
     "full": {
-      "commands": [],
+      "commands": [["python3", "scripts/ide-development.py", "verify", "--json"]],
       "required": true
     },
     "release": {

@@ -117,18 +117,10 @@ jobs:
         run: |
           set -euo pipefail
           git diff --check
-          if [ "${GITHUB_REPOSITORY}" = "linktrend/IDE-Development" ]; then
-            python3 -m unittest \
-              scripts.tests.test_candidate_lifecycle \
-              scripts.tests.test_gate_receipts \
-              scripts.tests.test_promotion_receipt_gate \
-              scripts.tests.test_phase_batch_lifecycle
-            bash scripts/tests/test-gitops-phase-delivery.sh
-          else
-            ci_name="$(python3 -c 'import json; print(json.load(open(".github/linktrend-gitops-consumer.json"))["ciWorkflowName"])')"
-            successes="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?event=pull_request&head_sha=${EXPECTED_HEAD}&per_page=100" | jq --arg name "${ci_name}" '[.workflow_runs[] | select(.name == $name and .conclusion == "success")] | length')"
-            test "${successes}" -gt 0 || { echo "consumer_full_suite_missing_for_exact_head=${EXPECTED_HEAD} workflow=${ci_name}"; exit 1; }
-          fi
+          python3 scripts/gitops/run_delivery_profile.py full
+          ci_name="$(python3 -c 'import json; print(json.load(open(".github/linktrend-gitops-consumer.json"))["ciWorkflowName"])')"
+          successes="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?event=pull_request&head_sha=${EXPECTED_HEAD}&per_page=100" | jq --arg name "${ci_name}" '[.workflow_runs[] | select(.name == $name and .conclusion == "success")] | length')"
+          test "${successes}" -gt 0 || { echo "full_suite_required_ci_missing_for_exact_head=${EXPECTED_HEAD} workflow=${ci_name}"; exit 1; }
 
       - name: Write exact full-suite receipt
         if: success()
@@ -154,13 +146,10 @@ jobs:
           )
 
           started, completed = __import__("sys").argv[1:]
-          commands = [
-              "python3 -m unittest scripts.tests.test_candidate_lifecycle scripts.tests.test_gate_receipts scripts.tests.test_promotion_receipt_gate scripts.tests.test_phase_batch_lifecycle",
-              "bash scripts/tests/test-gitops-phase-delivery.sh",
-          ]
-          if os.environ["GITHUB_REPOSITORY"] != "linktrend/IDE-Development":
-              config = json.loads(Path(".github/linktrend-gitops-consumer.json").read_text())
-              commands = [f"verify exact-head successful GitHub Actions workflow: {config['ciWorkflowName']}"]
+          from scripts.gitops.run_delivery_profile import load_profile
+          config_path, commands = load_profile(Path.cwd(), "full")
+          ci_name = json.loads(Path(".github/linktrend-gitops-consumer.json").read_text())["ciWorkflowName"]
+          commands = commands + [["require-successful-workflow", ci_name]]
           identity = compute_candidate_identity(
               Path("."),
               [],

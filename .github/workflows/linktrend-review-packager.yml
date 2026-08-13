@@ -55,15 +55,7 @@ jobs:
         run: |
           set -euo pipefail
           git diff --check
-          python3 -m py_compile \
-            scripts/gitops/phase_integrator.py \
-            scripts/gitops/coordinator/state.py \
-            scripts/gitops/coordinator/receipts.py \
-            scripts/gitops/promotion_receipt_gate.py
-          python3 -m unittest \
-            scripts.tests.test_candidate_lifecycle \
-            scripts.tests.test_gate_receipts \
-            scripts.tests.test_promotion_receipt_gate
+          python3 scripts/gitops/run_delivery_profile.py fast
 
       - name: Retain fast-check evidence
         if: always()
