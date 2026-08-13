@@ -1,0 +1,71 @@
+{
+  "schema_version": "0.1",
+  "automation_id": "ide-repository-status",
+  "display_name": "IDE Repository Status",
+  "summary": "Inactive manual n8n contract for bounded read-only repository-status and precheck metadata.",
+  "ownership": {
+    "owner_kind": "shared_internal",
+    "owning_program": "linkautowork",
+    "classification": "internal_only",
+    "binding_operations": [
+      "linkautowork.ide-repository-status"
+    ]
+  },
+  "release": {
+    "version": "1.0.0",
+    "channel": "development",
+    "lifecycle": "draft",
+    "identity": {
+      "package_digest": "sha256:12acc384669f0edd01e37897093466340816fbe4f13774d188235f8ac0f1d336",
+      "workflow_digest": "sha256:c9acb15b3aaab981945365d9dc248c99b118b96ec5e16ab89f2aa34587722c82",
+      "source_git_sha": "a06b9866664e775ad3c37c1f5e6155df727d828c",
+      "n8n_version": "2.30.0"
+    }
+  },
+  "runtime": {
+    "engine": "n8n",
+    "workflow_ref": "workflow.json",
+    "trigger_mode": "manual",
+    "result_mode": "none",
+    "approved_node_policy": "n8n-core-only-v0.1"
+  },
+  "contracts": {
+    "input_schema_ref": "contracts/input.schema.json",
+    "output_schema_ref": "contracts/output.schema.json",
+    "configuration_schema_ref": "contracts/configuration.schema.json",
+    "invocation_contract_version": "v1"
+  },
+  "secrets": [],
+  "execution_policy": {
+    "criticality": "low",
+    "side_effects": ["none"],
+    "approval": { "mode": "none", "evidence_required": true },
+    "retry": { "max_attempts": 0, "backoff": "none", "max_delay_seconds": 0 },
+    "idempotency": { "required": false, "key_location": "not_applicable" },
+    "kill_switch_scope": "instance"
+  },
+  "telemetry": {
+    "classification": "internal",
+    "redaction_rules": ["Do not retain input values beyond the redacted test fixture."],
+    "retention_days": 30,
+    "required_fields": ["org_id", "instance_id", "release_id", "execution_id", "status", "latency_ms", "retry_count", "failure_class"]
+  },
+  "evaluation": {
+    "suite_ref": "evals/suite.json",
+    "required_for_certification": true
+  },
+  "operations": {
+    "monitoring_ref": "operations/monitoring.json",
+    "maintenance_ref": "operations/maintenance.json",
+    "deployment_ref": "operations/deployment.json",
+    "runbook_ref": "operations/runbook.md"
+  },
+  "provenance": {
+    "sources_ref": "provenance/sources.json",
+    "commercial_use_clearance": "not_applicable"
+  },
+  "source_authority": {
+    "kind": "golden_automation_package",
+    "cutover_state": "package_authoritative"
+  }
+}

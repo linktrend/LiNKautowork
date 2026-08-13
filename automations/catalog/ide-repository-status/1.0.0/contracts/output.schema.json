@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.dev/schemas/linkautowork/ide-repository-status/output-v1.json",
+  "title": "IDE Repository Status Output v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "automation_id", "version", "operation_kinds", "side_effect_class", "repository_status", "precheck"],
+  "properties": {
+    "status": { "const": "ok" },
+    "automation_id": { "const": "ide-repository-status" },
+    "version": { "const": "1.0.0" },
+    "operation_kinds": { "const": "status_collection,precheck" },
+    "side_effect_class": { "const": "read_only" },
+    "repository_status": { "const": "bounded_metadata_only" },
+    "precheck": { "const": "read_only" }
+  }
+}

@@ -1,11 +1,13 @@
 import { createHmac, randomUUID } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { createApp, type AppDeps } from '../src/app.js';
 import type { AppEnv } from '../src/config/env.js';
 import { NonceStore } from '../src/lib/nonce-store.js';
 import { createAcceptedProviderReceipt, InMemoryProviderStore } from '../src/services/provider-store.js';
-import { ideRepositoryStatusCanaryDigests, ProviderRouteService } from '../src/services/provider-route-service.js';
+import { ideRepositoryStatusCanaryDigests, loadIdeRepositoryStatusPackage, ProviderRouteService } from '../src/services/provider-route-service.js';
 
 const ORG_A = '11111111-1111-4111-8111-111111111111'; const ORG_B = '22222222-2222-4222-8222-222222222222'; const DIGEST = ideRepositoryStatusCanaryDigests.definition; const CONFIG_DIGEST = ideRepositoryStatusCanaryDigests.configuration; const NOW = '2026-08-13T00:00:00.000Z';
 function token(org = ORG_A, service = 'ide-client') { const head = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url'); const claims = Buffer.from(JSON.stringify({ iss: 'platform-test', aud: 'lautowork', sub: 'caller', exp: Math.floor(Date.now() / 1000) + 3600, service, org_id: org, org_entitlements: [org] })).toString('base64url'); return `${head}.${claims}.${createHmac('sha256', 'test-secret').update(`${head}.${claims}`).digest('base64url')}`; }
@@ -13,6 +15,19 @@ function body(org = ORG_A) { return { contract_version: '2026-08-13.v1', protoco
 function fixture() { const env = { NODE_ENV: 'test', REPLAY_WINDOW_SECONDS: 60, serviceTokens: new Map([['ide-client', 'service-token']]), hmacSecrets: new Map(), PLATFORM_JWT_TEST_SECRET: 'test-secret', PLATFORM_JWT_ISSUER: 'platform-test', PLATFORM_JWT_AUDIENCE: 'lautowork' } as AppEnv; const store = new InMemoryProviderStore(); const app = createApp({ env, nonceStore: new NonceStore(60), providerRouteService: new ProviderRouteService(store) } as AppDeps); const headers = { 'x-link-service': 'ide-client', 'x-link-service-token': 'service-token', authorization: `Bearer ${token()}` }; return { app, store, headers }; }
 
 describe('provider HTTP routes', () => {
+  it('loads the exact inactive package and rejects any route metadata not bound to its checked-in identity', () => {
+    const loaded = loadIdeRepositoryStatusPackage();
+    const packageDir = resolve(process.cwd(), 'automations/catalog/ide-repository-status/1.0.0');
+    const workflow = JSON.parse(readFileSync(resolve(packageDir, 'workflow.json'), 'utf8')) as { active: boolean; nodes: Array<{ type: string; credentials?: unknown }> };
+    expect(loaded.manifest.automation_id).toBe('ide-repository-status');
+    expect((loaded.manifest.release as { version: string; lifecycle: string }).version).toBe('1.0.0');
+    expect((loaded.manifest.release as { version: string; lifecycle: string }).lifecycle).toBe('draft');
+    expect(ideRepositoryStatusCanaryDigests.definition).toBe(loaded.packageDigest);
+    expect(workflow.active).toBe(false);
+    expect(workflow.nodes.map((node) => node.type)).toEqual(['n8n-nodes-base.manualTrigger', 'n8n-nodes-base.set']);
+    expect(workflow.nodes.every((node) => node.credentials === undefined)).toBe(true);
+  });
+
   it('requires both internal-service and Platform authentication before compact discovery', async () => { const { app, headers } = fixture(); await request(app).get('/v1/provider/catalogue').expect(401); await request(app).get('/v1/provider/catalogue').set({ ...headers, authorization: 'Bearer forged' }).expect(401); const result = await request(app).get('/v1/provider/catalogue').set(headers).expect(200); expect(result.body.automations[0]).not.toHaveProperty('input_schema_ref'); expect(result.body.automations[0]).not.toHaveProperty('workflow'); expect(result.body.automations[0].automation.definition_digest).toBe(DIGEST); expect(DIGEST).not.toMatch(/^sha256:0+$/); });
   it('accepts a bounded exact request, replays it, exposes status and rejects changed content', async () => { const { app, headers } = fixture(); const input = body(); const first = await request(app).post('/v1/provider/requests').set(headers).send(input).expect(202); expect(first.body.status).not.toHaveProperty('input_ref'); const replay = await request(app).post('/v1/provider/requests').set(headers).send(input).expect(200); expect(replay.body.replay).toBe(true); await request(app).get(`/v1/provider/requests/${input.request_id}`).set(headers).expect(200); await request(app).post('/v1/provider/requests').set(headers).send({ ...input, input_ref: { ...input.input_ref, ref: 'ide://inputs/changed' } }).expect(409); });
   it('fails closed for payload organisation/capability/revocation override, unknown/latest/digest mismatch, private payloads, tenant reads, receipts and external assistance', async () => { const { app, headers } = fixture(); const input = body(); await request(app).post('/v1/provider/requests').set(headers).send({ ...input, platform: { ...input.platform, org_id: ORG_B } }).expect(403); await request(app).post('/v1/provider/requests').set(headers).send({ ...input, platform: { ...input.platform, capability: 'widened.capability' } }).expect(403); await request(app).post('/v1/provider/requests').set(headers).send({ ...input, platform: { ...input.platform, revocation_ref: 'platform://revocations/revoked' } }).expect(403); await request(app).get('/v1/provider/catalogue/ide-repository-status/versions/9.9.9').set(headers).expect(404); await request(app).get('/v1/provider/catalogue/ide-repository-status/versions/latest').set(headers).expect(404); await request(app).post('/v1/provider/requests').set(headers).send({ ...input, automation: { ...input.automation, definition_digest: `sha256:${'f'.repeat(64)}` } }).expect(403); await request(app).post('/v1/provider/requests').set(headers).send({ ...input, raw_payload: 'private source contents' }).expect(400); await request(app).post('/v1/provider/requests').set(headers).send({ ...input, operation_kind: 'external_assistance', brain_handoff_ref: { ref: 'brain://handoff/exact', digest: DIGEST, observed_at: NOW } }).expect(503); await request(app).post('/v1/provider/requests').set(headers).send(input).expect(202); await request(app).get(`/v1/provider/requests/${input.request_id}`).set({ ...headers, authorization: `Bearer ${token(ORG_B)}` }).expect(403); await request(app).get(`/v1/provider/requests/${input.request_id}/receipt`).set(headers).expect(404); });

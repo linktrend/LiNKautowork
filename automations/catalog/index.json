@@ -2,6 +2,27 @@
   "schema_version": "0.1",
   "catalogue_kind": "operator_metadata_index",
   "source_packages_root": "automations/catalog",
-  "release_count": 0,
-  "releases": []
+  "release_count": 1,
+  "releases": [
+    {
+      "automation_id": "ide-repository-status",
+      "version": "1.0.0",
+      "lifecycle": "draft",
+      "channel": "development",
+      "display_name": "IDE Repository Status",
+      "summary": "Inactive manual n8n contract for bounded read-only repository-status and precheck metadata.",
+      "owning_program": "linkautowork",
+      "classification": "internal_only",
+      "binding_operations": [
+        "linkautowork.ide-repository-status"
+      ],
+      "runtime": {
+        "engine": "n8n",
+        "n8n_version": "2.30.0"
+      },
+      "package_digest": "sha256:12acc384669f0edd01e37897093466340816fbe4f13774d188235f8ac0f1d336",
+      "workflow_digest": "sha256:c9acb15b3aaab981945365d9dc248c99b118b96ec5e16ab89f2aa34587722c82",
+      "path": "automations/catalog/ide-repository-status/1.0.0"
+    }
+  ]
 }
