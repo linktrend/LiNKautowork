@@ -1,77 +1,57 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://linktrend.local/managed-core/gate-receipt.schema.json",
-  "title": "LiNKtrend exact-content gate receipt",
+  "title": "LiNKtrend exact-content FullSuiteReceipt",
+  "description": "Schema version 1 receipts are migration-only and are not reusable.",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "schemaVersion",
-    "status",
-    "repository",
-    "gate",
-    "sourceSha",
-    "testedCheckoutSha",
-    "gitTreeSha",
-    "dependencyDigests",
-    "testProfile",
-    "attempt",
-    "coordinatorVersion",
+    "candidateIdentity",
+    "workflowRunId",
+    "workflowRunAttempt",
+    "runnerLabel",
     "startedAt",
     "completedAt",
+    "conclusion",
+    "commandDigest",
     "evidenceDigests",
-    "github"
+    "receiptDigest"
   ],
   "properties": {
-    "schemaVersion": {"type": "integer", "const": 1},
-    "status": {"type": "string", "const": "passed"},
-    "repository": {"type": "string", "pattern": "^[^/\\s]+/[^/\\s]+$"},
-    "gate": {
-      "type": "string",
-      "enum": ["fast-gate", "full-gate", "staging-gate", "release-gate"]
-    },
-    "sourceSha": {"$ref": "#/$defs/sha"},
-    "testedCheckoutSha": {"$ref": "#/$defs/sha"},
-    "gitTreeSha": {"$ref": "#/$defs/sha"},
-    "dependencyDigests": {
-      "type": "object",
-      "propertyNames": {"$ref": "#/$defs/repoRelativePath"},
-      "additionalProperties": {"$ref": "#/$defs/digest"}
-    },
-    "testProfile": {"type": "string", "enum": ["fast", "full", "release"]},
-    "attempt": {"type": "integer", "minimum": 1},
-    "coordinatorVersion": {
-      "type": "string",
-      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$"
-    },
+    "schemaVersion": {"type": "integer", "const": 2},
+    "candidateIdentity": {"$ref": "#/$defs/candidateIdentity"},
+    "workflowRunId": {"type": "integer", "minimum": 1},
+    "workflowRunAttempt": {"type": "integer", "minimum": 1},
+    "runnerLabel": {"type": "string", "enum": ["ubuntu-24.04-arm"]},
     "startedAt": {"$ref": "#/$defs/rfc3339Utc"},
     "completedAt": {"$ref": "#/$defs/rfc3339Utc"},
+    "conclusion": {"type": "string", "const": "success"},
+    "commandDigest": {"$ref": "#/$defs/digest"},
     "evidenceDigests": {
       "type": "object",
       "propertyNames": {"$ref": "#/$defs/repoRelativePath"},
       "additionalProperties": {"$ref": "#/$defs/digest"}
     },
-    "github": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["pullRequest", "runUrl"],
-      "properties": {
-        "pullRequest": {"type": ["integer", "null"], "minimum": 1},
-        "runUrl": {"type": ["string", "null"]}
-      }
-    },
-    "workerId": {"type": ["string", "null"], "minLength": 1},
-    "workerCapabilities": {
-      "type": "array",
-      "items": {"type": "string", "enum": ["fast", "heavy", "nestedDocker"]},
-      "uniqueItems": true
-    },
-    "workerTrust": {"type": ["string", "null"], "enum": ["isolated-candidate", null]},
-    "coordinatorIdentity": {"type": ["string", "null"], "minLength": 1},
-    "executionEnvironment": {"type": "object", "additionalProperties": true}
+    "receiptDigest": {"$ref": "#/$defs/digest"}
   },
   "$defs": {
     "sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
     "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "candidateIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "sourceBranch", "headCommit", "gitTree", "dependencyDigest", "profileDigest", "workflowDigest"],
+      "properties": {
+        "repository": {"type": "string", "pattern": "^[^/\\s]+/[^/\\s]+$"},
+        "sourceBranch": {"type": "string", "pattern": "^(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"},
+        "headCommit": {"$ref": "#/$defs/sha"},
+        "gitTree": {"$ref": "#/$defs/sha"},
+        "dependencyDigest": {"$ref": "#/$defs/digest"},
+        "profileDigest": {"$ref": "#/$defs/digest"},
+        "workflowDigest": {"$ref": "#/$defs/digest"}
+      }
+    },
     "repoRelativePath": {
       "type": "string",
       "minLength": 1,

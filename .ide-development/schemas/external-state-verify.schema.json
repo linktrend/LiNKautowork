@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/external-state-verify.schema.json",
+  "title": "IDE Development external-state verify (WP1 Lane C)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schemaVersion",
+    "mode",
+    "dryRun",
+    "repo",
+    "mutations",
+    "source",
+    "checks",
+    "summary",
+    "humanSummary"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "mode": { "type": "string", "const": "verify" },
+    "dryRun": { "type": "boolean", "const": true },
+    "applyRefused": { "type": "boolean", "const": true },
+    "repo": { "type": "string", "minLength": 1 },
+    "mutations": {
+      "type": "array",
+      "maxItems": 0,
+      "items": { "type": "object" }
+    },
+    "source": {
+      "type": "string",
+      "enum": ["dry-run", "fixture", "live"]
+    },
+    "statusContext": {
+      "type": "string",
+      "const": "Linktrend Review Ready"
+    },
+    "checks": {
+      "type": "array",
+      "items": { "$ref": "external-state-plan.schema.json#/$defs/checkRow" }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["ready", "requiredTotal"],
+      "properties": {
+        "ready": { "type": "boolean" },
+        "requiredTotal": { "type": "integer", "minimum": 0 },
+        "unproven": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "humanSummary": { "type": "string", "minLength": 1 },
+    "desired": {
+      "type": "array",
+      "items": { "$ref": "external-state-plan.schema.json#/$defs/desiredRow" }
+    },
+    "protectionPlan": { "type": "object" },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "error": { "type": "string" },
+    "exitCode": { "type": "integer" }
+  }
+}

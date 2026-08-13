@@ -147,6 +147,129 @@
         "resourceLimits": { "$ref": "#/$defs/resourceLimits" }
       }
     },
+    "hostedCommand": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "hostedProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commands"],
+      "properties": {
+        "commands": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/hostedCommand" }
+        },
+        "timeoutMinutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 60
+        }
+      }
+    },
+    "hostedFastProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commands", "timeoutMinutes"],
+      "properties": {
+        "commands": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/hostedCommand" }
+        },
+        "timeoutMinutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 60
+        }
+      }
+    },
+    "hostedFullProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commands", "required"],
+      "properties": {
+        "commands": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/hostedCommand" }
+        },
+        "required": { "type": "boolean" },
+        "timeoutMinutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 60
+        }
+      }
+    },
+    "hostedIdentity": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": ["repository", "gitTree", "dependencyDigest", "profileDigest", "workflowDigest"]
+      },
+      "allOf": [
+        { "contains": { "const": "repository" } },
+        { "contains": { "const": "gitTree" } },
+        { "contains": { "const": "dependencyDigest" } },
+        { "contains": { "const": "profileDigest" } },
+        { "contains": { "const": "workflowDigest" } }
+      ]
+    },
+    "hostedDeliveryConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "mode", "compute", "profiles", "promotion", "review"],
+      "properties": {
+        "schemaVersion": { "type": "integer", "const": 2 },
+        "mode": { "$ref": "#/$defs/deliveryModeId" },
+        "compute": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "provider", "runner", "checkpointCI", "cancelObsolete",
+            "maxInfrastructureAttempts", "maxSealedCandidates"
+          ],
+          "properties": {
+            "provider": { "type": "string", "const": "github-hosted" },
+            "runner": { "type": "string", "const": "ubuntu-24.04-arm" },
+            "checkpointCI": { "type": "boolean", "const": false },
+            "cancelObsolete": { "type": "boolean", "const": true },
+            "maxInfrastructureAttempts": { "type": "integer", "const": 2 },
+            "maxSealedCandidates": { "type": "integer", "const": 2 }
+          }
+        },
+        "profiles": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["fast", "full", "release"],
+          "properties": {
+            "fast": { "$ref": "#/$defs/hostedFastProfile" },
+            "full": { "$ref": "#/$defs/hostedFullProfile" },
+            "release": { "$ref": "#/$defs/hostedProfile" }
+          }
+        },
+        "promotion": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["reuseExactReceipt", "identity"],
+          "properties": {
+            "reuseExactReceipt": { "type": "boolean", "const": true },
+            "identity": { "$ref": "#/$defs/hostedIdentity" }
+          }
+        },
+        "review": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["bugbot"],
+          "properties": {
+            "bugbot": { "type": "string", "const": "final-candidate-only" }
+          }
+        }
+      }
+    },
     "issuePrException": {
       "type": "object",
       "additionalProperties": false,
@@ -252,6 +375,7 @@
   "oneOf": [
     { "$ref": "#/$defs/deliveryModeConfig" },
     { "$ref": "#/$defs/deliveryRuntimeConfig" },
+    { "$ref": "#/$defs/hostedDeliveryConfig" },
     { "$ref": "#/$defs/issuePrException" },
     { "$ref": "#/$defs/phaseDeliveryRecord" }
   ]
