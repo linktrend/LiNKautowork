@@ -29,6 +29,16 @@ from gitops.coordinator.receipts import (
 )
 
 
+def resolved_profile_files(repo: Path, explicit: list[str]) -> list[str]:
+    """Bind a receipt to the same source-or-installed profile the runner uses."""
+    if explicit:
+        return explicit
+    for relative in (".github/linktrend-delivery-mode.json", ".ide-development/config/delivery.json"):
+        if (repo / relative).is_file():
+            return [relative]
+    raise ReceiptError("invalid_path", "delivery profile configuration is unavailable")
+
+
 def _json_output(value: Any) -> None:
     if hasattr(value, "to_dict"):
         value = value.to_dict()
@@ -83,7 +93,7 @@ def main(argv: list[str] | None = None) -> int:
                     args.repo,
                     args.dependencies,
                     args.profile,
-                    profile_files=args.profile_file,
+                    profile_files=resolved_profile_files(args.repo, args.profile_file),
                     workflow_files=args.workflow_file or None,
                 )
             )
@@ -103,7 +113,7 @@ def main(argv: list[str] | None = None) -> int:
                     args.repo,
                     args.dependencies,
                     args.profile,
-                    profile_files=args.profile_file,
+                    profile_files=resolved_profile_files(args.repo, args.profile_file),
                     workflow_files=args.workflow_file or None,
                 )
             verdict = verify_receipt(
