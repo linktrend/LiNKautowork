@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "packageName": "ide-development-managed-core",
-  "packageVersion": "2.3.4",
-  "installedAt": "2026-08-13T19:17:54Z",
+  "packageVersion": "2.3.5",
+  "installedAt": "2026-08-13T19:38:00Z",
   "files": {
     ".agents/skills/action-queue/SKILL.md": {
       "id": "codex-skill-action-queue",
@@ -648,32 +648,32 @@
     },
     ".ide-development/INDEX.yaml": {
       "id": "core-index-yaml",
-      "sourceHash": "sha256:732256c248e990d73ec02c2e1666e7d6d2368d98fc9e946ba3ac29af648e8c0a",
-      "contentHash": "sha256:732256c248e990d73ec02c2e1666e7d6d2368d98fc9e946ba3ac29af648e8c0a",
+      "sourceHash": "sha256:336c8bee93ac03d67a112afde2ed768550a71136dc80256ebf3f3eeb26434c36",
+      "contentHash": "sha256:336c8bee93ac03d67a112afde2ed768550a71136dc80256ebf3f3eeb26434c36",
       "mode": "0644"
     },
     ".ide-development/MANIFEST.json": {
       "id": "package-manifest",
-      "sourceHash": "sha256:9e04e7074856ba8dcea767520e7cd5fc60bc3dde06d7875675e0fbed790314b0",
-      "contentHash": "sha256:9e04e7074856ba8dcea767520e7cd5fc60bc3dde06d7875675e0fbed790314b0",
+      "sourceHash": "sha256:5a60511c4952c112ed691806b81f75f5881bd81c89eb9757d53c8003073537dc",
+      "contentHash": "sha256:5a60511c4952c112ed691806b81f75f5881bd81c89eb9757d53c8003073537dc",
       "mode": "0644"
     },
     ".ide-development/README.md": {
       "id": "core-readme-md",
-      "sourceHash": "sha256:ddb07c4a3b7472423d7daf13d7e266d43ca8d54cfda2f384e6e44ccf14d210a7",
-      "contentHash": "sha256:ddb07c4a3b7472423d7daf13d7e266d43ca8d54cfda2f384e6e44ccf14d210a7",
+      "sourceHash": "sha256:537efca2b00258370ea1a05b75cbc754f2f69eed509279f5cd19ef6803bbedff",
+      "contentHash": "sha256:537efca2b00258370ea1a05b75cbc754f2f69eed509279f5cd19ef6803bbedff",
       "mode": "0644"
     },
     ".ide-development/VERSION": {
       "id": "core-version",
-      "sourceHash": "sha256:386a85ff43996bfa097ad213275fa5294bd3d9668eafd1f41aafeade18423a9a",
-      "contentHash": "sha256:386a85ff43996bfa097ad213275fa5294bd3d9668eafd1f41aafeade18423a9a",
+      "sourceHash": "sha256:717395a9f692749ed344f7237e736d43ec5ba651437c4e5f91c8dfc62a74ea26",
+      "contentHash": "sha256:717395a9f692749ed344f7237e736d43ec5ba651437c4e5f91c8dfc62a74ea26",
       "mode": "0644"
     },
     ".ide-development/config/delivery.json": {
       "id": "core-config-delivery-json",
-      "sourceHash": "sha256:b7686e5c9210bb9725ab4566a8bcf06e3e6ed9525bdcce621c728fd859e39f8f",
-      "contentHash": "sha256:b7686e5c9210bb9725ab4566a8bcf06e3e6ed9525bdcce621c728fd859e39f8f",
+      "sourceHash": "sha256:6dbb943e95a5cc4dd81e668f1e26c4b3a96f2157cc6a66b4c40bede17670d40d",
+      "contentHash": "sha256:6dbb943e95a5cc4dd81e668f1e26c4b3a96f2157cc6a66b4c40bede17670d40d",
       "mode": "0644"
     },
     ".ide-development/content/README.md": {
@@ -720,8 +720,8 @@
     },
     ".ide-development/content/doctrine/MANAGED-CORE-V2.md": {
       "id": "doctrine-managed-core-v2-md",
-      "sourceHash": "sha256:957d60d26c036d44461109614c4f979d6c0b5f8928ceebac2566e8f95dbb1609",
-      "contentHash": "sha256:957d60d26c036d44461109614c4f979d6c0b5f8928ceebac2566e8f95dbb1609",
+      "sourceHash": "sha256:197619dee8e8651158cd9253e9d86bd90fae6301f495fa0e33f39b0c23ab6002",
+      "contentHash": "sha256:197619dee8e8651158cd9253e9d86bd90fae6301f495fa0e33f39b0c23ab6002",
       "mode": "0644"
     },
     ".ide-development/content/doctrine/REPOSITORY-PROTECTION.md": {
@@ -816,8 +816,8 @@
     },
     ".ide-development/migrations/catalog.json": {
       "id": "core-migrations-catalog-json",
-      "sourceHash": "sha256:de0f102825432461f078109b3e216da6b3ff01f57e65b602b461ea4e118b881f",
-      "contentHash": "sha256:de0f102825432461f078109b3e216da6b3ff01f57e65b602b461ea4e118b881f",
+      "sourceHash": "sha256:80dad71e8cf2e87e07500ffcfe3c880ee5d7da51667c838f3eebc4a078f81b7a",
+      "contentHash": "sha256:80dad71e8cf2e87e07500ffcfe3c880ee5d7da51667c838f3eebc4a078f81b7a",
       "mode": "0644"
     },
     ".ide-development/migrations/external-cleanup-plan.json": {
@@ -1344,8 +1344,8 @@
     },
     ".ide-development/workflows/linktrend-integrator-merge.yml": {
       "id": "workflow-linktrend-integrator-merge-yml",
-      "sourceHash": "sha256:45c3731253cf08032c9a2ecbf166bcd20802fd601b745da5afc859e1317fc86d",
-      "contentHash": "sha256:45c3731253cf08032c9a2ecbf166bcd20802fd601b745da5afc859e1317fc86d",
+      "sourceHash": "sha256:3106ecf4f77e64d264b4635bf54e2a1f913d671b691090b35432df9f90038307",
+      "contentHash": "sha256:3106ecf4f77e64d264b4635bf54e2a1f913d671b691090b35432df9f90038307",
       "mode": "0644"
     },
     ".ide-development/workflows/linktrend-review-packager.yml": {
@@ -1516,6 +1516,12 @@
       "contentHash": "sha256:95c7af7378b172c6e7bf9c87e545ffbcb34c0ab4e061ae13e2afeec954e5acc6",
       "mode": "0755"
     },
+    "scripts/gitops/require_exact_ci_success.py": {
+      "id": "gitops-scripts-gitops-require-exact-ci-success-py",
+      "sourceHash": "sha256:1efdbe57d2b038f10b59c4190f8471d0401bdb30da0a2b27eb44bb111cabeb54",
+      "contentHash": "sha256:1efdbe57d2b038f10b59c4190f8471d0401bdb30da0a2b27eb44bb111cabeb54",
+      "mode": "0755"
+    },
     "scripts/gitops/resolve_bugbot_user_token.sh": {
       "id": "gitops-scripts-gitops-resolve-bugbot-user-token-sh",
       "sourceHash": "sha256:dfb3497e63359a2fa404ab0c8de23f79022b4259d63c586800eec630c6aa9456",
@@ -1572,8 +1578,8 @@
     },
     "scripts/ide_development/__init__.py": {
       "id": "installer-scripts-ide-development-init-py",
-      "sourceHash": "sha256:3ba9002795f000030d89a5879a23751630270d0ba8eb15f547fc271a8855379b",
-      "contentHash": "sha256:3ba9002795f000030d89a5879a23751630270d0ba8eb15f547fc271a8855379b",
+      "sourceHash": "sha256:7568c6a851ccb618d4abe0416f7e533144a1902d63febe030fdccb26b2f5c3c4",
+      "contentHash": "sha256:7568c6a851ccb618d4abe0416f7e533144a1902d63febe030fdccb26b2f5c3c4",
       "mode": "0644"
     },
     "scripts/ide_development/__main__.py": {
@@ -1596,8 +1602,8 @@
     },
     "scripts/ide_development/constants.py": {
       "id": "installer-scripts-ide-development-constants-py",
-      "sourceHash": "sha256:c67ea590ab42a1820c871c41ad5a97943d4ed6f6e1f9f2a0de72375f98656fd2",
-      "contentHash": "sha256:c67ea590ab42a1820c871c41ad5a97943d4ed6f6e1f9f2a0de72375f98656fd2",
+      "sourceHash": "sha256:fe37f8f23d55fb2d52a6461957db1e4bae75101094aabc7139793cc8e0f31180",
+      "contentHash": "sha256:fe37f8f23d55fb2d52a6461957db1e4bae75101094aabc7139793cc8e0f31180",
       "mode": "0644"
     },
     "scripts/ide_development/engine.py": {

@@ -118,9 +118,8 @@ jobs:
           set -euo pipefail
           git diff --check
           python3 scripts/gitops/run_delivery_profile.py full
-          ci_name="$(python3 -c 'import json; print(json.load(open(".github/linktrend-gitops-consumer.json"))["ciWorkflowName"])')"
-          successes="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?event=pull_request&head_sha=${EXPECTED_HEAD}&per_page=100" | jq --arg name "${ci_name}" '[.workflow_runs[] | select(.name == $name and .conclusion == "success")] | length')"
-          test "${successes}" -gt 0 || { echo "full_suite_required_ci_missing_for_exact_head=${EXPECTED_HEAD} workflow=${ci_name}"; exit 1; }
+          python3 scripts/gitops/require_exact_ci_success.py \
+            --repository "${GITHUB_REPOSITORY}" --head "${EXPECTED_HEAD}"
 
       - name: Write exact full-suite receipt
         if: success()
