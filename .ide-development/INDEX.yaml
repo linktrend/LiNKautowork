@@ -1,5 +1,5 @@
 # Managed-core discovery index
-version: "2.3.1"
+version: "2.3.2"
 status: v2-github-hosted-phase-delivery
 contract: docs/contracts/MANAGED-CORE-V2.md
 adr: docs/adr/0004-portable-managed-core-v2.md

@@ -1,45 +1,27 @@
 name: Linktrend Full Suite
-run-name: Full Suite PR #${{ inputs.pr_number }} @ ${{ inputs.head_sha }} r${{ inputs.seal_revision }} a${{ inputs.attempt }}
+run-name: Full Suite PR #${{ github.event.pull_request.number }} @ ${{ github.event.pull_request.head.sha }} r1 a${{ github.run_attempt }}
 
-# Full validation is an explicit seal-bound dispatch.  It never wakes from a
-# checkpoint push or from opening a draft PR.
+# Full validation is a trusted, explicit PR-label wake. Candidate code runs in
+# pull_request context with a read-only token; it never runs from a privileged
+# default-branch workflow_dispatch context.
 on:
-  workflow_dispatch:
-    inputs:
-      pr_number:
-        description: Exact Phase PR number
-        required: true
-        type: string
-      source_branch:
-        description: Exact sealed Phase branch
-        required: true
-        type: string
-      head_sha:
-        description: Exact sealed Phase head
-        required: true
-        type: string
-      candidate_id:
-        description: Exact sealed candidate identity digest
-        required: true
-        type: string
-      seal_revision:
-        description: Sealed candidate revision (1 or 2)
-        required: true
-        type: string
-      attempt:
-        description: Infrastructure attempt for this exact candidate (1 or 2)
-        required: true
-        type: string
+  pull_request:
+    branches: [development]
+    types: [labeled]
 
 permissions: {}
 
 concurrency:
-  group: ${{ github.repository }}|${{ github.workflow }}|pr-${{ inputs.pr_number }}
+  group: ${{ github.repository }}|${{ github.workflow }}|pr-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
   full:
     name: Linktrend Full Suite
+    if: >-
+      github.event.label.name == 'linktrend-full-suite' &&
+      startsWith(github.event.pull_request.head.ref, 'phase/') &&
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 60
     permissions:
@@ -47,34 +29,22 @@ jobs:
       pull-requests: read
       actions: read
     env:
-      PR_NUMBER: ${{ inputs.pr_number }}
-      DISPATCH_SOURCE_BRANCH: ${{ inputs.source_branch }}
-      DISPATCH_HEAD: ${{ inputs.head_sha }}
-      DISPATCH_CANDIDATE_ID: ${{ inputs.candidate_id }}
-      DISPATCH_SEAL_REVISION: ${{ inputs.seal_revision }}
-      DISPATCH_ATTEMPT: ${{ inputs.attempt }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      EXPECTED_SOURCE_BRANCH: ${{ github.event.pull_request.head.ref }}
+      EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
     steps:
       - name: Capture start time
         id: clock
         run: echo "started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
 
-      - name: Checkout trusted workflow source
+      - name: Checkout exact sealed Phase head in unprivileged PR context
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: ${{ github.event.repository.default_branch }}
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Checkout exact sealed Phase head
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          ref: refs/pull/${{ inputs.pr_number }}/head
-          path: candidate
+          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
           persist-credentials: false
 
       - name: Validate live head and exact seal
-        working-directory: candidate
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -84,14 +54,14 @@ jobs:
           live_branch="$(jq -r .head.ref <<<"${pr}")"
           live_repo="$(jq -r .head.repo.full_name <<<"${pr}")"
           case "${live_branch}" in phase/*) ;; *) echo "full_suite_requires_phase_branch=${live_branch}"; exit 1;; esac
-          test "${DISPATCH_SOURCE_BRANCH}" = "${live_branch}" || {
-            echo "full_suite_source_branch_mismatch: input=${DISPATCH_SOURCE_BRANCH} live=${live_branch}"; exit 1;
+          test "${EXPECTED_SOURCE_BRANCH}" = "${live_branch}" || {
+            echo "full_suite_source_branch_mismatch: expected=${EXPECTED_SOURCE_BRANCH} live=${live_branch}"; exit 1;
           }
           test "${live_repo}" = "${GITHUB_REPOSITORY}" || {
             echo "full_suite_repository_mismatch: expected=${GITHUB_REPOSITORY} live=${live_repo}"; exit 1;
           }
-          test "${DISPATCH_HEAD}" = "${live}" || {
-            echo "full_suite_dispatch_head_stale: input=${DISPATCH_HEAD} live=${live}"; exit 1;
+          test "${EXPECTED_HEAD}" = "${live}" || {
+            echo "full_suite_dispatch_head_stale: expected=${EXPECTED_HEAD} live=${live}"; exit 1;
           }
           actual="$(git rev-parse HEAD)"
           test "${actual}" = "${live}" || { echo "full_suite_stale_seal: live=${live} actual=${actual}"; exit 1; }
@@ -113,14 +83,9 @@ jobs:
           print("sha256:" + hashlib.sha256(json.dumps(identity, sort_keys=True, separators=(",", ":")).encode()).hexdigest())
           PY
           )"
-          test "${derived}" = "${DISPATCH_CANDIDATE_ID}" || {
-            echo "full_suite_candidate_identity_mismatch: input=${DISPATCH_CANDIDATE_ID} derived=${derived}"; exit 1;
-          }
-          case "${DISPATCH_SEAL_REVISION}" in 1|2) ;; *) echo "full_suite_invalid_seal_revision"; exit 1;; esac
-          case "${DISPATCH_ATTEMPT}" in 1|2) ;; *) echo "full_suite_invalid_attempt"; exit 1;; esac
           history_file="$(mktemp)"
           trap 'rm -f "${history_file}"' EXIT
-          gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/linktrend-integrator-merge.yml/runs?event=workflow_dispatch&per_page=100" >"${history_file}"
+          gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/linktrend-integrator-merge.yml/runs?event=pull_request&per_page=100" >"${history_file}"
           python3 - "${history_file}" "${PR_NUMBER}" "${live}" <<'PY'
           import json, re, sys
           with open(sys.argv[1], encoding="utf-8") as handle:
@@ -142,12 +107,11 @@ jobs:
           if executions > 2:
               raise SystemExit("full_suite_attempt_limit")
           PY
-          printf 'SOURCE_BRANCH=%s\nEXPECTED_HEAD=%s\nCANDIDATE_ID=%s\nSEAL_REVISION=%s\nATTEMPT=%s\n' \
-            "${live_branch}" "${live}" "${derived}" "${DISPATCH_SEAL_REVISION}" "${DISPATCH_ATTEMPT}" >> "$GITHUB_ENV"
+          printf 'SOURCE_BRANCH=%s\nEXPECTED_HEAD=%s\nCANDIDATE_ID=%s\n' \
+            "${live_branch}" "${live}" "${derived}" >> "$GITHUB_ENV"
           echo "exact dispatch-time seal accepted"
 
       - name: Run full profile
-        working-directory: candidate
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -168,7 +132,6 @@ jobs:
 
       - name: Write exact full-suite receipt
         if: success()
-        working-directory: candidate
         env:
           STARTED: ${{ steps.clock.outputs.started_at }}
         run: |
@@ -236,10 +199,10 @@ jobs:
         if: success()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: linktrend-full-suite-receipt-${{ inputs.pr_number }}-${{ github.run_id }}
+          name: linktrend-full-suite-receipt-${{ github.event.pull_request.number }}-${{ github.run_id }}
           path: |
-            candidate/full-suite-receipt.json
-            candidate/full-suite-summary.txt
+            full-suite-receipt.json
+            full-suite-summary.txt
           retention-days: 30
 
   bugbot:
@@ -253,7 +216,7 @@ jobs:
       pull-requests: write
     env:
       GH_TOKEN: ${{ github.token }}
-      PR_NUMBER: ${{ inputs.pr_number }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
     steps:
       - name: Request Bugbot once for the sealed candidate
         run: |

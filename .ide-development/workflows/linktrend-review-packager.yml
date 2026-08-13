@@ -6,41 +6,32 @@ on:
   pull_request:
     branches: [development]
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
-  workflow_dispatch:
-    inputs:
-      pr_number:
-        required: true
-        type: string
-      head_sha:
-        required: true
-        type: string
 
 permissions: {}
 
 concurrency:
-  group: ${{ github.repository }}|${{ github.workflow }}|pr-${{ github.event.pull_request.number || inputs.pr_number }}
+  group: ${{ github.repository }}|${{ github.workflow }}|pr-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
   fast:
     name: Linktrend Fast Checks
     if: >-
-      (github.event_name == 'workflow_dispatch') ||
-      (github.event_name == 'pull_request' && startsWith(github.event.pull_request.head.ref, 'phase/'))
+      github.event_name == 'pull_request' && startsWith(github.event.pull_request.head.ref, 'phase/')
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 5
     permissions:
       contents: read
       pull-requests: read
     env:
-      PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
-      EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || inputs.head_sha }}
-      SOURCE_BRANCH: ${{ github.event.pull_request.head.ref || '' }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+      SOURCE_BRANCH: ${{ github.event.pull_request.head.ref }}
     steps:
       - name: Checkout exact Phase PR head
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: ${{ github.event.pull_request.head.sha || format('refs/pull/{0}/head', inputs.pr_number) }}
+          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
           persist-credentials: false
 
