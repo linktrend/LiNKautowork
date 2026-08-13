@@ -1,0 +1,3 @@
+/** Named provider capability states with explicit non-authority truthfulness. */
+export const providerCapabilityStates = ['available', 'degraded', 'offline', 'unauthorized', 'forbidden', 'stale', 'incompatible', 'disabled', 'unavailable', 'hold'] as const;
+export function providerCapabilityStatus(capability: string, state: typeof providerCapabilityStates[number]) { if (!providerCapabilityStates.includes(state)) throw new Error('invalid capability state'); return { capability, state, doesNotProve: ['automation_run', 'consumer_outcome', 'consumer_gate', 'external_side_effect', 'e2e_readiness', 'production_readiness'] }; }

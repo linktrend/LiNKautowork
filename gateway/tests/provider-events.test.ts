@@ -1,0 +1,3 @@
+import { describe, expect, it } from 'vitest';
+import { acceptProviderEvent, advanceOutbox, pageProviderEvents } from '../src/services/provider-events.js';
+describe('provider events', () => { it('deduplicates and pages bounded metadata', () => { const seen = new Set<string>(); expect(acceptProviderEvent(seen, 'e1')).toBe(true); expect(acceptProviderEvent(seen, 'e1')).toBe(false); expect(pageProviderEvents([{ id: 'e1' }, { id: 'e2' }], 'e1', 1).events).toEqual([{ id: 'e2' }]); }); it('keeps delivery retry separate and sends exhausted delivery to DLQ', () => { expect(advanceOutbox('pending', 0, 99)).toBe('pending'); expect(advanceOutbox('pending', 3, 0)).toBe('dlq'); }); });

@@ -1,0 +1,5 @@
+{
+  "contract_version": "2026-08-13.v1",
+  "fixture_classification": "sanitized_metadata_only",
+  "note": "References and SHA-256 digests only; this fixture contains no payload, credential, prompt, log, customer, case, or consumer-ledger data."
+}
