@@ -15,6 +15,7 @@ from .constants import (
     EXIT_INVALID_PACKAGE,
     EXIT_OK,
     EXIT_ROLLBACK_FAILURE,
+    PACKAGE_VERSION_TARGET,
 )
 from .engine import (
     run_drift,
@@ -179,8 +180,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     rc_verify.add_argument(
         "--expected-version",
-        default="2.1.10",
-        help="Expected package version (default 2.1.10)",
+        default=PACKAGE_VERSION_TARGET,
+        help=f"Expected package version (default {PACKAGE_VERSION_TARGET})",
     )
     return parser
 
