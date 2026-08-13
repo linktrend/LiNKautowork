@@ -5,27 +5,11 @@ on:
   pull_request_target: # zizmor: ignore[dangerous-triggers] trusted default-branch workflow; candidate is data only and candidate code is never executed
     branches: [staging]
     types: [opened, synchronize, reopened, ready_for_review]
-  workflow_dispatch:
-    inputs:
-      source_branch:
-        required: true
-        type: string
-      head_sha:
-        required: true
-        type: string
-      full_run_id:
-        description: Full-suite workflow run containing the retained receipt
-        required: true
-        type: string
-      artifact_name:
-        description: Exact full-suite receipt artifact name
-        required: true
-        type: string
 
 permissions: {}
 
 concurrency:
-  group: ${{ github.repository }}|${{ github.workflow }}|head-${{ github.event.pull_request.head.sha || inputs.head_sha }}
+  group: ${{ github.repository }}|${{ github.workflow }}|head-${{ github.event.pull_request.head.sha }}
   cancel-in-progress: true
 
 jobs:
@@ -33,7 +17,7 @@ jobs:
     name: Linktrend Branch Source Policy
     uses: ./.github/workflows/branch-source-policy.yml
     with:
-      source_branch: ${{ github.event.pull_request.head.ref || inputs.source_branch }}
+      source_branch: ${{ github.event.pull_request.head.ref }}
       target_branch: staging
     permissions:
       pull-requests: read
@@ -48,7 +32,7 @@ jobs:
       actions: read
       pull-requests: read
     env:
-      HEAD_SHA: ${{ github.event.pull_request.head.sha || inputs.head_sha }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout trusted default branch
@@ -61,30 +45,21 @@ jobs:
       - name: Resolve exact retained receipt coordinates
         id: receipt
         env:
-          EVENT_NAME: ${{ github.event_name }}
-          PR_NUMBER: ${{ github.event.pull_request.number || '' }}
-          INPUT_FULL_RUN_ID: ${{ inputs.full_run_id }}
-          INPUT_ARTIFACT_NAME: ${{ inputs.artifact_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
           pr_body=""
-          if [ "${EVENT_NAME}" = "pull_request_target" ]; then
-            test -n "${PR_NUMBER}" || { echo "receipt_gate_pr_number_missing"; exit 1; }
-            pr_body="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq .body)"
-          fi
+          test -n "${PR_NUMBER}" || { echo "receipt_gate_pr_number_missing"; exit 1; }
+          pr_body="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq .body)"
           export PR_BODY="${pr_body}"
           coordinates="$(python3 - <<'PY'
           import json, os, re
-          if os.environ["EVENT_NAME"] == "workflow_dispatch":
-              run_id = os.environ.get("INPUT_FULL_RUN_ID", "").strip()
-              artifact = os.environ.get("INPUT_ARTIFACT_NAME", "").strip()
-          else:
-              match = re.search(r"<!-- linktrend-promote:\s*(\{.*?\})\s*-->", os.environ.get("PR_BODY", ""), re.S)
-              if not match:
-                  raise SystemExit("receipt_gate_promotion_marker_missing")
-              marker = json.loads(match.group(1))
-              run_id = str(marker.get("fullRunId") or "").strip()
-              artifact = ""
+          match = re.search(r"<!-- linktrend-promote:\s*(\{.*?\})\s*-->", os.environ.get("PR_BODY", ""), re.S)
+          if not match:
+              raise SystemExit("receipt_gate_promotion_marker_missing")
+          marker = json.loads(match.group(1))
+          run_id = str(marker.get("fullRunId") or "").strip()
+          artifact = ""
           if not run_id.isdigit() or int(run_id) < 1:
               raise SystemExit("receipt_gate_full_run_invalid")
           print(json.dumps({"runId": run_id, "artifactName": artifact}))
