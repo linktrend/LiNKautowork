@@ -39,7 +39,7 @@ jobs:
       actions: read
     env:
       PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
-      EXPECTED_SOURCE_BRANCH: ${{ github.event.pull_request.head.ref }}
+      EXPECTED_SOURCE_BRANCH: ${{ github.event_name == 'workflow_dispatch' && github.ref_name || github.event.pull_request.head.ref }}
       EXPECTED_HEAD: ${{ github.event_name == 'workflow_dispatch' && inputs.expected_head || github.event.pull_request.head.sha }}
     steps:
       - name: Capture start time

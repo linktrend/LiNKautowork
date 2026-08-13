@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "packageName": "ide-development-managed-core",
   "packageVersion": "2.3.6",
-  "installedAt": "2026-08-13T20:02:08Z",
+  "installedAt": "2026-08-13T20:04:18Z",
   "files": {
     ".agents/skills/action-queue/SKILL.md": {
       "id": "codex-skill-action-queue",
@@ -654,8 +654,8 @@
     },
     ".ide-development/MANIFEST.json": {
       "id": "package-manifest",
-      "sourceHash": "sha256:087b4348db95de43235418506bc8f12ff73d16cbb6c5bb2a0524ba62331fe9f0",
-      "contentHash": "sha256:087b4348db95de43235418506bc8f12ff73d16cbb6c5bb2a0524ba62331fe9f0",
+      "sourceHash": "sha256:389045f023f0a37672a59746b9ae8eceb9e20e48141a1cd400826c38e88be1e9",
+      "contentHash": "sha256:389045f023f0a37672a59746b9ae8eceb9e20e48141a1cd400826c38e88be1e9",
       "mode": "0644"
     },
     ".ide-development/README.md": {
@@ -1344,8 +1344,8 @@
     },
     ".ide-development/workflows/linktrend-integrator-merge.yml": {
       "id": "workflow-linktrend-integrator-merge-yml",
-      "sourceHash": "sha256:8ddaa1a93f633b186251f711537fbd7525defc381c9537c36e9708a4387b9028",
-      "contentHash": "sha256:8ddaa1a93f633b186251f711537fbd7525defc381c9537c36e9708a4387b9028",
+      "sourceHash": "sha256:a10d84081dcd9accf647100d614b8c1a1219426f7eab0e97031bdfe39e024f32",
+      "contentHash": "sha256:a10d84081dcd9accf647100d614b8c1a1219426f7eab0e97031bdfe39e024f32",
       "mode": "0644"
     },
     ".ide-development/workflows/linktrend-review-packager.yml": {
