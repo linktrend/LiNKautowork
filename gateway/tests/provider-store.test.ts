@@ -59,6 +59,7 @@ describe('InMemoryProviderStore', () => {
     const callback = providerCallbackSchema.parse({ request_id: accepted.record.request.request_id, receipt_id: receipt.receipt_id, org_id: ORG_A, callback_binding_ref: accepted.record.request.automation.configuration_ref.ref, source_timestamp: '2026-08-13T12:01:00.000Z', receipt });
     await store.admitCallback(ORG_A, callback);
     await expect(store.admitCallback(ORG_A, callback)).rejects.toMatchObject({ category: 'invalid_callback' });
+    await expect(store.admitCallback(ORG_A, { ...callback, source_timestamp: '2026-08-13T12:00:59.000Z' })).rejects.toMatchObject({ category: 'invalid_callback' });
     await expect(store.admitCallback(ORG_A, { ...callback, callback_binding_ref: 'autowork://config/forged' })).rejects.toMatchObject({ category: 'invalid_callback' });
     await expect(store.admitCallback(ORG_B, { ...callback, org_id: ORG_B })).rejects.toMatchObject({ category: 'forbidden' });
   });
