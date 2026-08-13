@@ -2,7 +2,7 @@ name: Linktrend Development Receipt Gate
 
 # Promotion is identity verification only.  It never reruns the full suite.
 on:
-  pull_request_target: # trusted default-branch workflow; candidate is data only
+  pull_request_target: # zizmor: ignore[dangerous-triggers] trusted default-branch workflow; candidate is data only and candidate code is never executed
     branches: [staging]
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:

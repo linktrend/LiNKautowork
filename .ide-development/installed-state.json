@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "packageName": "ide-development-managed-core",
-  "packageVersion": "2.3.0",
-  "installedAt": "2026-08-13T17:39:16Z",
+  "packageVersion": "2.3.1",
+  "installedAt": "2026-08-13T18:08:10Z",
   "files": {
     ".agents/skills/action-queue/SKILL.md": {
       "id": "codex-skill-action-queue",
@@ -648,26 +648,26 @@
     },
     ".ide-development/INDEX.yaml": {
       "id": "core-index-yaml",
-      "sourceHash": "sha256:23a5f01520769ff5cbf708f03fae33285b393138a0ae42f74c3443cbcf4fb9f1",
-      "contentHash": "sha256:23a5f01520769ff5cbf708f03fae33285b393138a0ae42f74c3443cbcf4fb9f1",
+      "sourceHash": "sha256:c144f5398f0a0736686f1810997c33f7649e99f4f5e6d6e4a0f93c8dc68573bb",
+      "contentHash": "sha256:c144f5398f0a0736686f1810997c33f7649e99f4f5e6d6e4a0f93c8dc68573bb",
       "mode": "0644"
     },
     ".ide-development/MANIFEST.json": {
       "id": "package-manifest",
-      "sourceHash": "sha256:0a3322dce2b52ff905b40d5b0b27c5fdbd9e371e5548f8e535f607d1ff7f05c6",
-      "contentHash": "sha256:0a3322dce2b52ff905b40d5b0b27c5fdbd9e371e5548f8e535f607d1ff7f05c6",
+      "sourceHash": "sha256:ba319bf4f607386526baf8a8aebb6554f3042ce40c7a7765b56ad8c1c1f6c0b0",
+      "contentHash": "sha256:ba319bf4f607386526baf8a8aebb6554f3042ce40c7a7765b56ad8c1c1f6c0b0",
       "mode": "0644"
     },
     ".ide-development/README.md": {
       "id": "core-readme-md",
-      "sourceHash": "sha256:013197a52488c8291cbca2e2c4b1e2f76098b162203a3d4ea18c14142fa82823",
-      "contentHash": "sha256:013197a52488c8291cbca2e2c4b1e2f76098b162203a3d4ea18c14142fa82823",
+      "sourceHash": "sha256:e0c0797cd13dfb0b3a25e747bfc2ce4f0f92707d19fefccbfe3eb48eb4653737",
+      "contentHash": "sha256:e0c0797cd13dfb0b3a25e747bfc2ce4f0f92707d19fefccbfe3eb48eb4653737",
       "mode": "0644"
     },
     ".ide-development/VERSION": {
       "id": "core-version",
-      "sourceHash": "sha256:a42caf4a54bbbe27aa45b6efbc6356c5e299b19763e728b6cdb7201b02ebbe36",
-      "contentHash": "sha256:a42caf4a54bbbe27aa45b6efbc6356c5e299b19763e728b6cdb7201b02ebbe36",
+      "sourceHash": "sha256:ad8650bc9057d9dfd809961b69dbad640c288d809fa44437d44d83d3b118c821",
+      "contentHash": "sha256:ad8650bc9057d9dfd809961b69dbad640c288d809fa44437d44d83d3b118c821",
       "mode": "0644"
     },
     ".ide-development/config/delivery.json": {
@@ -720,8 +720,8 @@
     },
     ".ide-development/content/doctrine/MANAGED-CORE-V2.md": {
       "id": "doctrine-managed-core-v2-md",
-      "sourceHash": "sha256:244be37ca7902db72d63605e4fc835b77f6a308b59a40f133a605347ade84fca",
-      "contentHash": "sha256:244be37ca7902db72d63605e4fc835b77f6a308b59a40f133a605347ade84fca",
+      "sourceHash": "sha256:d6bbb4fe82e21b8ad3591b050ccab630b3ad92dd68d8b5b80769e8e435d221bc",
+      "contentHash": "sha256:d6bbb4fe82e21b8ad3591b050ccab630b3ad92dd68d8b5b80769e8e435d221bc",
       "mode": "0644"
     },
     ".ide-development/content/doctrine/REPOSITORY-PROTECTION.md": {
@@ -816,8 +816,8 @@
     },
     ".ide-development/migrations/catalog.json": {
       "id": "core-migrations-catalog-json",
-      "sourceHash": "sha256:198aff7747de75107e5c7bcf4b89c0dd5bdcf87fdf5ca65d6edab3f9340f06a8",
-      "contentHash": "sha256:198aff7747de75107e5c7bcf4b89c0dd5bdcf87fdf5ca65d6edab3f9340f06a8",
+      "sourceHash": "sha256:14216e5177e41303be2996f8df6208c03d06a7ad4f7a401cd0789163802c0db2",
+      "contentHash": "sha256:14216e5177e41303be2996f8df6208c03d06a7ad4f7a401cd0789163802c0db2",
       "mode": "0644"
     },
     ".ide-development/migrations/external-cleanup-plan.json": {
@@ -1338,14 +1338,14 @@
     },
     ".ide-development/workflows/linktrend-development-to-staging.yml": {
       "id": "workflow-linktrend-development-to-staging-yml",
-      "sourceHash": "sha256:58738ef15498a41465d60109454475ace38963cb2b3503f487bea3b39eddd1bf",
-      "contentHash": "sha256:58738ef15498a41465d60109454475ace38963cb2b3503f487bea3b39eddd1bf",
+      "sourceHash": "sha256:1d4d8aaffb8e02b8def10e557e0cb765aadccd2234f10ffa395b94dda9047d86",
+      "contentHash": "sha256:1d4d8aaffb8e02b8def10e557e0cb765aadccd2234f10ffa395b94dda9047d86",
       "mode": "0644"
     },
     ".ide-development/workflows/linktrend-integrator-merge.yml": {
       "id": "workflow-linktrend-integrator-merge-yml",
-      "sourceHash": "sha256:f3a53a9fb00e71f02e10df57c73e543d05b0cba23a0087526dce19b0e51a1447",
-      "contentHash": "sha256:f3a53a9fb00e71f02e10df57c73e543d05b0cba23a0087526dce19b0e51a1447",
+      "sourceHash": "sha256:1dcaf17dfb878c44dff799122e0855132d9e7991aec922f45f11d76f4bb9e690",
+      "contentHash": "sha256:1dcaf17dfb878c44dff799122e0855132d9e7991aec922f45f11d76f4bb9e690",
       "mode": "0644"
     },
     ".ide-development/workflows/linktrend-review-packager.yml": {
@@ -1362,8 +1362,8 @@
     },
     ".ide-development/workflows/linktrend-staging-to-main.yml": {
       "id": "workflow-linktrend-staging-to-main-yml",
-      "sourceHash": "sha256:51894fa176b70581cb34962da9ca6d3e8670c800d96e785974abdd66d7a2f3a6",
-      "contentHash": "sha256:51894fa176b70581cb34962da9ca6d3e8670c800d96e785974abdd66d7a2f3a6",
+      "sourceHash": "sha256:0a9d5653a2bf11cc68937106c65279d08ade521beabe806729b1f6d0f38f6b56",
+      "contentHash": "sha256:0a9d5653a2bf11cc68937106c65279d08ade521beabe806729b1f6d0f38f6b56",
       "mode": "0644"
     },
     "AGENTS.md": {
@@ -1386,8 +1386,8 @@
     },
     "scripts/gitops/cleanup_controls.py": {
       "id": "gitops-scripts-gitops-cleanup-controls-py",
-      "sourceHash": "sha256:9bb688d397bc415067b38123db44266506a84dfb6c41c016f3720d7fea5dfdce",
-      "contentHash": "sha256:9bb688d397bc415067b38123db44266506a84dfb6c41c016f3720d7fea5dfdce",
+      "sourceHash": "sha256:f74089c1b58819f289bff3a3c083328a3c6e150e65a539fa9a19eb58cde9ba54",
+      "contentHash": "sha256:f74089c1b58819f289bff3a3c083328a3c6e150e65a539fa9a19eb58cde9ba54",
       "mode": "0644"
     },
     "scripts/gitops/completion_gate.py": {
@@ -1566,8 +1566,8 @@
     },
     "scripts/ide_development/__init__.py": {
       "id": "installer-scripts-ide-development-init-py",
-      "sourceHash": "sha256:668e41cdf7a247b18e004f4de24e20941d705faddd3e6a8b8485d8701d95fc13",
-      "contentHash": "sha256:668e41cdf7a247b18e004f4de24e20941d705faddd3e6a8b8485d8701d95fc13",
+      "sourceHash": "sha256:acfeed4a6101b892b6e9818d2355df830da9432fa869050d6bc09e26527b4727",
+      "contentHash": "sha256:acfeed4a6101b892b6e9818d2355df830da9432fa869050d6bc09e26527b4727",
       "mode": "0644"
     },
     "scripts/ide_development/__main__.py": {
@@ -1590,8 +1590,8 @@
     },
     "scripts/ide_development/constants.py": {
       "id": "installer-scripts-ide-development-constants-py",
-      "sourceHash": "sha256:f0b6fe0e3033705683bf194469119321aa0a295f3c2347b298fcb5da8cb50262",
-      "contentHash": "sha256:f0b6fe0e3033705683bf194469119321aa0a295f3c2347b298fcb5da8cb50262",
+      "sourceHash": "sha256:34b617aac78ce0bb7f2426e3e241879c04a8fe7cddc1beb6db74e96c8ad3271c",
+      "contentHash": "sha256:34b617aac78ce0bb7f2426e3e241879c04a8fe7cddc1beb6db74e96c8ad3271c",
       "mode": "0644"
     },
     "scripts/ide_development/engine.py": {

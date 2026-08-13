@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "catalogId": "ide-development-managed-core-migrations",
-  "packageVersion": "2.3.0",
+  "packageVersion": "2.3.1",
   "description": "Reviewed Wave 1 supersession catalog. Removals require exact identity and contentHash match; mismatches fail closed.",
   "entries": [
     {

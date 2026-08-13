@@ -3,7 +3,7 @@ name: Linktrend Main Receipt Gate
 # Main promotion has the same short identity gate as staging.  Principal/Terra
 # performs the actual protected-branch operation outside this workflow.
 on:
-  pull_request_target: # trusted default-branch workflow; candidate is data only
+  pull_request_target: # zizmor: ignore[dangerous-triggers] trusted default-branch workflow; candidate is data only and candidate code is never executed
     branches: [main]
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:

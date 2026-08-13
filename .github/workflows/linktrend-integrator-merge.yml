@@ -118,10 +118,14 @@ jobs:
           }
           case "${DISPATCH_SEAL_REVISION}" in 1|2) ;; *) echo "full_suite_invalid_seal_revision"; exit 1;; esac
           case "${DISPATCH_ATTEMPT}" in 1|2) ;; *) echo "full_suite_invalid_attempt"; exit 1;; esac
-          history="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/linktrend-integrator-merge.yml/runs?event=workflow_dispatch&per_page=100")"
-          python3 - "${history}" "${PR_NUMBER}" "${live}" <<'PY'
+          history_file="$(mktemp)"
+          trap 'rm -f "${history_file}"' EXIT
+          gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/linktrend-integrator-merge.yml/runs?event=workflow_dispatch&per_page=100" >"${history_file}"
+          python3 - "${history_file}" "${PR_NUMBER}" "${live}" <<'PY'
           import json, re, sys
-          history, pr_number, current_head = json.loads(sys.argv[1]), sys.argv[2], sys.argv[3]
+          with open(sys.argv[1], encoding="utf-8") as handle:
+              history = json.load(handle)
+          pr_number, current_head = sys.argv[2], sys.argv[3]
           pattern = re.compile(r"^Full Suite PR #(\d+) @ ([0-9a-f]{40}) r([12]) a([12])$")
           relevant = []
           for run in history.get("workflow_runs", []):

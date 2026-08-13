@@ -24,6 +24,7 @@ from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 SCHEMA_VERSION = 1
 ISSUE_BRANCH_RE = re.compile(r"^issue/(\d+)(?:-|$)")
@@ -285,18 +286,31 @@ def default_pr_state(pr: str, *, repo: str = "") -> str:
 def _owner_repo_from_github_url(url: str) -> str | None:
     """Parse owner/repo from a GitHub HTTPS or SSH remote URL; else None."""
     sanitized = (url or "").strip()
-    if "://" in sanitized and "@" in sanitized.split("://", 1)[1]:
-        scheme, rest = sanitized.split("://", 1)
-        sanitized = f"{scheme}://" + rest.split("@", 1)[1]
-    owner_repo = ""
-    if sanitized.startswith("git@") and ":" in sanitized:
-        owner_repo = sanitized.split(":", 1)[1]
-    elif "github.com/" in sanitized:
-        owner_repo = sanitized.split("github.com/", 1)[1]
-    elif "github.com:" in sanitized:
-        owner_repo = sanitized.split("github.com:", 1)[1]
+    owner_repo: str
+
+    # Git's scp-like SSH syntax is not understood by urlsplit. Match the
+    # complete, trusted host instead of accepting a github.com substring.
+    scp_match = re.fullmatch(r"git@github\.com:(.+)", sanitized, re.IGNORECASE)
+    if scp_match:
+        owner_repo = scp_match.group(1)
     else:
-        return None
+        try:
+            parsed = urlsplit(sanitized)
+            port = parsed.port  # Force validation of malformed ports.
+        except ValueError:
+            return None
+        if (
+            parsed.scheme.lower() not in {"https", "ssh"}
+            or (parsed.hostname or "").lower() != "github.com"
+            or parsed.query
+            or parsed.fragment
+        ):
+            return None
+        if parsed.scheme.lower() == "https" and port not in {None, 443}:
+            return None
+        if parsed.scheme.lower() == "ssh" and port not in {None, 22}:
+            return None
+        owner_repo = parsed.path
     owner_repo = owner_repo.strip()
     if owner_repo.endswith(".git"):
         owner_repo = owner_repo[:-4]

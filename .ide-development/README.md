@@ -18,7 +18,7 @@ This directory is the authoring source inside the IDE Development system reposit
 core/managed-core/
   README.md                 # this file
   INDEX.yaml                # discovery index
-  VERSION                   # package semver (2.3.0 target)
+  VERSION                   # package semver (2.3.1 target)
   MANIFEST.json             # live install set (built by scripts/ide_development/build_manifest.py)
   config/                   # versioned hosted delivery defaults; commands remain consumer-owned
   schemas/                  # authoritative JSON Schemas
