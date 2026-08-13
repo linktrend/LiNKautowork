@@ -2,7 +2,7 @@
 
 **Status:** Binding for managed-core packaging and Review Packager / Integrator behavior.
 **Package:** IDE Development managed-core (consumer-installable doctrine + scripts).
-**Related:** `docs/AUTONOMOUS-GIT-OPERATIONS.md`, `docs/adr/0003-autonomous-ship-pull-promote.md`, `core/github/CI-GATE-CONTRACTS.md`, `docs/contracts/AGENT-COMPLETION.md`.
+**Related:** `docs/AUTONOMOUS-GIT-OPERATIONS.md`, `docs/adr/0003-autonomous-ship-pull-promote.md`, `docs/adr/0005-streamlined-delivery-coordinator.md`, `docs/contracts/STREAMLINED-DELIVERY.md`, `core/github/CI-GATE-CONTRACTS.md`, `docs/contracts/AGENT-COMPLETION.md`.
 **Schema:** `core/managed-core/schemas/delivery-modes.schema.json`
 
 ## Purpose
@@ -91,6 +91,15 @@ Repository config file (optional): `.github/linktrend-delivery-mode.json`
 Environment override (tests / automation): `LINKTREND_DELIVERY_MODE=issue-pr|phase-integration`.
 
 When unset, default is **`issue-pr`** so existing consumers keep current behavior.
+
+For a new v2 local-coordinator consumer, version 2 may add bounded fast/full/
+release profiles, dependency files, attempt/revision limits, resource limits,
+and `mainPromotion`. The complete version-2 shape and validation rules are
+frozen in `docs/planning/streamlined-delivery/FROZEN-INTERFACES.md` and the
+packaged `delivery-runtime.schema.json`. Recommended new-install values are
+`deliveryMode=phase-integration`, `orchestrationMode=local-coordinator`, two
+fast jobs, one heavy job, a 300-second fast target, two attempts, two sealed
+revisions, automatic staging, and principal-approved main.
 
 `phaseBranchPrefix` is shared by Packager discovery (`is_allowed_work_branch`) and required branch-source CI policy (`scripts/gitops/work-branch-allowlist.sh` / `branch-source-policy.yml`). A custom prefix (for example `wave/`) must be allowlisted consistently in both places.
 

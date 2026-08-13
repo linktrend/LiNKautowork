@@ -76,8 +76,10 @@ CONTENT_DOCTRINE = (
     ("docs/contracts/DELIVERY-MODES.md", "content/doctrine/DELIVERY-MODES.md"),
     ("docs/contracts/MANAGED-CORE-V2.md", "content/doctrine/MANAGED-CORE-V2.md"),
     ("docs/contracts/REPOSITORY-PROTECTION.md", "content/doctrine/REPOSITORY-PROTECTION.md"),
+    ("docs/contracts/STREAMLINED-DELIVERY.md", "content/doctrine/STREAMLINED-DELIVERY.md"),
     ("docs/adr/0003-autonomous-ship-pull-promote.md", "content/doctrine/0003-autonomous-ship-pull-promote.md"),
     ("docs/adr/0004-portable-managed-core-v2.md", "content/doctrine/0004-portable-managed-core-v2.md"),
+    ("docs/adr/0005-streamlined-delivery-coordinator.md", "content/doctrine/0005-streamlined-delivery-coordinator.md"),
     ("docs/AUTONOMOUS-GIT-OPERATIONS.md", "content/doctrine/AUTONOMOUS-GIT-OPERATIONS.md"),
 )
 
@@ -277,6 +279,14 @@ def build_entries() -> list[dict[str, Any]]:
         (
             "schemas/delivery-modes.schema.json",
             ".ide-development/schemas/delivery-modes.schema.json",
+        ),
+        (
+            "schemas/delivery-runtime.schema.json",
+            ".ide-development/schemas/delivery-runtime.schema.json",
+        ),
+        (
+            "schemas/gate-receipt.schema.json",
+            ".ide-development/schemas/gate-receipt.schema.json",
         ),
         (
             "schemas/managed-core-release.schema.json",

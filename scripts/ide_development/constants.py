@@ -13,8 +13,8 @@ EXIT_INVALID_PACKAGE = 12
 EXIT_ROLLBACK_FAILURE = 13
 
 SCHEMA_VERSION = 1
-INSTALLER_VERSION = "2.1.10"
-PACKAGE_VERSION_TARGET = "2.1.10"
+INSTALLER_VERSION = "2.2.0"
+PACKAGE_VERSION_TARGET = "2.2.0"
 PACKAGE_NAME = "ide-development-managed-core"
 
 # Release-candidate packaging (Lane D) — archives under ignored build/
@@ -40,7 +40,7 @@ RC_REQUIRED_TEST_RELS = (
     "scripts/ide_development_tests/test_package_reproducibility.py",
 )
 RC_REQUIRED_EVIDENCE_RELS = (
-    "tests/packaging/LANE_D_RESULT.md",
+    "docs/evidence/streamlined-delivery/W3-P1/release-candidate.md",
 )
 RC_EXCLUSION_CLASSES = (
     "credentials-and-secret-values",

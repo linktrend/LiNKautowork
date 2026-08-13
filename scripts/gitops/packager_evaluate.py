@@ -38,6 +38,8 @@ from packager_logic import (  # noqa: E402
     require_packager_pr_author,
     should_request_bugbot,
 )
+from delivery_modes import PHASE_DELIVERY_REL, load_delivery_config
+from phase_integrator import phase_bugbot_request_allowed
 from readiness_status import is_sha_review_ready  # noqa: E402
 from write_outcome import post_check_run, write_outcome  # noqa: E402
 
@@ -45,6 +47,8 @@ from write_outcome import post_check_run, write_outcome  # noqa: E402
 _RUN_HOOK: Callable[[list[str], dict[str, str]], str] | None = None
 # Test hook for HTTP API: (method, url, token, body, env_snapshot) -> payload
 _API_HOOK: Callable[[str, str, str, Any, dict[str, str]], Any] | None = None
+# Test hook: (token, repository, exact head sha) -> Phase record or None.
+_PHASE_RECORD_HOOK: Callable[[str, str, str], dict[str, Any] | None] | None = None
 
 
 def run(args: list[str], token: str, *, role: str = "automation") -> str:
@@ -90,6 +94,30 @@ def gh_api(method: str, url: str, token: str, body=None):
     except urllib.error.HTTPError as e:
         detail = e.read().decode("utf-8", errors="replace")
         raise RuntimeError(f"{method} {url} -> {e.code}: {detail}") from e
+
+
+def fetch_phase_record(token: str, repo: str, sha: str) -> dict[str, Any] | None:
+    """Read the Phase record from the exact PR head, never from the event branch."""
+
+    if _PHASE_RECORD_HOOK is not None:
+        return _PHASE_RECORD_HOOK(token, repo, sha)
+    import base64
+
+    try:
+        payload = gh_api(
+            "GET",
+            f"https://api.github.com/repos/{repo}/contents/{PHASE_DELIVERY_REL.as_posix()}?ref={sha}",
+            token,
+        )
+    except RuntimeError:
+        return None
+    if not isinstance(payload, dict) or payload.get("encoding") != "base64":
+        return None
+    try:
+        value = json.loads(base64.b64decode(str(payload.get("content") or "")).decode("utf-8"))
+    except (ValueError, json.JSONDecodeError, UnicodeDecodeError):
+        return None
+    return value if isinstance(value, dict) else None
 
 
 def pr_head(pr: int, token: str) -> str:
@@ -257,6 +285,19 @@ def evaluate_pr(pr: int, app_token: str) -> dict:
         return result
 
     sha1 = (meta.get("headRefOid") or "").lower()
+    phase_prefix = load_delivery_config(Path.cwd()).phase_branch_prefix
+    phase_branch = str(meta.get("headRefName") or "").startswith(phase_prefix)
+    phase_record = fetch_phase_record(app_token, repo, sha1) if phase_branch else None
+    if phase_branch and isinstance(phase_record, dict) and not bool(phase_record.get("sealed")):
+        result["headSha"] = sha1
+        result["status"] = "waiting"
+        result["detail"] = "phase_unsealed_no_gates"
+        return result
+    if phase_branch and phase_record is None:
+        result["headSha"] = sha1
+        result["status"] = "waiting"
+        result["detail"] = "phase_record_missing"
+        return result
     event_head = (os.environ.get("HEAD_SHA") or "").lower()
     if event_head and event_head != sha1:
         result["status"] = "skipped"
@@ -328,6 +369,22 @@ def evaluate_pr(pr: int, app_token: str) -> dict:
         return result
 
     comments = list_comments(app_token, repo, pr)
+    if phase_branch:
+        current_record = fetch_phase_record(app_token, repo, sha3)
+        if current_record is None:
+            result["status"] = "skipped"
+            result["detail"] = "phase_record_missing_after_fast"
+            return result
+        # The check result is local to this exact live head.  The Integrator
+        # persists the corresponding gate observation; no prior candidate gate
+        # may be reused after a Phase head move.
+        phase_request_record = dict(current_record)
+        phase_request_record["fast"] = {"status": "passed", "sha": sha3, "detail": "current_pr_fast_gate"}
+        allowed, phase_detail = phase_bugbot_request_allowed(phase_request_record, live_head_sha=sha3)
+        if not allowed:
+            result["status"] = "skipped" if phase_detail.startswith("bugbot_already") else "waiting"
+            result["detail"] = phase_detail
+            return result
     ok, reason = should_request_bugbot(comments=comments, head_sha=sha3, fast_gate_ok=True)
     if not ok:
         result["status"] = "skipped" if reason.startswith("skipped_") else "blocked"
