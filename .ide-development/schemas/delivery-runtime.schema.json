@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/delivery-runtime.schema.json",
+  "title": "IDE Development delivery coordinator runtime state",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "repository", "phaseBranch", "phaseId", "immutableBaseSha",
+    "status", "acceptedIssues", "candidateIdentity", "sealedCandidateRevisions",
+    "attempts", "gateResults", "draftPr", "mergeSha", "stagingSha", "stopReason"
+  ],
+  "$defs": {
+    "sha40": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "candidateIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "sourceSha", "gitTreeSha", "dependencyDigests", "testProfile"],
+      "properties": {
+        "repository": { "type": "string", "pattern": "^[^/\\s]+/[^/\\s]+$" },
+        "sourceSha": { "$ref": "#/$defs/sha40" },
+        "gitTreeSha": { "$ref": "#/$defs/sha40" },
+        "dependencyDigests": {
+          "type": "object",
+          "additionalProperties": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+        },
+        "testProfile": { "type": "string", "enum": ["fast", "full", "release"] }
+      }
+    },
+    "issue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["branch", "sha", "accepted", "included"],
+      "properties": {
+        "branch": { "type": "string", "minLength": 1 },
+        "sha": { "$ref": "#/$defs/sha40" },
+        "accepted": { "type": "boolean" },
+        "included": { "type": "boolean" }
+      }
+    },
+    "gateResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "attempt", "detail"],
+      "properties": {
+        "status": { "type": "string", "enum": ["passed", "failed"] },
+        "attempt": { "type": "integer", "minimum": 0, "maximum": 2 },
+        "detail": { "type": "string" }
+      }
+    }
+  },
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "repository": { "type": "string", "pattern": "^[^/\\s]+/[^/\\s]+$" },
+    "phaseBranch": { "type": "string", "minLength": 1 },
+    "phaseId": { "type": "string", "minLength": 1 },
+    "immutableBaseSha": { "$ref": "#/$defs/sha40" },
+    "status": {
+      "type": "string",
+      "enum": [
+        "created", "collecting", "draft", "sealed", "candidate-failed",
+        "fast-running", "fast-passed", "bugbot-running", "bugbot-passed",
+        "full-running", "full-passed", "candidate-ready", "merged",
+        "staging-running", "staging-passed", "staging-promoted", "release-running",
+        "release-passed", "main-awaiting-approval", "main-promoted", "stopped",
+        "blocked", "cancelled"
+      ]
+    },
+    "acceptedIssues": { "type": "array", "items": { "$ref": "#/$defs/issue" } },
+    "candidateIdentity": {
+      "anyOf": [{ "$ref": "#/$defs/candidateIdentity" }, { "type": "null" }]
+    },
+    "sealedCandidateRevisions": { "type": "integer", "minimum": 0, "maximum": 2 },
+    "attempts": { "type": "integer", "minimum": 0, "maximum": 2 },
+    "gateResults": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/gateResult" }
+    },
+    "draftPr": { "anyOf": [{ "type": "object" }, { "type": "null" }] },
+    "mergeSha": { "anyOf": [{ "$ref": "#/$defs/sha40" }, { "type": "null" }] },
+    "stagingSha": { "anyOf": [{ "$ref": "#/$defs/sha40" }, { "type": "null" }] },
+    "stopReason": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+  }
+}

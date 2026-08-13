@@ -39,6 +39,7 @@ from delivery_modes import (  # noqa: E402
     PHASE_DELIVERY_REL,
     load_delivery_config,
     load_exception_for_tip,
+    phase_draft_record_ready,
     should_open_pr_for_branch,
     validate_phase_delivery_record,
 )
@@ -382,7 +383,22 @@ def main() -> int:
         sha = ((b.get("commit") or {}).get("sha") or "").lower()
         if not sha:
             continue
-        ok, detail = is_sha_review_ready(sha)
+        phase_preview = None
+        phase_draft = False
+        if delivery.is_phase_integration and name.startswith(delivery.phase_branch_prefix):
+            # An early Phase draft is visibility-only.  It may exist before the
+            # sealed candidate receives Review Ready and must not trigger gates.
+            phase_preview = fetch_phase_delivery_record(token, repo, sha)
+            phase_draft = isinstance(phase_preview, dict) and not bool(phase_preview.get("sealed"))
+        if phase_draft:
+            ok, detail = phase_draft_record_ready(
+                phase_preview,
+                branch=name,
+                head_sha=sha,
+                phase_branch_prefix=delivery.phase_branch_prefix,
+            )
+        else:
+            ok, detail = is_sha_review_ready(sha)
         entry: dict[str, Any] = {
             "branch": name,
             "headSha": sha,
@@ -418,13 +434,21 @@ def main() -> int:
             continue
 
         if decision.reason == "phase_branch_pr":
-            phase_record = fetch_phase_delivery_record(token, repo, sha)
-            ok_phase, phase_detail = validate_phase_delivery_record(
-                phase_record,
-                branch=name,
-                head_sha=sha,
-                phase_branch_prefix=delivery.phase_branch_prefix,
-            )
+            phase_record = phase_preview or fetch_phase_delivery_record(token, repo, sha)
+            if phase_draft:
+                ok_phase, phase_detail = phase_draft_record_ready(
+                    phase_record,
+                    branch=name,
+                    head_sha=sha,
+                    phase_branch_prefix=delivery.phase_branch_prefix,
+                )
+            else:
+                ok_phase, phase_detail = validate_phase_delivery_record(
+                    phase_record,
+                    branch=name,
+                    head_sha=sha,
+                    phase_branch_prefix=delivery.phase_branch_prefix,
+                )
             entry["phaseDelivery"] = phase_detail
             if not ok_phase:
                 entry["action"] = f"skipped_phase_delivery:{phase_detail}"

@@ -15,6 +15,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/work-branch-allowlist.sh"
 
 MODE="${MODE:-package}"
+MAIN_PROMOTION_MODE="${MAIN_PROMOTION_MODE:-principal-approval}"
 RELEASE_GATE_CHECKS="${RELEASE_GATE_CHECKS:-Verify IDE Development,Enforce allowed PR source branches}"
 TIMEZONE_LABEL="${TIMEZONE_LABEL:-Asia/Taipei}"
 EXPECTED_STAGING_SHA="${EXPECTED_STAGING_SHA:-}"
@@ -26,6 +27,15 @@ TOKEN="${AUTOMATION_TOKEN:-}"
 export GH_TOKEN="${TOKEN}"
 export GITHUB_TOKEN="${TOKEN}"
 OUTCOME="${OUTCOME_FILE:-gitops-outcome.json}"
+RECEIPT_GATE="${SCRIPT_DIR}/promotion_receipt_gate.py"
+RECEIPT_PATH="${RECEIPT_PATH:-${LINKTREND_RECEIPT_PATH:-}}"
+RECEIPT_DEPENDENCY_FILES="${RECEIPT_DEPENDENCY_FILES:-}"
+COORDINATOR_RECEIPT_ROOT="${LINKTREND_COORDINATOR_RECEIPT_ROOT:-${HOME}/.linktrend/ide-coordinator/receipts}"
+
+case "${MAIN_PROMOTION_MODE}" in
+  principal-approval|automatic) ;;
+  *) echo "FAIL: unsupported main promotion mode ${MAIN_PROMOTION_MODE}" >&2; exit 1 ;;
+esac
 
 
 repair_task_upsert() {
@@ -93,6 +103,31 @@ gh_retry() {
 
 write_out() {
   python3 "${SCRIPT_DIR}/write_outcome.py" --file "${OUTCOME}" --status "$1" --detail "$2"
+}
+
+receipt_identity_args() {
+  local raw dep
+  RECEIPT_IDENTITY_ARGS=()
+  raw="$(printf '%s' "${RECEIPT_DEPENDENCY_FILES}" | tr ',' '\n')"
+  while IFS= read -r dep; do
+    [ -n "${dep}" ] && RECEIPT_IDENTITY_ARGS+=(--dependency "${dep}")
+  done <<< "${raw}"
+}
+
+verify_receipt_before_mutation() {
+  local candidate_repo="$1"
+  local profile="${2:-full}"
+  if [ -z "${RECEIPT_PATH}" ] || [ ! -f "${RECEIPT_PATH}" ]; then
+    write_out "blocked" "promotion receipt missing; protected main was not mutated"
+    return 1
+  fi
+  receipt_identity_args
+  python3 "${RECEIPT_GATE}" verify \
+    --receipt "${RECEIPT_PATH}" \
+    --repo "${candidate_repo}" \
+    --profile "${profile}" \
+    --gate full-gate \
+    "${RECEIPT_IDENTITY_ARGS[@]}"
 }
 
 if [ -z "${TOKEN}" ] || [ "${AUTOMATION_TOKEN_SOURCE:-}" != "github_token" ]; then
@@ -177,7 +212,11 @@ if [ "${MODE}" = "package" ]; then
   START_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
   START_SHA="$(git rev-parse HEAD)"
   WT="$(mktemp -d "${TMPDIR:-/tmp}/main-promote.XXXXXX")"
-  cleanup() { git worktree remove --force "${WT}" >/dev/null 2>&1 || rm -rf "${WT}"; }
+  RECEIPT_IDENTITY_FILE="$(mktemp "${TMPDIR:-/tmp}/main-identity.XXXXXX.json")"
+  cleanup() {
+    git worktree remove --force "${WT}" >/dev/null 2>&1 || rm -rf "${WT}"
+    rm -f "${RECEIPT_IDENTITY_FILE}"
+  }
   trap cleanup EXIT
   git worktree add --detach "${WT}" origin/main >/dev/null
   git -C "${WT}" checkout -B "${PROMOTE_BRANCH}" >/dev/null
@@ -196,8 +235,27 @@ if [ "${MODE}" = "package" ]; then
     exit 0
   fi
   CANDIDATE="$(git -C "${WT}" rev-parse HEAD)"
+  CANDIDATE_TREE="$(git -C "${WT}" rev-parse HEAD^{tree})"
+  if [ -z "${RECEIPT_PATH}" ]; then
+    RECEIPT_PATH="${COORDINATOR_RECEIPT_ROOT}/${CANDIDATE_TREE}-full-gate.json"
+  fi
+  receipt_identity_args
+  python3 "${SCRIPT_DIR}/gate_receipt.py" identity \
+    --repo "${WT}" --profile full \
+    "${RECEIPT_IDENTITY_ARGS[@]}" >"${RECEIPT_IDENTITY_FILE}"
+  verify_receipt_before_mutation "${WT}" full || exit 0
   git -C "${WT}" push -u origin "HEAD:refs/heads/${PROMOTE_BRANCH}"
   MARKER="$(marker_json "${STG_SHA}" "${MAIN_SHA}" "${CANDIDATE}" "${PROMOTE_BRANCH}")"
+  RECEIPT_DIGEST="$(python3 - "${RECEIPT_PATH}" <<'PY'
+import hashlib
+import json
+import sys
+value = json.loads(open(sys.argv[1], encoding="utf-8").read())
+payload = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+print("sha256:" + hashlib.sha256(payload).hexdigest())
+PY
+)"
+  MARKER="$(echo "${MARKER}" | jq --arg digest "${RECEIPT_DIGEST}" --arg mode "${MAIN_PROMOTION_MODE}" '. + {receiptDigest:$digest,approvalMode:$mode}')"
   BODY="$(cat <<EOF
 ## Main promote package (awaiting Principal Approve)
 
@@ -219,6 +277,10 @@ EOF
   exit 0
 fi
 
+if [ "${MODE}" = "automatic" ]; then
+  MAIN_PROMOTION_MODE="automatic"
+  MODE="approve-merge"
+fi
 if [ "${MODE}" != "approve-merge" ]; then
   write_out "failed" "unknown MODE=${MODE}"
   exit 1
@@ -274,6 +336,63 @@ marker="$(extract_marker "${body}")" || { write_out "failed" "missing promote ma
 echo "${marker}" | jq -e --arg s "${STG_SHA}" --arg m "${MAIN_SHA}" --arg c "${EXPECTED_PROMOTE_HEAD}" \
   '.sourceSha==$s and .targetSha==$m and .candidateHead==$c' >/dev/null \
   || { write_out "failed" "marker SHA binding mismatch"; exit 1; }
+
+if [ -z "${CANDIDATE_IDENTITY_PATH:-}" ] || [ ! -f "${CANDIDATE_IDENTITY_PATH}" ]; then
+  IDENTITY_WORKTREE="$(mktemp -d "${TMPDIR:-/tmp}/main-identity.XXXXXX")"
+  IDENTITY_FILE="$(mktemp "${TMPDIR:-/tmp}/main-identity.XXXXXX.json")"
+  git fetch origin "refs/heads/${head_branch}:refs/remotes/origin/${head_branch}"
+  if [ "$(git rev-parse "origin/${head_branch}")" != "${EXPECTED_PROMOTE_HEAD}" ]; then
+    rm -rf "${IDENTITY_WORKTREE}"
+    rm -f "${IDENTITY_FILE}"
+    write_out "failed" "fetched promote branch does not match expected head"
+    exit 1
+  fi
+  git worktree add --detach "${IDENTITY_WORKTREE}" "origin/${head_branch}" >/dev/null
+  receipt_identity_args
+  python3 "${SCRIPT_DIR}/gate_receipt.py" identity \
+    --repo "${IDENTITY_WORKTREE}" --profile full "${RECEIPT_IDENTITY_ARGS[@]}" >"${IDENTITY_FILE}"
+  git worktree remove --force "${IDENTITY_WORKTREE}" >/dev/null 2>&1 || rm -rf "${IDENTITY_WORKTREE}"
+  CANDIDATE_IDENTITY_PATH="${IDENTITY_FILE}"
+fi
+if [ -z "${RECEIPT_PATH}" ]; then
+  CANDIDATE_TREE="$(python3 - "${CANDIDATE_IDENTITY_PATH}" <<'PY'
+import json
+import sys
+print(json.load(open(sys.argv[1], encoding="utf-8"))["gitTreeSha"])
+PY
+)"
+  RECEIPT_PATH="${COORDINATOR_RECEIPT_ROOT}/${CANDIDATE_TREE}-full-gate.json"
+fi
+if [ ! -f "${RECEIPT_PATH}" ]; then
+  [ -z "${IDENTITY_FILE:-}" ] || rm -f "${IDENTITY_FILE}"
+  write_out "blocked" "promotion receipt missing; principal approval cannot mutate main"
+  exit 1
+fi
+python3 "${RECEIPT_GATE}" verify \
+  --receipt "${RECEIPT_PATH}" \
+  --identity "${CANDIDATE_IDENTITY_PATH}" \
+  --profile full --gate full-gate || {
+    [ -z "${IDENTITY_FILE:-}" ] || rm -f "${IDENTITY_FILE}"
+    write_out "blocked" "promotion receipt identity does not match main candidate"
+    exit 1
+  }
+[ -z "${IDENTITY_FILE:-}" ] || rm -f "${IDENTITY_FILE}"
+
+marker_receipt="$(echo "${marker}" | jq -r '.receiptDigest // empty')"
+marker_mode="$(echo "${marker}" | jq -r '.approvalMode // "principal-approval"')"
+actual_receipt="$(python3 - "${RECEIPT_PATH}" <<'PY'
+import hashlib
+import json
+import sys
+value = json.loads(open(sys.argv[1], encoding="utf-8").read())
+payload = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+print("sha256:" + hashlib.sha256(payload).hexdigest())
+PY
+)"
+[ -n "${marker_receipt}" ] && [ "${marker_receipt}" = "${actual_receipt}" ] \
+  || { write_out "failed" "stale main approval receipt binding"; exit 1; }
+[ "${marker_mode}" = "${MAIN_PROMOTION_MODE}" ] \
+  || { write_out "failed" "main approval mode is stale or mismatched"; exit 1; }
 
 if ! python3 "${SCRIPT_DIR}/wait_named_gate.py" \
     --pr "${PROMOTE_PR_NUMBER}" \
