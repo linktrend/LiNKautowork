@@ -197,6 +197,12 @@ export class SupabaseAuditClient implements ExecutionStore {
     return (await response.json()) as T;
   }
 
+  /** Calls an org-scoped provider-plane RPC with the runtime JWT; never service-role bypasses RLS. */
+  async callProviderRpc<T>(rpcName: string, body: Record<string, unknown>, orgId: string): Promise<T> {
+    const response = await this.callRpc(rpcName, body, 'provider-plane', orgId);
+    return (await response.json()) as T;
+  }
+
   async listActiveKillSwitches(): Promise<ActiveKillSwitch[]> {
     const response = await this.callRpc('linkautowork_active_killswitches', {}, 'active-killswitches');
     const payload = (await response.json()) as unknown;
