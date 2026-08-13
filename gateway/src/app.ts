@@ -43,6 +43,9 @@ import { deploymentDecisionSchema, incidentTransitionSchema, operationsActionSch
 import { OperationsService, type AlertAdapter } from './services/monitoring/operations-service.js';
 import { SupabaseOperationsStore } from './services/monitoring/supabase-operations-store.js';
 import { N8nOperationsExecutor } from './services/deployments/n8n-operations-executor.js';
+import { ProviderRouteService } from './services/provider-route-service.js';
+import { ProviderStoreError } from './services/provider-store.js';
+import { providerInvocationRequestSchema } from '../../packages/automation-contracts/src/provider-contract.js';
 
 function parseSchema<T>(schema: z.ZodType<T>, input: unknown): T {
   try {
@@ -79,6 +82,8 @@ export type AppDeps = {
   librarianService: AutomationLibrarianService;
   provisioningService: ProvisioningService;
   operationsService: OperationsService;
+  /** Optional until an org-scoped provider-plane runtime is configured; routes fail closed when absent. */
+  providerRouteService?: ProviderRouteService;
 };
 
 export function buildDependencies(env: AppEnv): AppDeps {
@@ -166,6 +171,20 @@ export function createApp(deps: AppDeps) {
     res.setHeader('content-type', getMetricsRegistry().contentType);
     res.send(await getMetricsRegistry().metrics());
   });
+
+  const providerService = (): ProviderRouteService => {
+    if (!deps.providerRouteService) throw new HttpError(503, 'provider persistence runtime is unavailable');
+    return deps.providerRouteService;
+  };
+  const providerAuth = [requireInternalServiceToken(deps.env), requirePlatformInvocationClaim(deps.env)];
+  app.get('/v1/provider/capabilities', ...providerAuth, (req, res, next) => { try { res.json({ contract_version: '2026-08-13.v1', capabilities: providerService().capabilities() }); } catch (error) { next(error); } });
+  app.get('/v1/provider/catalogue', ...providerAuth, (req, res, next) => { try { res.json({ contract_version: '2026-08-13.v1', automations: providerService().catalogue() }); } catch (error) { next(error); } });
+  app.get('/v1/provider/catalogue/:automationId/versions/:version', ...providerAuth, (req, res, next) => { try { res.json({ automation: providerService().detail(req.params.automationId, req.params.version) }); } catch (error) { next(error); } });
+  app.post('/v1/provider/requests', ingressRateLimiter, ...providerAuth, async (req, res, next) => { try { const result = await providerService().accept(req.platformInvocation!.orgId, parseSchema(providerInvocationRequestSchema, req.body)); res.status(result.replay ? 200 : 202).json(result); } catch (error) { next(error); } });
+  app.get('/v1/provider/requests/:requestId', ...providerAuth, async (req, res, next) => { try { res.json({ status: await providerService().request(req.platformInvocation!.orgId, req.params.requestId) }); } catch (error) { next(error); } });
+  app.get('/v1/provider/requests/:requestId/receipt', ...providerAuth, async (req, res, next) => { try { res.json({ receipt: await providerService().receipt(req.platformInvocation!.orgId, req.params.requestId) }); } catch (error) { next(error); } });
+  app.post('/v1/provider/callbacks', ingressRateLimiter, ...providerAuth, async (req, res, next) => { try { res.status(202).json({ receipt: await providerService().callback(req.platformInvocation!.orgId, req.body) }); } catch (error) { next(error); } });
+  app.get('/v1/provider/events', ...providerAuth, async (req, res, next) => { try { const cursor = typeof req.query.cursor === 'string' ? req.query.cursor : null; const limit = typeof req.query.limit === 'string' ? Number(req.query.limit) : 50; res.json(await providerService().events(req.platformInvocation!.orgId, cursor, limit)); } catch (error) { next(error); } });
 
   app.post(
     '/v1/ingress/:workflowId',
@@ -583,6 +602,11 @@ export function createApp(deps: AppDeps) {
   app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
     if (error instanceof HttpError) {
       res.status(error.statusCode).json({ error: error.message });
+      return;
+    }
+    if (error instanceof ProviderStoreError) {
+      const status = error.category === 'not_found' ? 404 : error.category === 'conflict' ? 409 : error.category === 'blocked' ? 503 : error.category === 'forbidden' ? 403 : 400;
+      res.status(status).json({ error: error.category });
       return;
     }
 
