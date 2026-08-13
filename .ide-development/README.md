@@ -1,13 +1,13 @@
-# Managed Core (v2 package source)
+# Managed Core (v2.2 package source)
 
-**Status:** Wave 1 architecture surface (Issue #43)
+**Status:** v2.2 streamlined-delivery package surface
 **Package version:** see `VERSION`
 **Contract:** `docs/contracts/MANAGED-CORE-V2.md`
 **ADR:** `docs/adr/0004-portable-managed-core-v2.md`
 
 ## Purpose
 
-`core/managed-core/` is the **system-source package root** for the portable IDE Development v2 managed core.
+`core/managed-core/` is the **system-source package root** for the portable IDE Development v2 managed core, including the shared streamlined-delivery coordinator interfaces.
 
 When installed into a consumer repository, the committed package root is `.ide-development/`.
 This directory is the authoring source inside the IDE Development system repository. It is **not** a nested install of IDE Development into itself.
@@ -18,7 +18,7 @@ This directory is the authoring source inside the IDE Development system reposit
 core/managed-core/
   README.md                 # this file
   INDEX.yaml                # discovery index
-  VERSION                   # package semver (2.0.0 target)
+  VERSION                   # package semver (2.2.0 target)
   MANIFEST.json             # live install set (built by scripts/ide_development/build_manifest.py)
   schemas/                  # authoritative JSON Schemas
   examples/                 # minimal valid examples for focused validation
