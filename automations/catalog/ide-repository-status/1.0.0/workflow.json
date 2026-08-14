@@ -1,0 +1,88 @@
+{
+  "id": "ide-repository-status-eval",
+  "name": "IDE Repository Status",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a8f1e0da-2f46-47c6-8ec6-5d7777770001",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [260, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d41a5ec6-a1e8-4dfd-84c8-3f7777770002",
+              "name": "status",
+              "value": "ok",
+              "type": "string"
+            },
+            {
+              "id": "29b9bcdd-fd70-47bb-99b3-9d7777770003",
+              "name": "automation_id",
+              "value": "ide-repository-status",
+              "type": "string"
+            },
+            {
+              "id": "ec18d47c-daf2-45ab-aaf4-3f7777770005",
+              "name": "version",
+              "value": "1.0.0",
+              "type": "string"
+            },
+            {
+              "id": "ec18d47c-daf2-45ab-aaf4-3f7777770006",
+              "name": "operation_kinds",
+              "value": "status_collection,precheck",
+              "type": "string"
+            },
+            {
+              "id": "ec18d47c-daf2-45ab-aaf4-3f7777770007",
+              "name": "side_effect_class",
+              "value": "read_only",
+              "type": "string"
+            },
+            {
+              "id": "ec18d47c-daf2-45ab-aaf4-3f7777770008",
+              "name": "repository_status",
+              "value": "bounded_metadata_only",
+              "type": "string"
+            },
+            {
+              "id": "ec18d47c-daf2-45ab-aaf4-3f7777770009",
+              "name": "precheck",
+              "value": "read_only",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c0fa1162-56a3-43ec-ae6b-0b7777770004",
+      "name": "Return Contract Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [500, 300]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Return Contract Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": { "executionOrder": "v1" },
+  "active": false,
+  "versionId": "a2121212-0000-4000-8000-000000000001",
+  "tags": []
+}

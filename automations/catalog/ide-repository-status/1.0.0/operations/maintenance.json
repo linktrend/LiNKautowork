@@ -1,0 +1,11 @@
+{
+  "schema_version": "0.1",
+  "policy_id": "ide-repository-status-maintenance",
+  "automatic_actions": ["none"],
+  "escalation": { "create_maintenance_issue": true, "severity_threshold": "warning" },
+  "candidate_change_policy": {
+    "workflow_logic_change": "new_release_candidate",
+    "independent_eval_required": true,
+    "production_in_place_change_allowed": false
+  }
+}

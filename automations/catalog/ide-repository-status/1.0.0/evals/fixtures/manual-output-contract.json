@@ -1,0 +1,12 @@
+{
+  "input": {},
+  "expected_output": {
+    "status": "ok",
+    "automation_id": "ide-repository-status",
+    "version": "1.0.0",
+    "operation_kinds": "status_collection,precheck",
+    "side_effect_class": "read_only",
+    "repository_status": "bounded_metadata_only",
+    "precheck": "read_only"
+  }
+}

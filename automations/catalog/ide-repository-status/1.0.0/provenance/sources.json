@@ -1,0 +1,33 @@
+{
+  "schema_version": "0.1",
+  "automation_id": "ide-repository-status",
+  "automation_version": "1.0.0",
+  "required_runtime": { "engine": "n8n", "n8n_version": "2.30.0" },
+  "sources": [
+    {
+      "source_id": "linkautowork-gap-v01",
+      "kind": "internal",
+      "locator": "https://github.com/linktrend/LiNKautowork",
+      "revision": "a06b9866664e775ad3c37c1f5e6155df727d828c",
+      "content_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "license": "LicenseRef-LiNKtrend-Internal",
+      "commercial_use": "not_applicable",
+      "adaptation_status": "reference_only"
+    }
+  ],
+  "source_to_target_map": [
+    {
+      "source_id": "linkautowork-gap-v01",
+      "source_content_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "source_component_ref": "ide-repository-status-contract",
+      "target_component_ref": "automation.json",
+      "action": "reference_only",
+      "reason": "The internal package contract defines this inactive read-only repository metadata workflow."
+    }
+  ],
+  "review": {
+    "status": "not_applicable",
+    "reviewer_role": "LiNKautowork product contract",
+    "conclusion": "This source-only package has no third-party automation source and carries no credentials or external integration."
+  }
+}

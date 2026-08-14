@@ -1,0 +1,12 @@
+{
+  "schema_version": "0.1",
+  "profile_id": "ide-repository-status-monitoring",
+  "slo": { "success_rate_target": 1, "max_latency_ms": 5000, "missed_schedule_tolerance": 0 },
+  "signals": ["execution_success", "execution_failure", "latency"],
+  "alerts": [
+    { "signal": "execution_failure", "severity": "warning", "condition": "Any evaluation execution fails.", "route_key": "linkautowork.operator-review" }
+  ],
+  "health_checks": [
+    { "check_id": "ide-repository-status-contract", "kind": "configuration_reference", "interval_seconds": 3600 }
+  ]
+}

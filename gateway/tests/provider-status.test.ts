@@ -1,0 +1,2 @@
+import { describe, expect, it } from 'vitest'; import { providerCapabilityStatus } from '../src/services/provider-status.js';
+describe('provider status', () => { it('returns truthful non-authority status', () => expect(providerCapabilityStatus('catalogue', 'available').doesNotProve).toContain('production_readiness')); it('rejects unknown status', () => expect(() => providerCapabilityStatus('catalogue', 'ready' as never)).toThrow(/invalid/)); });
