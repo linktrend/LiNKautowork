@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   branch-source-policy:
-    name: Linktrend Branch Source Policy
+    name: Enforce allowed PR source branches
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 5
     env:

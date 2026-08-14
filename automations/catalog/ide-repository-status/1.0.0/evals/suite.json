@@ -1,0 +1,41 @@
+{
+  "schema_version": "0.1",
+  "suite_id": "ide-repository-status-suite",
+  "automation_id": "ide-repository-status",
+  "automation_version": "1.0.0",
+  "required_runtime": { "engine": "n8n", "n8n_version": "2.30.0" },
+  "pass_threshold": 1,
+  "cases": [
+    {
+      "case_id": "manual-output-contract",
+      "case_type": "happy_path",
+      "fixture_ref": "fixtures/manual-output-contract.json",
+      "expected": {
+        "outcome": "success",
+        "assertions": ["Output is bounded repository status and precheck metadata.", "Output declares read_only side effects."],
+        "receipt_fields": ["release_id", "instance_id", "execution_id", "status", "latency_ms"]
+      },
+      "side_effect_mode": "none"
+    },
+    {
+      "case_id": "no-side-effects",
+      "case_type": "side_effect_safety",
+      "fixture_ref": "fixtures/no-side-effects.json",
+      "expected": {
+        "outcome": "no_side_effect",
+        "assertions": ["The workflow has no credentialed or external-action node.", "The workflow remains inactive after evaluation."],
+        "receipt_fields": ["release_id", "execution_id", "status"]
+      },
+      "side_effect_mode": "prohibited"
+    },
+    {
+      "case_id": "bounded-metadata", "case_type": "compatibility", "fixture_ref": "fixtures/manual-output-contract.json",
+      "expected": { "outcome": "success", "assertions": ["The output contains only bounded repository metadata."] }, "side_effect_mode": "none"
+    }
+  ],
+  "evidence_policy": {
+    "retain": ["case_result", "assertion_result", "release_hash", "runtime_version", "receipt_hash"],
+    "redact": ["Do not persist fixture input values outside the test harness."],
+    "independent_verdict_required": true
+  }
+}

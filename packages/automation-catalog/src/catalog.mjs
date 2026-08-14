@@ -85,6 +85,23 @@ export function canonicalJson(value) {
   return JSON.stringify(value);
 }
 
+/** Returns bounded, authorization-filtered catalogue metadata; it never exposes workflow or package payloads. */
+export function listProviderCatalogue(entries, { orgId, capabilities = [] }) {
+  const granted = new Set(capabilities);
+  return entries.filter((entry) => entry.org_id === orgId && granted.has(entry.capability) && entry.lifecycle === 'available')
+    .map(({ automation_id, version, digest, owner, lifecycle, capability, purpose }) => ({ automation_id, version, digest, owner, lifecycle, capability, purpose }));
+}
+
+/** Resolves one caller-selected immutable version and rejects implicit latest/deprecated substitutions. */
+export function getProviderCatalogueDetail(entries, { orgId, capability, automationId, version }) {
+  if (!version) throw new Error('exact automation version is required');
+  const entry = entries.find((candidate) => candidate.org_id === orgId && candidate.capability === capability && candidate.automation_id === automationId && candidate.version === version);
+  if (!entry) throw new Error('automation version is unavailable');
+  if (entry.lifecycle !== 'available') throw new Error(`automation version is ${entry.lifecycle}`);
+  const { workflow, payload, logs, ...detail } = entry;
+  return detail;
+}
+
 export function isSafeRelativePath(reference) {
   if (typeof reference !== 'string' || !reference || path.isAbsolute(reference)) return false;
   const normalized = path.posix.normalize(reference.replace(/\\/g, '/'));

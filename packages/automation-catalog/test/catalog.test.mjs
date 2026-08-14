@@ -11,7 +11,20 @@ import {
   validateCatalog,
   validateIntakeRecords,
   validatePackageDirectory,
+  listProviderCatalogue,
+  getProviderCatalogueDetail,
 } from '../src/catalog.mjs';
+
+describe('provider catalogue progressive disclosure', () => {
+  const entries = [{ org_id: 'org-a', capability: 'catalogue.read', automation_id: 'precheck', version: '1.0.0', digest: 'sha256:abc', owner: 'autowork', lifecycle: 'available', purpose: 'bounded check', workflow: { private: true }, payload: 'private', logs: 'private' }, { org_id: 'org-a', capability: 'catalogue.read', automation_id: 'precheck', version: '1.1.0', digest: 'sha256:def', owner: 'autowork', lifecycle: 'deprecated', purpose: 'old' }];
+  it('filters metadata and requires an exact available version', () => {
+    expect(listProviderCatalogue(entries, { orgId: 'org-a', capabilities: ['catalogue.read'] })).toHaveLength(1);
+    expect(listProviderCatalogue(entries, { orgId: 'org-b', capabilities: ['catalogue.read'] })).toEqual([]);
+    expect(() => getProviderCatalogueDetail(entries, { orgId: 'org-a', capability: 'catalogue.read', automationId: 'precheck' })).toThrow(/exact/);
+    const detail = getProviderCatalogueDetail(entries, { orgId: 'org-a', capability: 'catalogue.read', automationId: 'precheck', version: '1.0.0' });
+    expect(detail).not.toHaveProperty('workflow'); expect(detail).not.toHaveProperty('payload'); expect(detail).not.toHaveProperty('logs');
+  });
+});
 
 const repoRoot = path.resolve(import.meta.dirname, '../../..');
 const golden = path.join(repoRoot, 'automations/packages/_golden-template');

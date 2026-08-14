@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+export * from './provider-contract.js';
+
 export const AUTOMATION_RELEASE_LIFECYCLES = [
   'draft',
   'eval_pending',
