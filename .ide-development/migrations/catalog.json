@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "catalogId": "ide-development-managed-core-migrations",
-  "packageVersion": "2.2.0",
+  "packageVersion": "2.3.6",
   "description": "Reviewed Wave 1 supersession catalog. Removals require exact identity and contentHash match; mismatches fail closed.",
   "entries": [
     {
@@ -110,6 +110,182 @@
       "reason": "Sparse GitOps install note superseded by managed-core v2 package identity.",
       "sincePackageVersion": "2.0.0",
       "knownBytes": "core/managed-core/migrations/known-bytes/obsolete-sparse-gitops-note-v1.md"
+    },
+    {
+      "identity": "scripts/gitops/integrator_evaluate.sh",
+      "path": "scripts/gitops/integrator_evaluate.sh",
+      "contentHash": "sha256:ad26be00754d3bdc8fbf6f4e2362619a417f1cb3ba45e437947b776aeb6a7492",
+      "action": "remove",
+      "reason": "Former App-backed Integrator helper; replaced by hosted Phase workflow behavior.",
+      "sincePackageVersion": "2.2.0"
+    },
+    {
+      "identity": "scripts/gitops/main_approve_package_discover.py",
+      "path": "scripts/gitops/main_approve_package_discover.py",
+      "contentHash": "sha256:f6c5f1caf5541d260cb1f3f52157080c9d0e5241e79a2c30342a820026f6d155",
+      "action": "remove",
+      "reason": "Former promotion package discovery helper; receipt-gated hosted promotion supersedes it.",
+      "sincePackageVersion": "2.2.0"
+    },
+    {
+      "identity": "scripts/gitops/main_approve_package_reuse.py",
+      "path": "scripts/gitops/main_approve_package_reuse.py",
+      "contentHash": "sha256:ef21cc91858a30793ab8c77ca39fe0cc2d18646a9b04b5c604d08f33b4f04dc3",
+      "action": "remove",
+      "reason": "Former promotion package reuse helper; exact hosted receipt identity supersedes it.",
+      "sincePackageVersion": "2.2.0"
+    },
+    {
+      "identity": "scripts/gitops/packager_discover.py",
+      "path": "scripts/gitops/packager_discover.py",
+      "contentHash": "sha256:3c3f84d3a59696e62fdff5ad444923c4563bc83df2f6d20410ea6e90361c1ebe",
+      "action": "remove",
+      "reason": "Former App-backed Packager discovery helper; hosted Phase workflow owns candidate discovery.",
+      "sincePackageVersion": "2.2.0"
+    },
+    {
+      "identity": "scripts/gitops/packager_evaluate.py",
+      "path": "scripts/gitops/packager_evaluate.py",
+      "contentHash": "sha256:451071fa711ec5e6fecf53dfa47d46ed1027f434c6044377b6ccb8c92c2d431a",
+      "action": "remove",
+      "reason": "Former App-backed Packager evaluation helper; hosted candidate lifecycle supersedes it.",
+      "sincePackageVersion": "2.2.0"
+    },
+    {
+      "identity": "scripts/gitops/packager_logic.py",
+      "path": "scripts/gitops/packager_logic.py",
+      "contentHash": "sha256:c6b95e0026cbda5e0655720e1fc99723fa106acc304b3a4762effb10a9b0034e",
+      "action": "remove",
+      "reason": "Former Packager compatibility logic no longer belongs in the hosted package.",
+      "sincePackageVersion": "2.2.0"
+    },
+    {
+      "identity": "scripts/gitops/promote_main.sh",
+      "path": "scripts/gitops/promote_main.sh",
+      "contentHash": "sha256:345995a8c15b5c884af35d702c1ced1def1ffd09511982a48aeb2f5cc0474a83",
+      "action": "remove",
+      "reason": "Former local-coordinator promotion script; hosted receipt gate owns promotion validation.",
+      "sincePackageVersion": "2.2.0"
+    },
+    {
+      "identity": "scripts/gitops/promote_staging.sh",
+      "path": "scripts/gitops/promote_staging.sh",
+      "contentHash": "sha256:e6d5532c97fadd18f5adddce45b475b560d46e6135006a44e206cf81f77c1e5d",
+      "action": "remove",
+      "reason": "Former local-coordinator promotion script; hosted receipt gate owns promotion validation.",
+      "sincePackageVersion": "2.2.0"
+    },
+    {
+      "identity": "scripts/gitops/readiness_status.py",
+      "path": "scripts/gitops/readiness_status.py",
+      "contentHash": "sha256:e933a06bc40f8a2c8cade2e6821774611ff911da717648a0e4d6e02041dc587a",
+      "action": "remove",
+      "reason": "Former App-backed readiness publisher path; final hosted candidate checks supersede it.",
+      "sincePackageVersion": "2.2.0"
+    },
+    {
+      "identity": "scripts/gitops/repair_observer.py",
+      "path": "scripts/gitops/repair_observer.py",
+      "contentHash": "sha256:04c69c4440dcad12c3ebefaaa72b96fd53f8d9b39b1acd894f1d1f6b7530c0ee",
+      "action": "remove",
+      "reason": "Former repair workflow observer; hosted workflow failure outcomes supersede it.",
+      "sincePackageVersion": "2.2.0"
+    },
+    {
+      "identity": "scripts/gitops/repair_task.py",
+      "path": "scripts/gitops/repair_task.py",
+      "contentHash": "sha256:bc488140766e2d810e1ddb0751c432c8c171e6fd465bb9d9981aca18601a5b67",
+      "action": "remove",
+      "reason": "Former autonomous repair dispatch path; hosted checks stop and alert instead.",
+      "sincePackageVersion": "2.2.0"
+    },
+    {
+      "identity": "scripts/gitops/resolve_automation_token.sh",
+      "path": "scripts/gitops/resolve_automation_token.sh",
+      "contentHash": "sha256:f3d575f4340fb4f8f647c5e476abd3bb95f8f25d76a78804fcadafded52f264e",
+      "action": "remove",
+      "reason": "Former custom-App/Mac automation token resolver; hosted jobs use least-privilege GITHUB_TOKEN.",
+      "sincePackageVersion": "2.2.0"
+    },
+    {
+      "identity": "scripts/gitops/resolve_bugbot_user_token.sh",
+      "path": "scripts/gitops/resolve_bugbot_user_token.sh",
+      "contentHash": "sha256:dfb3497e63359a2fa404ab0c8de23f79022b4259d63c586800eec630c6aa9456",
+      "action": "remove",
+      "reason": "Former user-token resolver for App-era Bugbot dispatch; hosted Bugbot integration supersedes it.",
+      "sincePackageVersion": "2.2.0"
+    },
+    {
+      "identity": "scripts/gitops/bugbot_user_credentials.py",
+      "path": "scripts/gitops/bugbot_user_credentials.py",
+      "contentHash": "sha256:d79d08f5e03fa5b0a0fa9580890c5bd39c5aa3c7219fb81ad2df4b9f531947e2",
+      "action": "remove",
+      "reason": "Former Bugbot user-token credential helper; no credential helper is installable.",
+      "sincePackageVersion": "2.2.0"
+    },
+    {
+      "identity": "scripts/gitops/review_ready_dispatch.py",
+      "path": "scripts/gitops/review_ready_dispatch.py",
+      "contentHash": "sha256:6c6168773ef10a5de7ad9840acd09da7412d6e6d53bd9a52addf5740eb207229",
+      "action": "remove",
+      "reason": "Former publisher-dispatch compatibility path; hosted final-candidate status is authoritative.",
+      "sincePackageVersion": "2.2.0"
+    },
+    {
+      "identity": "scripts/gitops/write_outcome.py",
+      "path": "scripts/gitops/write_outcome.py",
+      "contentHash": "sha256:ba088c7a0dc9c22224adfef3bc382c4032c65caa181be3876d27b4fc105ed2b7",
+      "action": "remove",
+      "reason": "Former token-backed workflow outcome writer; native hosted workflow results supersede it.",
+      "sincePackageVersion": "2.2.0"
+    },
+    {
+      "identity": "scripts/mark-review-ready.sh",
+      "path": "scripts/mark-review-ready.sh",
+      "contentHash": "sha256:4f2d8fd2a652363f0e080764af310bf496142a3f20bfca6da010dbbf55bb11ae",
+      "action": "remove",
+      "reason": "Former compatibility publisher wrapper; hosted final-candidate workflow owns readiness.",
+      "sincePackageVersion": "2.2.0"
+    },
+    {
+      "identity": "scripts/validate-review-ready.sh",
+      "path": "scripts/validate-review-ready.sh",
+      "contentHash": "sha256:8dd555cc8eb575c83dd28ee0dc2bde0cc7585f050d8bb59f5970fcf70fd74124",
+      "action": "remove",
+      "reason": "Former App-era readiness wrapper; hosted candidate lifecycle owns validation.",
+      "sincePackageVersion": "2.2.0"
+    },
+    {
+      "identity": "scripts/clear-review-ready.sh",
+      "path": "scripts/clear-review-ready.sh",
+      "contentHash": "sha256:d3958d904a8c23ff7d64de5947cfc73d1c23dd035af0cb223027d69a6624e4eb",
+      "action": "remove",
+      "reason": "Former token-backed readiness withdrawal wrapper; no legacy publisher is installable.",
+      "sincePackageVersion": "2.2.0"
+    },
+    {
+      "identity": "scripts/cleanup-merged-branches.sh",
+      "path": "scripts/cleanup-merged-branches.sh",
+      "contentHash": "sha256:cee3ffb385b42c4b681b28d43ef61815689a71acf1e1540f5a8c8ae75e143a4d",
+      "action": "remove",
+      "reason": "Former autonomous cleanup workflow wrapper; external cleanup remains W3 authority.",
+      "sincePackageVersion": "2.2.0"
+    },
+    {
+      "identity": "scripts/pull-update-work-branches.sh",
+      "path": "scripts/pull-update-work-branches.sh",
+      "contentHash": "sha256:dfc019cb8a6bdba9633c4d2fb89cfe5f9dbcca826245601b1b8d3f0f0c9d659f",
+      "action": "remove",
+      "reason": "Former coordinator pull helper; hosted Phase workflow owns candidate assembly.",
+      "sincePackageVersion": "2.2.0"
+    },
+    {
+      "identity": "scripts/apply-development-merge-ruleset.sh",
+      "path": "scripts/apply-development-merge-ruleset.sh",
+      "contentHash": "sha256:01c69ff32eaf135d06ce1abac0a3430c856a3192903f2b1e06ebd68d8e77850f",
+      "action": "remove",
+      "reason": "Former live ruleset mutation wrapper; external protection remains approval-gated W3 authority.",
+      "sincePackageVersion": "2.2.0"
     }
   ]
 }

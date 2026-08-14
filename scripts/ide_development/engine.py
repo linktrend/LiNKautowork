@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +14,55 @@ from .paths import require_git_repo, resolve_dir, same_path
 from .plan import Plan, build_drift_report, build_plan, meaningful_drift
 from .state import load_installed_state
 from .transaction import apply_plan, current_tx_dir, read_journal, recover_interrupted, rollback_last
+from .io_atomic import atomic_write_bytes
+
+
+CONSUMER_CONFIG = Path(".github/linktrend-gitops-consumer.json")
+MANAGED_FAST_WORKFLOW = "Linktrend Fast Checks"
+MANAGED_RUNNER_TYPE = "github-hosted"
+RETIRED_RUNNER_TYPE = "linktrend-private-macos-arm64"
+
+
+def _normalize_consumer_workflow_contract(target_root: Path, *, mutate: bool) -> bool:
+    """Upgrade bounded legacy delivery declarations without inferring CI.
+
+    The workflow config is repository-owned, so an installer may only fill the
+    historic absent managed Fast declaration and the one retired private runner
+    declaration. Explicit blank/wrong values and any missing/blank CI
+    declaration fail closed before managed workflows are installed or updated.
+    """
+    path = target_root / CONSUMER_CONFIG
+    if not path.is_file():
+        return False
+    try:
+        config = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise InvalidPackageError(f"consumer workflow config is invalid: {path}: {exc}") from exc
+    if not isinstance(config, dict):
+        raise InvalidPackageError(f"consumer workflow config is not an object: {path}")
+    ci = config.get("ciWorkflowName")
+    if not isinstance(ci, str) or not ci.strip():
+        raise InvalidPackageError(f"consumer workflow config requires non-empty ciWorkflowName: {path}")
+    changed = False
+    fast = config.get("fastWorkflowName")
+    if fast is None:
+        config["fastWorkflowName"] = MANAGED_FAST_WORKFLOW
+        changed = True
+    elif not isinstance(fast, str) or fast != MANAGED_FAST_WORKFLOW:
+        raise InvalidPackageError(
+            f"consumer workflow config fastWorkflowName must equal {MANAGED_FAST_WORKFLOW!r}: {path}"
+        )
+    runner = config.get("runnerType", MANAGED_RUNNER_TYPE)
+    if runner == RETIRED_RUNNER_TYPE:
+        config["runnerType"] = MANAGED_RUNNER_TYPE
+        changed = True
+    elif runner != MANAGED_RUNNER_TYPE:
+        raise InvalidPackageError(
+            f"consumer workflow config runnerType must equal {MANAGED_RUNNER_TYPE!r}: {path}"
+        )
+    if mutate and changed:
+        atomic_write_bytes(path, (json.dumps(config, indent=2) + "\n").encode("utf-8"), mode="0644")
+    return changed
 
 
 class EngineResult:
@@ -81,6 +131,10 @@ def run_plan(
     manifest = load_manifest(package_root)
     migration = load_migration_catalog(package_root)
     prior = load_installed_state(target_root)
+
+    # Planning is deliberately non-mutating.  Report whether an older
+    # consumer would receive the managed Fast declaration during install.
+    normalized_fast = _normalize_consumer_workflow_contract(target_root, mutate=False)
     plan = build_plan(
         command=command,
         package_root=package_root,
@@ -91,7 +145,7 @@ def run_plan(
         dry_run=True,
     )
     exit_code = EXIT_CONFLICT if plan.has_conflicts else EXIT_OK
-    payload = _plan_payload(plan, recovery=recovery, installerVersion=installer_version)
+    payload = _plan_payload(plan, recovery=recovery, installerVersion=installer_version, normalizedFastWorkflowName=normalized_fast)
     return EngineResult(exit_code=exit_code, payload=payload)
 
 
@@ -106,6 +160,11 @@ def run_install_or_update(
     recovery = _maybe_recover(target_root, mutate=not dry_run)
     manifest = load_manifest(package_root)
     migration = load_migration_catalog(package_root)
+
+    # The installer is the authoritative upgrade path.  Early consumers have
+    # a repository-owned config without the later receipt-bound Fast key; add
+    # only that fixed managed declaration.  Never infer a consumer CI name.
+    normalized_fast = _normalize_consumer_workflow_contract(target_root, mutate=not dry_run)
     prior = load_installed_state(target_root)
 
     if command == "update" and prior is None:
@@ -122,7 +181,12 @@ def run_install_or_update(
         prior=prior,
         dry_run=dry_run,
     )
-    payload = _plan_payload(plan, recovery=recovery, installerVersion=installer_version)
+    payload = _plan_payload(
+        plan,
+        recovery=recovery,
+        installerVersion=installer_version,
+        normalizedFastWorkflowName=normalized_fast,
+    )
 
     if plan.has_conflicts:
         return EngineResult(exit_code=EXIT_CONFLICT, payload=payload)

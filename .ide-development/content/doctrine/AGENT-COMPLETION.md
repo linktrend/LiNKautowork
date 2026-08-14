@@ -126,7 +126,7 @@ System repository paths:
 - `core/github/REVIEW-READY.md`
 - `docs/contracts/GITHUB-APP-GITOPS-CREDENTIALS.md`
 - `docs/contracts/REPAIR-DISPATCHER.md`
-- `docs/archive/work-packets/2026-08-01-wave-2-app-backed-completion.md` (stub remains at historical `docs/work-packets/` path)
+- `docs/archive/work-packets/2026-08-01-wave-2-completion.md` (historical archive reference only)
 
 Consumer installs (packaged doctrine under `.ide-development/content/doctrine/`): use sibling `AUTONOMOUS-GIT-OPERATIONS.md` in the same directory. Root `docs/` and `core/github/` paths above are system-source contracts and are not assumed present at those locations in every consumer.
 

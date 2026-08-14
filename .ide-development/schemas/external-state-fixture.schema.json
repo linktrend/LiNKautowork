@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/external-state-fixture.schema.json",
+  "title": "IDE Development external-state fixture state.json (WP1 Lane C)",
+  "description": "Offline observation fixture. Secret VALUES must never appear; use actions_secret_names (names only).",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "malformed": {
+      "type": "boolean",
+      "description": "When true, loader refuses the fixture (malformed matrix case)."
+    },
+    "capability": {
+      "type": "object",
+      "properties": {
+        "rulesets": {
+          "type": "string",
+          "enum": ["ok", "unavailable", "forbidden", "error", "blocked"]
+        },
+        "branch_protection": {
+          "type": "string",
+          "enum": ["ok", "unavailable", "forbidden", "error", "blocked"]
+        },
+        "rulesets_error": { "type": "string" }
+      }
+    },
+    "actions_variables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "value": { "type": "string" }
+        }
+      }
+    },
+    "actions_secret_names": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Secret names only — never values."
+    },
+    "actions_secrets": {
+      "type": "array",
+      "description": "Legacy shape; values ignored and must not be emitted.",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "value": { "type": "string" }
+        }
+      }
+    },
+    "installation": {
+      "oneOf": [
+        { "type": "boolean", "const": false },
+        {
+          "type": "object",
+          "properties": {
+            "id": { "type": ["integer", "string"] },
+            "app_slug": { "type": "string" }
+          }
+        }
+      ]
+    },
+    "app_permissions": {
+      "type": "object",
+      "description": "Permission levels only (no credentials)."
+    },
+    "bugbot": {
+      "type": "object",
+      "properties": {
+        "manualTriggerOnly": { "type": "boolean" },
+        "enabled": { "type": "boolean" }
+      }
+    },
+    "carlos_user_token_boundary": {
+      "type": "object",
+      "properties": {
+        "allowedOps": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "forbiddenOpsClaimed": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "publishesReviewReady": { "type": "boolean" },
+        "status": {
+          "type": "string",
+          "enum": ["ok", "forbidden", "blocked", "unknown"]
+        }
+      }
+    },
+    "rulesets": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "ruleset_details": {
+      "type": "object",
+      "additionalProperties": { "type": "object" }
+    },
+    "repo": {
+      "type": "object",
+      "properties": {
+        "allow_auto_merge": { "type": "boolean" }
+      }
+    },
+    "workflows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "name": { "type": "string" },
+          "state": { "type": "string" },
+          "id": { "type": ["integer", "string"] },
+          "permissions": { "type": "object" },
+          "latestConclusion": { "type": "string" },
+          "conclusion": { "type": "string" }
+        }
+      }
+    }
+  }
+}

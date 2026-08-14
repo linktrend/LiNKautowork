@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 2,
+  "mode": "phase-integration",
+  "compute": {
+    "provider": "github-hosted",
+    "runner": "ubuntu-24.04-arm",
+    "checkpointCI": false,
+    "cancelObsolete": true,
+    "maxInfrastructureAttempts": 2,
+    "maxSealedCandidates": 2
+  },
+  "profiles": {
+    "fast": {
+      "commands": [["python3", "-m", "py_compile", "scripts/gitops/run_delivery_profile.py", "scripts/gitops/gate_receipt.py"]],
+      "timeoutMinutes": 5
+    },
+    "full": {
+      "commands": [["python3", "-m", "py_compile", "scripts/gitops/run_delivery_profile.py", "scripts/gitops/gate_receipt.py"]],
+      "required": true
+    },
+    "release": {
+      "commands": []
+    }
+  },
+  "promotion": {
+    "reuseExactReceipt": true,
+    "identity": [
+      "repository",
+      "gitTree",
+      "dependencyDigest",
+      "profileDigest",
+      "workflowDigest"
+    ]
+  },
+  "review": {
+    "bugbot": "final-candidate-only"
+  }
+}
