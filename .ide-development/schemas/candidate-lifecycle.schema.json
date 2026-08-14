@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/candidate-lifecycle.schema.json",
+  "title": "W1-P2 candidate lifecycle state",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "repository", "phaseId", "phaseBranch", "immutableBaseSha",
+    "status", "currentHead", "sealedRevisions", "candidates", "seenEvents", "stopReason"
+  ],
+  "$defs": {
+    "sha40": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "candidateIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "sourceBranch", "headCommit", "gitTree", "dependencyDigest", "profileDigest", "workflowDigest"],
+      "properties": {
+        "repository": { "type": "string", "pattern": "^[^/\\s]+/[^/\\s]+$" },
+        "sourceBranch": { "type": "string", "minLength": 1 },
+        "headCommit": { "$ref": "#/$defs/sha40" },
+        "gitTree": { "$ref": "#/$defs/sha40" },
+        "dependencyDigest": { "type": "string", "minLength": 1 },
+        "profileDigest": { "type": "string", "minLength": 1 },
+        "workflowDigest": { "type": "string", "minLength": 1 }
+      }
+    },
+    "seal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "prNumber", "sourceBranch", "headCommit", "candidateId", "candidateIdentity"],
+      "properties": {
+        "repository": { "type": "string", "pattern": "^[^/\\s]+/[^/\\s]+$" },
+        "prNumber": { "type": "integer", "minimum": 1 },
+        "sourceBranch": { "type": "string", "minLength": 1 },
+        "headCommit": { "$ref": "#/$defs/sha40" },
+        "candidateId": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "candidateIdentity": { "$ref": "#/$defs/candidateIdentity" }
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["seal", "status", "attempts", "checks", "invalidated", "stopReason"],
+      "properties": {
+        "seal": { "$ref": "#/$defs/seal" },
+        "status": {
+          "type": "string",
+          "enum": [
+            "sealed-candidate", "fast-checking", "full-checking", "review-checking",
+            "review-complete", "development-eligible", "staging-eligible", "main-eligible",
+            "infrastructure-retry", "superseded", "code-failed", "stopped-alert", "cancelled"
+          ]
+        },
+        "attempts": { "type": "integer", "minimum": 0, "maximum": 2 },
+        "checks": { "type": "object", "additionalProperties": { "type": "object" } },
+        "invalidated": { "type": "boolean" },
+        "stopReason": { "type": ["string", "null"] }
+      }
+    }
+  },
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 2 },
+    "repository": { "type": "string", "pattern": "^[^/\\s]+/[^/\\s]+$" },
+    "phaseId": { "type": "string", "minLength": 1 },
+    "phaseBranch": { "type": "string", "minLength": 1 },
+    "immutableBaseSha": { "$ref": "#/$defs/sha40" },
+    "status": {
+      "type": "string",
+      "enum": [
+        "checkpointed", "integrating", "draft-phase-pr", "sealed-candidate",
+        "fast-checking", "full-checking", "review-checking", "review-complete", "code-failed",
+        "development-eligible", "staging-eligible", "main-eligible",
+        "infrastructure-retry", "stopped-alert"
+      ]
+    },
+    "currentHead": { "anyOf": [{ "$ref": "#/$defs/sha40" }, { "type": "null" }] },
+    "sealedRevisions": { "type": "integer", "minimum": 0, "maximum": 2 },
+    "candidates": { "type": "object", "additionalProperties": { "$ref": "#/$defs/candidate" } },
+    "seenEvents": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "stopReason": { "type": ["string", "null"] }
+  }
+}

@@ -35,6 +35,8 @@ OUTCOME="${OUTCOME_FILE:-gitops-outcome.json}"
 RECEIPT_GATE="${SCRIPT_DIR}/promotion_receipt_gate.py"
 RECEIPT_PATH="${RECEIPT_PATH:-${LINKTREND_RECEIPT_PATH:-}}"
 RECEIPT_DEPENDENCY_FILES="${RECEIPT_DEPENDENCY_FILES:-}"
+RECEIPT_IDENTITY_ARGS=()
+RECEIPT_PROFILE_ARGS=()
 COORDINATOR_RECEIPT_ROOT="${LINKTREND_COORDINATOR_RECEIPT_ROOT:-${HOME}/.linktrend/ide-coordinator/receipts}"
 
 
@@ -112,6 +114,21 @@ receipt_identity_args() {
   while IFS= read -r dep; do
     [ -n "${dep}" ] && RECEIPT_IDENTITY_ARGS+=(--dependency "${dep}")
   done <<< "${raw}"
+  return 0
+}
+
+receipt_profile_args() {
+  local candidate_repo="$1"
+  RECEIPT_PROFILE_ARGS=()
+  if [ -f "${candidate_repo}/.github/linktrend-delivery-mode.json" ]; then
+    RECEIPT_PROFILE_ARGS=(--profile-file ".github/linktrend-delivery-mode.json")
+  elif [ -f "${candidate_repo}/.ide-development/config/delivery.json" ]; then
+    RECEIPT_PROFILE_ARGS=(--profile-file ".ide-development/config/delivery.json")
+  else
+    echo "FAIL: delivery profile configuration is unavailable in promotion candidate" >&2
+    return 1
+  fi
+  return 0
 }
 
 verify_receipt_before_mutation() {
@@ -122,12 +139,14 @@ verify_receipt_before_mutation() {
     return 1
   fi
   receipt_identity_args
+  receipt_profile_args "${candidate_repo}"
   python3 "${RECEIPT_GATE}" verify \
     --receipt "${RECEIPT_PATH}" \
     --repo "${candidate_repo}" \
     --profile "${profile}" \
     --gate full-gate \
-    "${RECEIPT_IDENTITY_ARGS[@]}"
+    ${RECEIPT_PROFILE_ARGS[@]+"${RECEIPT_PROFILE_ARGS[@]}"} \
+    ${RECEIPT_IDENTITY_ARGS[@]+"${RECEIPT_IDENTITY_ARGS[@]}"}
 }
 
 if [ -z "${TOKEN}" ] || [ "${AUTOMATION_TOKEN_SOURCE:-}" != "github_token" ]; then
@@ -152,7 +171,8 @@ marker_json() {
     "targetSha": sys.argv[2],
     "candidateHead": sys.argv[3],
     "promoteBranch": sys.argv[4],
-  }, separators=(",", ":")))' "$1" "$2" "$3" "$4"
+    "fullRunId": int(sys.argv[5]),
+  }, separators=(",", ":")))' "$1" "$2" "$3" "$4" "$5"
 }
 
 extract_marker() {
@@ -350,13 +370,16 @@ if [ -z "${RECEIPT_PATH}" ]; then
   RECEIPT_PATH="${COORDINATOR_RECEIPT_ROOT}/${CANDIDATE_TREE}-full-gate.json"
 fi
 receipt_identity_args
+receipt_profile_args "${WT}"
 python3 "${SCRIPT_DIR}/gate_receipt.py" identity \
   --repo "${WT}" --profile full \
-  "${RECEIPT_IDENTITY_ARGS[@]}" >"${RECEIPT_IDENTITY_FILE}"
+  ${RECEIPT_PROFILE_ARGS[@]+"${RECEIPT_PROFILE_ARGS[@]}"} \
+  ${RECEIPT_IDENTITY_ARGS[@]+"${RECEIPT_IDENTITY_ARGS[@]}"} >"${RECEIPT_IDENTITY_FILE}"
 verify_receipt_before_mutation "${WT}" full || exit 0
 git -C "${WT}" push -u origin "HEAD:refs/heads/${PROMOTE_BRANCH}"
 
-MARKER="$(marker_json "${DEV_SHA}" "${STG_SHA}" "${CANDIDATE}" "${PROMOTE_BRANCH}")"
+FULL_RUN_ID="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["workflowRunId"])' "${RECEIPT_PATH}")"
+MARKER="$(marker_json "${DEV_SHA}" "${STG_SHA}" "${CANDIDATE}" "${PROMOTE_BRANCH}" "${FULL_RUN_ID}")"
 BODY="$(cat <<EOF
 ## Staging promote candidate
 
