@@ -83,6 +83,33 @@ CONTENT_DOCTRINE = (
     ("docs/AUTONOMOUS-GIT-OPERATIONS.md", "content/doctrine/AUTONOMOUS-GIT-OPERATIONS.md"),
 )
 
+# W2-P2 package payloads are intentionally explicit.  Workflow and test files
+# are discovered only when W2-P1 has supplied a hosted replacement; the legacy
+# Mac/App templates remain source history but must never become installable.
+HOSTED_WORKFLOW_REJECT_MARKERS = (
+    "self-hosted",
+    "macos",
+    "mac mini",
+    "linktrend-private-macos",
+    "linktrend-privileged",
+    "linktrend-ci-isolated",
+    "privileged mac",
+    "isolated candidate runner",
+    "local-coordinator",
+    "resolve_automation_token",
+    "resolve_bugbot_user_token",
+    "github_app",
+    "installation token",
+    "launchd",
+)
+
+HOSTED_TEST_FILES = (
+    "scripts/tests/test_candidate_lifecycle.py",
+    "scripts/tests/test_gate_receipts.py",
+    "scripts/tests/test_phase_batch_lifecycle.py",
+    "scripts/tests/test_promotion_receipt_gate.py",
+)
+
 ID_SAFE = re.compile(r"[^a-z0-9]+")
 
 
@@ -197,6 +224,20 @@ def _library_mapping_errors() -> list[str]:
     return errors
 
 
+def _hosted_workflow_files() -> list[str]:
+    """Return only W2-P1 workflow templates safe for managed packaging."""
+    root = REPO_ROOT / "core" / "github" / "managed-workflows"
+    if not root.is_dir():
+        return []
+    safe: list[str] = []
+    for path in sorted(root.glob("*.yml")):
+        text = path.read_text(encoding="utf-8").lower()
+        if any(marker in text for marker in HOSTED_WORKFLOW_REJECT_MARKERS):
+            continue
+        safe.append(str(path.relative_to(REPO_ROOT)).replace("\\", "/"))
+    return safe
+
+
 def sync_package_payload() -> None:
     """Materialize approved lifecycle payload under core/managed-core/."""
     # Content doctrine copies (self-contained for consumers).
@@ -262,7 +303,12 @@ def build_entries() -> list[dict[str, Any]]:
         ("README.md", ".ide-development/README.md"),
         ("INDEX.yaml", ".ide-development/INDEX.yaml"),
         ("content/README.md", ".ide-development/content/README.md"),
+        ("config/delivery.json", ".ide-development/config/delivery.json"),
         ("migrations/catalog.json", ".ide-development/migrations/catalog.json"),
+        (
+            "migrations/external-cleanup-plan.json",
+            ".ide-development/migrations/external-cleanup-plan.json",
+        ),
         ("migrations/schema.json", ".ide-development/migrations/schema.json"),
         ("migrations/README.md", ".ide-development/migrations/README.md"),
         ("schemas/manifest.schema.json", ".ide-development/schemas/manifest.schema.json"),
@@ -279,6 +325,22 @@ def build_entries() -> list[dict[str, Any]]:
         (
             "schemas/delivery-modes.schema.json",
             ".ide-development/schemas/delivery-modes.schema.json",
+        ),
+        (
+            "schemas/candidate-lifecycle.schema.json",
+            ".ide-development/schemas/candidate-lifecycle.schema.json",
+        ),
+        (
+            "schemas/external-state-fixture.schema.json",
+            ".ide-development/schemas/external-state-fixture.schema.json",
+        ),
+        (
+            "schemas/external-state-plan.schema.json",
+            ".ide-development/schemas/external-state-plan.schema.json",
+        ),
+        (
+            "schemas/external-state-verify.schema.json",
+            ".ide-development/schemas/external-state-verify.schema.json",
         ),
         (
             "schemas/delivery-runtime.schema.json",
@@ -512,7 +574,7 @@ def build_entries() -> list[dict[str, Any]]:
                 source_hash=_hash_rel(source),
             )
         )
-        # Also keep under .ide-development/platforms
+        # Also keep under .ide-development/platforms.
         entries.append(
             _entry(
                 entry_id=f"pkg-{_slug(src_tail)}",
@@ -526,6 +588,66 @@ def build_entries() -> list[dict[str, Any]]:
             )
         )
 
+    # Hosted workflow templates are staged under the managed package.  The
+    # W2-P1 branch supplies the files; legacy templates are filtered above and
+    # are never copied into consumer .github/workflows by this package.
+    for source in _hosted_workflow_files():
+        name = Path(source).name
+        entries.append(
+            _entry(
+                entry_id=f"workflow-{_slug(name)}",
+                ownership="managed-core",
+                source=source,
+                destination=f".ide-development/workflows/{name}",
+                mode="0644",
+                platform="github",
+                merge="replace",
+                source_hash=_hash_rel(source),
+                notes="Hosted W2-P1 workflow template; materialized by workflow sync.",
+            )
+        )
+
+    # Keep the receipt/lifecycle proof inputs available to clean-room package
+    # validation without shipping the old App/runner test harness.
+    for source in HOSTED_TEST_FILES:
+        path = REPO_ROOT / source
+        if not path.is_file():
+            continue
+        name = Path(source).name
+        entries.append(
+            _entry(
+                entry_id=f"test-{_slug(name)}",
+                ownership="managed-core",
+                source=source,
+                destination=f".ide-development/tests/{name}",
+                mode="0644",
+                platform="github",
+                merge="replace",
+                source_hash=_hash_rel(source),
+                notes="Hosted lifecycle/receipt validation input.",
+            )
+        )
+
+    # Stable, source-owned GitHub contracts are useful offline package docs;
+    # stale managed-workflows README text is deliberately excluded until P3.
+    for source in ("core/github/CI-GATE-CONTRACTS.md",):
+        path = REPO_ROOT / source
+        if not path.is_file():
+            continue
+        name = Path(source).name
+        entries.append(
+            _entry(
+                entry_id=f"github-doc-{_slug(name)}",
+                ownership="managed-core",
+                source=source,
+                destination=f".ide-development/content/github/{name}",
+                mode="0644",
+                platform="github",
+                merge="replace",
+                source_hash=_hash_rel(source),
+                notes="Hosted GitHub gate contract for offline consumer reference.",
+            )
+        )
     # --- Additional lifecycle Cursor rules ---
     for name in LIFECYCLE_CURSOR_RULES:
         source = f"core/managed-core/platforms/cursor/rules/{name}"

@@ -392,9 +392,32 @@ def _apply_plan_unlocked(
 
     mutating = plan.mutating_actions
     if not mutating:
-        # Idempotent success: no backups/journal. Still ensure MANIFEST.json and
-        # installed-state exist so update/drift/ownership remain fail-closed.
+        # Idempotent success: no backups/journal.  Once the package manifest and
+        # installed-state already describe this exact package, do not rewrite
+        # installedAt (or any other committed byte) on a second install.
         dest = join_under(target_root, MANIFEST_DEST)
+        manifest_hash = sha256_file(manifest.path)
+        current_manifest = (
+            dest.is_file()
+            and not path_is_symlink(dest)
+            and sha256_file(dest) == manifest_hash
+        )
+        prior_manifest = prior.files.get(MANIFEST_DEST) if prior is not None else None
+        if (
+            prior is not None
+            and prior.package_version == manifest.package_version
+            and current_manifest
+            and prior_manifest is not None
+            and prior_manifest.content_hash == manifest_hash
+        ):
+            return {
+                "transactionId": None,
+                "applied": [],
+                "recovery": recovery,
+                "packageVersion": manifest.package_version,
+                "noop": True,
+                "installedStateWritten": False,
+            }
         if not dest.is_file():
             copy_file_physical(manifest.path, dest, mode="0644")
         next_state = build_next_state(
@@ -405,7 +428,7 @@ def _apply_plan_unlocked(
         )
         next_state.files[MANIFEST_DEST] = FileState(
             id="package-manifest",
-            source_hash=sha256_file(manifest.path),
+            source_hash=manifest_hash,
             content_hash=sha256_file(join_under(target_root, MANIFEST_DEST)),
             mode="0644",
         )

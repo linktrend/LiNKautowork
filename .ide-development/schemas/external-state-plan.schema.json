@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/external-state-plan.schema.json",
+  "title": "IDE Development external-state plan (WP1 Lane C)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schemaVersion",
+    "mode",
+    "dryRun",
+    "repo",
+    "mutations",
+    "source",
+    "checks",
+    "summary",
+    "humanSummary",
+    "desired"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "mode": { "type": "string", "enum": ["plan", "report", "verify"] },
+    "dryRun": { "type": "boolean", "const": true },
+    "applyRefused": { "type": "boolean", "const": true },
+    "repo": { "type": "string", "minLength": 1 },
+    "mutations": {
+      "type": "array",
+      "maxItems": 0,
+      "items": { "type": "object" }
+    },
+    "source": {
+      "type": "string",
+      "enum": ["dry-run", "fixture", "live"]
+    },
+    "statusContext": {
+      "type": "string",
+      "const": "Linktrend Review Ready"
+    },
+    "checklist": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/checklistItem" }
+    },
+    "checks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/checkRow" }
+    },
+    "desired": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/desiredRow" }
+    },
+    "protectionPlan": { "type": "object" },
+    "summary": { "$ref": "#/$defs/summary" },
+    "humanSummary": { "type": "string", "minLength": 1 },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "$defs": {
+    "checklistItem": {
+      "type": "object",
+      "required": ["id", "category", "required", "expected"],
+      "properties": {
+        "id": { "type": "string" },
+        "category": { "type": "string" },
+        "required": { "type": "boolean" },
+        "expected": { "type": "string" }
+      }
+    },
+    "checkRow": {
+      "type": "object",
+      "required": [
+        "id",
+        "category",
+        "required",
+        "expected",
+        "observed",
+        "status"
+      ],
+      "properties": {
+        "id": { "type": "string" },
+        "category": { "type": "string" },
+        "required": { "type": "boolean" },
+        "expected": { "type": "string" },
+        "observed": { "type": "string" },
+        "status": {
+          "type": "string",
+          "enum": [
+            "ok",
+            "matched",
+            "missing",
+            "drift",
+            "unchecked",
+            "unknown",
+            "blocked",
+            "unavailable",
+            "forbidden",
+            "credential-missing",
+            "malformed",
+            "error"
+          ]
+        },
+        "detail": { "type": "string" },
+        "source": { "type": "string" }
+      }
+    },
+    "desiredRow": {
+      "type": "object",
+      "required": ["id", "action", "mutate"],
+      "properties": {
+        "id": { "type": "string" },
+        "category": { "type": "string" },
+        "expected": { "type": "string" },
+        "observedStatus": { "type": "string" },
+        "observed": { "type": "string" },
+        "action": { "type": "string" },
+        "mutate": { "type": "boolean", "const": false }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["ready", "requiredTotal"],
+      "properties": {
+        "ready": { "type": "boolean" },
+        "requiredTotal": { "type": "integer", "minimum": 0 },
+        "unproven": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

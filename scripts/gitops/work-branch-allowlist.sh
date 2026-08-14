@@ -49,7 +49,7 @@ print(p)
 is_allowed_work_branch() {
   local name="${1:-}"
   case "${name}" in
-    issue/*|feature/*|fix/*|chore/*|codex/*|cursor/*|antigravity/*|dependabot/*|dev/*)
+    issue/*|dev/*)
       return 0
       ;;
   esac
@@ -87,6 +87,5 @@ allowed_work_branch_globs() {
   local phase_prefix
   phase_prefix="$(resolve_phase_branch_prefix)"
   printf '%s\n' \
-    'issue/*' "${phase_prefix}*" 'feature/*' 'fix/*' 'chore/*' \
-    'codex/*' 'cursor/*' 'antigravity/*' 'dependabot/*' 'dev/*'
+    'issue/*' "${phase_prefix}*" 'dev/*'
 }
