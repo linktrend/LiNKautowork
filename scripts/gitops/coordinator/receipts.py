@@ -1,8 +1,17 @@
-"""Exact-content candidate identities and gate receipts.
+"""Pure exact-content identities and FullSuiteReceipt handling.
 
-This module deliberately has no GitHub, container, or workflow dependency.  A
-receipt is useful only when its content identity is independently recomputed
-from the checkout that is about to be promoted.
+Receipt creation and verification are deliberately local and side-effect free:
+they do not call GitHub, read credentials, mint installation tokens, or depend
+on a custom GitHub App.  The later workflow boundary may use GitHub's built-in
+``GITHUB_TOKEN`` with explicit least-privilege permissions; that boundary is not
+part of this module.
+
+The receipt schema is versioned independently of older W1-P2 receipts.  A
+schemaVersion 1 receipt is rejected explicitly and is never silently trusted.
+If a later workflow boundary needs GitHub metadata, its built-in
+``GITHUB_TOKEN`` may be granted only the least privilege needed there (for
+example ``actions: read``, ``checks: read``, and ``contents: read``).  This
+pure module never consumes that token or any custom-App credential.
 """
 
 from __future__ import annotations
@@ -14,7 +23,7 @@ import re
 import stat
 import subprocess
 import tempfile
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 from typing import Any, Mapping, Sequence
 from urllib.parse import urlparse
@@ -22,6 +31,8 @@ from urllib.parse import urlparse
 
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 SHA256_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
+BRANCH_RE = re.compile(r"^[A-Za-z0-9._/-]+$")
+TIMESTAMP_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$")
 SEMVER_RE = re.compile(
     r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"
     r"(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?"
@@ -29,6 +40,8 @@ SEMVER_RE = re.compile(
 )
 GATES = frozenset({"fast-gate", "full-gate", "staging-gate", "release-gate"})
 PROFILES = frozenset({"fast", "full", "release"})
+RECOGNIZED_RUNNER_LABELS = frozenset({"ubuntu-24.04-arm"})
+RECEIPT_SCHEMA_VERSION = 2
 REJECTION_CODES = frozenset(
     {
         "repository_mismatch",
@@ -36,11 +49,22 @@ REJECTION_CODES = frozenset(
         "tree_mismatch",
         "dependency_mismatch",
         "profile_mismatch",
+        "workflow_mismatch",
+        "command_mismatch",
         "receipt_not_passed",
+        "conclusion_not_success",
         "evidence_mismatch",
+        "receipt_digest_mismatch",
+        "run_mismatch",
+        "attempt_mismatch",
+        "superseded_head",
+        "unknown_runner",
         "invalid_sha",
         "invalid_path",
         "invalid_receipt",
+        "unsupported_version",
+        "invalid_branch",
+        "invalid_gate",
     }
 )
 
@@ -55,51 +79,46 @@ class ReceiptError(ValueError):
         self.code = code
 
 
-def _sha(value: Any) -> str:
+def _string(value: Any) -> str:
     return value if isinstance(value, str) else ""
 
 
 def _is_sha(value: Any) -> bool:
-    return bool(SHA_RE.fullmatch(_sha(value))) and set(_sha(value)) != {"0"}
+    candidate = _string(value)
+    return bool(SHA_RE.fullmatch(candidate)) and set(candidate) != {"0"}
 
 
 def _is_digest(value: Any) -> bool:
-    return bool(SHA256_RE.fullmatch(_sha(value)))
+    return bool(SHA256_RE.fullmatch(_string(value)))
 
 
-def _canonical_json(payload: Mapping[str, Any]) -> bytes:
+def canonical_json_bytes(payload: Mapping[str, Any]) -> bytes:
+    """Return the one canonical byte representation used for all digests."""
+
     return (
-        json.dumps(
-            payload,
-            ensure_ascii=False,
-            sort_keys=True,
-            separators=(",", ":"),
-        ).encode("utf-8")
+        json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        .encode("utf-8")
         + b"\n"
     )
 
 
-def _mapping(value: Any, *, code: str = "invalid_receipt") -> dict[str, Any]:
+def canonical_digest(payload: Mapping[str, Any]) -> str:
+    return "sha256:" + hashlib.sha256(canonical_json_bytes(payload)).hexdigest()
+
+
+def _mapping(value: Any) -> dict[str, Any]:
     if isinstance(value, Mapping):
         return dict(value)
     if hasattr(value, "to_dict"):
         converted = value.to_dict()
         if isinstance(converted, Mapping):
             return dict(converted)
-    if hasattr(value, "__dict__"):
-        converted = dict(vars(value))
-        if converted:
-            return converted
-    raise ReceiptError(code, "expected a JSON object")
+    raise ReceiptError("invalid_receipt", "expected a JSON object")
 
 
 def _git(repo: Path, *args: str) -> str:
     process = subprocess.run(
-        ["git", *args],
-        cwd=str(repo),
-        check=False,
-        capture_output=True,
-        text=True,
+        ["git", *args], cwd=str(repo), check=False, capture_output=True, text=True
     )
     if process.returncode != 0:
         detail = (process.stderr or "").strip().replace("\n", " ")[:300]
@@ -108,8 +127,6 @@ def _git(repo: Path, *args: str) -> str:
 
 
 def _repository_name(repo: Path) -> str:
-    """Return a stable owner/name from origin, with a local-only fallback."""
-
     try:
         remote = _git(repo, "config", "--get", "remote.origin.url")
     except ReceiptError:
@@ -125,10 +142,8 @@ def _repository_name(repo: Path) -> str:
         if candidate.endswith(".git"):
             candidate = candidate[:-4]
         parts = [part for part in candidate.split("/") if part]
-        if len(parts) >= 2 and all(re.fullmatch(r"[A-Za-z0-9_.-]+", p) for p in parts[-2:]):
+        if len(parts) >= 2 and all(re.fullmatch(r"[A-Za-z0-9_.-]+", item) for item in parts[-2:]):
             return f"{parts[-2]}/{parts[-1]}"
-    # A local checkout without an origin is still useful in tests and in a
-    # pre-registration coordinator flow.  It remains unambiguous locally.
     name = repo.name or "repository"
     if not re.fullmatch(r"[A-Za-z0-9_.-]+", name):
         raise ReceiptError("invalid_receipt", "repository name is not representable")
@@ -150,46 +165,41 @@ def _repo_root(repo_path: str | os.PathLike[str] | Path) -> Path:
 
 def _normal_relative_path(raw: Any) -> str:
     if not isinstance(raw, str) or not raw or "\\" in raw:
-        raise ReceiptError("invalid_path", "dependency path must be a non-empty POSIX relative path")
+        raise ReceiptError("invalid_path", "path must be a non-empty POSIX relative path")
     path = PurePosixPath(raw)
-    if raw.startswith("/") or raw.startswith("~") or ":" in raw or ".." in path.parts:
-        raise ReceiptError("invalid_path", f"dependency path is not relative: {raw!r}")
+    if raw.startswith(("/", "~")) or ":" in raw or ".." in path.parts:
+        raise ReceiptError("invalid_path", f"path is not relative: {raw!r}")
     if not path.parts or path == PurePosixPath(".") or any(part in {"", "."} for part in path.parts):
-        raise ReceiptError("invalid_path", f"dependency path is not canonical: {raw!r}")
+        raise ReceiptError("invalid_path", f"path is not canonical: {raw!r}")
     normalized = path.as_posix()
     if normalized != raw:
-        raise ReceiptError("invalid_path", f"dependency path is not canonical: {raw!r}")
+        raise ReceiptError("invalid_path", f"path is not canonical: {raw!r}")
     return normalized
 
 
-def _dependency_bytes(repo: Path, relative: str) -> bytes:
+def _file_bytes(repo: Path, relative: str) -> bytes:
     candidate = repo.joinpath(*PurePosixPath(relative).parts)
     current = repo
-    # Refuse both escaping symlinks and symlink aliases.  This makes the bytes
-    # being measured the bytes named by the checkout, not an external target.
     for part in PurePosixPath(relative).parts:
         current = current / part
         if current.is_symlink():
-            raise ReceiptError("invalid_path", f"dependency path contains a symlink: {relative}")
+            raise ReceiptError("invalid_path", f"path contains a symlink: {relative}")
     try:
         resolved = candidate.resolve(strict=True)
         resolved.relative_to(repo)
-    except (OSError, ValueError) as exc:
-        raise ReceiptError("invalid_path", f"dependency path escapes repository: {relative}") from exc
-    try:
         mode = os.stat(candidate, follow_symlinks=False).st_mode
-    except OSError as exc:
-        raise ReceiptError("invalid_path", f"dependency file is unavailable: {relative}") from exc
+    except (OSError, ValueError) as exc:
+        raise ReceiptError("invalid_path", f"file is unavailable or escapes repository: {relative}") from exc
     if not stat.S_ISREG(mode):
-        raise ReceiptError("invalid_path", f"dependency is not a regular file: {relative}")
+        raise ReceiptError("invalid_path", f"path is not a regular file: {relative}")
     flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
     try:
         fd = os.open(str(candidate), flags)
     except OSError as exc:
-        raise ReceiptError("invalid_path", f"dependency cannot be opened: {relative}") from exc
+        raise ReceiptError("invalid_path", f"file cannot be opened: {relative}") from exc
     try:
         if os.path.islink(candidate):
-            raise ReceiptError("invalid_path", f"dependency became a symlink: {relative}")
+            raise ReceiptError("invalid_path", f"file became a symlink: {relative}")
         with os.fdopen(fd, "rb") as handle:
             fd = -1
             return handle.read()
@@ -198,279 +208,300 @@ def _dependency_bytes(repo: Path, relative: str) -> bytes:
             os.close(fd)
 
 
-def _dependency_digests(repo: Path, dependency_files: Sequence[str] | None) -> dict[str, str]:
-    if dependency_files is None:
-        dependency_files = ()
-    normalized = [_normal_relative_path(value) for value in dependency_files]
+def _normalized_files(files: Sequence[str] | str | None) -> list[str]:
+    if files is None:
+        return []
+    if isinstance(files, str):
+        files = (files,)
+    normalized = [_normal_relative_path(value) for value in files]
     if len(set(normalized)) != len(normalized):
-        raise ReceiptError("invalid_path", "dependency paths must be unique")
+        raise ReceiptError("invalid_path", "declared paths must be unique")
+    return sorted(normalized)
+
+
+def _file_digest_map(repo: Path, files: Sequence[str] | str | None) -> dict[str, str]:
     return {
-        relative: "sha256:" + hashlib.sha256(_dependency_bytes(repo, relative)).hexdigest()
-        for relative in sorted(normalized)
+        relative: "sha256:" + hashlib.sha256(_file_bytes(repo, relative)).hexdigest()
+        for relative in _normalized_files(files)
     }
+
+
+def _declared_workflows(repo: Path) -> list[str]:
+    try:
+        paths = _git(repo, "ls-tree", "-r", "--name-only", "HEAD", "--", ".github/workflows").splitlines()
+    except ReceiptError:
+        return []
+    return sorted(path for path in paths if path.endswith((".yml", ".yaml")))
+
+
+def _profile_digest(
+    repo: Path,
+    profile: str,
+    profile_files: Sequence[str] | str | None,
+    profile_bytes: bytes | str | Mapping[str, Any] | None,
+) -> str:
+    files = _file_digest_map(repo, profile_files)
+    if profile_bytes is None:
+        value: Any = {"profile": profile, "files": files}
+    elif isinstance(profile_bytes, bytes):
+        value = {"profile": profile, "bytesDigest": "sha256:" + hashlib.sha256(profile_bytes).hexdigest(), "files": files}
+    elif isinstance(profile_bytes, str):
+        value = {"profile": profile, "bytesDigest": "sha256:" + hashlib.sha256(profile_bytes.encode("utf-8")).hexdigest(), "files": files}
+    else:
+        value = {"profile": profile, "definition": dict(profile_bytes), "files": files}
+    return canonical_digest(value)
+
+
+def _workflow_digest(
+    repo: Path,
+    workflow_files: Sequence[str] | str | None,
+    workflow_bytes: bytes | str | Mapping[str, Any] | None,
+) -> str:
+    files = _declared_workflows(repo) if workflow_files is None else _normalized_files(workflow_files)
+    file_digests = _file_digest_map(repo, files)
+    if workflow_bytes is None:
+        value: Any = {"files": file_digests}
+    elif isinstance(workflow_bytes, bytes):
+        value = {"bytesDigest": "sha256:" + hashlib.sha256(workflow_bytes).hexdigest(), "files": file_digests}
+    elif isinstance(workflow_bytes, str):
+        value = {"bytesDigest": "sha256:" + hashlib.sha256(workflow_bytes.encode("utf-8")).hexdigest(), "files": file_digests}
+    else:
+        value = {"definition": dict(workflow_bytes), "files": file_digests}
+    return canonical_digest(value)
 
 
 @dataclass(frozen=True)
 class CandidateIdentity:
     repository: str
-    source_sha: str
-    git_tree_sha: str
-    dependency_digests: dict[str, str]
-    test_profile: str
+    source_branch: str
+    head_commit: str
+    git_tree: str
+    dependency_digest: str
+    profile_digest: str
+    workflow_digest: str
+    _dependency_files: dict[str, str] = field(default_factory=dict, repr=False, compare=False)
+    _test_profile: str = field(default="full", repr=False, compare=False)
 
     @property
-    def sourceSha(self) -> str:  # compatibility with the frozen JSON names
-        return self.source_sha
+    def source_sha(self) -> str:
+        return self.head_commit
 
     @property
-    def gitTreeSha(self) -> str:
-        return self.git_tree_sha
+    def git_tree_sha(self) -> str:
+        return self.git_tree
 
     @property
-    def dependencyDigests(self) -> dict[str, str]:
-        return dict(self.dependency_digests)
+    def dependency_digests(self) -> dict[str, str]:
+        """Return declared file digests for callers of the W1-P2 API.
+
+        The v2 wire shape stores the canonical aggregate ``dependencyDigest``
+        in the receipt identity.  Computed identities retain the individual
+        entries as a compatibility view for older coordinator callers.
+        """
+
+        return dict(self._dependency_files) or {"declared": self.dependency_digest}
 
     @property
-    def testProfile(self) -> str:
-        return self.test_profile
+    def test_profile(self) -> str:
+        return self._test_profile
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "repository": self.repository,
-            "sourceSha": self.source_sha,
-            "gitTreeSha": self.git_tree_sha,
-            "dependencyDigests": dict(sorted(self.dependency_digests.items())),
-            "testProfile": self.test_profile,
+            "sourceBranch": self.source_branch,
+            "headCommit": self.head_commit,
+            "gitTree": self.git_tree,
+            "dependencyDigest": self.dependency_digest,
+            "profileDigest": self.profile_digest,
+            "workflowDigest": self.workflow_digest,
         }
 
     @classmethod
     def from_dict(cls, value: Any) -> "CandidateIdentity":
         data = _mapping(value)
-        expected = {"repository", "sourceSha", "gitTreeSha", "dependencyDigests", "testProfile"}
+        expected = {"repository", "sourceBranch", "headCommit", "gitTree", "dependencyDigest", "profileDigest", "workflowDigest"}
         if set(data) != expected:
             raise ReceiptError("invalid_receipt", "candidate identity fields are incomplete or unknown")
-        deps = data["dependencyDigests"]
-        if not isinstance(deps, Mapping):
-            raise ReceiptError("invalid_receipt", "dependencyDigests must be an object")
-        normalized: dict[str, str] = {}
-        for path, digest in deps.items():
-            relative = _normal_relative_path(path)
-            if not _is_digest(digest):
-                raise ReceiptError("dependency_mismatch", f"invalid dependency digest: {relative}")
-            normalized[relative] = digest
-        if len(normalized) != len(deps):
-            raise ReceiptError("invalid_path", "dependency paths must be unique")
-        profile = data["testProfile"]
-        if not isinstance(profile, str) or profile not in PROFILES:
-            raise ReceiptError("profile_mismatch", "unknown test profile")
-        for field in ("sourceSha", "gitTreeSha"):
-            if not _is_sha(data[field]):
-                raise ReceiptError("invalid_sha", f"invalid {field}")
         repository = data["repository"]
-        if not isinstance(repository, str) or not repository or "/" not in repository:
+        branch = data["sourceBranch"]
+        if not isinstance(repository, str) or not re.fullmatch(r"[^/\s]+/[^/\s]+", repository):
             raise ReceiptError("invalid_receipt", "repository must be owner/name")
-        return cls(repository, data["sourceSha"], data["gitTreeSha"], dict(sorted(normalized.items())), profile)
+        if not isinstance(branch, str) or not branch or not BRANCH_RE.fullmatch(branch) or ".." in branch:
+            raise ReceiptError("invalid_branch", "candidate sourceBranch is invalid")
+        if not _is_sha(data["headCommit"]) or not _is_sha(data["gitTree"]):
+            raise ReceiptError("invalid_sha", "candidate identity contains a malformed commit or tree SHA")
+        for field in ("dependencyDigest", "profileDigest", "workflowDigest"):
+            if not _is_digest(data[field]):
+                raise ReceiptError("invalid_receipt", f"candidate identity {field} is invalid")
+        return cls(
+            repository,
+            branch,
+            data["headCommit"],
+            data["gitTree"],
+            data["dependencyDigest"],
+            data["profileDigest"],
+            data["workflowDigest"],
+        )
 
 
 def compute_candidate_identity(
     repo_path: str | os.PathLike[str] | Path,
-    dependency_files: Sequence[str] | None,
+    dependency_files: Sequence[str] | str | None = None,
     test_profile: str = "full",
+    *,
+    profile_files: Sequence[str] | str | None = None,
+    workflow_files: Sequence[str] | str | None = None,
+    profile_bytes: bytes | str | Mapping[str, Any] | None = None,
+    workflow_bytes: bytes | str | Mapping[str, Any] | None = None,
+    source_branch: str | None = None,
 ) -> CandidateIdentity:
-    """Compute identity from the checked-out commit and physical dependencies."""
+    """Compute the frozen identity from Git and canonical declared bytes."""
 
     if test_profile not in PROFILES:
         raise ReceiptError("profile_mismatch", f"unknown test profile: {test_profile!r}")
     repo = _repo_root(repo_path)
-    source_sha = _git(repo, "rev-parse", "HEAD").lower()
-    tree_sha = _git(repo, "rev-parse", "HEAD^{tree}").lower()
-    if not _is_sha(source_sha) or not _is_sha(tree_sha):
+    head = _git(repo, "rev-parse", "HEAD").lower()
+    tree = _git(repo, "rev-parse", "HEAD^{tree}").lower()
+    if not _is_sha(head) or not _is_sha(tree):
         raise ReceiptError("invalid_sha", "Git returned a malformed commit or tree SHA")
+    branch = source_branch or _git(repo, "branch", "--show-current") or "detached"
+    if not isinstance(branch, str) or not BRANCH_RE.fullmatch(branch) or ".." in branch:
+        raise ReceiptError("invalid_branch", "Git source branch is invalid")
+    dependency_map = _file_digest_map(repo, dependency_files)
+    dependency_digest = canonical_digest({"files": dependency_map})
     return CandidateIdentity(
         repository=_repository_name(repo),
-        source_sha=source_sha,
-        git_tree_sha=tree_sha,
-        dependency_digests=_dependency_digests(repo, dependency_files),
-        test_profile=test_profile,
+        source_branch=branch,
+        head_commit=head,
+        git_tree=tree,
+        dependency_digest=dependency_digest,
+        profile_digest=_profile_digest(repo, test_profile, profile_files, profile_bytes),
+        workflow_digest=_workflow_digest(repo, workflow_files, workflow_bytes),
+        _dependency_files=dependency_map,
+        _test_profile=test_profile,
     )
 
 
-RECEIPT_FIELDS = {
-    "schemaVersion",
-    "status",
-    "repository",
-    "gate",
-    "sourceSha",
-    "testedCheckoutSha",
-    "gitTreeSha",
-    "dependencyDigests",
-    "testProfile",
-    "attempt",
-    "coordinatorVersion",
-    "startedAt",
-    "completedAt",
-    "evidenceDigests",
-    "github",
-    "workerId",
-    "workerCapabilities",
-    "workerTrust",
-    "coordinatorIdentity",
-    "executionEnvironment",
-}
-LEGACY_RECEIPT_FIELDS = RECEIPT_FIELDS - {
-    "workerId", "workerCapabilities", "workerTrust", "coordinatorIdentity", "executionEnvironment"
-}
+CANDIDATE_IDENTITY_FIELDS = frozenset({"repository", "sourceBranch", "headCommit", "gitTree", "dependencyDigest", "profileDigest", "workflowDigest"})
+RECEIPT_FIELDS = frozenset({
+    "schemaVersion", "candidateIdentity", "workflowRunId", "workflowRunAttempt", "runnerLabel",
+    "startedAt", "completedAt", "conclusion", "commandDigest", "evidenceDigests", "receiptDigest",
+})
 
 
-@dataclass(frozen=True)
-class GateReceipt:
-    schema_version: int
-    status: str
-    repository: str
-    gate: str
-    source_sha: str
-    tested_checkout_sha: str
-    git_tree_sha: str
-    dependency_digests: dict[str, str]
-    test_profile: str
-    attempt: int
-    coordinator_version: str
-    started_at: str
-    completed_at: str
-    evidence_digests: dict[str, str]
-    github: dict[str, Any]
-    worker_id: str | None = None
-    worker_capabilities: tuple[str, ...] = ()
-    worker_trust: str | None = None
-    coordinator_identity: str | None = None
-    execution_environment: dict[str, Any] | None = None
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "schemaVersion": self.schema_version,
-            "status": self.status,
-            "repository": self.repository,
-            "gate": self.gate,
-            "sourceSha": self.source_sha,
-            "testedCheckoutSha": self.tested_checkout_sha,
-            "gitTreeSha": self.git_tree_sha,
-            "dependencyDigests": dict(sorted(self.dependency_digests.items())),
-            "testProfile": self.test_profile,
-            "attempt": self.attempt,
-            "coordinatorVersion": self.coordinator_version,
-            "startedAt": self.started_at,
-            "completedAt": self.completed_at,
-            "evidenceDigests": dict(sorted(self.evidence_digests.items())),
-            "github": self.github,
-            "workerId": self.worker_id,
-            "workerCapabilities": list(self.worker_capabilities),
-            "workerTrust": self.worker_trust,
-            "coordinatorIdentity": self.coordinator_identity,
-            "executionEnvironment": self.execution_environment or {},
-        }
-
-    @classmethod
-    def from_dict(cls, value: Any) -> "GateReceipt":
-        data = _mapping(value)
-        if set(data) != LEGACY_RECEIPT_FIELDS and set(data) != RECEIPT_FIELDS:
-            raise ReceiptError("invalid_receipt", "receipt fields are incomplete or unknown")
-        if data["schemaVersion"] != 1 or not isinstance(data["schemaVersion"], int):
-            raise ReceiptError("invalid_receipt", "unsupported receipt schema")
-        deps = _parse_digest_map(data["dependencyDigests"], dependency=True)
-        evidence = _parse_digest_map(data["evidenceDigests"], dependency=False)
-        github = data["github"]
-        if not isinstance(github, Mapping) or set(github) != {"pullRequest", "runUrl"}:
-            raise ReceiptError("invalid_receipt", "github receipt metadata is invalid")
-        if github["pullRequest"] is not None and (
-            not isinstance(github["pullRequest"], int) or isinstance(github["pullRequest"], bool)
-        ):
-            raise ReceiptError("invalid_receipt", "pullRequest must be an integer or null")
-        if github["runUrl"] is not None and not isinstance(github["runUrl"], str):
-            raise ReceiptError("invalid_receipt", "runUrl must be a string or null")
-        worker_capabilities = tuple(data.get("workerCapabilities", ()))
-        if any(not isinstance(item, str) or item not in {"fast", "heavy", "nestedDocker"} for item in worker_capabilities):
-            raise ReceiptError("invalid_receipt", "workerCapabilities is invalid")
-        worker_trust = data.get("workerTrust")
-        if worker_trust is not None and worker_trust != "isolated-candidate":
-            raise ReceiptError("trust_boundary", "receipt worker trust is not isolated-candidate")
-        if data.get("workerId") is not None and (not isinstance(data["workerId"], str) or not data["workerId"]):
-            raise ReceiptError("invalid_receipt", "workerId is invalid")
-        if data.get("coordinatorIdentity") is not None and (not isinstance(data["coordinatorIdentity"], str) or not data["coordinatorIdentity"]):
-            raise ReceiptError("invalid_receipt", "coordinatorIdentity is invalid")
-        environment = data.get("executionEnvironment", {})
-        if not isinstance(environment, Mapping):
-            raise ReceiptError("invalid_receipt", "executionEnvironment must be an object")
-        return cls(
-            schema_version=1,
-            status=data["status"],
-            repository=data["repository"],
-            gate=data["gate"],
-            source_sha=data["sourceSha"],
-            tested_checkout_sha=data["testedCheckoutSha"],
-            git_tree_sha=data["gitTreeSha"],
-            dependency_digests=deps,
-            test_profile=data["testProfile"],
-            attempt=data["attempt"],
-            coordinator_version=data["coordinatorVersion"],
-            started_at=data["startedAt"],
-            completed_at=data["completedAt"],
-            evidence_digests=evidence,
-            github=dict(github),
-            worker_id=data.get("workerId"),
-            worker_capabilities=worker_capabilities,
-            worker_trust=worker_trust,
-            coordinator_identity=data.get("coordinatorIdentity"),
-            execution_environment=dict(environment),
-        )
-
-
-def _parse_digest_map(value: Any, *, dependency: bool) -> dict[str, str]:
+def _parse_digest_map(value: Any) -> dict[str, str]:
     if not isinstance(value, Mapping):
-        raise ReceiptError("invalid_receipt", "digest fields must be objects")
+        raise ReceiptError("invalid_receipt", "evidenceDigests must be an object")
     result: dict[str, str] = {}
     for raw_path, digest in value.items():
         try:
             path = _normal_relative_path(raw_path)
-        except ReceiptError:
-            if dependency:
-                raise
-            raise ReceiptError("evidence_mismatch", "evidence path is invalid")
+        except ReceiptError as exc:
+            raise ReceiptError("evidence_mismatch", "evidence path is invalid") from exc
         if not _is_digest(digest):
-            raise ReceiptError("dependency_mismatch" if dependency else "evidence_mismatch", "invalid digest")
+            raise ReceiptError("evidence_mismatch", "invalid evidence digest")
         result[path] = digest
     if len(result) != len(value):
-        raise ReceiptError("invalid_path", "digest paths must be unique")
+        raise ReceiptError("evidence_mismatch", "evidence paths must be unique")
     return dict(sorted(result.items()))
 
 
-def _validate_completed_receipt(receipt: GateReceipt) -> None:
-    for field in (receipt.source_sha, receipt.tested_checkout_sha, receipt.git_tree_sha):
-        if not _is_sha(field):
-            raise ReceiptError("invalid_sha", "receipt contains a malformed SHA")
-    if receipt.status != "passed":
-        raise ReceiptError("receipt_not_passed", "only completed passed results can be written")
-    if not isinstance(receipt.gate, str) or receipt.gate not in GATES:
-        raise ReceiptError("invalid_receipt", "unknown gate")
-    if not isinstance(receipt.test_profile, str) or receipt.test_profile not in PROFILES:
-        raise ReceiptError("profile_mismatch", "unknown test profile")
-    if not isinstance(receipt.repository, str) or not receipt.repository or "/" not in receipt.repository:
-        raise ReceiptError("invalid_receipt", "repository must be owner/name")
-    if not isinstance(receipt.attempt, int) or isinstance(receipt.attempt, bool) or receipt.attempt < 1:
-        raise ReceiptError("invalid_receipt", "attempt must be a positive integer")
-    if not isinstance(receipt.coordinator_version, str) or not SEMVER_RE.fullmatch(receipt.coordinator_version):
-        raise ReceiptError("invalid_receipt", "coordinatorVersion must be released semver")
-    if receipt.worker_id is not None and receipt.worker_trust != "isolated-candidate":
-        raise ReceiptError("trust_boundary", "worker receipt metadata must identify an isolated candidate worker")
-    if receipt.worker_id is not None and not receipt.worker_capabilities:
-        raise ReceiptError("invalid_receipt", "worker receipt metadata must include capabilities")
-    timestamp_re = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$")
-    if (
-        not isinstance(receipt.started_at, str)
-        or not isinstance(receipt.completed_at, str)
-        or not timestamp_re.fullmatch(receipt.started_at)
-        or not timestamp_re.fullmatch(receipt.completed_at)
-    ):
-        raise ReceiptError("invalid_receipt", "timestamps must be RFC3339 UTC")
+@dataclass(frozen=True)
+class FullSuiteReceipt:
+    schema_version: int
+    candidate_identity: CandidateIdentity
+    workflow_run_id: int
+    workflow_run_attempt: int
+    runner_label: str
+    started_at: str
+    completed_at: str
+    conclusion: str
+    command_digest: str
+    evidence_digests: dict[str, str]
+    receipt_digest: str
+
+    def to_dict(self, *, include_digest: bool = True) -> dict[str, Any]:
+        result: dict[str, Any] = {
+            "schemaVersion": self.schema_version,
+            "candidateIdentity": self.candidate_identity.to_dict(),
+            "workflowRunId": self.workflow_run_id,
+            "workflowRunAttempt": self.workflow_run_attempt,
+            "runnerLabel": self.runner_label,
+            "startedAt": self.started_at,
+            "completedAt": self.completed_at,
+            "conclusion": self.conclusion,
+            "commandDigest": self.command_digest,
+            "evidenceDigests": dict(sorted(self.evidence_digests.items())),
+        }
+        if include_digest:
+            result["receiptDigest"] = self.receipt_digest
+        return result
+
+    @classmethod
+    def from_dict(cls, value: Any, *, allow_missing_digest: bool = False) -> "FullSuiteReceipt":
+        data = _mapping(value)
+        version = data.get("schemaVersion")
+        if version != RECEIPT_SCHEMA_VERSION:
+            if version == 1:
+                raise ReceiptError("unsupported_version", "schemaVersion 1 receipts are unsupported; migrate to FullSuiteReceipt schemaVersion 2")
+            raise ReceiptError("unsupported_version", "unsupported FullSuiteReceipt schemaVersion")
+        expected = set(RECEIPT_FIELDS)
+        if allow_missing_digest:
+            expected.remove("receiptDigest")
+        if set(data) != expected and not (allow_missing_digest and set(data) == expected | {"receiptDigest"}):
+            raise ReceiptError("invalid_receipt", "receipt fields are incomplete or unknown")
+        identity = CandidateIdentity.from_dict(data.get("candidateIdentity"))
+        run_id = data.get("workflowRunId")
+        attempt = data.get("workflowRunAttempt")
+        if not isinstance(run_id, int) or isinstance(run_id, bool) or run_id < 1:
+            raise ReceiptError("run_mismatch", "workflowRunId must be a positive integer")
+        if not isinstance(attempt, int) or isinstance(attempt, bool) or attempt < 1:
+            raise ReceiptError("attempt_mismatch", "workflowRunAttempt must be a positive integer")
+        runner = data.get("runnerLabel")
+        if runner not in RECOGNIZED_RUNNER_LABELS:
+            raise ReceiptError("unknown_runner", "runnerLabel is not recognized")
+        for field in ("startedAt", "completedAt"):
+            if not isinstance(data.get(field), str) or not TIMESTAMP_RE.fullmatch(data[field]):
+                raise ReceiptError("invalid_receipt", f"{field} must be RFC3339 UTC")
+        conclusion = data.get("conclusion")
+        if conclusion != "success":
+            raise ReceiptError("conclusion_not_success", "only successful workflow conclusions are reusable")
+        if not _is_digest(data.get("commandDigest")):
+            raise ReceiptError("invalid_receipt", "commandDigest is invalid")
+        evidence = _parse_digest_map(data.get("evidenceDigests"))
+        digest = data.get("receiptDigest", "")
+        if digest and not _is_digest(digest):
+            raise ReceiptError("receipt_digest_mismatch", "receiptDigest is invalid")
+        return cls(RECEIPT_SCHEMA_VERSION, identity, run_id, attempt, runner, data["startedAt"], data["completedAt"], conclusion, data["commandDigest"], evidence, digest)
+
+
+GateReceipt = FullSuiteReceipt
+
+
+def compute_receipt_digest(receipt: FullSuiteReceipt | Mapping[str, Any]) -> str:
+    parsed = receipt if isinstance(receipt, FullSuiteReceipt) else FullSuiteReceipt.from_dict(receipt, allow_missing_digest=True)
+    return canonical_digest(parsed.to_dict(include_digest=False))
+
+
+def _validate_receipt_digest(receipt: FullSuiteReceipt) -> None:
+    if receipt.receipt_digest != compute_receipt_digest(receipt):
+        raise ReceiptError("receipt_digest_mismatch", "receiptDigest does not match canonical receipt bytes")
+
+
+def create_full_suite_receipt(result: Mapping[str, Any]) -> FullSuiteReceipt:
+    """Validate a successful workflow result and fill its deterministic digest."""
+
+    data = dict(result)
+    if data.get("schemaVersion") == 1:
+        raise ReceiptError("unsupported_version", "schemaVersion 1 receipts are unsupported; migrate to FullSuiteReceipt schemaVersion 2")
+    data.setdefault("schemaVersion", RECEIPT_SCHEMA_VERSION)
+    data.pop("receiptDigest", None)
+    parsed = FullSuiteReceipt.from_dict(data, allow_missing_digest=True)
+    receipt = FullSuiteReceipt(**{**parsed.__dict__, "receipt_digest": compute_receipt_digest(parsed)})
+    supplied = result.get("receiptDigest")
+    if supplied is not None and supplied != receipt.receipt_digest:
+        raise ReceiptError("receipt_digest_mismatch", "supplied receiptDigest does not match canonical receipt bytes")
+    return receipt
 
 
 def _atomic_write(path: Path, payload: bytes) -> None:
@@ -495,12 +526,9 @@ def _atomic_write(path: Path, payload: bytes) -> None:
         raise
 
 
-def write_receipt(result: Any, output_path: str | os.PathLike[str] | Path) -> GateReceipt:
-    """Validate a completed result and atomically write its canonical receipt."""
-
-    receipt = result if isinstance(result, GateReceipt) else GateReceipt.from_dict(result)
-    _validate_completed_receipt(receipt)
-    _atomic_write(Path(output_path), _canonical_json(receipt.to_dict()))
+def write_receipt(result: Any, output_path: str | os.PathLike[str] | Path) -> FullSuiteReceipt:
+    receipt = create_full_suite_receipt(_mapping(result))
+    _atomic_write(Path(output_path), canonical_json_bytes(receipt.to_dict()))
     return receipt
 
 
@@ -509,6 +537,8 @@ class ReceiptVerdict:
     accepted: bool
     rejection_code: str | None = None
     message: str = ""
+    source_commit: str | None = None
+    promotion_commit: str | None = None
 
     @property
     def ok(self) -> bool:
@@ -529,29 +559,70 @@ def _reject(error: ReceiptError) -> ReceiptVerdict:
 def verify_receipt(
     receipt: Any,
     candidate_identity: Any,
-    required_gate: str,
+    required_gate: str = "full-gate",
+    *,
+    workflow_run_id: int | None = None,
+    workflow_run_attempt: int | None = None,
+    workflow_head_commit: str | None = None,
+    runner_label: str | None = None,
+    expected_command_digest: str | None = None,
+    expected_workflow_digest: str | None = None,
+    expected_evidence_digests: Mapping[str, str] | None = None,
 ) -> ReceiptVerdict:
-    """Verify receipt reuse against a freshly computed candidate identity."""
+    """Verify reusable identity without privileged credentials or network calls."""
 
     try:
         candidate = candidate_identity if isinstance(candidate_identity, CandidateIdentity) else CandidateIdentity.from_dict(candidate_identity)
-        parsed = receipt if isinstance(receipt, GateReceipt) else GateReceipt.from_dict(receipt)
-        _validate_completed_receipt(parsed)
-        if not isinstance(required_gate, str) or required_gate not in GATES:
-            raise ReceiptError("gate_mismatch", "unknown required gate")
-        if parsed.gate != required_gate:
-            raise ReceiptError("gate_mismatch", "receipt gate does not match required gate")
-        if parsed.repository != candidate.repository:
+        parsed = receipt if isinstance(receipt, FullSuiteReceipt) else FullSuiteReceipt.from_dict(receipt)
+        _validate_receipt_digest(parsed)
+        if required_gate != "full-gate":
+            raise ReceiptError("gate_mismatch", "FullSuiteReceipt is reusable only for full-gate")
+        if parsed.candidate_identity.repository != candidate.repository:
             raise ReceiptError("repository_mismatch", "receipt repository does not match candidate")
-        if parsed.git_tree_sha != candidate.git_tree_sha:
+        receipt_identity = parsed.candidate_identity
+        if receipt_identity.git_tree != candidate.git_tree:
             raise ReceiptError("tree_mismatch", "receipt Git tree does not match candidate")
-        if parsed.dependency_digests != candidate.dependency_digests:
-            raise ReceiptError("dependency_mismatch", "receipt dependencies do not match candidate")
-        if parsed.test_profile != candidate.test_profile:
-            raise ReceiptError("profile_mismatch", "receipt test profile does not match candidate")
-        return ReceiptVerdict(True, message="receipt identity matches")
+        if receipt_identity.dependency_digest != candidate.dependency_digest:
+            raise ReceiptError("dependency_mismatch", "receipt dependency identity does not match candidate")
+        if receipt_identity.profile_digest != candidate.profile_digest:
+            raise ReceiptError("profile_mismatch", "receipt profile identity does not match candidate")
+        if receipt_identity.workflow_digest != candidate.workflow_digest:
+            raise ReceiptError("workflow_mismatch", "receipt workflow identity does not match candidate")
+        if workflow_run_id is not None and parsed.workflow_run_id != workflow_run_id:
+            raise ReceiptError("run_mismatch", "receipt workflow run does not match expected run")
+        if workflow_run_attempt is not None and parsed.workflow_run_attempt != workflow_run_attempt:
+            raise ReceiptError("attempt_mismatch", "receipt workflow run attempt does not match expected attempt")
+        if workflow_head_commit is not None:
+            if not _is_sha(workflow_head_commit):
+                raise ReceiptError("invalid_sha", "workflow head commit is malformed")
+            if receipt_identity.head_commit != workflow_head_commit:
+                raise ReceiptError("superseded_head", "workflow run head is superseded")
+        if runner_label is not None and parsed.runner_label != runner_label:
+            raise ReceiptError("unknown_runner", "receipt runner label does not match expected runner")
+        if expected_command_digest is not None and parsed.command_digest != expected_command_digest:
+            raise ReceiptError("command_mismatch", "receipt command identity does not match expected command")
+        if expected_workflow_digest is not None and candidate.workflow_digest != expected_workflow_digest:
+            raise ReceiptError("workflow_mismatch", "candidate workflow identity is not recognized")
+        if expected_evidence_digests is not None:
+            expected_evidence = _parse_digest_map(expected_evidence_digests)
+            if parsed.evidence_digests != expected_evidence:
+                raise ReceiptError("evidence_mismatch", "receipt evidence does not match expected evidence")
+        return ReceiptVerdict(
+            True,
+            message="full-suite receipt identity matches",
+            source_commit=receipt_identity.head_commit,
+            promotion_commit=candidate.head_commit,
+        )
     except ReceiptError as error:
         return _reject(error)
+
+
+def receipt_lookup_key(receipt: FullSuiteReceipt | Mapping[str, Any]) -> str:
+    """Return stable retention/lookup metadata needed through main promotion."""
+
+    parsed = receipt if isinstance(receipt, FullSuiteReceipt) else FullSuiteReceipt.from_dict(receipt)
+    _validate_receipt_digest(parsed)
+    return f"{parsed.candidate_identity.repository}/{parsed.workflow_run_id}/{parsed.workflow_run_attempt}/{parsed.receipt_digest}"
 
 
 def load_json(path: str | os.PathLike[str] | Path) -> Any:
@@ -562,12 +633,20 @@ def load_json(path: str | os.PathLike[str] | Path) -> Any:
 
 
 __all__ = [
+    "CANDIDATE_IDENTITY_FIELDS",
     "CandidateIdentity",
+    "FullSuiteReceipt",
     "GateReceipt",
+    "RECOGNIZED_RUNNER_LABELS",
     "ReceiptError",
     "ReceiptVerdict",
+    "canonical_digest",
+    "canonical_json_bytes",
     "compute_candidate_identity",
+    "compute_receipt_digest",
+    "create_full_suite_receipt",
     "load_json",
+    "receipt_lookup_key",
     "verify_receipt",
     "write_receipt",
 ]

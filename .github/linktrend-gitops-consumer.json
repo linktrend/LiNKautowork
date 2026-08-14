@@ -1,7 +1,8 @@
 {
   "schemaVersion": 1,
+  "fastWorkflowName": "Linktrend Fast Checks",
   "ciWorkflowName": "LiNKautowork CI",
   "branchPolicyWorkflowName": "Branch Source Policy",
   "bugbotCheckName": "Cursor Bugbot",
-  "runnerType": "linktrend-private-macos-arm64"
+  "runnerType": "github-hosted"
 }
