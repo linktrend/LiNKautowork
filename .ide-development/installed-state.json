@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "packageName": "ide-development-managed-core",
-  "packageVersion": "2.3.7",
-  "installedAt": "2026-08-13T22:54:30Z",
+  "packageVersion": "2.3.8",
+  "installedAt": "2026-08-14T00:31:41Z",
   "files": {
     ".agents/skills/action-queue/SKILL.md": {
       "id": "codex-skill-action-queue",
@@ -648,14 +648,14 @@
     },
     ".ide-development/INDEX.yaml": {
       "id": "core-index-yaml",
-      "sourceHash": "sha256:6a3bcbbea1f2dc1353ab47bb7db8baea7773ffecf7c0a44129ac541a7cfad679",
-      "contentHash": "sha256:6a3bcbbea1f2dc1353ab47bb7db8baea7773ffecf7c0a44129ac541a7cfad679",
+      "sourceHash": "sha256:67649c049731f4ee3add284a9f496c9c3f15c7364d00b87f1fb142d63153bd66",
+      "contentHash": "sha256:67649c049731f4ee3add284a9f496c9c3f15c7364d00b87f1fb142d63153bd66",
       "mode": "0644"
     },
     ".ide-development/MANIFEST.json": {
       "id": "package-manifest",
-      "sourceHash": "sha256:2de731723db44c5f40be5dc67832ce8a5044be5718d6a10f4f96f9bf8435cf18",
-      "contentHash": "sha256:2de731723db44c5f40be5dc67832ce8a5044be5718d6a10f4f96f9bf8435cf18",
+      "sourceHash": "sha256:d08c5d7d3531265708950f14a4a9cb18ed21acd9b0e53b93388087022db6ab79",
+      "contentHash": "sha256:d08c5d7d3531265708950f14a4a9cb18ed21acd9b0e53b93388087022db6ab79",
       "mode": "0644"
     },
     ".ide-development/README.md": {
@@ -666,8 +666,8 @@
     },
     ".ide-development/VERSION": {
       "id": "core-version",
-      "sourceHash": "sha256:0fd7d1833844253d87dd014218f5f0c8cf6f8a2eb9ed9c9eab0d5ebb061e4607",
-      "contentHash": "sha256:0fd7d1833844253d87dd014218f5f0c8cf6f8a2eb9ed9c9eab0d5ebb061e4607",
+      "sourceHash": "sha256:b37daa6ab977ca83cca1f9e5b89f8adf0fc89128a74a709355f779f0063846f2",
+      "contentHash": "sha256:b37daa6ab977ca83cca1f9e5b89f8adf0fc89128a74a709355f779f0063846f2",
       "mode": "0644"
     },
     ".ide-development/config/delivery.json": {
@@ -1590,8 +1590,8 @@
     },
     "scripts/ide_development/__init__.py": {
       "id": "installer-scripts-ide-development-init-py",
-      "sourceHash": "sha256:0a5ce1d33837a4ebec03e2c08fa12b7c767246c856ba3b81a44f6e97dbbbe5d8",
-      "contentHash": "sha256:0a5ce1d33837a4ebec03e2c08fa12b7c767246c856ba3b81a44f6e97dbbbe5d8",
+      "sourceHash": "sha256:0aa5be769db43f187c59f6869c7dd3c92fb0010edd551dc6ed8cd01e0ed6ccc7",
+      "contentHash": "sha256:0aa5be769db43f187c59f6869c7dd3c92fb0010edd551dc6ed8cd01e0ed6ccc7",
       "mode": "0644"
     },
     "scripts/ide_development/__main__.py": {
@@ -1614,14 +1614,14 @@
     },
     "scripts/ide_development/constants.py": {
       "id": "installer-scripts-ide-development-constants-py",
-      "sourceHash": "sha256:d05f717125b2545a99086025ef8fd4901bedbafde49069c3562642bfd8722d65",
-      "contentHash": "sha256:d05f717125b2545a99086025ef8fd4901bedbafde49069c3562642bfd8722d65",
+      "sourceHash": "sha256:f37f8f16080ab2d8a184b9ed699ee9b58103b46762f54faed7c2cb0783463c5e",
+      "contentHash": "sha256:f37f8f16080ab2d8a184b9ed699ee9b58103b46762f54faed7c2cb0783463c5e",
       "mode": "0644"
     },
     "scripts/ide_development/engine.py": {
       "id": "installer-scripts-ide-development-engine-py",
-      "sourceHash": "sha256:3ab302e25a1505a963fcc4d6a28430148269f5fc2f6a7e18c9f49bbacb1fbd15",
-      "contentHash": "sha256:3ab302e25a1505a963fcc4d6a28430148269f5fc2f6a7e18c9f49bbacb1fbd15",
+      "sourceHash": "sha256:2312230b97c91d5fd953f0ee0863aedc1ad893233c5c8b2971f4a20c8bdb4881",
+      "contentHash": "sha256:2312230b97c91d5fd953f0ee0863aedc1ad893233c5c8b2971f4a20c8bdb4881",
       "mode": "0644"
     },
     "scripts/ide_development/errors.py": {
