@@ -36,6 +36,7 @@ RECEIPT_GATE="${SCRIPT_DIR}/promotion_receipt_gate.py"
 RECEIPT_PATH="${RECEIPT_PATH:-${LINKTREND_RECEIPT_PATH:-}}"
 RECEIPT_DEPENDENCY_FILES="${RECEIPT_DEPENDENCY_FILES:-}"
 RECEIPT_IDENTITY_ARGS=()
+RECEIPT_PROFILE_ARGS=()
 COORDINATOR_RECEIPT_ROOT="${LINKTREND_COORDINATOR_RECEIPT_ROOT:-${HOME}/.linktrend/ide-coordinator/receipts}"
 
 
@@ -116,6 +117,20 @@ receipt_identity_args() {
   return 0
 }
 
+receipt_profile_args() {
+  local candidate_repo="$1"
+  RECEIPT_PROFILE_ARGS=()
+  if [ -f "${candidate_repo}/.github/linktrend-delivery-mode.json" ]; then
+    RECEIPT_PROFILE_ARGS=(--profile-file ".github/linktrend-delivery-mode.json")
+  elif [ -f "${candidate_repo}/.ide-development/config/delivery.json" ]; then
+    RECEIPT_PROFILE_ARGS=(--profile-file ".ide-development/config/delivery.json")
+  else
+    echo "FAIL: delivery profile configuration is unavailable in promotion candidate" >&2
+    return 1
+  fi
+  return 0
+}
+
 verify_receipt_before_mutation() {
   local candidate_repo="$1"
   local profile="${2:-full}"
@@ -124,12 +139,13 @@ verify_receipt_before_mutation() {
     return 1
   fi
   receipt_identity_args
+  receipt_profile_args "${candidate_repo}"
   python3 "${RECEIPT_GATE}" verify \
     --receipt "${RECEIPT_PATH}" \
     --repo "${candidate_repo}" \
     --profile "${profile}" \
-    --profile-file .github/linktrend-delivery-mode.json \
     --gate full-gate \
+    ${RECEIPT_PROFILE_ARGS[@]+"${RECEIPT_PROFILE_ARGS[@]}"} \
     ${RECEIPT_IDENTITY_ARGS[@]+"${RECEIPT_IDENTITY_ARGS[@]}"}
 }
 
@@ -354,9 +370,10 @@ if [ -z "${RECEIPT_PATH}" ]; then
   RECEIPT_PATH="${COORDINATOR_RECEIPT_ROOT}/${CANDIDATE_TREE}-full-gate.json"
 fi
 receipt_identity_args
+receipt_profile_args "${WT}"
 python3 "${SCRIPT_DIR}/gate_receipt.py" identity \
   --repo "${WT}" --profile full \
-  --profile-file .github/linktrend-delivery-mode.json \
+  ${RECEIPT_PROFILE_ARGS[@]+"${RECEIPT_PROFILE_ARGS[@]}"} \
   ${RECEIPT_IDENTITY_ARGS[@]+"${RECEIPT_IDENTITY_ARGS[@]}"} >"${RECEIPT_IDENTITY_FILE}"
 verify_receipt_before_mutation "${WT}" full || exit 0
 git -C "${WT}" push -u origin "HEAD:refs/heads/${PROMOTE_BRANCH}"

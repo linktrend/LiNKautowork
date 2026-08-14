@@ -6,6 +6,33 @@ on:
   pull_request:
     branches: [development]
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "reconciled only; never a general manual Fast trigger"
+        required: true
+        type: choice
+        options: [reconciled]
+      expected_repository:
+        description: "Exact same-repository owner/name"
+        required: true
+        type: string
+      expected_commit:
+        description: "Exact development 40-character commit"
+        required: true
+        type: string
+      expected_tree:
+        description: "Exact development 40-character Git tree"
+        required: true
+        type: string
+      package_version:
+        description: "Installed immutable managed-core version"
+        required: true
+        type: string
+      installed_state_digest:
+        description: "Canonical installed-state SHA-256"
+        required: true
+        type: string
 
 permissions: {}
 
@@ -75,3 +102,42 @@ jobs:
           name: linktrend-fast-check-${{ github.run_id }}
           path: fast-check-summary.txt
           retention-days: 30
+
+  reconciled-fast:
+    name: Linktrend Fast Checks
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'reconciled'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    env:
+      EXPECTED_REPOSITORY: ${{ inputs.expected_repository }}
+      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+      EXPECTED_TREE: ${{ inputs.expected_tree }}
+      PACKAGE_VERSION: ${{ inputs.package_version }}
+      INSTALLED_STATE_DIGEST: ${{ inputs.installed_state_digest }}
+    steps:
+      - name: Checkout exact trusted development ref
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: development
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Bind reconciled Fast dispatch to exact installed development tree
+        env:
+          ACTUAL_REPOSITORY: ${{ github.repository }}
+          WORKFLOW_REF: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          [[ "${EXPECTED_COMMIT}" =~ ^[0-9a-f]{40}$ ]] || { echo reconciled_fast_commit_invalid; exit 1; }
+          [[ "${EXPECTED_TREE}" =~ ^[0-9a-f]{40}$ ]] || { echo reconciled_fast_tree_invalid; exit 1; }
+          [[ "${INSTALLED_STATE_DIGEST}" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo reconciled_fast_digest_invalid; exit 1; }
+          python3 scripts/gitops/verify_reconciled_fast_dispatch.py \
+            --repo . --expected-repository "${EXPECTED_REPOSITORY}" --actual-repository "${ACTUAL_REPOSITORY}" \
+            --ref "${WORKFLOW_REF}" --expected-commit "${EXPECTED_COMMIT}" --expected-tree "${EXPECTED_TREE}" \
+            --package-version "${PACKAGE_VERSION}" --installed-state-digest "${INSTALLED_STATE_DIGEST}"
+      - name: Run exact Fast profile without cache or write authority
+        run: |
+          set -euo pipefail
+          git diff --check
+          python3 scripts/gitops/run_delivery_profile.py fast
