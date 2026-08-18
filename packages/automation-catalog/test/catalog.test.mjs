@@ -86,10 +86,11 @@ describe('catalogue package validation', () => {
   it('rejects secret-shaped source content without returning the value', () => {
     const packageDir = copiedGolden();
     const file = path.join(packageDir, 'contracts/configuration.schema.json');
-    fs.writeFileSync(file, JSON.stringify({ password: 'ltfx.ph.064d218202.v1' }));
+    const planted = 'fixture-value-must-not-' + 'appear-in-errors';
+    fs.writeFileSync(file, JSON.stringify({ password: planted }));
     const errors = validatePackageDirectory({ repoRoot, packageDir }).errors;
     expect(errors.map((error) => error.code)).toContain('secret_like_field');
-    expect(JSON.stringify(errors)).not.toContain('fixture-value-must-not-appear-in-errors');
+    expect(JSON.stringify(errors)).not.toContain(planted);
   });
 
   it('rejects credential objects and private-key-shaped workflow content', () => {
@@ -97,7 +98,7 @@ describe('catalogue package validation', () => {
     const workflowFile = path.join(packageDir, 'workflow.json');
     const workflow = JSON.parse(fs.readFileSync(workflowFile, 'utf8'));
     workflow.nodes[1].credentials = { demo: { id: 'fixture-only' } };
-    ltfx.ph.4477d50314.v1
+    workflow.nodes[1].parameters.private_material = '-----BEGIN ' + 'PRIVATE KEY-----';
     fs.writeFileSync(workflowFile, `${JSON.stringify(workflow, null, 2)}\n`);
     expect(errorsFor(packageDir)).toEqual(expect.arrayContaining(['secret_like_field', 'secret_like_content']));
   });

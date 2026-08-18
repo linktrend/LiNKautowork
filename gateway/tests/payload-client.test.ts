@@ -20,7 +20,7 @@ describe("createPayloadSyncClient", () => {
     expect(fetchImpl).toHaveBeenCalledOnce();
     const init = fetchImpl.mock.calls[0]?.[1];
     const headers = init?.headers as Record<string, string> | undefined;
-    expect(headers?.Authorization).toBe("users API-Key test-api-key");
+    expect(headers?.Authorization).toBe("users API-Key ltfx.ph.2e7a7ee14c.v1");
     expect(headers?.Authorization ?? "").not.toMatch(/^Bearer /);
   });
 });

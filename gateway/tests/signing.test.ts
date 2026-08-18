@@ -8,7 +8,7 @@ describe('verifyLinkSignature', () => {
     const timestamp = String(Math.floor(nowMs / 1000));
     const nonce = 'nonce-1';
     const rawBody = JSON.stringify({ hello: 'world' });
-    const signature = computeLinkSignature('secret-1', timestamp, nonce, rawBody);
+    const signature = computeLinkSignature('ltfx.signing.test.ts.secret.67.0.v1', timestamp, nonce, rawBody);
 
     const result = verifyLinkSignature({
       secret: 'ltfx.signing.test.ts.secret.67.0.v1',
@@ -34,7 +34,7 @@ describe('verifyLinkSignature', () => {
       secret: 'ltfx.signing.test.ts.secret.67.0.v1',
       timestamp: oldTimestamp,
       nonce,
-      signature: computeLinkSignature('secret-1', oldTimestamp, nonce, rawBody),
+      signature: computeLinkSignature('ltfx.signing.test.ts.secret.67.0.v1', oldTimestamp, nonce, rawBody),
       rawBody,
       replayWindowSeconds: 300,
       nonceStore: new NonceStore(300),
@@ -49,7 +49,7 @@ describe('verifyLinkSignature', () => {
     const timestamp = String(Math.floor(nowMs / 1000));
     const nonce = 'nonce-3';
     const rawBody = '{}';
-    const signature = computeLinkSignature('secret-1', timestamp, nonce, rawBody);
+    const signature = computeLinkSignature('ltfx.signing.test.ts.secret.67.0.v1', timestamp, nonce, rawBody);
     const nonceStore = new NonceStore(300);
 
     const first = verifyLinkSignature({

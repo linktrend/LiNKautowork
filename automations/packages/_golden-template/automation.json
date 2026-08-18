@@ -16,7 +16,7 @@
     "channel": "development",
     "lifecycle": "draft",
     "identity": {
-      "package_digest": "sha256:583475585ffab4ea9034d1acab2b195f345946f4ab3745e5c96c19dc6a44c3e3",
+      "package_digest": "sha256:b3307fa719248bcddf6a2b791a41b0a6e52b417db62d926e7c5ff62c073f56c2",
       "workflow_digest": "sha256:efe4955bbb9ae2c364a7db3906d3b80e41b3d09bffad5805a7b7a944b64dafe4",
       "source_git_sha": "a368a45e164eda92eddf1eccad62e58a7c349399",
       "n8n_version": "2.30.0"
