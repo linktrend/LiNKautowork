@@ -52,7 +52,7 @@ describe('automation control contracts', () => {
       configuration_digest: digest,
       configuration: { api_key: 'ltfx.app.test.ts.apikey.18.2.v1' },
     })).toThrow(/secret-shaped key/);
-    ltfx.ph.0db5cd5b56.v1
+    expect(() => assertNoSecretShapedContent({ value: '-----BEGIN ' + 'PRIVATE KEY-----' })).toThrow(/secret-shaped value/);
     expect(() => assertNoSecretShapedContent({ callback_url: 'postgres://' + 'admin:pw123@db.internal:5432/app' })).toThrow(/secret-shaped value/);
     expect(() => assertNoSecretShapedContent({ callback_url: 'mongodb+srv://' + 'admin:pw123@cluster.example/app' })).toThrow(/secret-shaped value/);
     expect(() => assertNoSecretShapedContent({ authorization: 'Bearer abcdefghijklmnop' })).toThrow(/secret-shaped value/);
