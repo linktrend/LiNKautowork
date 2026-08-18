@@ -6,7 +6,7 @@ import { PostgrestProductApiService, PostgrestProvisioningAdapter } from '../../
 
 const restUrl = process.env.DURABLE_POSTGREST_URL;
 if (!restUrl) throw new Error('DURABLE_POSTGREST_URL is required');
-const postgrestSecret = 'ltfx.ph.24c6deb948.v1';
+const postgrestSecret = 'ltfx.ph.24c6deb948.v1.disposable-postgrest-jwt';
 const webhookSecret = 'ltfx.ph.dab4648be8.v1';
 const orgId = '00000000-0000-0000-0000-000000000002';
 const subscriptionSuccess = '93000000-0000-0000-0000-000000000001';
