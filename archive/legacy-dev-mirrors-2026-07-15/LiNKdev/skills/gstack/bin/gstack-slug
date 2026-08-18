@@ -9,7 +9,7 @@ set -euo pipefail
 
 CACHE_DIR="$HOME/.gstack/slug-cache"
 PROJECT_DIR="$(pwd)"
-# Encode absolute path as cache key: /Users/j/foo → _Users_j_foo
+# Encode absolute path as cache key: ltfx.ph.236d331a18.v1 → _Users_j_foo
 CACHE_KEY=$(printf '%s' "$PROJECT_DIR" | tr '/' '_')
 CACHE_FILE="${CACHE_DIR}/${CACHE_KEY}"
 

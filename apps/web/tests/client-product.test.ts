@@ -3,7 +3,7 @@ import { FakeProductAdapter, ProductError, beginSignup, renderPublicSite } from 
 import type { ClientIdentity, Provisioner, PublishedOffer } from '../src/contracts.js';
 
 const orgA = '00000000-0000-0000-0000-000000000002'; const orgB = '00000000-0000-0000-0000-000000000003';
-const offer: PublishedOffer = { productId: 'product-brief', offerId: 'brief-v2', releaseLabel: 'Briefing v2.0', name: 'Executive briefing', summary: 'A managed daily decision brief.', prerequisites: ['operator-assisted credentials'], pricePresentation: 'Pricing is confirmed with support before activation.', supportPath: 'support@linktrend.example', published: true, fields: [{ key: 'timezone', label: 'Time zone', kind: 'select', required: true, options: ['Asia/Taipei', 'UTC'] }] };
+const offer: PublishedOffer = { productId: 'product-brief', offerId: 'brief-v2', releaseLabel: 'Briefing v2.0', name: 'Executive briefing', summary: 'A managed daily decision brief.', prerequisites: ['operator-assisted credentials'], pricePresentation: 'Pricing is confirmed with support before activation.', supportPath: 'support@linktrend.example', published: true, fields: [{ key: ('timezone'), label: 'Time zone', kind: 'select', required: true, options: ['Asia/Taipei', 'UTC'] }] };
 const privateOffer: PublishedOffer = { ...offer, offerId: 'internal', name: 'Internal workflow', published: false };
 class FakeProvisioner implements Provisioner { calls = 0; fail = false; async provision(input: { idempotencyKey: string }) { this.calls++; if (this.fail) throw new Error('internal detail'); return { instanceId: `instance-${input.idempotencyKey}` }; } }
 const identity = (organisationId = orgA): ClientIdentity => ({ subject: 'client-user', organisationId, roles: ['client_admin'] });

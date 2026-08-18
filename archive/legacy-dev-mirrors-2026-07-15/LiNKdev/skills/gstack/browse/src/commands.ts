@@ -79,7 +79,7 @@ export const DOM_CONTENT_COMMANDS = new Set([
 ]);
 
 /** Wrap output from untrusted-content commands with trust boundary markers */
-export function wrapUntrustedContent(result: string, url: string): string {
+export function wrapUntrustedContent(result: string, url: string ): string {
   // Sanitize URL: remove newlines to prevent marker injection via history.pushState
   const safeUrl = url.replace(/[\n\r]/g, '').slice(0, 200);
   // Escape marker strings in content to prevent boundary escape attacks
@@ -211,7 +211,7 @@ export const COMMAND_ALIASES: Record<string, string> = {
 };
 
 /** Resolve an alias to its canonical command name. Non-aliases pass through unchanged. */
-export function canonicalizeCommand(cmd: string): string {
+export function canonicalizeCommand(cmd: string ): string {
   return COMMAND_ALIASES[cmd] ?? cmd;
 }
 
@@ -229,7 +229,7 @@ export const NEW_IN_VERSION: Record<string, string> = {
  * Levenshtein distance (dynamic programming).
  * O(a.length * b.length) — fast for command name sizes (<20 chars).
  */
-function levenshtein(a: string, b: string): number {
+function levenshtein(a: string, b: string ): number {
   if (a === b) return 0;
   if (a.length === 0) return b.length;
   if (b.length === 0) return a.length;

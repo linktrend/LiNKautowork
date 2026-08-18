@@ -279,7 +279,7 @@ export function generateCanary(): string {
  * output the token. If the token appears in any outbound channel, that's
  * evidence of prompt injection successfully overriding the system prompt.
  */
-export function injectCanary(systemPrompt: string, canary: string): string {
+export function injectCanary(systemPrompt: string, canary: string ): string {
   const instruction = [
     '',
     `SECURITY CANARY: ${canary}`,
@@ -294,7 +294,7 @@ export function injectCanary(systemPrompt: string, canary: string): string {
  * objects, and primitives. Returns true if canary is found anywhere in the
  * structure — including tool call arguments, URLs embedded in strings, etc.
  */
-export function checkCanaryInStructure(value: unknown, canary: string): boolean {
+export function checkCanaryInStructure(value: unknown, canary: string ): boolean {
   if (value == null) return false;
   if (typeof value === 'string') return value.includes(canary);
   if (typeof value === 'number' || typeof value === 'boolean') return false;
@@ -359,7 +359,7 @@ function getDeviceSalt(): string {
   return cachedSalt;
 }
 
-export function hashPayload(payload: string): string {
+export function hashPayload(payload: string ): string {
   const salt = getDeviceSalt();
   return createHash('sha256').update(salt).update(payload).digest('hex');
 }
@@ -665,7 +665,7 @@ export function getStatus(): StatusDetail {
  * Extract url domain for logging. Never logs path or query string.
  * Returns empty string on parse failure rather than throwing.
  */
-export function extractDomain(url: string): string {
+export function extractDomain(url: string ): string {
   try {
     return new URL(url).hostname;
   } catch {

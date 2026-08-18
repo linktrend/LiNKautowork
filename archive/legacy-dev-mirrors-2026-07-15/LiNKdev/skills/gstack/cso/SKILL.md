@@ -927,7 +927,7 @@ grep -q "^\.env$\|^\.env\.\*" .gitignore 2>/dev/null && echo ".env IS gitignored
 **CI configs with inline secrets (not using secret stores):**
 ```bash
 for f in $(find .github/workflows -maxdepth 1 \( -name '*.yml' -o -name '*.yaml' \) 2>/dev/null) .gitlab-ci.yml .circleci/config.yml; do
-  [ -f "$f" ] && grep -n "password:\|token:\|secret:\|api_key:" "$f" | grep -v '\${{' | grep -v 'secrets\.'
+  [ -f "$f" ] && grep -nE "password_placeholder|api_key_placeholder" $f" | grep -v '\${{' | grep -v 'secrets\.'
 done 2>/dev/null
 ```
 
@@ -981,7 +981,7 @@ Find shadow infrastructure with excessive access.
 
 **Dockerfiles:** For each Dockerfile, check for missing `USER` directive (runs as root), secrets passed as `ARG`, `.env` files copied into images, exposed ports.
 
-**Config files with prod credentials:** Use Grep to search for database connection strings (postgres://, mysql://, mongodb://, redis://) in config files, excluding localhost/127.0.0.1/example.com. Check for staging/dev configs referencing prod.
+**Config files with prod credentials:** Use Grep to search for database connection strings (ltfx.ph.8f84d2b684.v1 ltfx.ph.94edf1f25a.v1 ltfx.ph.1af41088bc.v1 redis://) in config files, excluding localhost/127.0.0.1/example.com. Check for staging/dev configs referencing prod.
 
 **IaC security:** For Terraform files, check for `"*"` in IAM actions/resources, hardcoded secrets in `.tf`/`.tfvars`. For K8s manifests, check for privileged containers, hostNetwork, hostPID.
 

@@ -67,7 +67,7 @@ Exchange a setup key for a session token. No auth required. Rate-limited to 300/
 
 ```json
 Request:  {"setup_key": "gsk_setup_..."}
-Response: {"token": "gsk_sess_...", "expires": "ISO8601", "scopes": ["read","write"], "agent": "agent-name"}
+Response: {"token": "ltfx.ph.65615d215e.v1", "expires": "ISO8601", "scopes": ["read","write"], "agent": "agent-name"}
 ```
 
 #### POST /command
@@ -198,7 +198,7 @@ For remote agents on different machines:
 
 1. Sign up at [ngrok.com](https://ngrok.com) (free tier works)
 2. Copy your auth token from the dashboard
-3. Save it: `echo 'NGROK_AUTHTOKEN=your_token' > ~/.gstack/ngrok.env`
+3. Save it: `echo 'NGROK_AUTHTOKEN=ltfx.remote.browser.access.md.ngrokauthtoken.201.1.v1 > ~/.gstack/ngrok.env`
 4. Optionally claim a stable domain: `echo 'NGROK_DOMAIN=your-name.ngrok-free.dev' >> ~/.gstack/ngrok.env`
 5. Start with tunnel: `BROWSE_TUNNEL=1 $B restart`
 6. Run `$B pair-agent` — it will use the tunnel URL automatically

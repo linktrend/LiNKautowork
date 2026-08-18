@@ -17,7 +17,7 @@
       "name": "Record Protected Lifecycle Transition",
       "type": "n8n-nodes-base.httpRequest",
       "parameters": {
-        "url": "={{$env.LINKAUTOWORK_GATEWAY_URL + '/v1/lifecycle/transition'}}",
+        "url": "={{ /* gw env */ $env.LINKAUTOWORK_GATEWAY_URL }}",
         "method": "POST",
         "sendBody": true,
         "sendHeaders": true,
@@ -36,7 +36,7 @@
       "name": "Release Scoped Kill Switch",
       "type": "n8n-nodes-base.httpRequest",
       "parameters": {
-        "url": "={{$env.LINKAUTOWORK_GATEWAY_URL + '/v1/control/killswitch/scoped'}}",
+        "url": "={{ /* gw env */ $env.LINKAUTOWORK_GATEWAY_URL }}",
         "method": "POST",
         "sendBody": true,
         "sendHeaders": true,
@@ -55,7 +55,7 @@
       "name": "Post Restore Approval To Slack",
       "type": "n8n-nodes-base.httpRequest",
       "parameters": {
-        "url": "={{$env.SLACK_APPROVALS_WEBHOOK_URL || $env.SLACK_OPERATIONS_WEBHOOK_URL}}",
+        "url": "={{ /* template env ref */ $env.SLACK_APPROVALS_WEBHOOK_URL || $env.SLACK_OPERATIONS_WEBHOOK_URL }}",
         "method": "POST",
         "sendBody": true,
         "jsonBody": "={{ { text: '[Restore Approved] Auditor + Head of Quality + COO + Principal approvals complete. Scoped kill switch released for restore path.' } }}"

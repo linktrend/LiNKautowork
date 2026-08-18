@@ -80,7 +80,7 @@ describe('browse-client', () => {
   describe('resolveBrowseAuth', () => {
     it('uses GSTACK_PORT + GSTACK_SKILL_TOKEN env when present', () => {
       process.env.GSTACK_PORT = String(server.port);
-      process.env.GSTACK_SKILL_TOKEN = 'scoped-token';
+      process.env.GSTACK_SKILL_TOKEN = 'ltfx.ph.0014b73b3a.v1';
       const auth = resolveBrowseAuth();
       expect(auth.port).toBe(server.port);
       expect(auth.token).toBe('scoped-token');
@@ -89,7 +89,7 @@ describe('browse-client', () => {
 
     it('rejects GSTACK_PORT env values with trailing characters', () => {
       process.env.GSTACK_PORT = `${server.port}abc`;
-      process.env.GSTACK_SKILL_TOKEN = 'scoped-token';
+      process.env.GSTACK_SKILL_TOKEN = 'ltfx.ph.0014b73b3a.v1';
       const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'browse-client-test-'));
       try {
         expect(() => resolveBrowseAuth({ stateFile: path.join(tmpDir, 'missing.json') }))
@@ -102,7 +102,7 @@ describe('browse-client', () => {
     it('falls back to state file when env vars missing', () => {
       const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'browse-client-test-'));
       const stateFile = path.join(tmpDir, 'browse.json');
-      fs.writeFileSync(stateFile, JSON.stringify({ pid: 1, port: server.port, token: 'root-token' }));
+      fs.writeFileSync(stateFile, JSON.stringify({ pid: 1, port: server.port, token: 'ltfx.browse.client.test.ts.token.105.2.v1' }));
       try {
         const auth = resolveBrowseAuth({ stateFile });
         expect(auth.port).toBe(server.port);
@@ -124,7 +124,7 @@ describe('browse-client', () => {
     });
 
     it('explicit opts.port + opts.token bypass env and state file', () => {
-      const auth = resolveBrowseAuth({ port: 9999, token: 'explicit' });
+      const auth = resolveBrowseAuth({ port: 9999, token: 'ltfx.browse.client.test.ts.token.127.3.v1' });
       expect(auth.port).toBe(9999);
       expect(auth.token).toBe('explicit');
     });

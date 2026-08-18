@@ -28,8 +28,8 @@ describe('filterArgs — privacy filtering', () => {
   });
 
   it('redacts sensitive URL query params', () => {
-    const result = filterArgs('goto', ['https://example.com?api_key=secret&page=1']);
-    expect(result[0]).toContain('api_key=%5BREDACTED%5D');
+    const result = filterArgs('goto', ['https://example.com?api_key=ltfx.ph.e804c74f71.v1]);
+    expect(result[0]).toContain('api_key=ltfx.ph.b69b3722b1.v1;
     expect(result[0]).toContain('page=1');
   });
 

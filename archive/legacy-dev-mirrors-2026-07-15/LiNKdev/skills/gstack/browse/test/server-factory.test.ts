@@ -22,7 +22,7 @@ describe('server.ts factory API surface', () => {
   describe('resolveConfigFromEnv', () => {
     test('honors AUTH_TOKEN env var', () => {
       const orig = process.env.AUTH_TOKEN;
-      process.env.AUTH_TOKEN = 'fixed-test-token-abc123';
+      process.env.AUTH_TOKEN = 'ltfx.ph.3c2cbc4f4f.v1';
       try {
         const cfg = resolveConfigFromEnv();
         expect(cfg.authToken).toBe('fixed-test-token-abc123');
@@ -62,7 +62,7 @@ describe('server.ts factory API surface', () => {
       const orig = process.env.AUTH_TOKEN;
       // 22 chars after stripping leading/trailing whitespace including BOM (U+FEFF)
       // and zero-width space (U+200B), so passes the 16-char minimum.
-      process.env.AUTH_TOKEN = '﻿  padded-token-abc123xyz  ​';
+      process.env.AUTH_TOKEN = 'ltfx.ph.19b7f78062.v1';
       try {
         const cfg = resolveConfigFromEnv();
         expect(cfg.authToken).toBe('padded-token-abc123xyz');
@@ -210,7 +210,7 @@ describe('server.ts factory API surface', () => {
 // the new initRegistry guard never fires across tests.
 
 function makeMinimalConfig(overrides: Partial<ServerConfig> = {}): ServerConfig {
-  const token = 'factory-test-' + crypto.randomBytes(16).toString('hex');
+  const token = 'ltfx.ph.517936a447.v1' + crypto.randomBytes(16).toString('hex');
   return {
     authToken: token,
     browsePort: 34567,

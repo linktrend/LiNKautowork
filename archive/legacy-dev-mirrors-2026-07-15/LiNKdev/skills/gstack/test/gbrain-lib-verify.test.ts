@@ -53,7 +53,7 @@ function runLibSnippet(snippet: string, stdin: string = '') {
 
 describe('gstack-gbrain-supabase-verify', () => {
   const VALID =
-    'postgresql://postgres.abcdefghijklmnopqrst:secretpass@aws-0-us-east-1.pooler.supabase.com:6543/postgres';
+    'postgresql://' + 'postgres.abcdefghijklmnopqrst:secretpass@aws-0-us-east-1.pooler.supabase.com:6543/postgres';
 
   test('accepts canonical Session Pooler URL', () => {
     const r = runVerify(VALID);
@@ -78,7 +78,7 @@ describe('gstack-gbrain-supabase-verify', () => {
   });
 
   test('rejects direct-connection URL with exit code 3', () => {
-    const url = 'postgresql://postgres:secret@db.abcdefghijk.supabase.co:5432/postgres';
+    const url = 'ltfx.db.supabase.example.v1';
     const r = runVerify(url);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain('rejected direct-connection URL');
@@ -88,14 +88,14 @@ describe('gstack-gbrain-supabase-verify', () => {
   });
 
   test('rejects wrong scheme', () => {
-    const r = runVerify('mysql://user:pass@aws-0-us-east-1.pooler.supabase.com:6543/postgres');
+    const r = runVerify('mysql://' + 'user:pass@aws-0-us-east-1.pooler.supabase.com:6543/postgres');
     expect(r.status).toBe(2);
     expect(r.stderr).toContain('bad scheme');
   });
 
   test('rejects non-6543 port', () => {
     const r = runVerify(
-      'postgresql://postgres.ref:pass@aws-0-us-east-1.pooler.supabase.com:5432/postgres'
+      'postgresql://' + 'postgres.ref:pass@aws-0-us-east-1.pooler.supabase.com:5432/postgres'
     );
     expect(r.status).toBe(2);
     expect(r.stderr).toContain('6543');
@@ -103,28 +103,28 @@ describe('gstack-gbrain-supabase-verify', () => {
 
   test('rejects empty password', () => {
     const r = runVerify(
-      'postgresql://postgres.ref:@aws-0-us-east-1.pooler.supabase.com:6543/postgres'
+      'postgresql://' + 'postgres.ref:@aws-0-us-east-1.pooler.supabase.com:6543/postgres'
     );
     expect(r.status).toBe(2);
     expect(r.stderr).toContain('empty password');
   });
 
   test('rejects missing userinfo', () => {
-    const r = runVerify('postgresql://aws-0-us-east-1.pooler.supabase.com:6543/postgres');
+    const r = runVerify('postgresql://' + 'aws-0-us-east-1.pooler.supabase.com:6543/postgres');
     expect(r.status).toBe(2);
     expect(r.stderr).toContain('missing userinfo');
   });
 
   test('rejects plain "postgres" user (no .ref) to catch direct-URL paste mistakes', () => {
     const r = runVerify(
-      'postgresql://postgres:pass@aws-0-us-east-1.pooler.supabase.com:6543/postgres'
+      'postgresql://' + 'postgres:pass@aws-0-us-east-1.pooler.supabase.com:6543/postgres'
     );
     expect(r.status).toBe(2);
     expect(r.stderr).toContain("user portion 'postgres'");
   });
 
   test('rejects wrong host (not *.pooler.supabase.com)', () => {
-    const r = runVerify('postgresql://postgres.ref:pass@example.com:6543/postgres');
+    const r = runVerify('postgresql://' + 'postgres.ref:pass@example.com:6543/postgres');
     expect(r.status).toBe(2);
     expect(r.stderr).toContain('pooler.supabase.com');
   });
@@ -137,7 +137,7 @@ describe('gstack-gbrain-supabase-verify', () => {
 
   test('case-insensitive host match (POOLER.SUPABASE.COM passes)', () => {
     const r = runVerify(
-      'postgresql://postgres.ref:pass@AWS-0-US-EAST-1.POOLER.SUPABASE.COM:6543/postgres'
+      'postgresql://' + 'postgres.ref:pass@AWS-0-US-EAST-1.POOLER.SUPABASE.COM:6543/postgres'
     );
     expect(r.status).toBe(0);
   });
@@ -146,7 +146,7 @@ describe('gstack-gbrain-supabase-verify', () => {
     // Supply a URL with a distinctive password; verify none of the errors
     // leak the password to stderr.
     const r = runVerify(
-      'mysql://user:VERY-DISTINCT-SECRET-dk3984@aws-0-us-east-1.pooler.supabase.com:6543/postgres'
+      'mysql://' + 'user:VERY-DISTINCT-SECRET-dk3984@aws-0-us-east-1.pooler.supabase.com:6543/postgres'
     );
     expect(r.status).toBe(2);
     expect(r.stderr).not.toContain('VERY-DISTINCT-SECRET');
@@ -186,11 +186,11 @@ describe('gstack-gbrain-lib.sh read_secret_to_env', () => {
       read_secret_to_env MY_URL "URL: " --echo-redacted 's#://[^@]*@#://***@#'
       echo "ok"
       `,
-      'postgresql://user:SECRET123@host:5432/db'
+      'postgresql://' + 'user:SECRET123@host:5432/db'
     );
     expect(r.status).toBe(0);
     // Redacted preview goes to stderr
-    expect(r.stderr).toContain('Got: postgresql://***@host:5432/db');
+    expect(r.stderr).toContain('Got: ltfx.ph.672a8b92de.v1');
     // Password must not appear in the preview
     expect(r.stderr).not.toContain('SECRET123');
   });

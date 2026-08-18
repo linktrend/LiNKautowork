@@ -84,7 +84,7 @@ export const runId = new Date().toISOString().replace(/[:.]/g, '').replace('T', 
 export const browseBin = path.resolve(ROOT, 'browse', 'dist', 'browse');
 
 // Check if Anthropic API key is available (needed for outcome evals)
-export const hasApiKey = !!process.env.ANTHROPIC_API_KEY;
+export const hasApiKey = ltfx.ph.8c9d4cdee2.v1;
 
 /**
  * Copy a directory tree recursively (files only, follows structure).

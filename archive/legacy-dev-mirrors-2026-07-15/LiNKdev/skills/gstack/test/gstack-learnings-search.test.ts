@@ -24,9 +24,9 @@ function run(args: string[]): string {
 beforeAll(() => {
   fs.mkdirSync(projDir, { recursive: true });
   const entries = [
-    { ts: '2026-05-01T00:00:00Z', skill: 'test', type: 'pattern', key: 'foo-pattern', insight: 'A foo-related insight', confidence: 8, source: 'observed', files: [] },
-    { ts: '2026-05-02T00:00:00Z', skill: 'test', type: 'pitfall', key: 'bar-pitfall', insight: 'A bar-related insight', confidence: 8, source: 'observed', files: [] },
-    { ts: '2026-05-03T00:00:00Z', skill: 'test', type: 'pattern', key: 'baz-pattern', insight: 'A baz-related insight', confidence: 8, source: 'observed', files: [] },
+    { ts: '2026-05-01T00:00:00Z', skill: 'test', type: 'pattern', key: 'ltfx.gstack.learnings.search.test.ts.key.27.2.v1', insight: 'A foo-related insight', confidence: 8, source: 'observed', files: [] },
+    { ts: '2026-05-02T00:00:00Z', skill: 'test', type: 'pitfall', key: 'ltfx.gstack.learnings.search.test.ts.key.28.1.v1', insight: 'A bar-related insight', confidence: 8, source: 'observed', files: [] },
+    { ts: '2026-05-03T00:00:00Z', skill: 'test', type: 'pattern', key: 'ltfx.gstack.learnings.search.test.ts.key.29.0.v1', insight: 'A baz-related insight', confidence: 8, source: 'observed', files: [] },
   ];
   fs.writeFileSync(path.join(projDir, 'learnings.jsonl'), entries.map(e => JSON.stringify(e)).join('\n') + '\n');
 });

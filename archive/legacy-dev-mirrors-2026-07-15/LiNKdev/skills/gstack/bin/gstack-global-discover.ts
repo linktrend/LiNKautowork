@@ -95,7 +95,7 @@ function parseArgs(): { since: string; format: "json" | "summary" } {
   return { since, format };
 }
 
-function windowToDate(window: string): Date {
+function windowToDate(window: string ): Date {
   const match = window.match(/^(\d+)(d|h|w)$/);
   if (!match) throw new Error(`Invalid window: ${window}`);
   const [, numStr, unit] = match;
@@ -121,7 +121,7 @@ function windowToDate(window: string): Date {
 
 // ── URL normalization ──────────────────────────────────────────────────────
 
-export function normalizeRemoteUrl(url: string): string {
+export function normalizeRemoteUrl(url: string ): string {
   let normalized = url.trim();
 
   // SSH → HTTPS: git@github.com:user/repo → https://github.com/user/repo
@@ -153,11 +153,11 @@ export function normalizeRemoteUrl(url: string): string {
 
 // ── Git helpers ────────────────────────────────────────────────────────────
 
-function isGitRepo(dir: string): boolean {
+function isGitRepo(dir: string ): boolean {
   return existsSync(join(dir, ".git"));
 }
 
-function getGitRemote(cwd: string): string | null {
+function getGitRemote(cwd: string ): string | null {
   if (!existsSync(cwd) || !isGitRepo(cwd)) return null;
   try {
     const remote = execSync("git remote get-url origin", {
@@ -273,7 +273,7 @@ function resolveClaudeCodeCwd(
   return null;
 }
 
-function extractCwdFromJsonl(filePath: string): string | null {
+function extractCwdFromJsonl(filePath: string ): string | null {
   try {
     // Read only the first 8KB to avoid loading huge JSONL files into memory
     const fd = openSync(filePath, "r");

@@ -85,7 +85,7 @@ fi
 : "${LINKAUTOWORK_APPROVED_TARGET:?approved target identifier required}"
 : "${LINKAUTOWORK_RELEASE_AUTHORIZATION:?release-window authorisation reference required}"
 : "${N8N_BASE_URL:?N8N_BASE_URL required from the generated runtime environment}"
-: "${N8N_API_KEY:?N8N_API_KEY required from the generated runtime environment}"
+: "${N8N_API_KEY:(missing missing) N8N API credential from generated runtime environment}"
 if [[ "$LINKAUTOWORK_APPROVED_TARGET" != "$environment" && "$LINKAUTOWORK_APPROVED_TARGET" != "${environment}:"* ]]; then
   echo "Approved target must be ${environment} or begin ${environment}:" >&2
   exit 65
@@ -99,10 +99,10 @@ for entry in "${packages[@]}"; do
   package_id="${entry%%$'\t'*}"; workflow_rel="${entry#*$'\t'}"; workflow="$ROOT_DIR/$workflow_rel"
   [[ -f "$workflow" ]] || { echo "Certified workflow is absent: $workflow_rel" >&2; exit 66; }
   echo "Importing certified package ${package_id} into approved ${LINKAUTOWORK_APPROVED_TARGET}"
-  response="$(curl --fail-with-body --silent --show-error -X POST "${N8N_BASE_URL%/}/api/v1/workflows" -H "x-n8n-api-key: $N8N_API_KEY" -H 'content-type: application/json' --data-binary "@$workflow")"
+  response="$(curl --fail-with-body --silent --show-error -X POST "${N8N_BASE_URL%/}/api/v1/workflows" -H "x-n8n-api-key: ${N8N_API_KEY}" -H 'content-type: application/json' --data-binary "@$workflow")"
   workflow_id="$(node -e 'const data=JSON.parse(process.argv[1]); if (!data.id) process.exit(1); process.stdout.write(String(data.id))' "$response")" || { echo "n8n import returned no workflow id for ${package_id}" >&2; exit 67; }
   # Workflows are imported inactive first; this guarded patch is the sole
   # activation point and is auditable through the release authorisation value.
-  curl --fail-with-body --silent --show-error -X PATCH "${N8N_BASE_URL%/}/api/v1/workflows/${workflow_id}" -H "x-n8n-api-key: $N8N_API_KEY" -H 'content-type: application/json' --data '{"active":true}' >/dev/null
+  curl --fail-with-body --silent --show-error -X PATCH "${N8N_BASE_URL%/}/api/v1/workflows/${workflow_id}" -H "x-n8n-api-key: ${N8N_API_KEY}" -H 'content-type: application/json' --data '{"active":true}' >/dev/null
   echo "Activated ${package_id} as n8n workflow ${workflow_id}"
 done

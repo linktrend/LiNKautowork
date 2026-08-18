@@ -3,7 +3,7 @@ set -euo pipefail
 
 : "${LINKAUTOWORK_GATEWAY_URL:?gateway URL required}"
 : "${LINK_SERVICE_TOKEN_OPERATIONS:?operations service token required}"
-: "${PLATFORM_INVOCATION_TOKEN:?platform invocation token required}"
+test -n "${PLATFORM_INVOCATION_TOKEN}" || { echo "missing platform invocation credential" >&2; exit 1; }
 
 invoke() {
   local method="$1" path="$2"

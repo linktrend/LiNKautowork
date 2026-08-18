@@ -33,17 +33,17 @@ if [[ -z "$PROJECT_ID" ]]; then
 fi
 N8N_API_KEY_SECRET_NAME="${KV[N8N_API_KEY_SECRET_NAME]:-}"
 : "${N8N_API_KEY_SECRET_NAME:?N8N_API_KEY_SECRET_NAME is required}"
-N8N_API_KEY="$(gcloud secrets versions access latest --project "$PROJECT_ID" --secret "$N8N_API_KEY_SECRET_NAME")"
+N8N_API_KEY="$(gcloud secrets versions access latest --project "$PROJECT_ID" --secret "${N8N_API_KEY}_SECRET_NAME")"
 
 TARGET_DIR="$ROOT_DIR/automations/live/$ENVIRONMENT"
 mkdir -p "$TARGET_DIR"
 
-WORKFLOWS_JSON="$(curl -sS -H "x-n8n-api-key: $N8N_API_KEY" "$N8N_BASE_URL/api/v1/workflows?limit=250")"
+WORKFLOWS_JSON="$(curl -sS -H "x-n8n-api-key: ${N8N_API_KEY}" "$N8N_BASE_URL/api/v1/workflows?limit=250")"
 
 echo "$WORKFLOWS_JSON" | jq -c '.data[]' | while read -r workflow; do
   id="$(echo "$workflow" | jq -r '.id')"
   name="$(echo "$workflow" | jq -r '.name' | tr ' /' '__')"
-  curl -sS -H "x-n8n-api-key: $N8N_API_KEY" "$N8N_BASE_URL/api/v1/workflows/$id" | jq '.' > "$TARGET_DIR/${name}-${id}.json"
+  curl -sS -H "x-n8n-api-key: ${N8N_API_KEY}" "$N8N_BASE_URL/api/v1/workflows/$id" | jq '.' > "$TARGET_DIR/${name}-${id}.json"
 done
 
 echo "Exported active workflow snapshots to $TARGET_DIR"

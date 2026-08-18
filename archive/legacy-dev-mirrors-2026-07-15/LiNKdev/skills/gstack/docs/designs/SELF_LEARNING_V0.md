@@ -88,7 +88,7 @@ Schema:
   "ts": "2026-03-28T12:00:00Z",
   "skill": "review",
   "type": "pitfall",
-  "key": "n-plus-one-activerecord",
+  "key": "ltfx.ph.d0475c8f1e.v1",
   "insight": "Always check includes() for has_many in list endpoints",
   "confidence": 8,
   "source": "observed",

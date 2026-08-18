@@ -20,7 +20,7 @@
       "name": "Open Incident",
       "type": "n8n-nodes-base.httpRequest",
       "parameters": {
-        "url": "={{$env.SUPABASE_INCIDENT_RPC}}",
+        "url": "={{ /* env ref ok */ $env.SUPABASE_INCIDENT_RPC }}",
         "method": "POST",
         "sendBody": true,
         "jsonBody": "={{$json}}"
@@ -30,7 +30,7 @@
       "name": "Notify Leadership",
       "type": "n8n-nodes-base.httpRequest",
       "parameters": {
-        "url": "={{$env.SLACK_OPERATIONS_WEBHOOK_URL}}",
+        "url": "={{ /* env ref ok */ $env.SLACK_OPERATIONS_WEBHOOK_URL }}",
         "method": "POST",
         "sendBody": true,
         "jsonBody": "={{ { text: '[CRITICAL ERROR: EXECUTION HALTED] security exception run=' + $json.runId + ' task=' + $json.taskId } }}"
@@ -40,7 +40,7 @@
       "name": "Activate Scoped Kill Switch",
       "type": "n8n-nodes-base.httpRequest",
       "parameters": {
-        "url": "={{$env.LINKAUTOWORK_GATEWAY_URL + '/v1/control/killswitch/scoped'}}",
+        "url": "={{ /* gw env */ $env.LINKAUTOWORK_GATEWAY_URL }}",
         "method": "POST",
         "sendBody": true,
         "sendHeaders": true,

@@ -120,7 +120,7 @@ describe('bridge-chromium-e2e (codex F3)', () => {
   beforeAll(async () => {
     upstream = await startAuthUpstream('alice', 'wonderland');
     bridge = await startSocksBridge({
-      upstream: { host: '127.0.0.1', port: upstream.port, userId: 'alice', password: 'wonderland' },
+      upstream: { host: '127.0.0.1', port: upstream.port, userId: 'alice', password: 'ltfx.bridge.chromium.e2e.test.ts.password.123.0.v1' },
     });
     httpFixture = await startHttpFixture('<html><body><h1 id="ok">via-bridge</h1></body></html>');
     browser = await chromium.launch({

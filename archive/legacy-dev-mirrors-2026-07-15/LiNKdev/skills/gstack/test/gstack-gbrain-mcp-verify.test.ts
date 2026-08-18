@@ -77,7 +77,7 @@ exit ${exitCode}
   fs.writeFileSync(path.join(fakeBinDir, 'curl'), script, { mode: 0o755 });
 }
 
-function runVerify(token: string, url: string): { code: number; stdout: string; stderr: string } {
+function runVerify(token: string, url: string ): { code: number; stdout: string; stderr: string } {
   const result = spawnSync(VERIFY_BIN, [url], {
     env: {
       ...process.env,

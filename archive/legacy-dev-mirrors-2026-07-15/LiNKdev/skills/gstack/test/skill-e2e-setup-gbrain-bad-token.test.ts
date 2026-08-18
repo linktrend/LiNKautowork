@@ -70,7 +70,7 @@ describeE2E('/setup-gbrain Path 4 — bad token STOPs cleanly', () => {
     const ORIGINAL_CLAUDE_MD = '# Test project\n\nSome existing content here.\n';
     fs.writeFileSync(path.join(gstackHome, 'CLAUDE.md'), ORIGINAL_CLAUDE_MD);
 
-    const BAD_TOKEN = 'gbrain_BAD_TOKEN_67890_DELIBERATELY_INVALID';
+    const BAD_TOKEN = 'ltfx.ph.240ff8e061.v1';
     const askUserQuestions: Array<{ input: Record<string, unknown> }> = [];
     const binary = resolveClaudeBinary();
 

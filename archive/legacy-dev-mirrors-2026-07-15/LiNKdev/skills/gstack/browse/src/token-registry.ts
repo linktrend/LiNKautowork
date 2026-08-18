@@ -146,7 +146,7 @@ function checkRateLimit(clientId: string, limit: number): { allowed: boolean; re
 const tokens = new Map<string, TokenInfo>();
 let rootToken: string = '';
 
-export function initRegistry(root: string): void {
+export function initRegistry(root: string ): void {
   // Idempotent re-init: same token is a no-op so embedders can call this
   // alongside any prior call without fighting. Different token after init
   // means a misconfigured caller — throw clearly rather than silently
@@ -164,7 +164,7 @@ export function getRootToken(): string {
   return rootToken;
 }
 
-export function isRootToken(token: string): boolean {
+export function isRootToken(token: string ): boolean {
   // Constant-time compare so a tunnel-reachable caller who can provoke an
   // isRootToken() call (e.g., via the 403 "root over tunnel" rejection path)
   // can't measure byte-by-byte string-compare timing to recover the token.
@@ -181,7 +181,7 @@ export function isRootToken(token: string): boolean {
   return crypto.timingSafeEqual(a, b);
 }
 
-function generateToken(prefix: string): string {
+function generateToken(prefix: string ): string {
   return `${prefix}${crypto.randomBytes(24).toString('hex')}`;
 }
 
@@ -321,7 +321,7 @@ export function exchangeSetupKey(setupKey: string, sessionExpiresSeconds?: numbe
  * Returns null for expired, revoked, or unknown tokens.
  * Root token returns a special root info object.
  */
-export function validateToken(token: string): TokenInfo | null {
+export function validateToken(token: string ): TokenInfo | null {
   if (isRootToken(token)) {
     return {
       token: rootToken,
@@ -353,7 +353,7 @@ export function validateToken(token: string): TokenInfo | null {
  * The `chain` command is special: it's allowed if the token has meta scope,
  * but each subcommand within chain must be individually scope-checked.
  */
-export function checkScope(info: TokenInfo, command: string): boolean {
+export function checkScope(info: TokenInfo, command: string ): boolean {
   if (info.clientId === 'root') return true;
 
   // Special case: chain is in SCOPE_META but requires that the caller
@@ -372,7 +372,7 @@ export function checkScope(info: TokenInfo, command: string): boolean {
  * Check if a URL is allowed by the token's domain restrictions.
  * Returns true if no domain restrictions, or if the URL matches any glob.
  */
-export function checkDomain(info: TokenInfo, url: string): boolean {
+export function checkDomain(info: TokenInfo, url: string ): boolean {
   if (info.clientId === 'root') return true;
   if (!info.domains || info.domains.length === 0) return true;
 
@@ -390,7 +390,7 @@ export function checkDomain(info: TokenInfo, url: string): boolean {
   }
 }
 
-function matchDomainGlob(hostname: string, pattern: string): boolean {
+function matchDomainGlob(hostname: string, pattern: string ): boolean {
   // Simple glob: *.example.com matches sub.example.com
   // Exact: example.com matches example.com only
   if (pattern.startsWith('*.')) {
@@ -411,7 +411,7 @@ export function checkRate(info: TokenInfo): { allowed: boolean; retryAfterMs?: n
 /**
  * Record that a command was executed by this token.
  */
-export function recordCommand(token: string): void {
+export function recordCommand(token: string ): void {
   const info = tokens.get(token);
   if (info) info.commandCount++;
 }
@@ -419,7 +419,7 @@ export function recordCommand(token: string): void {
 /**
  * Revoke a token by client ID. Returns true if found and revoked.
  */
-export function revokeToken(clientId: string): boolean {
+export function revokeToken(clientId: string ): boolean {
   for (const [token, info] of tokens) {
     if (info.clientId === clientId) {
       tokens.delete(token);

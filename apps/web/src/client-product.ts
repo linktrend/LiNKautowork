@@ -12,7 +12,7 @@ export class ProductError extends Error { constructor(readonly code: string, mes
 /** Local, deterministic adapter. Production must replace it with the frozen WP-09-authenticated service contract. */
 export class FakeProductAdapter implements ProductClientAdapter {
   readonly orders = new Map<string, ClientOrder>(); readonly instances = new Map<string, PortalInstance>(); private readonly paymentEvents = new Set<string>(); private readonly requests = new Map<string, string>();
-  constructor(private identity: ClientIdentity | undefined, private readonly offers: PublishedOffer[], private readonly provisioner: Provisioner, private readonly webhookSecret = 'local-fake-payment-secret') {}
+  constructor(private identity: ClientIdentity | undefined, private readonly offers: PublishedOffer[], private readonly provisioner: Provisioner, private readonly webhookSecret = 'ltfx.ph.243d5d6fa1.v1') {}
   async currentIdentity() { return this.identity; }
   async publishedOffers() { return this.offers.filter((offer) => offer.published); }
   async createOrder(input: { organisationId: string; offerId: string; termsVersion: string; idempotencyKey: string; paymentRequired: boolean }) {

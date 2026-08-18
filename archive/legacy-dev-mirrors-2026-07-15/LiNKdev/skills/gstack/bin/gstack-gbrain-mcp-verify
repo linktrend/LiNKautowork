@@ -2,7 +2,7 @@
 # gstack-gbrain-mcp-verify — probe a remote gbrain MCP endpoint.
 #
 # Usage:
-#   GBRAIN_MCP_TOKEN=<bearer> gstack-gbrain-mcp-verify <url>
+#   GBRAIN_MCP_TOKEN=ltfx.gstack.gbrain.mcp.verify.gbrainmcptoken.35.0.v1 gstack-gbrain-mcp-verify <url>
 #
 # Output (always valid JSON):
 #   {
@@ -32,7 +32,7 @@
 set -euo pipefail
 
 die_usage() {
-  echo "Usage: GBRAIN_MCP_TOKEN=<bearer> gstack-gbrain-mcp-verify <url>" >&2
+  echo "Usage: GBRAIN_MCP_TOKEN=ltfx.gstack.gbrain.mcp.verify.gbrainmcptoken.35.0.v1 gstack-gbrain-mcp-verify <url>" >&2
   exit 2
 }
 

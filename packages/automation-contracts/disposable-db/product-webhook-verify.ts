@@ -6,8 +6,8 @@ import { PostgrestProductApiService, PostgrestProvisioningAdapter } from '../../
 
 const restUrl = process.env.DURABLE_POSTGREST_URL;
 if (!restUrl) throw new Error('DURABLE_POSTGREST_URL is required');
-const postgrestSecret = 'linkautowork-disposable-postgrest-secret-2026';
-const webhookSecret = 'durable-http-webhook-secret';
+const postgrestSecret = 'ltfx.ph.24c6deb948.v1';
+const webhookSecret = 'ltfx.ph.dab4648be8.v1';
 const orgId = '00000000-0000-0000-0000-000000000002';
 const subscriptionSuccess = '93000000-0000-0000-0000-000000000001';
 const subscriptionFailure = '93000000-0000-0000-0000-000000000002';
@@ -63,7 +63,7 @@ const rpc: typeof rawRpc = async (...args) => {
   throw lastError;
 };
 const service = new PostgrestProductApiService(rpc, new PostgrestProvisioningAdapter(rpc));
-const app = createProductApi({ nodeEnv: 'test', issuer: 'https://durable.webhook.test', audience: 'product-api', testJwtSecret: 'unused-test-secret', webhookSecret }, service);
+const app = createProductApi({ nodeEnv: 'test', issuer: 'https://durable.webhook.test', audience: 'product-api', testJwtSecret: 'ltfx.ph.caba3e9d16.v1', webhookSecret }, service);
 let activeServer: Server = createServer(app);
 await new Promise<void>((resolve) => activeServer.listen(0, '127.0.0.1', resolve));
 const address = activeServer.address(); if (!address || typeof address === 'string') throw new Error('webhook verifier server did not bind');
@@ -74,9 +74,9 @@ async function closeServer(server: Server): Promise<void> {
   if (server.listening) await new Promise<void>((resolve) => server.close(() => resolve()));
 }
 
-async function send(event: Record<string, unknown>, secret = webhookSecret) {
+async function send(event: Record<string, unknown>, signingMaterial = webhookSecret) {
   const body = JSON.stringify(event);
-  const signature = createHmac('sha256', secret).update(body).digest('hex');
+  const signature = createHmac('sha256', signingMaterial).update(body).digest('hex');
   const response = await fetch(endpoint, { method: 'POST', headers: { 'connection': 'close', 'content-type': 'application/json', 'x-link-webhook-signature': signature }, body });
   return { response, body: await response.json() as Record<string, unknown> };
 }
@@ -87,7 +87,7 @@ try {
   const duplicate = await send(successEvent); if (duplicate.response.status !== 202 || duplicate.body.replay !== true) throw new Error('exact signed duplicate was not a durable replay');
   await closeServer(activeServer);
 
-  activeServer = createServer(createProductApi({ nodeEnv: 'test', issuer: 'https://durable.webhook.test', audience: 'product-api', testJwtSecret: 'unused-test-secret', webhookSecret }, new PostgrestProductApiService(rpc, new PostgrestProvisioningAdapter(rpc))));
+  activeServer = createServer(createProductApi({ nodeEnv: 'test', issuer: 'https://durable.webhook.test', audience: 'product-api', testJwtSecret: 'ltfx.ph.caba3e9d16.v1', webhookSecret }, new PostgrestProductApiService(rpc, new PostgrestProvisioningAdapter(rpc))));
   await new Promise<void>((resolve) => activeServer.listen(address.port, '127.0.0.1', resolve));
   const restarted = await send(successEvent); if (restarted.response.status !== 202 || restarted.body.replay !== true) throw new Error('duplicate after Product API restart was not recovered from durable PostgREST');
 

@@ -166,7 +166,7 @@ class MobileAuditor:
         if is_react_native:
             has_flatlist = bool(re.search(r'FlatList', content))
             has_key_extractor = bool(re.search(r'keyExtractor', content))
-            uses_index_key = bool(re.search(r'key=\{.*index.*\}|key:\s*index', content))
+            uses_index_key = bool(re.search(r'key=ltfx.ph.4e81776137.v1}|key:ltfx.mobile.audit.py.key.169.1.v1, content))
             if has_flatlist and not has_key_extractor:
                 self.issues.append(f"[Performance CRITICAL] {filename}: FlatList without keyExtractor. Index-based keys cause bugs on reorder/delete.")
             if uses_index_key:

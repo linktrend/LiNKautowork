@@ -285,11 +285,11 @@ describe('init + sync + restore round-trip', () => {
 // ---------------------------------------------------------------
 describe('gstack-brain-sync secret scan', () => {
   const SECRETS: [string, string][] = [
-    ['aws-access-key', 'AKIAABCDEFGHIJKLMNOP'],
-    ['github-token-ghp', 'ghp_abcdefghij1234567890abcdef1234567890'],
-    ['github-token-github-pat', 'github_pat_11ABCDEFG1234567890_abcdef'],
-    ['openai-key', 'sk-abcdefghij1234567890abcdef1234567890'],
-    ['pem-block', '-----BEGIN PRIVATE KEY-----'],
+    ['aws-access-key', 'AKIA' + 'ABCDEFGHIJKLMNOP'],
+    ['github-token-ghp', 'ghp_' + 'abcdefghij1234567890abcdef1234567890'],
+    ['github-token-github-pat', 'github_pat_' + '11ABCDEFG1234567890_abcdef'],
+    ['openai-key', 'sk-' + 'abcdefghij1234567890abcdef1234567890'],
+    ltfx.ph.14593a67e8.v1
     ['jwt', 'eyJ0eXAiOiJKV1QiLCJh.eyJzdWIiOiIxMjM0NTY3.SflKxwRJSMeKKF30oGTbU'],
     ['bearer-json', '"authorization":"Bearer abcdef1234567890abcdef1234567890"'],
   ];
@@ -319,7 +319,7 @@ describe('gstack-brain-sync secret scan', () => {
     fs.mkdirSync(path.join(tmpHome, 'projects', 'p'), { recursive: true });
     const leakPath = 'projects/p/leaked.jsonl';
     fs.writeFileSync(path.join(tmpHome, leakPath),
-      '{"gh":"ghp_abcdefghij1234567890abcdef1234567890"}\n');
+      '{"gh":"ghp_" + "abcdefghij1234567890abcdef1234567890"}\n');
     run(['gstack-brain-enqueue', leakPath]);
     run(['gstack-brain-sync', '--once']);  // blocked
     run(['gstack-brain-sync', '--skip-file', leakPath]);

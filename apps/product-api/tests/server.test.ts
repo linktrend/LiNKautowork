@@ -8,12 +8,12 @@ const operatorOrigin = 'https://operator.example';
 function stubProductionEnvironment(): void {
   const values = {
     PRODUCT_API_POSTGREST_URL: 'http://postgrest.test/rest/v1',
-    PRODUCT_API_SERVICE_ROLE_TOKEN: 'product-api-service-role-token',
+    PRODUCT_API_SERVICE_ROLE_TOKEN: 'ltfx.ph.4f97dce584.v1',
     PRODUCT_API_SESSION_URL: 'http://session.test/check',
     PRODUCT_API_JWT_ISSUER: 'https://issuer.example',
     PRODUCT_API_JWT_AUDIENCE: 'linkautowork-product-api',
     PRODUCT_API_JWKS_URL: 'http://jwks.test/keys',
-    PRODUCT_API_WEBHOOK_SECRET: 'product-api-webhook-secret',
+    PRODUCT_API_WEBHOOK_SECRET: 'ltfx.ph.e48b2e34cf.v1',
     PRODUCT_API_CLIENT_ORIGIN: clientOrigin,
     PRODUCT_API_OPERATOR_ORIGIN: operatorOrigin,
   };
@@ -43,7 +43,7 @@ describe('Product API production constructor', () => {
   it('mounts PostgREST RPCs at the supplied restUrl root when rpcPath is empty', async () => {
     const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
-    const rpc = createPostgrestRpc({ restUrl: 'https://project.supabase.co', rpcPath: '', serviceRoleToken: 'product-api-service-role-token' });
+    const rpc = createPostgrestRpc({ restUrl: 'https://project.supabase.co', rpcPath: '', serviceRoleToken: 'ltfx.ph.4f97dce584.v1' });
 
     await rpc('linkautowork_product_published_products', { p_limit: 10, p_cursor: null });
 
@@ -53,7 +53,7 @@ describe('Product API production constructor', () => {
   it('uses the default /rest/v1 PostgREST path', async () => {
     const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
-    const rpc = createPostgrestRpc({ restUrl: 'https://project.supabase.co', serviceRoleToken: 'product-api-service-role-token' });
+    const rpc = createPostgrestRpc({ restUrl: 'https://project.supabase.co', serviceRoleToken: 'ltfx.ph.4f97dce584.v1' });
 
     await rpc('linkautowork_product_published_products', { p_limit: 10, p_cursor: null });
 
@@ -63,7 +63,7 @@ describe('Product API production constructor', () => {
   it('captures exactly one PostgREST REST path when the environment already supplies /rest/v1', async () => {
     const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
-    const rpc = createPostgrestRpc({ restUrl: 'https://project.supabase.co/rest/v1', serviceRoleToken: 'product-api-service-role-token' });
+    const rpc = createPostgrestRpc({ restUrl: 'https://project.supabase.co/rest/v1', serviceRoleToken: 'ltfx.ph.4f97dce584.v1' });
 
     await rpc('linkautowork_product_published_products', { p_limit: 10, p_cursor: null });
 
@@ -74,7 +74,7 @@ describe('Product API production constructor', () => {
   it('delegates the verified organisation to an org-scoped command behind a fixed service credential', async () => {
     const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
-    const rpc = createPostgrestRpc({ restUrl: 'https://project.supabase.co', serviceRoleToken: 'product-api-service-role-token' });
+    const rpc = createPostgrestRpc({ restUrl: 'https://project.supabase.co', serviceRoleToken: 'ltfx.ph.4f97dce584.v1' });
 
     await rpc('linkautowork_product_request_provisioning_audited', {}, '00000000-0000-0000-0000-000000000002');
 

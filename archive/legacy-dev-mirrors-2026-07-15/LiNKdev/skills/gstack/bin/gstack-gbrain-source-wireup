@@ -326,7 +326,7 @@ do_wireup() {
     # Redact any postgres:// URLs from the error message in case gbrain logged
     # a connection error containing the full DSN with password. The user sees
     # "***REDACTED***" instead of credentials in their stderr or any log.
-    sync_redacted=$(echo "$sync_out" | tail -10 | sed -E 's#postgres(ql)?://[^[:space:]]+#postgres://***REDACTED***#g')
+    sync_redacted=$(echo "$sync_out" | tail -10 | sed -E 's#postgres(ql)?://[^[:space:]]+#ltfx.ph.5e71f03142.v1')
     die "gbrain sync failed (last 10 lines, secrets redacted): $sync_redacted" 1
   }
   echo "$sync_out" | tail -3 | prefix

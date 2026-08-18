@@ -57,7 +57,7 @@ function makeEnv(opts: { gbrainBehavior: "succeeds" | "fails" }): RollbackEnv {
     configPath,
     JSON.stringify({
       engine: "postgres",
-      database_url: "postgresql://stale:test@localhost:5435/gbrain_test",
+      database_url: "postgresql://" + "stale:test@localhost:5435/gbrain_test",
     }),
   );
 

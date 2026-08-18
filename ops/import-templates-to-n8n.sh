@@ -29,14 +29,14 @@ if [[ -z "$PROJECT_ID" ]]; then
 fi
 N8N_API_KEY_SECRET_NAME="${KV[N8N_API_KEY_SECRET_NAME]:-}"
 : "${N8N_API_KEY_SECRET_NAME:?N8N_API_KEY_SECRET_NAME is required}"
-N8N_API_KEY="$(gcloud secrets versions access latest --project "$PROJECT_ID" --secret "$N8N_API_KEY_SECRET_NAME")"
+N8N_API_KEY="$(gcloud secrets versions access latest --project "$PROJECT_ID" --secret "${N8N_API_KEY}_SECRET_NAME")"
 
 TEMPLATE_DIR="$ROOT_DIR/automations/templates"
 
 find "$TEMPLATE_DIR" -maxdepth 1 -name '*.json' ! -name 'manifest.json' -print0 | while IFS= read -r -d '' template; do
   echo "Importing $(basename "$template")"
   curl -sS -X POST "$N8N_BASE_URL/api/v1/workflows" \
-    -H "x-n8n-api-key: $N8N_API_KEY" \
+    -H "x-n8n-api-key: ${N8N_API_KEY}" \
     -H 'content-type: application/json' \
     --data-binary "@$template" >/dev/null
   echo "Imported $(basename "$template")"

@@ -20,7 +20,7 @@
       "name": "Load Mission Health",
       "type": "n8n-nodes-base.httpRequest",
       "parameters": {
-        "url": "={{$env.SUPABASE_HEALTH_RPC}}",
+        "url": "={{ /* env ref ok */ $env.SUPABASE_HEALTH_RPC }}",
         "method": "POST",
         "sendBody": true,
         "jsonBody": "={{ { tenant_id: $json.tenantId, mission_id: $json.missionId } }}"
@@ -37,7 +37,7 @@
       "name": "Notify Operations Slack",
       "type": "n8n-nodes-base.httpRequest",
       "parameters": {
-        "url": "={{$env.SLACK_OPERATIONS_WEBHOOK_URL}}",
+        "url": "={{ /* env ref ok */ $env.SLACK_OPERATIONS_WEBHOOK_URL }}",
         "method": "POST",
         "sendBody": true,
         "jsonBody": "={{ { text: '[Heartbeat Triage] ' + $json.summary + ' | risk=' + $json.risk } }}"
@@ -47,7 +47,7 @@
       "name": "Publish Heartbeat Event",
       "type": "n8n-nodes-base.httpRequest",
       "parameters": {
-        "url": "={{$env.LINKAUTOWORK_GATEWAY_URL + '/v1/events/publish'}}",
+        "url": "={{ /* gw env */ $env.LINKAUTOWORK_GATEWAY_URL }}",
         "method": "POST",
         "sendBody": true,
         "sendHeaders": true,

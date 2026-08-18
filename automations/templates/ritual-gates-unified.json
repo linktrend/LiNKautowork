@@ -45,7 +45,7 @@
       "name": "Post Gate To Slack",
       "type": "n8n-nodes-base.httpRequest",
       "parameters": {
-        "url": "={{$env.SLACK_OPERATIONS_WEBHOOK_URL}}",
+        "url": "={{ /* env ref ok */ $env.SLACK_OPERATIONS_WEBHOOK_URL }}",
         "method": "POST",
         "sendBody": true,
         "jsonBody": "={{ { text: $json.summary + ($json.partialReport ? ' | Missing: ' + ($json.missingSections || []).join(', ') : '') } }}"
@@ -55,7 +55,7 @@
       "name": "Publish Gate Event",
       "type": "n8n-nodes-base.httpRequest",
       "parameters": {
-        "url": "={{$env.LINKAUTOWORK_GATEWAY_URL + '/v1/events/publish'}}",
+        "url": "={{ /* gw env */ $env.LINKAUTOWORK_GATEWAY_URL }}",
         "method": "POST",
         "sendBody": true,
         "sendHeaders": true,

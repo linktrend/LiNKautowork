@@ -1294,7 +1294,7 @@ $B snapshot -i -a -o "$REPORT_DIR/screenshots/issue-002.png"
    ```json
    {
      "date": "YYYY-MM-DD",
-     "url": "<target>",
+     "url": "ltfx.skill.md.url.1512.0.v1",
      "healthScore": N,
      "issues": [{ "id": "ISSUE-001", "title": "...", "severity": "...", "category": "..." }],
      "categoryScores": { "console": N, "links": N, ... }

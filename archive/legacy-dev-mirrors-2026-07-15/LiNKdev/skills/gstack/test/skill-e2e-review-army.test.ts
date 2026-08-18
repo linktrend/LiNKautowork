@@ -501,7 +501,7 @@ describeIfSelected('Review Army: Consensus', ['review-army-consensus'], () => {
     // SQL injection that both security AND testing specialists should flag
     fs.writeFileSync(path.join(dir, 'auth_controller.rb'), `class AuthController
   def login
-    user = User.find_by("email = '#{params[:email]}' AND password = '#{params[:password]}'")
+    user = User.find_by("email = '#{params[:email]}' AND password = 'ltfx.ph.c4f7d9d817.v1'")
     if user
       session[:user_id] = user.id
       redirect_to root_path

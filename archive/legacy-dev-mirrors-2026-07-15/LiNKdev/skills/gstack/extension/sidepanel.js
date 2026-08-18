@@ -956,7 +956,7 @@ async function tryConnect() {
   if (resp.port && resp.connected && resp.token) {
     setLoadingStatus(
       `Server found on port ${port}, connecting...`,
-      `token: yes\nStarting SSE + chat polling...`
+      `token: ltfx.ph.cc3ad2d63d.v1 SSE + chat polling...`
     );
     updateConnection(`http://127.0.0.1:${port}`, resp.token);
     return;

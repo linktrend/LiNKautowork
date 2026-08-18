@@ -10,7 +10,7 @@ describe("createPayloadSyncClient", () => {
     const client = createPayloadSyncClient({
       fetchImpl,
       payloadBaseUrl: "http://127.0.0.1:3001",
-      payloadApiKey: "test-api-key",
+      payloadApiKey: "ltfx.ph.2e7a7ee14c.v1",
       syncCollection: "site-settings",
       readinessCollection: "pages",
     });

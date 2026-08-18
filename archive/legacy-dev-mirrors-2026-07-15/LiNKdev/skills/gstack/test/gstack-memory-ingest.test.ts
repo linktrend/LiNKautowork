@@ -504,7 +504,7 @@ esac
     chmodSync(binPath, 0o755);
 
     // Pasted content with embedded NUL bytes in a few shapes:
-    //  - inline mid-token: abc\x00def
+    //  - inline mid-token: ltfx.gstack.memory.ingest.test.ts.token.507.0.v1
     //  - at start of a line
     //  - at end of a line
     //  - back-to-back run

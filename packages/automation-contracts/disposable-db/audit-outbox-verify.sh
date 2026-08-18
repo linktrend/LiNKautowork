@@ -4,11 +4,11 @@ set -euo pipefail
 compose_file="$1"
 project_name="$2"
 org_id='00000000-0000-0000-0000-000000000002'
-jwt_secret='linkautowork-disposable-postgrest-secret-2026'
+jwt_secret='ltfx.ph.24c6deb948.v1'
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 sign_jwt() {
-  JWT_SECRET="$jwt_secret" JWT_ORG="$org_id" node -e '
+  JWT_SECRET="${jwt_secret}" JWT_ORG="$org_id" node -e '
     const crypto=require("node:crypto");
     const enc=(value)=>Buffer.from(JSON.stringify(value)).toString("base64url");
     const header=enc({alg:"HS256",typ:"JWT"});
@@ -21,7 +21,7 @@ token="$(sign_jwt)"
 rpc() {
   local name="$1" body="$2"
   docker compose -f "$compose_file" -p "$project_name" exec -T http curl -fsS \
-    -H 'apikey: disposable-project-api-key' -H "Authorization: Bearer $token" \
+    -H 'apikey: ltfx.ph.a076393258.v1 -H "Authorization: Bearer $token" \
     -H "x-link-org-id: $org_id" -H 'content-type: application/json' \
     --data "$body" "http://postgrest:3000/rpc/$name"
 }
@@ -29,7 +29,7 @@ rpc() {
 rpc_status() {
   local name="$1" body="$2"
   docker compose -f "$compose_file" -p "$project_name" exec -T http curl -sS -o /dev/null -w '%{http_code}' \
-    -H 'apikey: disposable-project-api-key' -H "Authorization: Bearer $token" \
+    -H 'apikey: ltfx.ph.a076393258.v1 -H "Authorization: Bearer $token" \
     -H "x-link-org-id: $org_id" -H 'content-type: application/json' \
     --data "$body" "http://postgrest:3000/rpc/$name"
 }
@@ -37,7 +37,7 @@ rpc_status() {
 rpc_with_audit() {
   local name="$1" body="$2" actor="$3" resource="$4" action="$5" reason="$6" correlation="$7"
   docker compose -f "$compose_file" -p "$project_name" exec -T http curl -fsS \
-    -H 'apikey: disposable-project-api-key' -H "Authorization: Bearer $token" \
+    -H 'apikey: ltfx.ph.a076393258.v1 -H "Authorization: Bearer $token" \
     -H "x-link-org-id: $org_id" -H "x-link-audit-actor: $actor" \
     -H "x-link-audit-resource: $resource" -H "x-link-audit-action: $action" \
     -H "x-link-audit-reason: $reason" -H "x-link-audit-correlation: $correlation" \
@@ -47,7 +47,7 @@ rpc_with_audit() {
 rpc_with_audit_status() {
   local name="$1" body="$2" actor="$3" resource="$4" action="$5" reason="$6" correlation="$7"
   docker compose -f "$compose_file" -p "$project_name" exec -T http curl -sS -o /dev/null -w '%{http_code}' \
-    -H 'apikey: disposable-project-api-key' -H "Authorization: Bearer $token" \
+    -H 'apikey: ltfx.ph.a076393258.v1 -H "Authorization: Bearer $token" \
     -H "x-link-org-id: $org_id" -H "x-link-audit-actor: $actor" \
     -H "x-link-audit-resource: $resource" -H "x-link-audit-action: $action" \
     -H "x-link-audit-reason: $reason" -H "x-link-audit-correlation: $correlation" \

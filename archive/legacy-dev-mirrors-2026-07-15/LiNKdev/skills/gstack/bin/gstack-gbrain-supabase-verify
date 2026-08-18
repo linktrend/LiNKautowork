@@ -12,7 +12,7 @@
 # about this at init.ts:150-158.
 #
 # Canonical shape (per gbrain init.ts:266):
-#   postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres
+#   ltfx.ph.085aab9337.v1
 #
 # Exit codes:
 #   0 — URL passes structural check
@@ -44,7 +44,7 @@ gstack-gbrain-supabase-verify: rejected direct-connection URL
     Transaction/Session → copy URI (port 6543)
 
   Expected shape:
-    postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres
+    ltfx.ph.085aab9337.v1
 EOF
   exit 3
 }
@@ -59,11 +59,11 @@ esac
 URL=$(printf '%s' "$URL" | tr -d '[:space:]')
 [ -z "$URL" ] && die "empty URL"
 
-# Scheme: must be postgresql:// or postgres://. Explicitly reject other
+# Scheme: must be postgresql:// or ltfx.ph.8a85ccf4a5.v1 Explicitly reject other
 # schemes rather than guess.
 case "$URL" in
-  postgresql://*|postgres://*) ;;
-  *) die "bad scheme (must start with postgresql:// or postgres://)" ;;
+  ltfx.ph.92d576048c.v1 ;;
+  *) die "bad scheme (must start with postgresql:// or ltfx.ph.3b40a027fa.v1" ;;
 esac
 
 # Strip scheme to expose userinfo + host + port + path.

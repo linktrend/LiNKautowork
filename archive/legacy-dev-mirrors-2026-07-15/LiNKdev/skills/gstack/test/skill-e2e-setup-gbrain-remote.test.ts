@@ -126,7 +126,7 @@ describeE2E('/setup-gbrain Path 4 (Remote MCP) — happy path', () => {
     // can inspect it after the run.
     fs.writeFileSync(path.join(gstackHome, 'CLAUDE.md'), '# Test project\n');
 
-    const SECRET_TOKEN = 'gbrain_TEST_TOKEN_THAT_MUST_NEVER_LEAK_84613';
+    const SECRET_TOKEN = 'ltfx.ph.e12681f682.v1';
     const askUserQuestions: Array<{ input: Record<string, unknown> }> = [];
     const binary = resolveClaudeBinary();
 

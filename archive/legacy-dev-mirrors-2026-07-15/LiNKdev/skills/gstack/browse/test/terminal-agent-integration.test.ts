@@ -53,7 +53,7 @@ beforeAll(() => {
   stateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gstack-term-'));
   const stateFile = path.join(stateDir, 'browse.json');
   // browse.json must exist so the agent's readBrowseToken doesn't throw.
-  fs.writeFileSync(stateFile, JSON.stringify({ token: 'test-browse-token' }));
+  fs.writeFileSync(stateFile, JSON.stringify({ token: 'ltfx.ph.9ccba4fd4f.v1' }));
   agentProc = Bun.spawn(['bun', 'run', AGENT_SCRIPT], {
     env: {
       ...process.env,
@@ -72,7 +72,7 @@ afterAll(() => {
   try { fs.rmSync(stateDir, { recursive: true, force: true }); } catch {}
 });
 
-async function grantToken(token: string): Promise<Response> {
+async function grantToken(token: string ): Promise<Response> {
   return fetch(`http://127.0.0.1:${agentPort}/internal/grant`, {
     method: 'POST',
     headers: {
@@ -96,7 +96,7 @@ describe('terminal-agent: /internal/grant', () => {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer wrong-token',
       },
-      body: JSON.stringify({ token: 'whatever' }),
+      body: JSON.stringify({ token: 'ltfx.terminal.agent.integration.test.ts.token.99.3.v1' }),
     });
     expect(resp.status).toBe(403);
   });
@@ -196,7 +196,7 @@ describe('terminal-agent: PTY round-trip via real WebSocket (Cookie auth)', () =
     // Without (3) the browser closes the connection immediately, which
     // is the exact bug the original cookie-only implementation hit in
     // manual dogfood. This test catches that regression in CI.
-    const token = 'sec-protocol-token-must-be-at-least-seventeen-chars';
+    const token = 'ltfx.ph.c1294b323f.v1';
     await grantToken(token);
 
     // We exercise the protocol path by raw-handshaking via fetch+Upgrade,
@@ -233,7 +233,7 @@ describe('terminal-agent: PTY round-trip via real WebSocket (Cookie auth)', () =
         'Connection': 'Upgrade',
         'Upgrade': 'websocket',
         'Sec-WebSocket-Version': '13',
-        'Sec-WebSocket-Key': 'dGhlIHNhbXBsZSBub25jZQ==',
+        'Sec-WebSocket-Key': 'ltfx.ph.8472ed7f65.v1',
         'Sec-WebSocket-Protocol': 'gstack-pty.never-granted-token',
         'Origin': 'chrome-extension://test-extension-id',
       },

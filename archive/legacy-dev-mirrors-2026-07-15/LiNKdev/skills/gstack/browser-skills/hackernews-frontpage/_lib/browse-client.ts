@@ -190,33 +190,33 @@ export class BrowseClient {
 
   // ─── Navigation ─────────────────────────────────────────────────
 
-  async goto(url: string): Promise<string> { return this.command('goto', [url]); }
-  async wait(arg: string): Promise<string> { return this.command('wait', [arg]); }
+  async goto(url: string ): Promise<string> { return this.command('goto', [url]); }
+  async wait(arg: string ): Promise<string> { return this.command('wait', [arg]); }
 
   // ─── Reading ────────────────────────────────────────────────────
 
-  async text(selector?: string): Promise<string> {
+  async text(selector?: string ): Promise<string> {
     return this.command('text', selector ? [selector] : []);
   }
-  async html(selector?: string): Promise<string> {
+  async html(selector?: string ): Promise<string> {
     return this.command('html', selector ? [selector] : []);
   }
   async links(): Promise<string> { return this.command('links'); }
   async forms(): Promise<string> { return this.command('forms'); }
   async accessibility(): Promise<string> { return this.command('accessibility'); }
-  async attrs(selector: string): Promise<string> { return this.command('attrs', [selector]); }
+  async attrs(selector: string ): Promise<string> { return this.command('attrs', [selector]); }
   async media(...flags: string[]): Promise<string> { return this.command('media', flags); }
   async data(...flags: string[]): Promise<string> { return this.command('data', flags); }
 
   // ─── Interaction ────────────────────────────────────────────────
 
-  async click(selector: string): Promise<string> { return this.command('click', [selector]); }
-  async fill(selector: string, value: string): Promise<string> { return this.command('fill', [selector, value]); }
-  async select(selector: string, value: string): Promise<string> { return this.command('select', [selector, value]); }
-  async hover(selector: string): Promise<string> { return this.command('hover', [selector]); }
-  async type(text: string): Promise<string> { return this.command('type', [text]); }
-  async press(key: string): Promise<string> { return this.command('press', [key]); }
-  async scroll(selector?: string): Promise<string> {
+  async click(selector: string ): Promise<string> { return this.command('click', [selector]); }
+  async fill(selector: string, value: string ): Promise<string> { return this.command('fill', [selector, value]); }
+  async select(selector: string, value: string ): Promise<string> { return this.command('select', [selector, value]); }
+  async hover(selector: string ): Promise<string> { return this.command('hover', [selector]); }
+  async type(text: string ): Promise<string> { return this.command('type', [text]); }
+  async press(key: string ): Promise<string> { return this.command('press', [key]); }
+  async scroll(selector?: string ): Promise<string> {
     return this.command('scroll', selector ? [selector] : []);
   }
 

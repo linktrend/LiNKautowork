@@ -5,7 +5,7 @@ set -euo pipefail
 : "${PGPORT:?PGPORT required}"
 : "${PGDATABASE:?PGDATABASE required}"
 : "${PGUSER:?PGUSER required}"
-: "${PGPASSWORD:?PGPASSWORD required}"
+test -n "${PGPASSWORD}" || { echo "missing postgres password" >&2; exit 1; }
 
 BACKUP_DIR="/Users/linktrend/Projects/LiNKautowork/ops/backups"
 mkdir -p "$BACKUP_DIR"

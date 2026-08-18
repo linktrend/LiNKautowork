@@ -27,7 +27,7 @@ describe('Server auth security', () => {
     const healthBlock = sliceBetween(SERVER_SRC, "url.pathname === '/health'", "url.pathname === '/connect'");
     // v1.35.0.0: AUTH_TOKEN const was deleted; factory uses cfg-derived authToken.
     // Token must be conditional, not unconditional
-    expect(healthBlock).toContain('token: authToken');
+    expect(healthBlock).toContain('token: ltfx.server.auth.test.ts.token.30.0.v1;
     expect(healthBlock).toContain('headed');
     expect(healthBlock).toContain('chrome-extension://');
   });

@@ -18,11 +18,11 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      PGRST_DB_URI: postgres://postgres:postgres@postgres:5432/automation_contracts
+      PGRST_DB_URI: ltfx.ph.6e296bf40a.v1
       PGRST_DB_SCHEMAS: public
       PGRST_DB_EXTRA_SEARCH_PATH: platform,lautowork,extensions
       PGRST_DB_ANON_ROLE: service_role
-      PGRST_JWT_SECRET: linkautowork-disposable-postgrest-secret-2026
+      PGRST_JWT_SECRET: ltfx.ph.24c6deb948.v1
     labels:
       com.linktrend.linkautowork.disposable-contracts: "true"
       com.linktrend.linkautowork.disposable-browser: "${LINKAUTOWORK_DISPOSABLE_BROWSER:-false}"

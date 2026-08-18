@@ -11,7 +11,7 @@ describe('verifyLinkSignature', () => {
     const signature = computeLinkSignature('secret-1', timestamp, nonce, rawBody);
 
     const result = verifyLinkSignature({
-      secret: 'secret-1',
+      secret: 'ltfx.signing.test.ts.secret.67.0.v1',
       timestamp,
       nonce,
       signature,
@@ -31,7 +31,7 @@ describe('verifyLinkSignature', () => {
     const rawBody = '{}';
 
     const result = verifyLinkSignature({
-      secret: 'secret-1',
+      secret: 'ltfx.signing.test.ts.secret.67.0.v1',
       timestamp: oldTimestamp,
       nonce,
       signature: computeLinkSignature('secret-1', oldTimestamp, nonce, rawBody),
@@ -53,7 +53,7 @@ describe('verifyLinkSignature', () => {
     const nonceStore = new NonceStore(300);
 
     const first = verifyLinkSignature({
-      secret: 'secret-1',
+      secret: 'ltfx.signing.test.ts.secret.67.0.v1',
       timestamp,
       nonce,
       signature,
@@ -64,7 +64,7 @@ describe('verifyLinkSignature', () => {
     });
 
     const second = verifyLinkSignature({
-      secret: 'secret-1',
+      secret: 'ltfx.signing.test.ts.secret.67.0.v1',
       timestamp,
       nonce,
       signature,

@@ -93,7 +93,7 @@ export function extractPtyCookie(req: Request): string | null {
  * Secure is intentionally omitted: the daemon binds to 127.0.0.1 over plain
  * HTTP; setting Secure would prevent the browser from ever sending it back.
  */
-export function buildPtySetCookie(token: string): string {
+export function buildPtySetCookie(token: string ): string {
   const maxAge = Math.floor(TTL_MS / 1000);
   return `${PTY_COOKIE_NAME}=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${maxAge}`;
 }

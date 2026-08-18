@@ -20,22 +20,22 @@ describe('conductor-env-shim', () => {
   });
 
   test('promotes GSTACK_ANTHROPIC_API_KEY to ANTHROPIC_API_KEY when canonical is empty', () => {
-    process.env.GSTACK_ANTHROPIC_API_KEY = 'sk-ant-test-123';
+    process.env.GSTACK_ANTHROPIC_API_KEY = 'ltfx.ant.test123.v1';
     promoteConductorEnv();
-    expect(process.env.ANTHROPIC_API_KEY).toBe('sk-ant-test-123');
+    expect(process.env.ANTHROPIC_API_KEY).toBe('ltfx.ant.test123.v1');
   });
 
   test('promotes GSTACK_OPENAI_API_KEY to OPENAI_API_KEY when canonical is empty', () => {
-    process.env.GSTACK_OPENAI_API_KEY = 'sk-oai-test-456';
+    process.env.GSTACK_OPENAI_API_KEY = 'ltfx.oai.test456.v1';
     promoteConductorEnv();
-    expect(process.env.OPENAI_API_KEY).toBe('sk-oai-test-456');
+    expect(process.env.OPENAI_API_KEY).toBe('ltfx.oai.test456.v1');
   });
 
   test('does not overwrite canonical when both canonical and GSTACK_-prefixed are set', () => {
-    process.env.ANTHROPIC_API_KEY = 'sk-ant-original';
-    process.env.GSTACK_ANTHROPIC_API_KEY = 'sk-ant-prefixed';
+    process.env.ANTHROPIC_API_KEY = 'ltfx.ant.original.v1';
+    process.env.GSTACK_ANTHROPIC_API_KEY = 'ltfx.ant.prefixed.v1';
     promoteConductorEnv();
-    expect(process.env.ANTHROPIC_API_KEY).toBe('sk-ant-original');
+    expect(process.env.ANTHROPIC_API_KEY).toBe('ltfx.ant.original.v1');
   });
 
   test('no-op when neither canonical nor GSTACK_-prefixed are set', () => {

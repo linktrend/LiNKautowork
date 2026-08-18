@@ -163,7 +163,7 @@ describeE2E('/setup-gbrain Path 4 + Step 4.5 Yes → local PGLite for code', () 
     };
     process.env.HOME = sandboxHome;
     process.env.PATH = `${fakeBinDir}:${path.join(path.resolve(import.meta.dir, '..'), 'bin')}:${process.env.PATH ?? '/usr/bin:/bin:/opt/homebrew/bin'}`;
-    process.env.GBRAIN_MCP_TOKEN = 'gbrain_fake_token_for_test';
+    process.env.GBRAIN_MCP_TOKEN = 'ltfx.ph.019d072a4b.v1';
 
     try {
       const skillPath = path.resolve(

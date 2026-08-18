@@ -100,4 +100,4 @@ const call = async (name, body, withAudit = false) => {
 await call('linkautowork_product_reserve_audit', { p_actor: audit.actor, p_resource: audit.resource, p_action: audit.action, p_reason: audit.reason, p_correlation_id: audit.correlation });
 await call('linkautowork_product_finalize_audit', { p_actor: audit.actor, p_resource: audit.resource, p_action: audit.action, p_reason: audit.reason, p_correlation_id: audit.correlation, p_outcome: 'allowed' }, true);
 NODE
-LINKAUTOWORK_DISPOSABLE_BROWSER=true DURABLE_POSTGREST_URL="$REST_URL" DURABLE_POSTGREST_JWT_SECRET="linkautowork-disposable-postgrest-secret-2026" npx tsx "$ROOT_DIR/apps/web/e2e/browser-e2e.ts"
+LINKAUTOWORK_DISPOSABLE_BROWSER=true DURABLE_POSTGREST_URL="$REST_URL" DURABLE_POSTGREST_JWT_SECRET="ltfx.ph.24c6deb948.v1" npx tsx "$ROOT_DIR/apps/web/e2e/browser-e2e.ts"

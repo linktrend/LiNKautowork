@@ -42,7 +42,7 @@ describeIfSelected('CSO v2 — full audit', ['cso-full-audit'], () => {
     fs.writeFileSync(path.join(csoDir, 'server.ts'), `
 import express from 'express';
 const app = express();
-const API_KEY = "sk-1234567890abcdef1234567890abcdef";
+const API_KEY = "ltfx.api.e2e.cso.v1";
 app.get('/api/data', (req, res) => {
   const id = req.query.id;
   res.json({ data: \`result for \${id}\` });
@@ -51,7 +51,7 @@ app.listen(3000);
 `);
 
     // Planted vuln: .env tracked by git
-    fs.writeFileSync(path.join(csoDir, '.env'), 'DATABASE_URL=postgres://admin:secretpass@prod.db.example.com:5432/myapp\n');
+    fs.writeFileSync(path.join(csoDir, '.env'), 'DATABASE_URL=ltfx.ph.15bea5744d.v1\n');
 
     run('git', ['add', '.']);
     run('git', ['commit', '-m', 'initial']);

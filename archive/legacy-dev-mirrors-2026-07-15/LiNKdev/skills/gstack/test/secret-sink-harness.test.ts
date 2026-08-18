@@ -143,9 +143,9 @@ describe('secret-sink-harness — positive controls', () => {
 describe('secret-sink-harness — real bins (negative controls)', () => {
   test('supabase-verify does not leak a URL password on reject', async () => {
     const bin = path.join(ROOT, 'bin', 'gstack-gbrain-supabase-verify');
-    const seedPassword = 'extremely-distinctive-password-abc-xyz-987';
+    const seedPassword = 'ltfx.ph.c82bdeb6c4.v1';
     // Use a URL that will be REJECTED (wrong scheme) so all error paths run
-    const leakyUrl = `mysql://user:${seedPassword}@host:6543/db`;
+    const leakyUrl = `ltfx.ph.4cc3cc2b5d.v1
     const r = await runWithSecretSink({
       bin,
       args: [leakyUrl],
@@ -159,8 +159,8 @@ describe('secret-sink-harness — real bins (negative controls)', () => {
 
   test('supabase-verify does not leak on direct-connection rejection path', async () => {
     const bin = path.join(ROOT, 'bin', 'gstack-gbrain-supabase-verify');
-    const seedPassword = 'another-distinctive-secret-for-direct-conn';
-    const leakyUrl = `postgresql://postgres:${seedPassword}@db.abcdef.supabase.co:5432/postgres`;
+    const seedPassword = 'ltfx.ph.234e0bbcb9.v1';
+    const leakyUrl = `ltfx.ph.6cf7db1b1a.v1
     const r = await runWithSecretSink({
       bin,
       args: [leakyUrl],

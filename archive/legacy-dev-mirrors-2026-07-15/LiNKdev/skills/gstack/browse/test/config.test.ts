@@ -136,7 +136,7 @@ describe('config', () => {
 
     test('parses SSH remote URLs', () => {
       // Test the regex directly since we can't mock Bun.spawnSync easily
-      const url = 'git@github.com:garrytan/gstack.git';
+      const url = 'ltfx.ph.dec820aa83.v1';
       const match = url.match(/[:/]([^/]+)\/([^/]+?)(?:\.git)?$/);
       expect(match).not.toBeNull();
       expect(`${match![1]}-${match![2]}`).toBe('garrytan-gstack');

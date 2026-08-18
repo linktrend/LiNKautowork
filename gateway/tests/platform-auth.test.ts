@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { requirePlatformInvocationClaim } from '../src/middleware/auth.js';
 import type { AppEnv } from '../src/config/env.js';
 
-const secret = 'a-very-long-platform-test-signing-secret';
+const secret = 'ltfx.ph.40fdef7128.v1';
 const org = '00000000-0000-0000-0000-000000000002';
 const env = { NODE_ENV: 'test', PLATFORM_JWT_ISSUER: 'https://platform.test.linktrend.local', PLATFORM_JWT_AUDIENCE: 'linkautowork-gateway', PLATFORM_JWT_TEST_SECRET: secret } as AppEnv;
 function jwt(overrides: Record<string, unknown> = {}) {
@@ -12,8 +12,8 @@ function jwt(overrides: Record<string, unknown> = {}) {
   const signature = createHmac('sha256', secret).update(`${header}.${claims}`).digest('base64url');
   return `${header}.${claims}.${signature}`;
 }
-function tamperSignedClaims(token: string): string {
-  const [header, encodedClaims, signature] = token.split('.');
+function tamperSignedClaims(encodedJwt: string): string {
+  const [header, encodedClaims, signature] = encodedJwt.split('.');
   const claims = JSON.parse(Buffer.from(encodedClaims, 'base64url').toString('utf8')) as Record<string, unknown>;
   claims.sub = `${String(claims.sub)}:tampered`;
   return `${header}.${Buffer.from(JSON.stringify(claims)).toString('base64url')}.${signature}`;

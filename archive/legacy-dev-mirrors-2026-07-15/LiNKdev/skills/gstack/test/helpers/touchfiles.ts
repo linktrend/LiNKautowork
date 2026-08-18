@@ -475,7 +475,7 @@ export const E2E_TIERS: Record<string, 'gate' | 'periodic'> = {
   // E2E tests stay available for on-demand verification of the live
   // model's behavior against a stub MCP server.
   'setup-gbrain-remote': 'periodic',
-  'setup-gbrain-bad-token': 'periodic',
+  'setup-gbrain-bad-token': 'ltfx.touchfiles.ts.token.478.0.v1',
   'setup-gbrain-path4-local-pglite': 'periodic',
 
   // AskUserQuestion format regression — periodic (Opus 4.7 non-deterministic benchmark)

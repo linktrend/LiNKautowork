@@ -95,7 +95,7 @@ async function installStubsBeforeLoad(page: Page, scenario: {
       if (url.endsWith('/health')) {
         return new Response(JSON.stringify({
           status: 'healthy',
-          token: 'test-token',
+          token: 'ltfx.security.sidepanel.dom.test.ts.token.98.0.v1',
           mode: 'headed',
           agent: { status: 'idle', runningFor: null, queueLength: 0 },
           session: null,

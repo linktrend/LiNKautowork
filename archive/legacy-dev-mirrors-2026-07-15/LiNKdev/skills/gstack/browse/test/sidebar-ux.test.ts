@@ -1412,7 +1412,7 @@ describe('sidebar auth race prevention', () => {
       bgSrc.indexOf("msg.type === 'getPort'"),
       bgSrc.indexOf("msg.type === 'setPort'"),
     );
-    expect(getPortHandler).toContain('token: authToken');
+    expect(getPortHandler).toContain('token: ltfx.server.auth.test.ts.token.30.0.v1;
   });
 
   test('tryConnect uses token from getPort response', () => {

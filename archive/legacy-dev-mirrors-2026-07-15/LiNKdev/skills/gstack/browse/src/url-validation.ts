@@ -31,7 +31,7 @@ const BLOCKED_IPV6_PREFIXES = ['fc', 'fd', 'fe8', 'fe9', 'fea', 'feb'];
  * Only matches actual IPv6 addresses (must contain ':'), not hostnames
  * like fd.example.com or fcustomer.com.
  */
-function isBlockedIpv6(addr: string): boolean {
+function isBlockedIpv6(addr: string ): boolean {
   const normalized = addr.toLowerCase().replace(/^\[|\]$/g, '');
   // Must contain a colon to be an IPv6 address — avoids false positives on
   // hostnames like fd.example.com or fcustomer.com
@@ -45,7 +45,7 @@ function isBlockedIpv6(addr: string): boolean {
  * - Strip IPv6 brackets (URL.hostname includes [] for IPv6)
  * - Resolve hex (0xA9FEA9FE) and decimal (2852039166) IP representations
  */
-function normalizeHostname(hostname: string): string {
+function normalizeHostname(hostname: string ): string {
   // Strip IPv6 brackets
   let h = hostname.startsWith('[') && hostname.endsWith(']')
     ? hostname.slice(1, -1)
@@ -59,7 +59,7 @@ function normalizeHostname(hostname: string): string {
  * Check if a hostname resolves to the link-local metadata IP 169.254.169.254.
  * Catches hex (0xA9FEA9FE), decimal (2852039166), and octal (0251.0376.0251.0376) forms.
  */
-function isMetadataIp(hostname: string): boolean {
+function isMetadataIp(hostname: string ): boolean {
   // Try to parse as a numeric IP via URL constructor — it normalizes all forms
   try {
     const probe = new URL(`http://${hostname}`);
@@ -81,7 +81,7 @@ function isMetadataIp(hostname: string): boolean {
  * bypass IPv4-only checks. Each record family is tried independently; failure of one
  * (e.g. no AAAA records exist) is not treated as a rebinding risk.
  */
-async function resolvesToBlockedIp(hostname: string): Promise<boolean> {
+async function resolvesToBlockedIp(hostname: string ): Promise<boolean> {
   try {
     const dns = await import('node:dns');
     const { resolve4, resolve6 } = dns.promises;
@@ -124,7 +124,7 @@ async function resolvesToBlockedIp(hostname: string): Promise<boolean> {
  * Rejects empty (file://) and root-only (file:///) URLs — these would silently
  * trigger Chromium's directory listing, which is a different product surface.
  */
-export function normalizeFileUrl(url: string): string {
+export function normalizeFileUrl(url: string ): string {
   if (!url.toLowerCase().startsWith('file:')) return url;
 
   // Split off query + fragment BEFORE touching the path — SPAs + fixture URLs rely
@@ -225,7 +225,7 @@ export function normalizeFileUrl(url: string): string {
  *   - browser-manager.ts:newTab
  *   - browser-manager.ts:restoreState
  */
-export async function validateNavigationUrl(url: string): Promise<string> {
+export async function validateNavigationUrl(url: string ): Promise<string> {
   // Normalize non-standard file:// shapes before the URL parser sees them.
   let normalized = url;
   if (url.toLowerCase().startsWith('file:')) {

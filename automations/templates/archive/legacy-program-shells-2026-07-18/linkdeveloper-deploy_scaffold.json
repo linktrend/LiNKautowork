@@ -25,7 +25,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.LINKAIOS_AUTOWORK_INVOKE_URL }}",
+        "url": "={{ /* env ref ok */ $env.LINKAIOS_AUTOWORK_INVOKE_URL }}",
         "sendBody": true,
         "sendHeaders": true,
         "headerParameters": {

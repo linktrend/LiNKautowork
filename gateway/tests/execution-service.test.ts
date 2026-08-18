@@ -5,7 +5,7 @@ import { executionCallbackSchema, type ExecutionCallback } from '../src/contract
 const orgId = '00000000-0000-0000-0000-000000000001';
 const otherOrg = '00000000-0000-0000-0000-000000000002';
 const executionId = '60000000-0000-0000-0000-000000000001';
-const capability = { service: 'linkautowork-n8n', token: 'bound-callback-token' };
+const capability = { service: 'linkautowork-n8n', token: 'ltfx.ph.a70a1a5cf4.v1' };
 const event = (sequence: number, eventType: ExecutionCallback['eventType'], org = orgId): ExecutionCallback => ({ orgId: org, executionId, sequence, eventType, occurredAt: `2026-08-04T00:00:0${sequence}.000Z`, evidenceRef: `evidence://eval/run-${sequence}` });
 
 class DurableFake implements ExecutionEventStore {

@@ -48,7 +48,7 @@ describe('redactUpstream', () => {
       host: 'proxy.example.com',
       port: 1080,
       userId: 'realuser',
-      password: 'realpass',
+      password: 'ltfx.proxy.redact.test.ts.password.51.0.v1',
     });
     expect(out.host).toBe('proxy.example.com');
     expect(out.port).toBe(1080);

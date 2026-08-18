@@ -84,7 +84,7 @@ begin
   end;
   update lautowork.product_subscriptions set status='eligible', automation_instance_id='40000000-0000-0000-0000-000000000001', requested_release_id='20000000-0000-0000-0000-000000000001' where id=(subscription_a->>'id')::uuid;
   begin
-    perform public.linkautowork_product_submit_configuration((subscription_a->>'id')::uuid,'{"apiKey":"must-remain-operator-assisted"}'::jsonb,'product-config-secret-key');
+    perform public.linkautowork_product_submit_configuration((subscription_a->>'id')::uuid,'{"apiKey":"ltfx.ph.e789616d1c.v1"}'::jsonb,'product-config-secret-key');
     raise exception 'credential-shaped configuration unexpectedly succeeded';
   exception when others then
     if position('credentials require operator-assisted binding' in sqlerrm)=0 then raise; end if;

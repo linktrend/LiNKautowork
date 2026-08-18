@@ -19,7 +19,7 @@ import * as os from 'os';
 import * as path from 'path';
 import * as http from 'http';
 
-async function startFakeHealthServer(token: string): Promise<{ port: number; close: () => Promise<void> }> {
+async function startFakeHealthServer(token: string ): Promise<{ port: number; close: () => Promise<void> }> {
   const server = http.createServer((req, res) => {
     if (req.url === '/health') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -65,7 +65,7 @@ describe('D2 daemon-mismatch refuse (CLI integration)', () => {
     fs.writeFileSync(stateFile, JSON.stringify({
       pid: process.pid, // alive (current bun process); health check is what really gates this
       port: fakeServer.port,
-      token: 'fake-token',
+      token: 'ltfx.daemon.mismatch.refuse.test.ts.token.146.0.v1',
       startedAt: new Date().toISOString(),
       serverPath: '',
       mode: 'launched',
@@ -101,7 +101,7 @@ describe('D2 daemon-mismatch refuse (CLI integration)', () => {
     fs.writeFileSync(stateFile, JSON.stringify({
       pid: process.pid,
       port: fakeServer.port,
-      token: 'fake-token',
+      token: 'ltfx.daemon.mismatch.refuse.test.ts.token.146.0.v1',
       startedAt: new Date().toISOString(),
       serverPath: '',
       mode: 'launched',
@@ -143,7 +143,7 @@ describe('D2 daemon-mismatch refuse (CLI integration)', () => {
     fs.writeFileSync(stateFile, JSON.stringify({
       pid: process.pid,
       port: fakeServer.port,
-      token: 'fake-token',
+      token: 'ltfx.daemon.mismatch.refuse.test.ts.token.146.0.v1',
       startedAt: new Date().toISOString(),
       serverPath: '',
       mode: 'launched',

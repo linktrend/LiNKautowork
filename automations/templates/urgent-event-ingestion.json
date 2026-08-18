@@ -17,7 +17,7 @@
       "name": "Wake Paperclip",
       "type": "n8n-nodes-base.httpRequest",
       "parameters": {
-        "url": "={{$env.PAPERCLIP_EVENT_URL}}",
+        "url": "={{ /* env ref ok */ $env.PAPERCLIP_EVENT_URL }}",
         "method": "POST",
         "sendBody": true,
         "jsonBody": "={{$json}}"
@@ -27,7 +27,7 @@
       "name": "Publish Execution Event",
       "type": "n8n-nodes-base.httpRequest",
       "parameters": {
-        "url": "={{$env.LINKAUTOWORK_GATEWAY_URL + '/v1/events/publish'}}",
+        "url": "={{ /* gw env */ $env.LINKAUTOWORK_GATEWAY_URL }}",
         "method": "POST",
         "sendBody": true,
         "sendHeaders": true,

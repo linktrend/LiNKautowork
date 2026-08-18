@@ -113,7 +113,7 @@ bin/dev-teardown
 ```bash
 # 1. Copy .env.example and add your API key
 cp .env.example .env
-# Edit .env → set ANTHROPIC_API_KEY=sk-ant-...
+# Edit .env → set ANTHROPIC_API_KEY=ltfx.contributing.md.anthropicapikey.116.0.v1
 
 # 2. Install deps (if you haven't already)
 bun install

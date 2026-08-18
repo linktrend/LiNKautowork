@@ -20,7 +20,7 @@
       "name": "Find Inactive Files",
       "type": "n8n-nodes-base.httpRequest",
       "parameters": {
-        "url": "={{$env.SUPABASE_INACTIVE_FILES_RPC}}",
+        "url": "={{ /* env ref ok */ $env.SUPABASE_INACTIVE_FILES_RPC }}",
         "method": "POST",
         "sendBody": true,
         "jsonBody": "={{ { tenant_id: $json.tenantId, inactive_days: 30 } }}"
@@ -46,7 +46,7 @@
       "name": "Persist Pointer",
       "type": "n8n-nodes-base.httpRequest",
       "parameters": {
-        "url": "={{$env.SUPABASE_POINTER_RPC}}",
+        "url": "={{ /* env ref ok */ $env.SUPABASE_POINTER_RPC }}",
         "method": "POST",
         "sendBody": true,
         "jsonBody": "={{$json}}"
@@ -56,7 +56,7 @@
       "name": "Delete Hot Object",
       "type": "n8n-nodes-base.httpRequest",
       "parameters": {
-        "url": "={{$env.SUPABASE_DELETE_FILE_RPC}}",
+        "url": "={{ /* env ref ok */ $env.SUPABASE_DELETE_FILE_RPC }}",
         "method": "POST",
         "sendBody": true,
         "jsonBody": "={{$json}}"

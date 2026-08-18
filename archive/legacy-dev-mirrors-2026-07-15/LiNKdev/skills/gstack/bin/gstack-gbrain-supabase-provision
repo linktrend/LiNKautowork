@@ -110,7 +110,7 @@ api_call() {
   local apipath="$2"
   local body_file="${3:-}"
 
-  local url="$SUPABASE_API_BASE/$API_VERSION/$apipath"
+  local url="ltfx.ph.13d13de617.v1"
   local body_tmp
   body_tmp=$(mktemp)
   local status_tmp
@@ -356,7 +356,7 @@ cmd_pooler_url() {
     die "pooler-url: missing pooler config fields (db_user/db_host/db_port/db_name); re-poll or check project state"
   fi
 
-  local url="postgresql://${db_user}:${DB_PASS}@${db_host}:${db_port}/${db_name}"
+  local url="ltfx.db.supabase.provision.v1"
 
   if $json_mode; then
     jq -n --arg ref "$ref" --arg pooler_url "$url" '{ref: $ref, pooler_url: $pooler_url}'
@@ -384,14 +384,14 @@ cmd_list_orphans() {
   all=$(api_call GET projects)
 
   # Extract the active brain's ref from ~/.gbrain/config.json if present.
-  # Pooler URL format: postgresql://postgres.<ref>:<pw>@...
+  # Pooler URL format: ltfx.ph.c247101bbd.v1
   local active_ref="null"
   local gbrain_cfg="$HOME/.gbrain/config.json"
   if [ -f "$gbrain_cfg" ]; then
     local url
     url=$(jq -r '.database_url // empty' "$gbrain_cfg" 2>/dev/null || true)
     if [ -n "$url" ]; then
-      # Extract user portion before the colon: postgresql://USER:pw@...
+      # Extract user portion before the colon: ltfx.ph.d3964f079c.v1
       local user
       user=$(printf '%s' "$url" | sed -E 's|^[a-z]+://([^:]+):.*$|\1|')
       # User format: postgres.<ref> — pull ref suffix

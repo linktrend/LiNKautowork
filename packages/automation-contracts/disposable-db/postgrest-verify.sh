@@ -3,12 +3,12 @@ set -euo pipefail
 
 compose_file="$1"
 project_name="$2"
-jwt_secret='linkautowork-disposable-postgrest-secret-2026'
+jwt_secret='ltfx.ph.24c6deb948.v1'
 org_a='00000000-0000-0000-0000-000000000002'
 org_b='00000000-0000-0000-0000-000000000003'
 
 sign_jwt() {
-  JWT_SECRET="$jwt_secret" JWT_ROLE="$1" JWT_ORG="$2" node -e '
+  JWT_SECRET="${jwt_secret}" JWT_ROLE="$1" JWT_ORG="$2" node -e '
     const crypto=require("node:crypto");
     const enc=(value)=>Buffer.from(JSON.stringify(value)).toString("base64url");
     const header=enc({alg:"HS256",typ:"JWT"});
@@ -31,7 +31,7 @@ sleep 1
 rpc_status() {
   local token="$1" header_org="$2" rpc="$3" body="$4"
   docker compose -f "$compose_file" -p "$project_name" exec -T http curl -sS -o /dev/null -w '%{http_code}' \
-    -H 'apikey: disposable-project-api-key' -H "Authorization: Bearer $token" -H "x-link-org-id: $header_org" \
+    -H 'apikey: ltfx.ph.a076393258.v1 -H "Authorization: Bearer $token" -H "x-link-org-id: $header_org" \
     -H 'content-type: application/json' --data "$body" "http://postgrest:3000/rpc/$rpc"
 }
 

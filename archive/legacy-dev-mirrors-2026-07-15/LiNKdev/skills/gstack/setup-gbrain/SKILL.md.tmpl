@@ -366,7 +366,7 @@ read_secret_to_env GBRAIN_MCP_TOKEN "Paste bearer token: " \
 classified JSON output:
 
 ```bash
-verify_json=$(GBRAIN_MCP_TOKEN="$GBRAIN_MCP_TOKEN" \
+verify_json=$(GBRAIN_MCP_TOKEN="${GBRAIN_MCP_TOKEN}" \
   ~/.claude/skills/gstack/bin/gstack-gbrain-mcp-verify "$MCP_URL")
 status=$(echo "$verify_json" | jq -r .status)
 ```
@@ -927,7 +927,7 @@ Re-collect a PAT (Step 4 path-2a scope disclosure), then:
 ```bash
 # List user's Supabase projects (user has to pipe this through their own
 # shell to review; we don't rely on a stored PAT).
-export SUPABASE_ACCESS_TOKEN="<collected from read_secret_to_env>"
+export SUPABASE_ACCESS_TOKEN="ltfx.ph.624fde937f.v1"
 projects=$(curl -s -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
   https://api.supabase.com/v1/projects)
 ```
@@ -966,7 +966,7 @@ telemetry payload (SAFE — no free-form secrets, never the URL or PAT):
   `skip-for-now` | `n/a` (outside git repo)
 
 Never pass `SUPABASE_ACCESS_TOKEN`, `DB_PASS`, `GBRAIN_POOLER_URL`,
-`GBRAIN_DATABASE_URL`, or any `postgresql://` substring to the telemetry
+`GBRAIN_DATABASE_URL`, or any `ltfx.ph.0fe7080734.v1 substring to the telemetry
 invocation. The CI grep test in `test/skill-validation.test.ts` enforces
 this at build time.
 

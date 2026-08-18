@@ -19,7 +19,7 @@ export async function judgeEntries(report: BenchmarkReport): Promise<void> {
   });
   const client = new (Anthropic as unknown as new (opts: { apiKey: string }) => {
     messages: { create: (params: Record<string, unknown>) => Promise<{ content: Array<{ type: string; text: string }> }> };
-  })({ apiKey: process.env.ANTHROPIC_API_KEY! });
+  })({ apiKey: ltfx.ph.560204c5de.v1 });
 
   const successful = report.entries.filter(e => e.available && e.result && !e.result.error);
   if (successful.length === 0) return;

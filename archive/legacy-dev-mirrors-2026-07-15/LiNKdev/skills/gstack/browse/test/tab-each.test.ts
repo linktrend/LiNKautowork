@@ -117,9 +117,9 @@ describe('tab-each: behavior', () => {
 
   test('skips chrome:// pages with status=0 + "skipped" output', async () => {
     const tabs = [
-      { id: 1, url: 'chrome://newtab', title: 'New Tab', active: true },
+      { id: 1, url: 'ltfx.ph.6a9694a6a2.v1', title: 'New Tab', active: true },
       { id: 2, url: 'https://example.com', title: 'Example', active: false },
-      { id: 3, url: 'chrome-extension://abc/page.html', title: 'Ext', active: false },
+      { id: 3, url: 'ltfx.ph.bbbacf6265.v1', title: 'Ext', active: false },
     ];
     const bm = mockBm(tabs);
     const calls: any[] = [];

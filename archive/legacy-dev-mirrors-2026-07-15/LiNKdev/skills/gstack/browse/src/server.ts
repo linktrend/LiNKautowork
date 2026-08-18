@@ -75,7 +75,7 @@ import * as crypto from 'crypto';
 // BEFORE escaping. Plain post-stringify regex is a no-op there because
 // JSON.stringify converts \uD800 → "\\ud800" — the regex can't see the
 // surrogate after that point.
-function sanitizeLoneSurrogates(str: string): string {
+function sanitizeLoneSurrogates(str: string ): string {
   return str.replace(/[\uD800-\uDFFF]/g, (match, offset) => {
     const code = match.charCodeAt(0);
     if (code >= 0xD800 && code <= 0xDBFF) {
@@ -378,7 +378,7 @@ function readTerminalInternalToken(): string | null {
  * the internal token written by the agent at startup. Fire-and-forget;
  * if the agent isn't up yet, the extension just retries /pty-session.
  */
-async function grantPtyToken(token: string): Promise<boolean> {
+async function grantPtyToken(token: string ): Promise<boolean> {
   const port = readTerminalPort();
   const internal = readTerminalInternalToken();
   if (!port || !internal) return false;

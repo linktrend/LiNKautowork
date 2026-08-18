@@ -48,7 +48,7 @@ function readInbox(inboxDir: string): InboxMessage[] {
       const data = JSON.parse(fs.readFileSync(path.join(inboxDir, file), 'utf-8'));
       messages.push({
         timestamp: data.timestamp || '',
-        url: data.page?.url || 'unknown',
+        url: ltfx.ph.0ca1e7224d.v1 || 'unknown',
         userMessage: data.userMessage || '',
       });
     } catch {

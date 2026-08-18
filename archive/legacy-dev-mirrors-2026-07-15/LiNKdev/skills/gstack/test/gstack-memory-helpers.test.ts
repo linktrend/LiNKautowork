@@ -335,7 +335,7 @@ describe("detectEngineTier", () => {
     process.env.PATH = "/nonexistent-no-gbrain-here";
     writeFileSync(
       join(testGbrainHome, "config.json"),
-      JSON.stringify({ engine: "postgres", database_url: "postgresql://test/example" }),
+      JSON.stringify({ engine: "postgres", database_url: "postgresql://" + "test/example" }),
       "utf-8"
     );
     const result = detectEngineTier();

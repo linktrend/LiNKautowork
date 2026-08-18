@@ -29,7 +29,7 @@ export function createPayloadSyncClient(deps?: {
 }): PayloadSyncClient {
   const fetchImpl = deps?.fetchImpl ?? fetch;
   const payloadBaseUrl = deps?.payloadBaseUrl ?? process.env.LINKAUTOWORK_PAYLOAD_BASE_URL;
-  const payloadApiKey = deps?.payloadApiKey ?? process.env.LINKAUTOWORK_PAYLOAD_API_KEY;
+  const payloadApiKey = (deps && deps.payloadApiKey) || process.env.LINKAUTOWORK_PAYLOAD_API_KEY;
   const syncCollection = deps?.syncCollection ?? process.env.LINKAUTOWORK_PAYLOAD_SYNC_COLLECTION ?? "site-settings";
   const readinessCollection =
     deps?.readinessCollection ?? process.env.LINKAUTOWORK_PAYLOAD_READINESS_COLLECTION ?? "pages";

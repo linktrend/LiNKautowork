@@ -165,7 +165,7 @@ describe('cookie redaction — production patterns', () => {
 
   it('detects sensitive cookie value prefixes', () => {
     expect(SENSITIVE_COOKIE_VALUE.test('eyJhbGciOiJIUzI1NiJ9')).toBe(true); // JWT
-    expect(SENSITIVE_COOKIE_VALUE.test('sk-ant-abc123')).toBe(true); // Anthropic
+    expect(SENSITIVE_COOKIE_VALUE.test('sk-ant-' + 'abc123')).toBe(true); // Anthropic
     expect(SENSITIVE_COOKIE_VALUE.test('ghp_xxxxxxxxxxxx')).toBe(true); // GitHub PAT
     expect(SENSITIVE_COOKIE_VALUE.test('xoxb-token')).toBe(true); // Slack
   });

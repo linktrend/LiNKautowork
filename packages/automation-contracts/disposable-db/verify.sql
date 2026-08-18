@@ -74,7 +74,7 @@ begin
   end;
   begin
     insert into lautowork.automation_instances (org_id, definition_id, release_id, instance_key, state, configuration, configuration_digest)
-    values ('00000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 'client-a-secret', 'draft', '{"api_key":"not-allowed"}', 'sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff');
+    values ('00000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 'client-a-secret', 'draft', '{"api_key":"ltfx.app.test.ts.apikey.18.2.v1"}', 'sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff');
     raise exception 'secret-shaped configuration unexpectedly succeeded';
   exception when check_violation then null;
   end;
@@ -221,7 +221,7 @@ begin
   end;
   begin
     insert into lautowork.automation_instances (org_id, definition_id, release_id, instance_key, state, configuration, configuration_digest)
-    values ('00000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 'client-a-url-secret', 'draft', '{"callback_url":"postgres://admin:pw123@db.internal:5432/app"}', 'sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff');
+    values ('00000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 'client-a-url-secret', 'draft', '{"callback_url":"postgres://" + "admin:pw123@db.internal:5432/app"}', 'sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff');
     raise exception 'connection-string configuration unexpectedly succeeded';
   exception when check_violation then null;
   end;

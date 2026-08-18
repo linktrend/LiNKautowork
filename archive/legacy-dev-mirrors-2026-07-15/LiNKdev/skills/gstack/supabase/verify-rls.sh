@@ -13,8 +13,8 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 . "$SCRIPT_DIR/config.sh"
 
-URL="$GSTACK_SUPABASE_URL"
-KEY="$GSTACK_SUPABASE_ANON_KEY"
+URL="${GSTACK_SUPABASE_URL}"
+KEY="${GSTACK_SUPABASE_ANON_KEY}"
 PASS=0
 FAIL=0
 TOTAL=0

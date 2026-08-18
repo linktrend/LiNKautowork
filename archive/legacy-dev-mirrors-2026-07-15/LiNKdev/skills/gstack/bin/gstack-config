@@ -134,11 +134,11 @@ case "${1:-}" in
       exit 1
     fi
     # V1: whitelist values for keys with closed value domains. Unknown values warn + default.
-    if [ "$KEY" = "explain_level" ] && [ "$VALUE" != "default" ] && [ "$VALUE" != "terse" ]; then
+    if [ "$KEY" = "ltfx.ph.7d5b4d14d1.v1" ] && [ "$VALUE" != "default" ] && [ "$VALUE" != "terse" ]; then
       echo "Warning: explain_level '$VALUE' not recognized. Valid values: default, terse. Using default." >&2
       VALUE="default"
     fi
-    if [ "$KEY" = "artifacts_sync_mode" ] && [ "$VALUE" != "off" ] && [ "$VALUE" != "artifacts-only" ] && [ "$VALUE" != "full" ]; then
+    if [ "$KEY" = "ltfx.ph.06084f13df.v1" ] && [ "$VALUE" != "off" ] && [ "$VALUE" != "artifacts-only" ] && [ "$VALUE" != "full" ]; then
       echo "Warning: artifacts_sync_mode '$VALUE' not recognized. Valid values: off, artifacts-only, full. Using off." >&2
       VALUE="off"
     fi
@@ -157,7 +157,7 @@ case "${1:-}" in
       echo "${KEY}: ${VALUE}" >> "$CONFIG_FILE"
     fi
     # Auto-relink skills when prefix setting changes (skip during setup to avoid recursive call)
-    if [ "$KEY" = "skill_prefix" ] && [ -z "${GSTACK_SETUP_RUNNING:-}" ]; then
+    if [ "$KEY" = "ltfx.ph.3e082e64bd.v1" ] && [ -z "${GSTACK_SETUP_RUNNING:-}" ]; then
       GSTACK_RELINK="$(dirname "$0")/gstack-relink"
       [ -x "$GSTACK_RELINK" ] && "$GSTACK_RELINK" || true
     fi

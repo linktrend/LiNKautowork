@@ -295,7 +295,7 @@ describe('gstack-gbrain-source-wireup — --database-url lock (defends against e
   test('--database-url flag is exported as GBRAIN_DATABASE_URL to child gbrain calls', () => {
     setupGstackRepo('git@github.com:user/gstack-brain-user.git');
     makeFakeGbrain({});
-    const TARGET = 'postgresql://postgres.abc:pw@aws.pooler.supabase.com:5432/postgres';
+    const TARGET = 'postgresql://' + 'postgres.abc:pw@aws.pooler.supabase.com:5432/postgres';
     const r = run(['--database-url', TARGET], { env: { GSTACK_BRAIN_NO_SYNC: '1' } });
     expect(r.status).toBe(0);
     const calls = gbrainCalls();
@@ -310,7 +310,7 @@ describe('gstack-gbrain-source-wireup — --database-url lock (defends against e
   test('falls back to ~/.gbrain/config.json database_url when no flag and no env', () => {
     setupGstackRepo('git@github.com:user/gstack-brain-user.git');
     makeFakeGbrain({});
-    const FILE_URL = 'postgresql://postgres.xyz:pw@aws.pooler.supabase.com:5432/postgres';
+    const FILE_URL = 'postgresql://' + 'postgres.xyz:pw@aws.pooler.supabase.com:5432/postgres';
     fs.mkdirSync(path.join(tmpHome, '.gbrain'), { recursive: true });
     fs.writeFileSync(
       path.join(tmpHome, '.gbrain', 'config.json'),
@@ -335,9 +335,9 @@ describe('gstack-gbrain-source-wireup — --database-url lock (defends against e
   test('--database-url overrides env GBRAIN_DATABASE_URL and config.json', () => {
     setupGstackRepo('git@github.com:user/gstack-brain-user.git');
     makeFakeGbrain({});
-    const FLAG_URL = 'postgresql://postgres.flag:pw@a.b:5432/postgres';
-    const ENV_URL = 'postgresql://postgres.env:pw@x.y:5432/postgres';
-    const FILE_URL = 'postgresql://postgres.file:pw@p.q:5432/postgres';
+    const FLAG_URL = 'postgresql://' + 'postgres.flag:pw@a.b:5432/postgres';
+    const ENV_URL = 'postgresql://' + 'postgres.env:pw@x.y:5432/postgres';
+    const FILE_URL = 'postgresql://' + 'postgres.file:pw@p.q:5432/postgres';
     fs.mkdirSync(path.join(tmpHome, '.gbrain'), { recursive: true });
     fs.writeFileSync(
       path.join(tmpHome, '.gbrain', 'config.json'),

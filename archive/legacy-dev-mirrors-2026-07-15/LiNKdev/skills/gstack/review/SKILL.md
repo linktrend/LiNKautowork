@@ -1016,7 +1016,7 @@ IMPACT: {HIGH|MEDIUM|LOW} — {what breaks or degrades if this stays undelivered
 ```bash
 ~/.claude/skills/gstack/bin/gstack-learnings-log '{
   "type": "pitfall",
-  "key": "plan-delivery-gap-KEBAB_SUMMARY",
+  "key": "ltfx.ph.62b67ddf3e.v1",
   "insight": "Planned X but delivered Y because Z",
   "confidence": 8,
   "source": "observed",

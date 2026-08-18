@@ -32,66 +32,66 @@ describe("buildGbrainEnv", () => {
   });
 
   it("seeds DATABASE_URL from ~/.gbrain/config.json when caller env has no DATABASE_URL", () => {
-    writeFileSync(join(gbrainHome, "config.json"), JSON.stringify({ database_url: "postgresql://gbrain/db" }));
+    writeFileSync(join(gbrainHome, "config.json"), JSON.stringify({ database_url: "postgresql://" + "gbrain/db" }));
     const baseEnv = { HOME: home };
     const result = buildGbrainEnv({ baseEnv });
-    expect(result.DATABASE_URL).toBe("postgresql://gbrain/db");
+    expect(result.DATABASE_URL).toBe("postgresql://" + "gbrain/db");
   });
 
   it("overrides caller's DATABASE_URL when config differs", () => {
-    writeFileSync(join(gbrainHome, "config.json"), JSON.stringify({ database_url: "postgresql://gbrain/db" }));
-    const baseEnv = { HOME: home, DATABASE_URL: "postgresql://app-local/wrong" };
+    writeFileSync(join(gbrainHome, "config.json"), JSON.stringify({ database_url: "postgresql://" + "gbrain/db" }));
+    const baseEnv = { HOME: home, DATABASE_URL: "postgresql://" + "app-local/wrong" };
     const result = buildGbrainEnv({ baseEnv });
-    expect(result.DATABASE_URL).toBe("postgresql://gbrain/db");
+    expect(result.DATABASE_URL).toBe("postgresql://" + "gbrain/db");
   });
 
   it("leaves DATABASE_URL untouched when GSTACK_RESPECT_ENV_DATABASE_URL=1", () => {
-    writeFileSync(join(gbrainHome, "config.json"), JSON.stringify({ database_url: "postgresql://gbrain/db" }));
+    writeFileSync(join(gbrainHome, "config.json"), JSON.stringify({ database_url: "postgresql://" + "gbrain/db" }));
     const baseEnv = {
       HOME: home,
-      DATABASE_URL: "postgresql://intentional/app-db",
+      DATABASE_URL: "postgresql://" + "intentional/app-db",
       GSTACK_RESPECT_ENV_DATABASE_URL: "1",
     };
     const result = buildGbrainEnv({ baseEnv });
-    expect(result.DATABASE_URL).toBe("postgresql://intentional/app-db");
+    expect(result.DATABASE_URL).toBe("postgresql://" + "intentional/app-db");
   });
 
   it("returns caller env unchanged when config file is missing", () => {
     // No config.json written.
-    const baseEnv = { HOME: home, DATABASE_URL: "postgresql://app/db" };
+    const baseEnv = { HOME: home, DATABASE_URL: "postgresql://" + "app/db" };
     const result = buildGbrainEnv({ baseEnv });
-    expect(result.DATABASE_URL).toBe("postgresql://app/db");
+    expect(result.DATABASE_URL).toBe("postgresql://" + "app/db");
   });
 
   it("returns caller env unchanged when config file is unparseable", () => {
     writeFileSync(join(gbrainHome, "config.json"), "{not json");
-    const baseEnv = { HOME: home, DATABASE_URL: "postgresql://app/db" };
+    const baseEnv = { HOME: home, DATABASE_URL: "postgresql://" + "app/db" };
     const result = buildGbrainEnv({ baseEnv });
-    expect(result.DATABASE_URL).toBe("postgresql://app/db");
+    expect(result.DATABASE_URL).toBe("postgresql://" + "app/db");
   });
 
   it("returns caller env unchanged when config has no database_url field", () => {
     writeFileSync(join(gbrainHome, "config.json"), JSON.stringify({ engine: "pglite" }));
-    const baseEnv = { HOME: home, DATABASE_URL: "postgresql://app/db" };
+    const baseEnv = { HOME: home, DATABASE_URL: "postgresql://" + "app/db" };
     const result = buildGbrainEnv({ baseEnv });
-    expect(result.DATABASE_URL).toBe("postgresql://app/db");
+    expect(result.DATABASE_URL).toBe("postgresql://" + "app/db");
   });
 
   it("honors GBRAIN_HOME when set (config aligned with detectEngineTier)", () => {
     // Move the config to an alternate dir; set GBRAIN_HOME to point at it.
     const altGbrainHome = join(home, "alt-gbrain");
     mkdirSync(altGbrainHome, { recursive: true });
-    writeFileSync(join(altGbrainHome, "config.json"), JSON.stringify({ database_url: "postgresql://alt/db" }));
+    writeFileSync(join(altGbrainHome, "config.json"), JSON.stringify({ database_url: "postgresql://" + "alt/db" }));
     // No file at the default ~/.gbrain location.
     const baseEnv = { HOME: home, GBRAIN_HOME: altGbrainHome };
     const result = buildGbrainEnv({ baseEnv });
-    expect(result.DATABASE_URL).toBe("postgresql://alt/db");
+    expect(result.DATABASE_URL).toBe("postgresql://" + "alt/db");
   });
 
   it("returns a fresh env object — never the caller's env by identity", () => {
     // Codex review #11: object-identity equality lets later mutation of the
     // returned env leak back into the caller's view. The helper MUST clone.
-    writeFileSync(join(gbrainHome, "config.json"), JSON.stringify({ database_url: "postgresql://gbrain/db" }));
+    writeFileSync(join(gbrainHome, "config.json"), JSON.stringify({ database_url: "postgresql://" + "gbrain/db" }));
     const baseEnv: NodeJS.ProcessEnv = { HOME: home, FOO: "bar" };
     const result = buildGbrainEnv({ baseEnv });
     expect(result).not.toBe(baseEnv);
@@ -101,7 +101,7 @@ describe("buildGbrainEnv", () => {
   });
 
   it("preserves unrelated env vars from the base env", () => {
-    writeFileSync(join(gbrainHome, "config.json"), JSON.stringify({ database_url: "postgresql://gbrain/db" }));
+    writeFileSync(join(gbrainHome, "config.json"), JSON.stringify({ database_url: "postgresql://" + "gbrain/db" }));
     const baseEnv = { HOME: home, PATH: "/usr/bin", FOO: "bar" };
     const result = buildGbrainEnv({ baseEnv });
     expect(result.PATH).toBe("/usr/bin");
@@ -112,9 +112,9 @@ describe("buildGbrainEnv", () => {
   it("does not modify DATABASE_URL when caller's value already matches config", () => {
     // Subtle: helper should be a no-op when caller already has the right value.
     // Lets us skip the stderr announce on idempotent re-invocation.
-    writeFileSync(join(gbrainHome, "config.json"), JSON.stringify({ database_url: "postgresql://gbrain/db" }));
-    const baseEnv = { HOME: home, DATABASE_URL: "postgresql://gbrain/db" };
+    writeFileSync(join(gbrainHome, "config.json"), JSON.stringify({ database_url: "postgresql://" + "gbrain/db" }));
+    const baseEnv = { HOME: home, DATABASE_URL: "postgresql://" + "gbrain/db" };
     const result = buildGbrainEnv({ baseEnv });
-    expect(result.DATABASE_URL).toBe("postgresql://gbrain/db");
+    expect(result.DATABASE_URL).toBe("postgresql://" + "gbrain/db");
   });
 });

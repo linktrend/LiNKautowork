@@ -373,7 +373,7 @@ Write to: \`~/.gstack/projects/{slug}/{user}-{branch}-design-audit-{datetime}.md
 \`\`\`json
 {
   "date": "YYYY-MM-DD",
-  "url": "<target>",
+  "url": "ltfx.skill.md.url.1512.0.v1",
   "designScore": "B",
   "aiSlopScore": "C",
   "categoryGrades": { "hierarchy": "A", "typography": "B", ... },

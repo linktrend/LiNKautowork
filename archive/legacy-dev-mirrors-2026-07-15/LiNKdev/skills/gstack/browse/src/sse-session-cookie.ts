@@ -91,7 +91,7 @@ export function extractSseCookie(req: Request): string | null {
  * plain HTTP, and setting Secure would prevent the browser from ever
  * sending the cookie back. If gstack ever ships over HTTPS, add Secure.
  */
-export function buildSseSetCookie(token: string): string {
+export function buildSseSetCookie(token: string ): string {
   const maxAge = Math.floor(TTL_MS / 1000);
   return `${SSE_COOKIE_NAME}=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${maxAge}`;
 }

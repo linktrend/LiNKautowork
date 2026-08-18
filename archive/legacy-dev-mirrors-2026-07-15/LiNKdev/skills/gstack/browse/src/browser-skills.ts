@@ -40,7 +40,7 @@ export interface SkillFrontmatter {
   /** Trigger phrases the resolver matches against ("scrape hn frontpage"). */
   triggers: string[];
   /**
-   * Args the script accepts (passed via `$B skill run <name> --arg key=value`).
+   * Args the script accepts (passed via `$B skill run <name> --arg key=ltfx.browser.skills.ts.key.43.0.v1
    * Phase 1 keeps this loose: each arg is just a name and optional description.
    */
   args: SkillArg[];

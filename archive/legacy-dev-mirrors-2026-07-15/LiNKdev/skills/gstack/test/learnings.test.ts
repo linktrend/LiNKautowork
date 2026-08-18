@@ -62,7 +62,7 @@ function findLearningsFile(): string | null {
 
 describe('gstack-learnings-log', () => {
   test('appends valid JSON to learnings.jsonl', () => {
-    const input = '{"skill":"review","type":"pattern","key":"test-key","insight":"test insight","confidence":8,"source":"observed"}';
+    const input = '{"skill":"review","type":"pattern","key":"ltfx.learnings.test.ts.key.65.18.v1","insight":"test insight","confidence":8,"source":"observed"}';
     const result = runLog(input);
     expect(result.exitCode).toBe(0);
 
@@ -106,7 +106,7 @@ describe('gstack-learnings-log', () => {
   // Regression test for #1423: investigate skill emits type:"investigation"
   // but ALLOWED_TYPES previously rejected it. Now accepted.
   test('accepts type:"investigation" (regression: #1423)', () => {
-    const input = '{"skill":"investigate","type":"investigation","key":"root-cause","insight":"verified","confidence":9,"source":"observed"}';
+    const input = '{"skill":"investigate","type":"investigation","key":"ltfx.learnings.test.ts.key.109.14.v1","insight":"verified","confidence":9,"source":"observed"}';
     const result = runLog(input);
     expect(result.exitCode).toBe(0);
     const f = findLearningsFile();
@@ -132,7 +132,7 @@ describe('gstack-learnings-search', () => {
   });
 
   test('returns formatted output when learnings exist', () => {
-    runLog('{"skill":"review","type":"pattern","key":"test-search","insight":"search test insight","confidence":7,"source":"observed"}');
+    runLog('{"skill":"review","type":"pattern","key":"ltfx.learnings.test.ts.key.135.5.v1","insight":"search test insight","confidence":7,"source":"observed"}');
     const output = runSearch();
     expect(output).toContain('LEARNINGS:');
     expect(output).toContain('test-search');
@@ -140,8 +140,8 @@ describe('gstack-learnings-search', () => {
   });
 
   test('deduplicates entries by key+type (latest wins)', () => {
-    const old = JSON.stringify({ skill: 'review', type: 'pattern', key: 'dedup-test', insight: 'old version', confidence: 5, source: 'observed', ts: '2026-01-01T00:00:00Z' });
-    const newer = JSON.stringify({ skill: 'review', type: 'pattern', key: 'dedup-test', insight: 'new version', confidence: 8, source: 'observed', ts: '2026-03-28T00:00:00Z' });
+    const old = JSON.stringify({ skill: 'review', type: 'pattern', key: 'ltfx.learnings.test.ts.key.144.12.v1', insight: 'old version', confidence: 5, source: 'observed', ts: '2026-01-01T00:00:00Z' });
+    const newer = JSON.stringify({ skill: 'review', type: 'pattern', key: 'ltfx.learnings.test.ts.key.144.12.v1', insight: 'new version', confidence: 8, source: 'observed', ts: '2026-03-28T00:00:00Z' });
     runLog(old);
     runLog(newer);
 
@@ -161,8 +161,8 @@ describe('gstack-learnings-search', () => {
   });
 
   test('filters by --query', () => {
-    runLog('{"skill":"review","type":"pattern","key":"auth-bypass","insight":"check session tokens","confidence":7,"source":"observed"}');
-    runLog('{"skill":"review","type":"pattern","key":"n-plus-one","insight":"use includes for associations","confidence":7,"source":"observed"}');
+    runLog('{"skill":"review","type":"pattern","key":"ltfx.learnings.test.ts.key.164.4.v1","insight":"check session tokens","confidence":7,"source":"observed"}');
+    runLog('{"skill":"review","type":"pattern","key":"ltfx.gstack.learnings.log.key.3.0.v1","insight":"use includes for associations","confidence":7,"source":"observed"}');
 
     const authOnly = runSearch('--query auth');
     expect(authOnly).toContain('auth-bypass');
@@ -171,7 +171,7 @@ describe('gstack-learnings-search', () => {
 
   test('respects --limit', () => {
     for (let i = 0; i < 5; i++) {
-      runLog(`{"skill":"review","type":"pattern","key":"limit-${i}","insight":"insight ${i}","confidence":7,"source":"observed"}`);
+      runLog(`{"skill":"review","type":"pattern","key":"ltfx.learnings.test.ts.key.174.10.v1","insight":"insight ${i}","confidence":7,"source":"observed"}`);
     }
 
     const limited = runSearch('--limit 2');
@@ -183,7 +183,7 @@ describe('gstack-learnings-search', () => {
     // Entry from 90 days ago with source=observed, confidence=8
     // Should decay to 8 - floor(90/30) = 8 - 3 = 5
     const ts = new Date(Date.now() - 90 * 86400000).toISOString();
-    runLog(`{"skill":"review","type":"pattern","key":"decay-test","insight":"old observation","confidence":8,"source":"observed","ts":"${ts}"}`);
+    runLog(`{"skill":"review","type":"pattern","key":"ltfx.learnings.test.ts.key.186.9.v1","insight":"old observation","confidence":8,"source":"observed","ts":"${ts}"}`);
 
     const output = runSearch();
     // Should show confidence 5 (decayed from 8)
@@ -192,7 +192,7 @@ describe('gstack-learnings-search', () => {
 
   test('does NOT decay user-stated learnings', () => {
     const ts = new Date(Date.now() - 90 * 86400000).toISOString();
-    runLog(`{"skill":"review","type":"preference","key":"no-decay-test","insight":"user preference","confidence":9,"source":"user-stated","ts":"${ts}"}`);
+    runLog(`{"skill":"review","type":"preference","key":"ltfx.ph.5cdc69072f.v1","insight":"user preference","confidence":9,"source":"user-stated","ts":"${ts}"}`);
 
     const output = runSearch();
     // Should still show confidence 9 (no decay for user-stated)
@@ -201,11 +201,11 @@ describe('gstack-learnings-search', () => {
 
   test('skips malformed JSONL lines gracefully', () => {
     // Write a valid entry, then manually append a bad line
-    runLog('{"skill":"review","type":"pattern","key":"valid-entry","insight":"valid","confidence":7,"source":"observed"}');
+    runLog('{"skill":"review","type":"pattern","key":"ltfx.learnings.test.ts.key.204.3.v1","insight":"valid","confidence":7,"source":"observed"}');
     const f = findLearningsFile();
     expect(f).not.toBeNull();
     fs.appendFileSync(f!, '\nthis is not json\n');
-    fs.appendFileSync(f!, '{"skill":"review","type":"pattern","key":"also-valid","insight":"also valid","confidence":6,"source":"observed","ts":"2026-03-28T00:00:00Z"}\n');
+    fs.appendFileSync(f!, '{"skill":"review","type":"pattern","key":"ltfx.learnings.test.ts.key.208.8.v1","insight":"also valid","confidence":6,"source":"observed","ts":"2026-03-28T00:00:00Z"}\n');
 
     const output = runSearch();
     expect(output).toContain('valid-entry');
@@ -215,7 +215,7 @@ describe('gstack-learnings-search', () => {
 
 describe('gstack-learnings-log edge cases', () => {
   test('preserves existing timestamp when ts is present', () => {
-    const input = '{"skill":"review","type":"pattern","key":"ts-preserve","insight":"test","confidence":5,"source":"observed","ts":"2025-06-15T10:00:00Z"}';
+    const input = '{"skill":"review","type":"pattern","key":"ltfx.learnings.test.ts.key.218.2.v1","insight":"test","confidence":5,"source":"observed","ts":"2025-06-15T10:00:00Z"}';
     runLog(input);
 
     const f = findLearningsFile();
@@ -225,7 +225,7 @@ describe('gstack-learnings-log edge cases', () => {
   });
 
   test('handles JSON with special characters in insight', () => {
-    const input = JSON.stringify({ skill: 'review', type: 'pattern', key: 'special-chars', insight: 'Use "quotes" and \\backslashes', confidence: 7, source: 'observed' });
+    const input = JSON.stringify({ skill: 'review', type: 'pattern', key: 'ltfx.ph.31aad2ed56.v1', insight: 'Use "quotes" and \\backslashes', confidence: 7, source: 'observed' });
     runLog(input);
 
     const f = findLearningsFile();
@@ -236,7 +236,7 @@ describe('gstack-learnings-log edge cases', () => {
   });
 
   test('handles JSON with files array field', () => {
-    const input = JSON.stringify({ skill: 'review', type: 'architecture', key: 'with-files', insight: 'test', confidence: 8, source: 'observed', files: ['src/auth.ts', 'src/db.ts'] });
+    const input = JSON.stringify({ skill: 'review', type: 'architecture', key: 'ltfx.learnings.test.ts.key.239.7.v1', insight: 'test', confidence: 8, source: 'observed', files: ['src/auth.ts', 'src/db.ts'] });
     runLog(input);
 
     const f = findLearningsFile();
@@ -249,7 +249,7 @@ describe('gstack-learnings-log edge cases', () => {
 describe('gstack-learnings-search edge cases', () => {
   test('sorts by confidence then recency', () => {
     // Two entries: one high confidence old, one lower confidence recent
-    runLog(JSON.stringify({ skill: 'review', type: 'pattern', key: 'high-conf', insight: 'high confidence entry', confidence: 9, source: 'user-stated', ts: '2026-01-01T00:00:00Z' }));
+    runLog(JSON.stringify({ skill: 'review', type: 'pattern', key: 'ltfx.learnings.test.ts.key.252.17.v1', insight: 'high confidence entry', confidence: 9, source: 'user-stated', ts: '2026-01-01T00:00:00Z' }));
     runLog(JSON.stringify({ skill: 'review', type: 'pattern', key: 'recent', insight: 'recent entry', confidence: 5, source: 'observed', ts: '2026-03-28T00:00:00Z' }));
 
     const output = runSearch();
@@ -269,9 +269,9 @@ describe('gstack-learnings-search edge cases', () => {
   });
 
   test('combined --type and --query filtering', () => {
-    runLog(JSON.stringify({ skill: 'review', type: 'pattern', key: 'auth-token', insight: 'check token expiry', confidence: 7, source: 'observed' }));
-    runLog(JSON.stringify({ skill: 'review', type: 'pitfall', key: 'auth-leak', insight: 'auth token in logs', confidence: 7, source: 'observed' }));
-    runLog(JSON.stringify({ skill: 'review', type: 'pattern', key: 'cache-key', insight: 'cache invalidation', confidence: 7, source: 'observed' }));
+    runLog(JSON.stringify({ skill: 'review', type: 'pattern', key: 'ltfx.learnings.test.ts.key.272.6.v1', insight: 'check token expiry', confidence: 7, source: 'observed' }));
+    runLog(JSON.stringify({ skill: 'review', type: 'pitfall', key: 'ltfx.learnings.test.ts.key.273.16.v1', insight: 'auth token in logs', confidence: 7, source: 'observed' }));
+    runLog(JSON.stringify({ skill: 'review', type: 'pattern', key: 'ltfx.learnings.test.ts.key.274.15.v1', insight: 'cache invalidation', confidence: 7, source: 'observed' }));
 
     const output = runSearch('--type pattern --query auth');
     expect(output).toContain('auth-token');

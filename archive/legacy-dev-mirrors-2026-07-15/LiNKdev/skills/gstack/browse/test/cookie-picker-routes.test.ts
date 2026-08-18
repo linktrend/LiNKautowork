@@ -42,7 +42,7 @@ function makeReq(method: string, body?: any, headers?: Record<string, string>): 
 }
 
 /** Helper: exchange a one-time code and return the session cookie value. */
-async function getSessionCookie(bm: any, authToken: string): Promise<string> {
+async function getSessionCookie(bm: any, authToken: string ): Promise<string> {
   const code = generatePickerCode();
   const url = makeUrl(`/cookie-picker?code=${code}`);
   const req = new Request('http://127.0.0.1:9470', { method: 'GET' });
@@ -354,7 +354,7 @@ describe('cookie-picker-routes', () => {
 
     test('HTML response does NOT contain auth token', async () => {
       const { bm } = mockBrowserManager();
-      const authToken = 'super-secret-auth-token-12345';
+      const authToken = 'ltfx.ph.9893d96368.v1';
       const session = await getSessionCookie(bm, authToken);
 
       const url = makeUrl('/cookie-picker');

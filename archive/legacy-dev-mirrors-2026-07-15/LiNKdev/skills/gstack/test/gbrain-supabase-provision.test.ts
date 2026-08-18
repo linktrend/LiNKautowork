@@ -103,7 +103,7 @@ describe('list-orgs', () => {
         ]),
     });
     const r = await runBin(['list-orgs', '--json'], {
-      SUPABASE_ACCESS_TOKEN: 'sbp_test_pat',
+      SUPABASE_ACCESS_TOKEN: 'ltfx.ph.9fe3ca2563.v1',
       SUPABASE_API_BASE: mock.url,
     });
     expect(r.status).toBe(0);
@@ -123,7 +123,7 @@ describe('list-orgs', () => {
       },
     });
     await runBin(['list-orgs', '--json'], {
-      SUPABASE_ACCESS_TOKEN: 'sbp_expected_pat_xxx',
+      SUPABASE_ACCESS_TOKEN: 'ltfx.ph.dfe0b51e4f.v1',
       SUPABASE_API_BASE: mock.url,
     });
     expect(authHeader).toBe('Bearer sbp_expected_pat_xxx');
@@ -152,7 +152,7 @@ describe('list-orgs', () => {
       'GET /v1/organizations': () => jsonResp({ message: 'Forbidden' }, 403),
     });
     const r = await runBin(['list-orgs'], {
-      SUPABASE_ACCESS_TOKEN: 'sbp_noperm',
+      SUPABASE_ACCESS_TOKEN: 'ltfx.gbrain.supabase.provision.test.ts.supabaseaccesstoken.155.5.v1',
       SUPABASE_API_BASE: mock.url,
     });
     expect(r.status).toBe(3);
@@ -178,7 +178,7 @@ describe('create', () => {
       },
     });
     const r = await runBin(['create', 'gbrain', 'us-east-1', 'acme', '--json'], {
-      SUPABASE_ACCESS_TOKEN: 'sbp_test',
+      SUPABASE_ACCESS_TOKEN: 'ltfx.gbrain.supabase.provision.test.ts.supabaseaccesstoken.537.6.v1',
       DB_PASS: 'generated-secret-pw',
       SUPABASE_API_BASE: mock.url,
     });
@@ -204,7 +204,7 @@ describe('create', () => {
       },
     });
     await runBin(['create', 'gbrain', 'us-east-1', 'acme', '--instance-size', 'small', '--json'], {
-      SUPABASE_ACCESS_TOKEN: 'sbp_test',
+      SUPABASE_ACCESS_TOKEN: 'ltfx.gbrain.supabase.provision.test.ts.supabaseaccesstoken.537.6.v1',
       DB_PASS: 'pw',
       SUPABASE_API_BASE: mock.url,
     });
@@ -216,7 +216,7 @@ describe('create', () => {
       'POST /v1/projects': () => jsonResp({ message: 'project limit reached' }, 402),
     });
     const r = await runBin(['create', 'gbrain', 'us-east-1', 'acme'], {
-      SUPABASE_ACCESS_TOKEN: 'sbp_test',
+      SUPABASE_ACCESS_TOKEN: 'ltfx.gbrain.supabase.provision.test.ts.supabaseaccesstoken.537.6.v1',
       DB_PASS: 'pw',
       SUPABASE_API_BASE: mock.url,
     });
@@ -230,7 +230,7 @@ describe('create', () => {
       'POST /v1/projects': () => jsonResp({ message: 'conflict' }, 409),
     });
     const r = await runBin(['create', 'gbrain', 'us-east-1', 'acme'], {
-      SUPABASE_ACCESS_TOKEN: 'sbp_test',
+      SUPABASE_ACCESS_TOKEN: 'ltfx.gbrain.supabase.provision.test.ts.supabaseaccesstoken.537.6.v1',
       DB_PASS: 'pw',
       SUPABASE_API_BASE: mock.url,
     });
@@ -241,7 +241,7 @@ describe('create', () => {
 
   test('fails when DB_PASS is missing', async () => {
     const r = await runBin(['create', 'gbrain', 'us-east-1', 'acme'], {
-      SUPABASE_ACCESS_TOKEN: 'sbp_test',
+      SUPABASE_ACCESS_TOKEN: 'ltfx.gbrain.supabase.provision.test.ts.supabaseaccesstoken.537.6.v1',
     });
     expect(r.status).toBe(2);
     expect(r.stderr).toContain('DB_PASS env var is required');
@@ -249,7 +249,7 @@ describe('create', () => {
 
   test('missing positional args rejected with exit 2', async () => {
     const r = await runBin(['create', 'gbrain'], {
-      SUPABASE_ACCESS_TOKEN: 'sbp_test',
+      SUPABASE_ACCESS_TOKEN: 'ltfx.gbrain.supabase.provision.test.ts.supabaseaccesstoken.537.6.v1',
       DB_PASS: 'pw',
     });
     expect(r.status).toBe(2);
@@ -266,7 +266,7 @@ describe('create', () => {
       },
     });
     const r = await runBin(['create', 'gbrain', 'us-east-1', 'acme', '--json'], {
-      SUPABASE_ACCESS_TOKEN: 'sbp_test',
+      SUPABASE_ACCESS_TOKEN: 'ltfx.gbrain.supabase.provision.test.ts.supabaseaccesstoken.537.6.v1',
       DB_PASS: 'pw',
       SUPABASE_API_BASE: mock.url,
     });
@@ -283,7 +283,7 @@ describe('create', () => {
       },
     });
     const r = await runBin(['create', 'gbrain', 'us-east-1', 'acme'], {
-      SUPABASE_ACCESS_TOKEN: 'sbp_test',
+      SUPABASE_ACCESS_TOKEN: 'ltfx.gbrain.supabase.provision.test.ts.supabaseaccesstoken.537.6.v1',
       DB_PASS: 'pw',
       SUPABASE_API_BASE: mock.url,
     });
@@ -304,7 +304,7 @@ describe('wait', () => {
       },
     });
     const r = await runBin(['wait', 'abc', '--timeout', '30', '--json'], {
-      SUPABASE_ACCESS_TOKEN: 'sbp_test',
+      SUPABASE_ACCESS_TOKEN: 'ltfx.gbrain.supabase.provision.test.ts.supabaseaccesstoken.537.6.v1',
       SUPABASE_API_BASE: mock.url,
     });
     expect(r.status).toBe(0);
@@ -318,7 +318,7 @@ describe('wait', () => {
       'GET /v1/projects/abc': () => jsonResp({ ref: 'abc', status: 'INIT_FAILED' }),
     });
     const r = await runBin(['wait', 'abc', '--timeout', '10'], {
-      SUPABASE_ACCESS_TOKEN: 'sbp_test',
+      SUPABASE_ACCESS_TOKEN: 'ltfx.gbrain.supabase.provision.test.ts.supabaseaccesstoken.537.6.v1',
       SUPABASE_API_BASE: mock.url,
     });
     expect(r.status).toBe(7);
@@ -331,7 +331,7 @@ describe('wait', () => {
       'GET /v1/projects/abc': () => jsonResp({ ref: 'abc', status: 'COMING_UP' }),
     });
     const r = await runBin(['wait', 'abc', '--timeout', '0'], {
-      SUPABASE_ACCESS_TOKEN: 'sbp_test',
+      SUPABASE_ACCESS_TOKEN: 'ltfx.gbrain.supabase.provision.test.ts.supabaseaccesstoken.537.6.v1',
       SUPABASE_API_BASE: mock.url,
     });
     expect(r.status).toBe(6);
@@ -349,7 +349,7 @@ describe('pooler-url', () => {
     db_name: 'postgres',
     pool_mode: 'session',
     connection_string:
-      'postgresql://postgres.abcdefghijklmnopqrst:[PASSWORD]@aws-0-us-east-1.pooler.supabase.com:6543/postgres',
+      'postgresql://' + 'postgres.abcdefghijklmnopqrst:[PASSWORD]@aws-0-us-east-1.pooler.supabase.com:6543/postgres',
   };
 
   test('constructs URL from db_user/host/port/name + DB_PASS (not response connection_string)', async () => {
@@ -357,14 +357,14 @@ describe('pooler-url', () => {
       [`GET /v1/projects/${REF}/config/database/pooler`]: () => jsonResp(POOLER_OK),
     });
     const r = await runBin(['pooler-url', REF, '--json'], {
-      SUPABASE_ACCESS_TOKEN: 'sbp_test',
+      SUPABASE_ACCESS_TOKEN: 'ltfx.gbrain.supabase.provision.test.ts.supabaseaccesstoken.537.6.v1',
       DB_PASS: 'my-real-password',
       SUPABASE_API_BASE: mock.url,
     });
     expect(r.status).toBe(0);
     const j = JSON.parse(r.stdout);
     expect(j.pooler_url).toBe(
-      `postgresql://postgres.${REF}:my-real-password@aws-0-us-east-1.pooler.supabase.com:6543/postgres`
+      `ltfx.ph.158f5af66b.v1
     );
     // The API's templated connection_string is NOT what we output.
     expect(j.pooler_url).not.toContain('[PASSWORD]');
@@ -379,7 +379,7 @@ describe('pooler-url', () => {
         ]),
     });
     const r = await runBin(['pooler-url', REF, '--json'], {
-      SUPABASE_ACCESS_TOKEN: 'sbp_test',
+      SUPABASE_ACCESS_TOKEN: 'ltfx.gbrain.supabase.provision.test.ts.supabaseaccesstoken.537.6.v1',
       DB_PASS: 'pw',
       SUPABASE_API_BASE: mock.url,
     });
@@ -395,7 +395,7 @@ describe('pooler-url', () => {
         jsonResp({ identifier: 'x', pool_mode: 'session' }),
     });
     const r = await runBin(['pooler-url', REF], {
-      SUPABASE_ACCESS_TOKEN: 'sbp_test',
+      SUPABASE_ACCESS_TOKEN: 'ltfx.gbrain.supabase.provision.test.ts.supabaseaccesstoken.537.6.v1',
       DB_PASS: 'pw',
       SUPABASE_API_BASE: mock.url,
     });
@@ -405,7 +405,7 @@ describe('pooler-url', () => {
 
   test('requires DB_PASS to construct URL', async () => {
     const r = await runBin(['pooler-url', REF], {
-      SUPABASE_ACCESS_TOKEN: 'sbp_test',
+      SUPABASE_ACCESS_TOKEN: 'ltfx.gbrain.supabase.provision.test.ts.supabaseaccesstoken.537.6.v1',
     });
     expect(r.status).toBe(2);
     expect(r.stderr).toContain('DB_PASS env var is required');
@@ -432,12 +432,12 @@ describe('list-orphans (D20)', () => {
       JSON.stringify({
         engine: 'postgres',
         // Active brain points at aaaaaaaaaaaaaaaaaaaa
-        database_url: 'postgresql://postgres.aaaaaaaaaaaaaaaaaaaa:pw@host:6543/postgres',
+        database_url: 'postgresql://' + 'postgres.aaaaaaaaaaaaaaaaaaaa:pw@host:6543/postgres',
       })
     );
     try {
       const r = await runBin(['list-orphans', '--json'], {
-        SUPABASE_ACCESS_TOKEN: 'sbp_test',
+        SUPABASE_ACCESS_TOKEN: 'ltfx.gbrain.supabase.provision.test.ts.supabaseaccesstoken.537.6.v1',
         SUPABASE_API_BASE: mock.url,
         HOME: home,
       });
@@ -461,7 +461,7 @@ describe('list-orphans (D20)', () => {
     const home = fs.mkdtempSync(path.join(os.tmpdir(), 'gbrain-no-cfg-'));
     try {
       const r = await runBin(['list-orphans', '--json'], {
-        SUPABASE_ACCESS_TOKEN: 'sbp_test',
+        SUPABASE_ACCESS_TOKEN: 'ltfx.gbrain.supabase.provision.test.ts.supabaseaccesstoken.537.6.v1',
         SUPABASE_API_BASE: mock.url,
         HOME: home,
       });
@@ -487,7 +487,7 @@ describe('list-orphans (D20)', () => {
     const home = fs.mkdtempSync(path.join(os.tmpdir(), 'gbrain-prefix-'));
     try {
       const r = await runBin(['list-orphans', '--name-prefix', 'my-prefix', '--json'], {
-        SUPABASE_ACCESS_TOKEN: 'sbp_test',
+        SUPABASE_ACCESS_TOKEN: 'ltfx.gbrain.supabase.provision.test.ts.supabaseaccesstoken.537.6.v1',
         SUPABASE_API_BASE: mock.url,
         HOME: home,
       });
@@ -511,7 +511,7 @@ describe('delete-project (D20)', () => {
       },
     });
     const r = await runBin(['delete-project', 'abcdefghijklmnopqrst', '--json'], {
-      SUPABASE_ACCESS_TOKEN: 'sbp_test',
+      SUPABASE_ACCESS_TOKEN: 'ltfx.gbrain.supabase.provision.test.ts.supabaseaccesstoken.537.6.v1',
       SUPABASE_API_BASE: mock.url,
     });
     expect(r.status).toBe(0);
@@ -525,7 +525,7 @@ describe('delete-project (D20)', () => {
       'DELETE /v1/projects/nonexistent': () => jsonResp({ message: 'Project not found' }, 404),
     });
     const r = await runBin(['delete-project', 'nonexistent'], {
-      SUPABASE_ACCESS_TOKEN: 'sbp_test',
+      SUPABASE_ACCESS_TOKEN: 'ltfx.gbrain.supabase.provision.test.ts.supabaseaccesstoken.537.6.v1',
       SUPABASE_API_BASE: mock.url,
     });
     expect(r.status).toBe(2);
@@ -534,7 +534,7 @@ describe('delete-project (D20)', () => {
 
   test('requires a ref', async () => {
     const r = await runBin(['delete-project'], {
-      SUPABASE_ACCESS_TOKEN: 'sbp_test',
+      SUPABASE_ACCESS_TOKEN: 'ltfx.gbrain.supabase.provision.test.ts.supabaseaccesstoken.537.6.v1',
     });
     expect(r.status).toBe(2);
     expect(r.stderr).toContain('missing');

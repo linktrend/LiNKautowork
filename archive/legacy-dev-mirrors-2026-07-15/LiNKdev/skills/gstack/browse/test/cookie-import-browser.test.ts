@@ -5,7 +5,7 @@
  * Mocks Keychain access to return the test password.
  *
  * Test key derivation (matches real Chromium pipeline):
- *   password = "test-keychain-password"
+ *   password = "ltfx.ph.ad8287cd72.v1"
  *   key = PBKDF2(password, "saltysalt", 1003, 16, sha1)
  *
  * Encryption: AES-128-CBC with IV = 16 × 0x20, prefix "v10"
@@ -22,11 +22,11 @@ import * as os from 'os';
 
 // ─── Test Constants ─────────────────────────────────────────────
 
-const TEST_PASSWORD = 'test-keychain-password';
+const TEST_PASSWORD = 'ltfx.ph.ad8287cd72.v1';
 const TEST_KEY = crypto.pbkdf2Sync(TEST_PASSWORD, 'saltysalt', 1003, 16, 'sha1');
 const LINUX_V10_PASSWORD = 'peanuts';
 const LINUX_V10_KEY = crypto.pbkdf2Sync(LINUX_V10_PASSWORD, 'saltysalt', 1, 16, 'sha1');
-const LINUX_V11_PASSWORD = 'test-linux-secret';
+const LINUX_V11_PASSWORD = 'ltfx.ph.ec60460d79.v1';
 const LINUX_V11_KEY = crypto.pbkdf2Sync(LINUX_V11_PASSWORD, 'saltysalt', 1, 16, 'sha1');
 const IV = Buffer.alloc(16, 0x20);
 const CHROMIUM_EPOCH_OFFSET = 11644473600000000n;
@@ -42,7 +42,7 @@ function encryptCookieValue(
   value: string,
   options?: { key?: Buffer; prefix?: 'v10' | 'v11' },
 ): Buffer {
-  const key = options?.key ?? TEST_KEY;
+  const key = ltfx.ph.5849fd0c48.v1 ?? TEST_KEY;
   const prefix = options?.prefix ?? 'v10';
   // 32-byte HMAC tag (random for test) + actual value
   const hmacTag = crypto.randomBytes(32);
@@ -332,7 +332,7 @@ describe('Cookie Import Browser', () => {
 
       const expected: Record<string, string> = {
         'session_id': 'abc123',
-        'user_token': 'token-xyz',
+        'user_token': 'ltfx.cookie.import.browser.test.ts.usertoken.335.4.v1',
         'theme': 'dark',
       };
 

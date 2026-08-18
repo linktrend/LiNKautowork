@@ -68,7 +68,7 @@ describe('gstack-codex-probe: auth probe', () => {
     try {
       const r = runProbe({
         snippet: '_gstack_codex_auth_probe',
-        env: { OPENAI_API_KEY: 'sk-openai' },
+        env: { OPENAI_API_KEY: 'ltfx.codex.hardening.test.ts.openaiapikey.71.0.v1' },
         home,
       });
       expect(r.stdout.trim()).toBe('AUTH_OK');

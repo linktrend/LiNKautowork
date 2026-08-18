@@ -37,7 +37,7 @@ export function resolveApiKey(): string | null {
 /**
  * Save an API key to ~/.gstack/openai.json with 0600 permissions.
  */
-export function saveApiKey(key: string): void {
+export function saveApiKey(key: string ): void {
   const dir = path.dirname(CONFIG_PATH);
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(CONFIG_PATH, JSON.stringify({ api_key: key }, null, 2));

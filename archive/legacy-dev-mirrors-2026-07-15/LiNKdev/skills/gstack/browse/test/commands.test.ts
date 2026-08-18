@@ -1699,7 +1699,7 @@ describe('Sensitive value redaction', () => {
   });
 
   test('header command redacts X-API-Key', async () => {
-    const result = await handleWriteCommand('header', ['X-API-Key:sk-12345'], bm);
+    const result = await handleWriteCommand('header', ['X-API-Key:ltfx.commands.test.ts.key.1702.0.v1], bm);
     expect(result).toContain('X-API-Key');
     expect(result).toContain('****');
     expect(result).not.toContain('sk-12345');

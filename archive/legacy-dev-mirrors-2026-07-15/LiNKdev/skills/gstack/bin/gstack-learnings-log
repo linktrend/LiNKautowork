@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # gstack-learnings-log — append a learning to the project learnings file
-# Usage: gstack-learnings-log '{"skill":"review","type":"pitfall","key":"n-plus-one","insight":"...","confidence":8,"source":"observed"}'
+# Usage: gstack-learnings-log '{"skill":"review","type":"pitfall","key":"ltfx.gstack.learnings.log.key.3.0.v1","insight":"...","confidence":8,"source":"observed"}'
 # Valid types: pattern, pitfall, preference, architecture, tool, operational, investigation
 #
 # Append-only storage. Duplicates (same key+type) are resolved at read time

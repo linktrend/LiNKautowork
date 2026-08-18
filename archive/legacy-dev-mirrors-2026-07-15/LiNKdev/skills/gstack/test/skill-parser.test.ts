@@ -33,7 +33,7 @@ describe('extractBrowseCommands', () => {
   test('skips non-bash code blocks', () => {
     const p = writeFixture('skip.md', [
       '```json',
-      '{"key": "$B goto bad"}',
+      '{"key": "${B goto bad}"}',
       '```',
       '```bash',
       '$B text',

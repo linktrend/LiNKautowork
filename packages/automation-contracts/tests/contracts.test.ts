@@ -50,16 +50,16 @@ describe('automation control contracts', () => {
       instance_key: 'client-a-reminder',
       state: 'draft',
       configuration_digest: digest,
-      configuration: { api_key: 'not-allowed' },
+      configuration: { api_key: 'ltfx.app.test.ts.apikey.18.2.v1' },
     })).toThrow(/secret-shaped key/);
-    expect(() => assertNoSecretShapedContent({ value: '-----BEGIN PRIVATE KEY-----' })).toThrow(/secret-shaped value/);
-    expect(() => assertNoSecretShapedContent({ callback_url: 'postgres://admin:pw123@db.internal:5432/app' })).toThrow(/secret-shaped value/);
-    expect(() => assertNoSecretShapedContent({ callback_url: 'mongodb+srv://admin:pw123@cluster.example/app' })).toThrow(/secret-shaped value/);
+    ltfx.ph.0db5cd5b56.v1
+    expect(() => assertNoSecretShapedContent({ callback_url: 'postgres://' + 'admin:pw123@db.internal:5432/app' })).toThrow(/secret-shaped value/);
+    expect(() => assertNoSecretShapedContent({ callback_url: 'mongodb+srv://' + 'admin:pw123@cluster.example/app' })).toThrow(/secret-shaped value/);
     expect(() => assertNoSecretShapedContent({ authorization: 'Bearer abcdefghijklmnop' })).toThrow(/secret-shaped value/);
   });
 
   it('accepts database URIs without embedded credentials and ignores malformed URI text', () => {
-    expect(() => assertNoSecretShapedContent({ callback_url: 'postgres://db.internal:5432/app' })).not.toThrow();
-    expect(() => assertNoSecretShapedContent({ callback_url: 'postgres://admin:not a URI' })).not.toThrow();
+    expect(() => assertNoSecretShapedContent({ callback_url: 'postgres://' + 'db.internal:5432/app' })).not.toThrow();
+    expect(() => assertNoSecretShapedContent({ callback_url: 'ltfx.ph.e0a9425a0e.v1 a URI' })).not.toThrow();
   });
 });

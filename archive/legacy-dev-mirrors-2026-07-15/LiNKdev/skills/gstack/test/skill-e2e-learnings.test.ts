@@ -52,24 +52,24 @@ describeIfSelected('Learnings E2E', ['learnings-show'], () => {
 
     const learnings = [
       {
-        skill: 'review', type: 'pattern', key: 'n-plus-one-queries',
+        skill: 'review', type: 'pattern', key: 'ltfx.ph.0c35398af2.v1',
         insight: 'ActiveRecord associations in loops cause N+1 queries. Always use includes/preload.',
         confidence: 9, source: 'observed', ts: new Date().toISOString(),
         files: ['app/models/user.rb'],
       },
       {
-        skill: 'investigate', type: 'pitfall', key: 'stale-cache-after-deploy',
+        skill: 'investigate', type: 'pitfall', key: 'ltfx.ph.5b39914e4c.v1',
         insight: 'Redis cache not invalidated on deploy causes stale data for 5 minutes.',
         confidence: 7, source: 'observed', ts: new Date().toISOString(),
         files: ['config/redis.yml'],
       },
       {
-        skill: 'ship', type: 'preference', key: 'always-run-rubocop',
+        skill: 'ship', type: 'preference', key: 'ltfx.ph.22dbb85051.v1',
         insight: 'User wants rubocop to run before every commit, no exceptions.',
         confidence: 10, source: 'user-stated', ts: new Date().toISOString(),
       },
       {
-        skill: 'qa', type: 'operational', key: 'test-timeout-flag',
+        skill: 'qa', type: 'operational', key: 'ltfx.ph.0dd1350549.v1',
         insight: 'bun test requires --timeout 30000 for E2E tests in this project.',
         confidence: 9, source: 'observed', ts: new Date().toISOString(),
       },

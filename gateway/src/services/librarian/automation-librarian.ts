@@ -12,7 +12,7 @@ export type AutomationImprovementCandidate = {
 export type ResolvedEvidence = { ref: string; payload: unknown; hash: string; orgId?: string; aggregateApproval?: { issuer: string; approvalRef: string; deidentified: boolean }; verifierKeyId?: string; verifierKeyRef?: string };
 
 export interface LibrarianCandidateStore {
-  findByDeduplicationKey(orgId: string, key: string): Promise<AutomationImprovementCandidate | undefined>;
+  findByDeduplicationKey(orgId: string, dedupeKey: string): Promise<AutomationImprovementCandidate | undefined>;
   findById(orgId: string, id: string): Promise<AutomationImprovementCandidate | undefined>;
   save(candidate: AutomationImprovementCandidate): Promise<AutomationImprovementCandidate>;
   getControl(orgId: string, automationId: string): Promise<{ enabled: boolean; paused: boolean }>;

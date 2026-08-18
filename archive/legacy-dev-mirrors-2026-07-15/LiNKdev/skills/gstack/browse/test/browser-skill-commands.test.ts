@@ -167,12 +167,12 @@ describe('buildSpawnEnv', () => {
   beforeEach(() => {
     origEnv = { ...process.env };
     // Plant some secrets for scrub-tests
-    process.env.GITHUB_TOKEN = 'gh-secret';
-    process.env.OPENAI_API_KEY = 'oai-secret';
+    process.env.GITHUB_TOKEN = 'ltfx.browser.skill.commands.test.ts.githubtoken.281.3.v1';
+    process.env.OPENAI_API_KEY = 'ltfx.browser.skill.commands.test.ts.openaiapikey.171.2.v1';
     process.env.MY_PASSWORD = 'sup3r';
     process.env.NPM_TOKEN = 'npmtok';
     process.env.AWS_SECRET_ACCESS_KEY = 'aws-secret';
-    process.env.GSTACK_TOKEN = 'root-token';
+    process.env.GSTACK_TOKEN = 'ltfx.browse.client.test.ts.token.105.2.v1';
     process.env.HOME = '/Users/test';
     process.env.PATH = '/test/bin:/usr/bin';
     process.env.LANG = 'en_US.UTF-8';
@@ -228,8 +228,8 @@ describe('buildSpawnEnv', () => {
 
   it('GSTACK_PORT/GSTACK_SKILL_TOKEN can never be overridden by parent env', () => {
     process.env.GSTACK_PORT = '99999'; // attacker-set
-    process.env.GSTACK_SKILL_TOKEN = 'attacker-tok';
-    const env = buildSpawnEnv({ trusted: true, port: 1234, skillToken: 'real-tok' });
+    process.env.GSTACK_SKILL_TOKEN = 'ltfx.ph.b61c18d347.v1';
+    const env = buildSpawnEnv({ trusted: true, port: 1234, skillToken: 'ltfx.browser.skill.commands.test.ts.skilltoken.232.5.v1' });
     expect(env.GSTACK_PORT).toBe('1234');
     expect(env.GSTACK_SKILL_TOKEN).toBe('real-tok');
   });
@@ -278,7 +278,7 @@ describe.skipIf(SKIP_SPAWN)('spawnSkill: lifecycle', () => {
       }));`,
     );
     const origEnv = { ...process.env };
-    process.env.GITHUB_TOKEN = 'gh-secret';
+    process.env.GITHUB_TOKEN = 'ltfx.browser.skill.commands.test.ts.githubtoken.281.3.v1';
     process.env.GSTACK_TOKEN = 'root';
     try {
       const skill = readBrowserSkill('env-probe', tiers)!;

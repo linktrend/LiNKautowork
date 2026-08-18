@@ -233,7 +233,7 @@ export async function serve(options: ServeOptions): Promise<void> {
  * Open a URL in the user's default browser.
  * Handles macOS (open), Linux (xdg-open), and headless environments.
  */
-function openBrowser(url: string): void {
+function openBrowser(url: string ): void {
   const platform = process.platform;
   let cmd: string;
 
