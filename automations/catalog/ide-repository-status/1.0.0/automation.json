@@ -38,40 +38,17 @@
   "secrets": [],
   "execution_policy": {
     "criticality": "low",
-    "side_effects": [
-      "none"
-    ],
-    "approval": {
-      "mode": "none",
-      "evidence_required": true
-    },
-    "retry": {
-      "max_attempts": 0,
-      "backoff": "none",
-      "max_delay_seconds": 0
-    },
-    "idempotency": {
-      "required": false,
-      "key_location": "not_applicable"
-    },
+    "side_effects": ["none"],
+    "approval": { "mode": "none", "evidence_required": true },
+    "retry": { "max_attempts": 0, "backoff": "none", "max_delay_seconds": 0 },
+    "idempotency": { "required": false, "key_location": "not_applicable" },
     "kill_switch_scope": "instance"
   },
   "telemetry": {
     "classification": "internal",
-    "redaction_rules": [
-      "Do not retain input values beyond the redacted test fixture."
-    ],
+    "redaction_rules": ["Do not retain input values beyond the redacted test fixture."],
     "retention_days": 30,
-    "required_fields": [
-      "org_id",
-      "instance_id",
-      "release_id",
-      "execution_id",
-      "status",
-      "latency_ms",
-      "retry_count",
-      "failure_class"
-    ]
+    "required_fields": ["org_id", "instance_id", "release_id", "execution_id", "status", "latency_ms", "retry_count", "failure_class"]
   },
   "evaluation": {
     "suite_ref": "evals/suite.json",
