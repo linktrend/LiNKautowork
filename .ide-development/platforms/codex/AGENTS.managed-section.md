@@ -14,12 +14,12 @@ Installed managed core: **`.ide-development/`** (versioned package; treat as rea
 
 ### Lifecycle
 
-- Work on `issue/<n>-<slug>` (or rare `dev/*`) → push checkpoint → Packager opens draft PR → Integrator merges to `development`.
-- Promote: `development` → `staging` → `main` via temporary `promote/*` PRs only.
+- Work on `issue/<n>-<slug>` (or rare `dev/*`) → push checkpoint → Phase Packager/Coordinator (`scripts/gitops/packager_coordinator.py`) opens the draft Phase PR → delivery controller (`scripts/gitops/delivery_controller.py`) merges to `development` through GitHub protection. Retained `packager_discover.py` is not the Phase Packager. Review Ready does not itself trigger a merge.
+- Promote: `development` → `staging` → `main` via temporary `promote/*` PRs only (controller-owned; main waits for explicit founder approval).
 
 ### Agent rules
 
-- Ship = checkpoint (commit + push). Packager opens PRs. Max 3 ordinary repairs.
+- Ship = checkpoint (commit + push). The Phase Packager/Coordinator opens Phase PRs. Max 3 ordinary repairs.
 - Completion: `python3 scripts/gitops/completion_gate.py` (`checkpoint` | `review-ready` | `blocked` | `status` | `write-evidence`).
 - Finished work: run appropriate tests/checks, auto-repair ordinary failures (≤3 cycles), `write-evidence`, then `review-ready`.
 - `review-ready` validates evidence then publishes **Linktrend Review Ready** only via the privileged normal-token path (or fails closed with normal-token dispatch diagnostics). Do not call `mark-review-ready.sh` as a pre-gate publisher.

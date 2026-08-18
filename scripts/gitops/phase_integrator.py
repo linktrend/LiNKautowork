@@ -588,19 +588,43 @@ class PhaseIntegrator:
 def main(argv: list[str] | None = None) -> int:
     import argparse
 
+    try:
+        from scripts.gitops.receipt_seal import phase_merge_eligibility_with_receipt
+    except ModuleNotFoundError:  # pragma: no cover - direct script execution
+        from receipt_seal import phase_merge_eligibility_with_receipt
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("command", choices=["eligible", "bugbot-allowed"])
     parser.add_argument("record")
     parser.add_argument("head")
+    parser.add_argument(
+        "--receipt",
+        default="",
+        help="path to retained FullSuiteReceipt JSON required for eligible (AC-U06)",
+    )
+    parser.add_argument("--expected-tree", default="", help="live candidate tree SHA for receipt binding")
     args = parser.parse_args(argv)
     record = json.loads(Path(args.record).read_text(encoding="utf-8"))
     if args.command == "eligible":
-        result = phase_merge_eligibility(record, live_head_sha=args.head)
+        receipt_payload = None
+        if args.receipt:
+            receipt_payload = json.loads(Path(args.receipt).read_text(encoding="utf-8"))
+        elif isinstance(record.get("retainedReceipt"), Mapping):
+            receipt_payload = record.get("retainedReceipt")
+        result = phase_merge_eligibility_with_receipt(
+            record,
+            live_head_sha=args.head,
+            retained_receipt=receipt_payload if isinstance(receipt_payload, Mapping) else None,
+            expected_tree=args.expected_tree or None,
+        )
     else:
         ok, detail = phase_bugbot_request_allowed(record, live_head_sha=args.head)
         result = {"eligible": ok, "detail": detail}
     print(json.dumps(result.to_dict() if hasattr(result, "to_dict") else result, sort_keys=True))
-    return 0 if (result.eligible if isinstance(result, MergeEligibility) else result["eligible"]) else 1
+    # Compare via attribute/mapping — avoid isinstance(MergeEligibility) which fails when
+    # this file is executed as __main__ while receipt_seal imported phase_integrator as a module.
+    eligible = result["eligible"] if isinstance(result, Mapping) else bool(result.eligible)
+    return 0 if eligible else 1
 
 
 if __name__ == "__main__":

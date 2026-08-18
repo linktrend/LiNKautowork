@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/finding-ledger.schema.json",
+  "title": "Independent-review finding ledger",
+  "description": "Durable finding identity across heads. Different nonempty fingerprints never fuzzy-merge; only wording variants of the same identity may match. First-seen findings on repair-touched paths are introduced_by_repair; first-seen findings on untouched paths are newly_discovered_in_unchanged_scope. Findings are never silently discarded, renumbered, or erased by a split or wording change.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "sessionId",
+    "rootSessionId",
+    "entries",
+    "component"
+  ],
+  "$defs": {
+    "sha40": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "severity": { "type": "string", "enum": ["P1", "P2", "P3"] },
+    "classification": {
+      "type": "string",
+      "enum": [
+        "unresolved",
+        "repeated",
+        "corrected",
+        "newly_discovered_in_unchanged_scope",
+        "introduced_by_repair"
+      ]
+    }
+  },
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "kind": { "type": "string", "const": "finding-ledger" },
+    "sessionId": { "type": "string", "minLength": 1 },
+    "rootSessionId": { "type": "string", "minLength": 1 },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "fingerprint",
+          "severity",
+          "paths",
+          "statement",
+          "evidence",
+          "acceptanceTest",
+          "classification",
+          "firstSeenHead",
+          "lastSeenHead",
+          "repairAttempts"
+        ],
+        "properties": {
+          "fingerprint": { "type": "string", "minLength": 1 },
+          "severity": { "$ref": "#/$defs/severity" },
+          "paths": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "statement": { "type": "string", "minLength": 1 },
+          "evidence": { "type": "string", "minLength": 1 },
+          "acceptanceTest": { "type": "string", "minLength": 1 },
+          "classification": { "$ref": "#/$defs/classification" },
+          "firstSeenHead": { "$ref": "#/$defs/sha40" },
+          "lastSeenHead": { "$ref": "#/$defs/sha40" },
+          "repairAttempts": { "type": "integer", "minimum": 0 },
+          "requiresRedesign": { "type": "boolean" },
+          "requiresNewAuthority": { "type": "boolean" },
+          "history": {
+            "type": "array",
+            "items": { "type": "object" }
+          }
+        }
+      }
+    },
+    "component": { "type": "string", "const": "independent_review_convergence" }
+  }
+}

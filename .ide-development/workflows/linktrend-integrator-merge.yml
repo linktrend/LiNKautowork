@@ -11,28 +11,32 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "phase for a normal sealed candidate; reconciled for a non-promotable no-change canary"
+        description: "phase for sealed candidate; recovery for unchanged development receipt; reconciled for non-promotable canary"
         required: false
         default: "phase"
         type: string
       expected_commit:
-        description: "Exact reconciled commit for non-promotable canary mode"
+        description: "Exact commit for recovery or reconciled canary mode"
         required: false
         type: string
       expected_tree:
-        description: "Exact reconciled Git tree for non-promotable canary mode"
+        description: "Exact Git tree for recovery or reconciled canary mode"
         required: false
         type: string
       package_version:
-        description: "Installed managed package version for non-promotable canary mode"
+        description: "Installed managed package version for recovery/reconciled modes"
         required: false
         type: string
       installed_state_digest:
-        description: "Canonical installed-state identity digest for non-promotable canary mode"
+        description: "Canonical installed-state identity digest for recovery/reconciled modes"
+        required: false
+        type: string
+      dependency_digest:
+        description: "Bound dependencyDigest for recovery mode (sha256:...)"
         required: false
         type: string
       security_workflow_name:
-        description: "Exact successful security workflow name for reconciled canary mode"
+        description: "Exact successful security workflow name for recovery/reconciled modes"
         required: false
         type: string
       pr_number:
@@ -54,7 +58,7 @@ jobs:
   full:
     name: Linktrend Full Suite
     if: >-
-      (github.event_name == 'workflow_dispatch' && inputs.mode != 'reconciled' || github.event.label.name == 'linktrend-full-suite') &&
+      ((github.event_name == 'workflow_dispatch' && inputs.mode != 'reconciled' && inputs.mode != 'recovery') || github.event.label.name == 'linktrend-full-suite') &&
       (github.event_name == 'workflow_dispatch' || (startsWith(github.event.pull_request.head.ref, 'phase/') && github.event.pull_request.head.repo.full_name == github.repository))
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 60
@@ -77,6 +81,38 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Resolve canonical candidate head (never merge-ref identity)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          pr="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}")"
+          tree="$(git rev-parse 'HEAD^{tree}')"
+          payload="$(jq -n \
+            --argjson pr "${pr}" \
+            --arg tree "${tree}" \
+            --argjson run_id "${GITHUB_RUN_ID}" \
+            --argjson attempt "${GITHUB_RUN_ATTEMPT}" \
+            '{
+              event_name: "pull_request",
+              pull_request: $pr,
+              candidate_tree: $tree,
+              base_tree: null,
+              merge_ref_sha: ($pr.merge_commit_sha // null),
+              workflow_run_id: $run_id,
+              workflow_run_attempt: $attempt
+            }')"
+          printf '%s\n' "${payload}" > "${RUNNER_TEMP}/canonical-head-payload.json"
+          python3 scripts/gitops/receipt_seal.py resolve-head --payload "${RUNNER_TEMP}/canonical-head-payload.json" \
+            | tee "${RUNNER_TEMP}/canonical-head.json"
+          canonical="$(jq -r .candidateHead "${RUNNER_TEMP}/canonical-head.json")"
+          test "${canonical}" = "$(git rev-parse HEAD)" || {
+            echo "full_suite_canonical_head_mismatch: resolved=${canonical} checkout=$(git rev-parse HEAD)"; exit 1;
+          }
+          test "${canonical}" != "$(jq -r '.merge_commit_sha // empty' <<<"${pr}")" || {
+            echo "full_suite_merge_ref_identity_forbidden"; exit 1;
+          }
 
       - name: Validate live head and exact seal
         env:
@@ -200,6 +236,7 @@ jobs:
               "workflow=Linktrend Full Suite\n"
               f"repository={os.environ['GITHUB_REPOSITORY']}\n"
               f"head={identity.head_commit}\n"
+              f"gitTree={identity.git_tree}\n"
               "runner=ubuntu-24.04-arm\n",
               encoding="utf-8",
           )
@@ -298,3 +335,145 @@ jobs:
             --repo . --expected-commit "${EXPECTED_COMMIT}" --expected-tree "${EXPECTED_TREE}" \
             --package-version "${PACKAGE_VERSION}" --installed-state-digest "${INSTALLED_STATE_DIGEST}" \
             --checks-json "${checks_json}" --staging-tree "${staging_tree}" --main-tree "${main_tree}"
+
+  recovery-receipt:
+    name: Linktrend Recovery Receipt
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'recovery'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    env:
+      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+      EXPECTED_TREE: ${{ inputs.expected_tree }}
+      PACKAGE_VERSION: ${{ inputs.package_version }}
+      INSTALLED_STATE_DIGEST: ${{ inputs.installed_state_digest }}
+      DEPENDENCY_DIGEST: ${{ inputs.dependency_digest }}
+      SECURITY_WORKFLOW_NAME: ${{ inputs.security_workflow_name }}
+    steps:
+      - name: Capture start time
+        id: clock
+        run: echo "started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout exact development ref (no PR, no empty commit)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: development
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate recovery dispatch preconditions
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          [[ "${EXPECTED_COMMIT}" =~ ^[0-9a-f]{40}$ ]] || { echo recovery_commit_invalid; exit 1; }
+          [[ "${EXPECTED_TREE}" =~ ^[0-9a-f]{40}$ ]] || { echo recovery_tree_invalid; exit 1; }
+          [[ "${DEPENDENCY_DIGEST}" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo recovery_dependency_digest_invalid; exit 1; }
+          test -n "${SECURITY_WORKFLOW_NAME}" || { echo recovery_security_workflow_missing; exit 1; }
+          python3 scripts/gitops/require_exact_ci_success.py --repository "${GITHUB_REPOSITORY}" --head "${EXPECTED_COMMIT}" --config-key fastWorkflowName
+          python3 scripts/gitops/require_exact_ci_success.py --repository "${GITHUB_REPOSITORY}" --head "${EXPECTED_COMMIT}" --config-key ciWorkflowName
+          python3 scripts/gitops/require_exact_ci_success.py --repository "${GITHUB_REPOSITORY}" --head "${EXPECTED_COMMIT}" --workflow-name "${SECURITY_WORKFLOW_NAME}"
+          checks_json="${RUNNER_TEMP}/linktrend-recovery-checks.json"
+          printf '{"fast":"success","ci":"success","security":"success"}\n' > "${checks_json}"
+          python3 scripts/gitops/receipt_seal.py validate-recovery \
+            --repo . \
+            --repository "${GITHUB_REPOSITORY}" \
+            --expected-ref development \
+            --expected-commit "${EXPECTED_COMMIT}" \
+            --expected-tree "${EXPECTED_TREE}" \
+            --package-version "${PACKAGE_VERSION}" \
+            --checks-json "${checks_json}" \
+            --dependency-digest "${DEPENDENCY_DIGEST}" \
+            --installed-state-digest "${INSTALLED_STATE_DIGEST}" \
+            | tee "${RUNNER_TEMP}/recovery-plan.json"
+          test "$(jq -r .opensPullRequest "${RUNNER_TEMP}/recovery-plan.json")" = "false"
+          test "$(jq -r .createsCommit "${RUNNER_TEMP}/recovery-plan.json")" = "false"
+          printf 'SOURCE_BRANCH=development\nEXPECTED_HEAD=%s\n' "${EXPECTED_COMMIT}" >> "$GITHUB_ENV"
+
+      - name: Run full profile for recovery receipt
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git diff --check
+          python3 scripts/gitops/run_delivery_profile.py full
+          python3 scripts/gitops/require_exact_ci_success.py \
+            --repository "${GITHUB_REPOSITORY}" --head "${EXPECTED_HEAD}"
+
+      - name: Write exact recovery full-suite receipt
+        if: success()
+        env:
+          STARTED: ${{ steps.clock.outputs.started_at }}
+        run: |
+          set -euo pipefail
+          COMPLETED="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          python3 - "${STARTED}" "${COMPLETED}" <<'PY'
+          import hashlib
+          import json
+          import os
+          import sys
+          from pathlib import Path
+
+          sys.path.insert(0, str(Path.cwd()))
+          from scripts.gitops.coordinator.receipts import (
+              canonical_digest,
+              compute_candidate_identity,
+              write_receipt,
+          )
+          from scripts.gitops.run_delivery_profile import load_profile
+
+          started, completed = sys.argv[1:]
+          config_path, commands = load_profile(Path.cwd(), "full")
+          checks = json.loads(Path(".github/linktrend-gitops-consumer.json").read_text())
+          commands = commands + [
+              ["require-successful-workflow", checks["fastWorkflowName"]],
+              ["require-successful-workflow", checks["ciWorkflowName"]],
+          ]
+          identity = compute_candidate_identity(
+              Path("."),
+              [],
+              "full",
+              profile_files=[str(config_path.relative_to(Path.cwd()))],
+              source_branch=os.environ["SOURCE_BRANCH"],
+          )
+          summary = Path("full-suite-summary.txt")
+          summary.write_text(
+              "workflow=Linktrend Recovery Receipt\n"
+              f"repository={os.environ['GITHUB_REPOSITORY']}\n"
+              f"head={identity.head_commit}\n"
+              f"gitTree={identity.git_tree}\n"
+              "runner=ubuntu-24.04-arm\n"
+              "mode=recovery\n",
+              encoding="utf-8",
+          )
+          evidence = {
+              "full-suite-summary.txt": "sha256:" + hashlib.sha256(summary.read_bytes()).hexdigest()
+          }
+          result = {
+              "schemaVersion": 2,
+              "candidateIdentity": identity.to_dict(),
+              "workflowRunId": int(os.environ["GITHUB_RUN_ID"]),
+              "workflowRunAttempt": int(os.environ["GITHUB_RUN_ATTEMPT"]),
+              "runnerLabel": "ubuntu-24.04-arm",
+              "startedAt": started,
+              "completedAt": completed,
+              "conclusion": "success",
+              "commandDigest": canonical_digest({"profile": "full", "commands": commands}),
+              "evidenceDigests": evidence,
+          }
+          write_receipt(result, Path("full-suite-receipt.json"))
+          print(json.dumps(result, sort_keys=True))
+          PY
+
+      - name: Upload retained recovery receipt
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: linktrend-full-suite-receipt-recovery-${{ github.run_id }}
+          path: |
+            full-suite-receipt.json
+            full-suite-summary.txt
+          retention-days: 30

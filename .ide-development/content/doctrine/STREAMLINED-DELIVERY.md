@@ -12,16 +12,25 @@ pull requests, branch protection, and promotion records.
 
 1. An implementer checkpoints on `issue/<number>-<slug>` (or an approved
    `dev/*` branch). A checkpoint push does not start managed CI.
-2. Accepted issue SHAs are integrated serially on `phase/*`. A Phase PR is the
-   single review unit for the combined phase result.
+2. The Phase Packager/Coordinator (`scripts/gitops/packager_coordinator.py`)
+   integrates accepted issue SHAs serially on `phase/*` and opens or updates
+   one draft Phase PR. Retained `packager_discover.py` is not that component.
 3. The Phase PR runs `Linktrend Fast Checks` on hosted `ubuntu-24.04-arm`.
+   Fast executes fixture-aware secret scanning of every tracked regular blob.
    Fast runs are scoped to repository, workflow, and PR number; a newer run
    cancels only an older run for that same PR.
-4. Terra seals one exact candidate head. Only that final sealed candidate may
-   run `Linktrend Full Suite` and the existing Bugbot final-candidate check.
+4. Terra seals one exact candidate head. Required independent review must be
+   clean on that exact head before `Linktrend Full Suite`, unless repository
+   policy explicitly requires Full first. A later repair invalidates prior
+   review and Full evidence. Only the final sealed candidate may run Full and
+   the existing Bugbot final-candidate check. Full always binds the canonical
+   PR head (never merge-ref identity). Ordinary Phase merge requires the exact
+   retained Full receipt for that head/tree.
 5. A successful full-suite receipt is reusable only when repository, Git tree,
    dependency, profile, and workflow identities match exactly. A changed tree
-   or dependency invalidates reuse.
+   or dependency invalidates reuse. Exceptional recovery may mint the same
+   receipt schema for an unchanged integrated `development` tree without an
+   empty commit or fake PR (`mode=recovery`).
 6. Development, staging, and main promotion use the receipt and source-policy
    gates. Promotion does not rerun the full suite when the exact receipt is
    valid. Main still requires Carlos's explicit approval.

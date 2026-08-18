@@ -216,12 +216,12 @@ gate = named_gate_evidence(
     checks=[
         {"name": "Verify IDE Development", "state": "SUCCESS", "completedAt": "t1"},
         {
-            "name": "Enforce allowed PR source branches",
+            "name": "Linktrend Branch Source Policy",
             "state": "SUCCESS",
             "completedAt": "t2",
         },
     ],
-    required=["Verify IDE Development", "Enforce allowed PR source branches"],
+    required=["Verify IDE Development", "Linktrend Branch Source Policy"],
     expected_sha=head,
 )
 assert gate["status"] == "success"

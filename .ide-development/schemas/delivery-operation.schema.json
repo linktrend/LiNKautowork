@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/delivery-operation.schema.json",
+  "title": "Delivery controller operation record",
+  "description": "Exact-identity record written by the agent-agnostic delivery controller (Update 2 / WP-U02).",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "component",
+    "status",
+    "stage"
+  ],
+  "$defs": {
+    "sha40": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+  },
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "kind": { "type": "string", "const": "delivery-operation" },
+    "component": { "type": "string", "const": "delivery_controller" },
+    "status": {
+      "type": "string",
+      "enum": [
+        "merged",
+        "waiting_founder_approval",
+        "stopped",
+        "cleaned",
+        "rejected",
+        "identical"
+      ]
+    },
+    "stage": {
+      "type": "string",
+      "enum": ["development", "staging", "main", "cleanup", "probe"]
+    },
+    "pr": { "type": "integer", "minimum": 1 },
+    "actor": { "type": "string" },
+    "role": { "type": "string" },
+    "testedHead": { "$ref": "#/$defs/sha40" },
+    "mergeCommitSha": { "$ref": "#/$defs/sha40" },
+    "gitTree": { "$ref": "#/$defs/sha40" },
+    "directPush": { "type": "boolean", "const": false },
+    "fullSuiteRerun": { "type": "boolean" },
+    "receiptReused": { "type": "boolean" },
+    "founderApproval": { "type": "boolean" },
+    "founderApprovalInferred": { "type": "boolean", "const": false },
+    "promoteBranch": {
+      "type": "string",
+      "pattern": "^promote/(staging|main)/[0-9a-f]{12}$"
+    },
+    "deleted": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "preserved": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "eligibility": { "type": "object" },
+    "agentFingerprint": { "type": "string" }
+  }
+}

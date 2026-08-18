@@ -169,7 +169,7 @@ def evaluate_development_gates(payload: Mapping[str, Any], expected_head_sha: st
     aliases = {
         "seal": ("seal", "sealed", "phaseReady"),
         "fast": ("fast", "fastGate", "fast-gate"),
-        "bugbot": ("bugbot", "cursorBugbot", "Cursor Bugbot"),
+        "bugbot": ("bugbot", "cursorBugbot", "Cursor Bugbot", "reviewGate", "Linktrend Review Gate"),
         "full": ("full", "fullSuite", "full-gate"),
     }
     for name, keys in aliases.items():

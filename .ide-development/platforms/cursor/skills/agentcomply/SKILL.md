@@ -34,7 +34,7 @@ Do **not** require the IDE Development checkout path.
 - Never dump work onto `development` / `staging` / `main`.
 - Never silently adopt an unrelated open PR branch.
 - **Never ask for issue id/slug** — helper creates/reuses them from the task description.
-- Never open a PR yourself; Review Packager opens PRs.
+- Never open a PR yourself. The Phase Packager/Coordinator (`scripts/gitops/packager_coordinator.py`) opens the Phase PR; retained `packager_discover.py` is not that component.
 - Never commit secrets.
 
 ## Inputs (ask only if needed)

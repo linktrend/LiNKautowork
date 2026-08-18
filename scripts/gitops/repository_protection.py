@@ -36,8 +36,14 @@ RULESET_NAMES = {
 DEFAULT_FAST_GATE = ["Verify IDE Development"]
 DEFAULT_STAGING_GATE = ["Verify IDE Development"]
 DEFAULT_RELEASE_GATE = ["Verify IDE Development"]
-SOURCE_POLICY_CHECK = "Enforce allowed PR source branches"
-BUGBOT_CHECK = "Cursor Bugbot"
+# Active workflow job display name (WP-U05). Obsolete step title must not remain required.
+SOURCE_POLICY_CHECK = "Linktrend Branch Source Policy"
+REVIEW_GATE_CHECK = "Linktrend Review Gate"
+BUGBOT_CHECK = REVIEW_GATE_CHECK  # migrated managed context (WP-U01)
+OBSOLETE_MANAGED_CHECKS = {
+    "Enforce allowed PR source branches": SOURCE_POLICY_CHECK,
+    "Cursor Bugbot": REVIEW_GATE_CHECK,
+}
 
 GOVERNED = ("development", "staging", "main")
 
@@ -85,7 +91,13 @@ def managed_baseline(
 
 def union_checks(managed: list[str], existing: list[str], extra: list[str] | None = None) -> dict[str, list[str]]:
     managed_u = _unique_ordered(managed)
-    extras = _unique_ordered([*(extra or []), *[c for c in existing if c not in managed_u]])
+    # Obsolete managed contexts are replaced by their active names, never preserved.
+    mapped_existing = _unique_ordered(
+        [OBSOLETE_MANAGED_CHECKS.get(c, c) for c in existing]
+    )
+    extras = _unique_ordered(
+        [*(extra or []), *[c for c in mapped_existing if c not in managed_u]]
+    )
     preserved = [c for c in extras if c not in managed_u]
     preserved_sorted = sorted(preserved)
     desired = _unique_ordered([*managed_u, *preserved_sorted])
@@ -959,42 +971,85 @@ def verify_plan(plan: dict[str, Any]) -> tuple[bool, list[str]]:
     return len(problems) == 0, problems
 
 
+def _apply_branch_mutation(
+    client: GitHubClient,
+    *,
+    mechanism: str,
+    branch: str,
+    detail: dict[str, Any],
+) -> dict[str, Any]:
+    action = detail.get("action")
+    if action == "noop":
+        return {}
+    if action == "unavailable":
+        raise ProtectionError(f"cannot apply unavailable branch plan: {branch}", EXIT_UNAVAILABLE)
+    after_body = (detail.get("after") or {}).get("body")
+    if not after_body:
+        raise ProtectionError(f"missing after body for {branch}")
+
+    if mechanism == "rulesets":
+        before = detail.get("before") or {}
+        if action == "create" or before.get("id") is None:
+            created = client.create_ruleset(after_body)
+            return {"op": "create_ruleset", "branch": branch, "id": created.get("id")}
+        rid = int(before["id"])
+        client.update_ruleset(rid, after_body)
+        return {"op": "update_ruleset", "branch": branch, "id": rid}
+    if mechanism == "branch_protection":
+        client.put_branch_protection(branch, after_body)
+        return {"op": "put_branch_protection", "branch": branch}
+    raise ProtectionError(f"unknown mechanism: {mechanism}")
+
+
 def apply_plan(client: GitHubClient, plan: dict[str, Any]) -> list[dict[str, Any]]:
+    """Apply all governed branch mutations atomically (WP-U05).
+
+    On failure after one or more branch updates, restore archived before-state
+    for already-applied branches and refuse a false success.
+    """
+
     mechanism = (plan.get("capability") or {}).get("mechanism")
     if mechanism == "unavailable":
         raise ProtectionError("cannot apply: protection mechanism unavailable", EXIT_UNAVAILABLE)
 
     mutations: list[dict[str, Any]] = []
+    applied_branches: list[str] = []
+    branch_details = plan.get("branches") or {}
+    # Stable three-branch order — never claim success with only development updated.
+    ordered = [b for b in GOVERNED if b in branch_details] + [
+        b for b in branch_details if b not in GOVERNED
+    ]
 
-    for branch, detail in (plan.get("branches") or {}).items():
-        action = detail.get("action")
-        if action == "noop":
-            continue
-        if action == "unavailable":
-            raise ProtectionError(f"cannot apply unavailable branch plan: {branch}", EXIT_UNAVAILABLE)
-        after_body = (detail.get("after") or {}).get("body")
-        if not after_body:
-            raise ProtectionError(f"missing after body for {branch}")
+    try:
+        for branch in ordered:
+            detail = branch_details[branch]
+            mutation = _apply_branch_mutation(
+                client, mechanism=mechanism, branch=branch, detail=detail
+            )
+            if mutation:
+                mutations.append(mutation)
+                applied_branches.append(branch)
 
-        if mechanism == "rulesets":
-            before = detail.get("before") or {}
-            if action == "create" or before.get("id") is None:
-                created = client.create_ruleset(after_body)
-                mutations.append({"op": "create_ruleset", "branch": branch, "id": created.get("id")})
-            else:
-                rid = int(before["id"])
-                client.update_ruleset(rid, after_body)
-                mutations.append({"op": "update_ruleset", "branch": branch, "id": rid})
-        elif mechanism == "branch_protection":
-            client.put_branch_protection(branch, after_body)
-            mutations.append({"op": "put_branch_protection", "branch": branch})
-        else:
-            raise ProtectionError(f"unknown mechanism: {mechanism}")
-
-    allow = (plan.get("repoSettings") or {}).get("allow_auto_merge") or {}
-    if allow.get("action") == "update" and allow.get("after") is True:
-        client.patch_repo({"allow_auto_merge": True})
-        mutations.append({"op": "patch_repo", "fields": {"allow_auto_merge": True}})
+        allow = (plan.get("repoSettings") or {}).get("allow_auto_merge") or {}
+        if allow.get("action") == "update" and allow.get("after") is True:
+            client.patch_repo({"allow_auto_merge": True})
+            mutations.append({"op": "patch_repo", "fields": {"allow_auto_merge": True}})
+    except Exception as exc:
+        snapshot = (plan.get("rollback") or {}).get("snapshot") or {}
+        if applied_branches and snapshot:
+            try:
+                rollback_from_snapshot(client, snapshot)
+            except Exception as rollback_exc:  # noqa: BLE001
+                raise ProtectionError(
+                    f"migration_incomplete after {applied_branches}: {exc}; "
+                    f"rollback also failed: {rollback_exc}",
+                    EXIT_FAILED,
+                ) from rollback_exc
+            raise ProtectionError(
+                f"migration_incomplete after {applied_branches}: {exc}; rolled back",
+                EXIT_FAILED,
+            ) from exc
+        raise
 
     return mutations
 

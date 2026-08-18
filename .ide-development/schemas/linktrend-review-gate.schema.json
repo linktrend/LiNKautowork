@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/linktrend-review-gate.schema.json",
+  "title": "Linktrend Review Gate classification",
+  "description": "Exact-head managed review-gate classification for Update 1 / WP-U01. Raw Cursor Bugbot is an observed provider signal only.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "context",
+    "outcome",
+    "gateSuccess",
+    "bugbotPassedClaim",
+    "alertFounder",
+    "detail",
+    "headSha",
+    "gitTree",
+    "repository",
+    "infrastructureAttempts"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "kind": { "type": "string", "const": "linktrend-review-gate" },
+    "context": { "type": "string", "const": "Linktrend Review Gate" },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "review-passed",
+        "review-findings",
+        "review-failed",
+        "advisory-unavailable",
+        "review-unknown"
+      ]
+    },
+    "gateSuccess": { "type": "boolean" },
+    "bugbotPassedClaim": { "type": "boolean" },
+    "alertFounder": { "type": "boolean" },
+    "detail": { "type": "string", "minLength": 1 },
+    "headSha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "gitTree": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "repository": { "type": "string", "pattern": "^[^/\\s]+/[^/\\s]+$" },
+    "pullRequest": { "type": ["integer", "null"], "minimum": 1 },
+    "infrastructureAttempts": { "type": "integer", "minimum": 0, "maximum": 2 },
+    "providerClass": {
+      "type": ["string", "null"],
+      "enum": ["quota", "spending_limit", "service_outage", "provider_error", null]
+    },
+    "sanitizedAlert": { "type": ["string", "null"] }
+  }
+}

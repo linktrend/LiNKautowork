@@ -34,7 +34,7 @@ Do **not** require the IDE Development checkout path.
 
 - One short-lived `issue/<id>-slug` per governed work package — not forever `dev/*`.
 - **Never ask the human for issue id or slug.** The helper creates/reuses them.
-- Never open a PR yourself; Review Packager opens PRs.
+- Never open a PR yourself. The Phase Packager/Coordinator (`scripts/gitops/packager_coordinator.py`) opens the Phase PR; retained `packager_discover.py` is not that component.
 - Never merge your own PR; never promote to staging/main.
 - Ship = checkpoint (commit + push) only.
 

@@ -8,8 +8,8 @@ alwaysApply: true
 - Integration branch: **`development`**
 - Studio default work branch: **`issue/<id>-<slug>`** (one short-lived branch per governed issue)
 - Cloud agents may use `cursor/*`; `dev/*` is rare ad-hoc only
-- Merge into `development` only via Review Packager → Integrator (implementers never open/merge that PR)
-- Promotion `development` → `staging` → `main` is automation/Principal only
+- Merge into `development` only via Phase Packager/Coordinator → delivery controller (implementers never open/merge that PR)
+- Promotion `development` → `staging` → `main` is delivery-controller/Principal only
 
 ## Session entrypoints
 

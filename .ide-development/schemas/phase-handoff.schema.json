@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/phase-handoff.schema.json",
+  "title": "Exact Phase handoff consumed by the delivery controller",
+  "description": "Update 2 consumes this identity without rediscovery. A later Phase head invalidates it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "repository",
+    "phaseBranch",
+    "phasePr",
+    "headCommit",
+    "gitTree",
+    "baseCommit",
+    "candidateRevision",
+    "acceptedCommits",
+    "evidenceLocations",
+    "valid",
+    "component"
+  ],
+  "$defs": {
+    "sha40": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "acceptedCommit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["branch", "sha", "order"],
+      "properties": {
+        "branch": { "type": "string", "pattern": "^issue/[1-9][0-9]{0,8}-[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "sha": { "$ref": "#/$defs/sha40" },
+        "order": { "type": "integer", "minimum": 1 }
+      }
+    }
+  },
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "kind": { "type": "string", "const": "phase-handoff" },
+    "repository": { "type": "string", "pattern": "^[^/\\s]+/[^/\\s]+$" },
+    "phaseBranch": { "type": "string", "pattern": "^phase/[A-Za-z0-9._-]+$" },
+    "phasePr": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["number", "url", "isDraft"],
+      "properties": {
+        "number": { "type": "integer", "minimum": 1 },
+        "url": { "type": "string", "minLength": 1 },
+        "isDraft": { "type": "boolean", "const": true }
+      }
+    },
+    "headCommit": { "$ref": "#/$defs/sha40" },
+    "gitTree": { "$ref": "#/$defs/sha40" },
+    "baseCommit": { "$ref": "#/$defs/sha40" },
+    "candidateRevision": { "type": "string", "minLength": 1 },
+    "acceptedCommits": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/acceptedCommit" }
+    },
+    "evidenceLocations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["phaseRecord", "handoff"],
+      "properties": {
+        "phaseRecord": { "type": "string", "const": ".linktrend/phase-delivery-record.json" },
+        "handoff": { "type": "string", "const": ".linktrend/phase-handoff.json" }
+      }
+    },
+    "valid": { "type": "boolean" },
+    "component": { "type": "string", "const": "phase_packager_coordinator" },
+    "invalidReason": { "type": "string" }
+  }
+}

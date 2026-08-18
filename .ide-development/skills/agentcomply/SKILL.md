@@ -37,7 +37,7 @@ Migrate an **already-open agent** onto a proper short-lived `issue/*` branch for
 - Multi-root: if which repo is being touched is ambiguous, ask (normal ambiguity ask). Detect or ask once if role is Orchestrator vs Implementer when unclear.
 - `cursor/*` for cloud; `dev/*` rare ad-hoc only.
 - Never dump work onto `development` / `staging` / `main`.
-- Never merge own PR; never self-review; Bugbot reviews; Integrator merges.
+- Never merge own PR; never self-review; Bugbot reviews; the delivery controller merges through GitHub protection.
 
 ## Use When
 
@@ -57,7 +57,7 @@ Migrate an **already-open agent** onto a proper short-lived `issue/*` branch for
 1. **Task description** if missing (helper creates/reuses the GitHub issue — do not ask Carlos for id/slug)
 2. Or allow **`issue/cleanup-<topic>`** only when a cleanup branch is explicitly appropriate and no issue should be filed
 3. **Target repo** if multi-root / ambiguous
-4. Whether to **commit/push a checkpoint** and/or **mark review-ready** (ask if commit message or readiness is ambiguous). Do not open a PR yourself — Review Packager does that. Prefer `scripts/gitops/completion_gate.py`.
+4. Whether to **commit/push a checkpoint** and/or **mark review-ready** (ask if commit message or readiness is ambiguous). Do not open a PR yourself — the Phase Packager/Coordinator (`scripts/gitops/packager_coordinator.py`) does that. Retained `packager_discover.py` is not that component. Prefer `scripts/gitops/completion_gate.py`.
 
 ## Workflow
 
@@ -129,7 +129,7 @@ Prefer this order:
 
 1. Get onto the correct `issue/*` (or cleanup) branch.
 2. **Push** the branch (`git push -u origin HEAD`) as a **checkpoint** once there is at least one commit to share, or Carlos asks to publish the branch tip.
-3. If the issue is **finished**: mark review-ready (`scripts/mark-review-ready.sh` / completion gate). Do **not** open a PR — the **Review Packager** opens the PR.
+3. If the issue is **finished**: mark review-ready (`scripts/mark-review-ready.sh` / completion gate). Do **not** open a PR — the **Phase Packager/Coordinator** (`scripts/gitops/packager_coordinator.py`) opens the Phase PR. Retained `packager_discover.py` is not that component.
 4. If work is unfinished: leave the checkpoint on the issue branch; state clearly that no PR was opened and review-ready was not claimed.
 
 Never open a PR yourself. Never open a PR from `development`/`staging`/`main`. Never merge.

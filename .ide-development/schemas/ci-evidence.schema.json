@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/ci-evidence.schema.json",
+  "title": "Repository CI preflight, cache, artifact, and affected-surface evidence",
+  "description": "Evidence envelopes consumed by the managed aggregate gate. Cache evidence is advisory and never substitutes for mandatory component execution. Properties enumerate every owned producer field; additionalProperties stays false.",
+  "oneOf": [
+    { "$ref": "#/$defs/preflightEvidence" },
+    { "$ref": "#/$defs/cacheEvidence" },
+    { "$ref": "#/$defs/artifactEvidence" },
+    { "$ref": "#/$defs/affectedSurfaceEvidence" }
+  ],
+  "$defs": {
+    "sha40": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "preflightEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "kind",
+        "componentId",
+        "ok",
+        "bindings",
+        "classification"
+      ],
+      "properties": {
+        "schemaVersion": { "type": "integer", "const": 1 },
+        "kind": { "type": "string", "const": "ci-preflight-evidence" },
+        "componentId": { "type": "string", "minLength": 1 },
+        "ok": { "type": "boolean" },
+        "classification": {
+          "type": "string",
+          "enum": ["infrastructure", "application"]
+        },
+        "detail": { "type": "string" },
+        "bindings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["variable", "resolvedPath", "matched"],
+            "properties": {
+              "variable": { "type": "string", "minLength": 1 },
+              "resolvedPath": { "type": "string" },
+              "matched": { "type": "boolean" },
+              "detail": { "type": "string" },
+              "bootstrap": { "type": "boolean" }
+            }
+          }
+        },
+        "bootstrap": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["ran"],
+          "properties": {
+            "ran": { "type": "boolean" },
+            "command": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 }
+            },
+            "ok": { "type": "boolean" },
+            "detail": { "type": "string" },
+            "verifiedVersion": { "type": "string" },
+            "evidencePath": { "type": "string" },
+            "resolvedPath": { "type": "string" }
+          }
+        },
+        "retainedComponentIds": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "resumedOnlyInvalidated": { "type": "boolean" }
+      }
+    },
+    "cacheEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "kind",
+        "cacheKey",
+        "keyFixedBeforeMutation",
+        "advisory"
+      ],
+      "properties": {
+        "schemaVersion": { "type": "integer", "const": 1 },
+        "kind": { "type": "string", "const": "ci-cache-evidence" },
+        "candidateHead": { "$ref": "#/$defs/sha40" },
+        "cacheKey": { "type": "string", "minLength": 1 },
+        "keyFixedBeforeMutation": { "type": "boolean", "const": true },
+        "advisory": { "type": "boolean", "const": true },
+        "restoreStatus": {
+          "type": "string",
+          "enum": ["hit", "miss", "error", "skipped"]
+        },
+        "saveStatus": {
+          "type": "string",
+          "enum": ["saved", "skipped", "error"]
+        },
+        "warnings": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "rejectedBroadHash": { "type": "boolean" },
+        "correctnessUnchanged": { "type": "boolean" },
+        "ok": { "type": "boolean" }
+      }
+    },
+    "artifactEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "kind",
+        "artifactId",
+        "path",
+        "candidateHead",
+        "ok"
+      ],
+      "properties": {
+        "schemaVersion": { "type": "integer", "const": 1 },
+        "kind": { "type": "string", "const": "ci-artifact-evidence" },
+        "artifactId": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "candidateHead": { "$ref": "#/$defs/sha40" },
+        "ok": { "type": "boolean" },
+        "detail": { "type": "string" },
+        "stdoutOnlyRejected": { "type": "boolean" }
+      }
+    },
+    "affectedSurfaceEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "kind",
+        "classifierDigest",
+        "inputsDigest",
+        "selectedProfile",
+        "changedPaths"
+      ],
+      "properties": {
+        "schemaVersion": { "type": "integer", "const": 1 },
+        "kind": { "type": "string", "const": "ci-affected-surface-evidence" },
+        "classifierDigest": { "$ref": "#/$defs/digest" },
+        "inputsDigest": { "$ref": "#/$defs/digest" },
+        "selectedProfile": {
+          "type": "string",
+          "enum": ["fast", "full", "trusted-governance", "promotion", "none"]
+        },
+        "changedPaths": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "reverseDependencies": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "requiredProbes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["production-resolution", "docker-import-build", "typecheck"]
+          }
+        },
+        "typecheckInsufficient": { "type": "boolean" },
+        "exportHit": { "type": "boolean" }
+      }
+    }
+  }
+}

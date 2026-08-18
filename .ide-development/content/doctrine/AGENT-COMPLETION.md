@@ -12,7 +12,20 @@ Define how Implementers finish a work session without opening PRs or falsely cla
 
 `review-ready` is the authoritative, fail-closed completion path. The gate validates the exact pushed branch state and machine-readable evidence before **`Linktrend Review Ready`** may be published.
 
-**Production publisher:** only the normal GitHub automation token, from the trusted normal-token publisher workflow on the protected default branch (`linktrend-review-ready-publisher.yml`). Local `completion_gate.py review-ready` remains the implementer entrypoint: it validates first, then either publishes when a privileged normal automation token is already present in a trusted context, or **fails closed** and explains the normal-token dispatch route when local privileged credentials are unavailable. It must never substitute Carlos's user token, ambient `GITHUB_TOKEN`, or any other human credential to publish the status.
+**Production publisher:** GitHub's built-in workflow token from the trusted
+`linktrend-review-ready-publisher.yml` workflow on the protected default branch,
+with `LINKTREND_TRUSTED_REVIEW_READY_PUBLISHER=1` on the publish/withdraw step
+only. The documented privileged input is `AUTOMATION_TOKEN`; `GH_TOKEN` and
+`GITHUB_TOKEN` are aliases with deterministic precedence
+(`AUTOMATION_TOKEN` then `GH_TOKEN` then `GITHUB_TOKEN`). The privileged
+normal-token route accepts `AUTOMATION_TOKEN` and forwards it onto those aliases
+without logging the value. Local `completion_gate.py review-ready` remains the
+implementer entrypoint: it validates first, then either publishes when a
+privileged token is already present in that trusted context, or **fails closed**
+and explains the normal-token dispatch route when local privileged credentials
+are unavailable. It must never substitute Carlos's user token, ambient
+`GITHUB_TOKEN` without the trusted flag, or any other human credential to
+publish the status.
 
 Bare `--tests-ok`, `COMPLETION_TESTS_OK=1`, and arbitrary text in `COMPLETION_EVIDENCE` are not sufficient production proof.
 
@@ -48,7 +61,7 @@ Order is part of the contract:
    - **normal-token publication requires** verified `issue/<number>-<slug>` (digits + lowercase slug) **or** a configured Phase tip matching `phaseBranchPrefix` + lowercase slug (default `phase/<slug>`). Ordinary allowlist prefixes (`feature/`, `dev/`, `cursor/`, …) may still exist for work/Pull, but `review-ready` on the production GitHub backend fails closed with an actionable migration path — it must never advertise a doomed `gh workflow run … -f branch=feature/…` command. Phase eligibility does not weaken issue-branch slug safeguards.
    - `HEAD == origin/<branch>` after fetch.
 2. Require machine-readable evidence JSON tied to that exact `HEAD` SHA.
-3. Only after those checks pass, publish **`Linktrend Review Ready`** through the privileged normal-token path (`scripts/gitops/readiness_status.py` only with `AUTOMATION_TOKEN`, or via the normal-token publisher workflow). Never publish with a user PAT / restricted Carlos identity / ordinary `GITHUB_TOKEN` fallback.
+3. Only after those checks pass, publish **`Linktrend Review Ready`** through the privileged normal-token path (`scripts/gitops/readiness_status.py` with `AUTOMATION_TOKEN` in a trusted publisher context, or via the trusted publisher workflow which forwards `github.token` as `AUTOMATION_TOKEN`). `GH_TOKEN` / `GITHUB_TOKEN` are aliases; `AUTOMATION_TOKEN` precedes them and must not be silently discarded. Never publish with a user PAT / restricted Carlos identity / ordinary `GITHUB_TOKEN` fallback outside that trusted context.
 
 The successful status is an output of completion, not an input prerequisite.
 
@@ -93,7 +106,7 @@ Allowed `classification` values:
 
 ## Hard rules
 
-- Implementers **never** open or update PRs. Review Packager opens PRs.
+- Implementers **never** open or update PRs. The Phase Packager/Coordinator (`scripts/gitops/packager_coordinator.py`) opens the Phase PR. Retained `packager_discover.py` is not that component.
 - Ship waves = checkpoint only (no Bugbot, no review-ready unless truly finished).
 - Incomplete review-ready claims must fail closed (exit `78`), not soft-succeed.
 - Agents call `python3 scripts/gitops/completion_gate.py review-ready` directly, or call `write-evidence` first and then `review-ready`.
@@ -106,7 +119,7 @@ Allowed `classification` values:
 When an issue appears complete:
 
 1. Run the appropriate tests/checks for the touched surface.
-2. Repair ordinary failures automatically, with at most **3** bounded repair cycles.
+2. Repair ordinary failures automatically, with at most **3** bounded repair cycles. This implementer bound is not the independent-review convergence policy. Pre-land independent review uses progress-based continuation in `scripts/gitops/independent_review_convergence.py`: no arbitrary terminal cycle cap, unattended pause after three review-repair cycles, and recorded founder `continue until clean` authority for additional progressing cycles.
 3. Write machine-readable evidence with `completion_gate.py write-evidence` or an equivalent schema-versioned JSON file under `.linktrend/`.
 4. Call `python3 scripts/gitops/completion_gate.py review-ready` only after validation succeeds.
 5. If the gate fails closed for missing privileged publish credentials, follow the normal-token route diagnostics (dispatch the publisher for this repo/branch/SHA). Do not invent a local status publish with a user token.

@@ -32,8 +32,8 @@ EXIT_REFUSED = 5
 
 AUTOMATION_TOKEN_SECRET = "LINKTREND_AUTOMATION_TOKEN"
 BUGBOT_USER_TOKEN_SECRET = "LINKTREND_BUGBOT_USER_TOKEN"
-BUGBOT_CHECK_NAME = "Cursor Bugbot"
-SOURCE_POLICY_CHECK = "Enforce allowed PR source branches"
+BUGBOT_CHECK_NAME = "Linktrend Review Gate"
+SOURCE_POLICY_CHECK = "Linktrend Branch Source Policy"
 STATUS_CONTEXT = "Linktrend Review Ready"
 
 RULESET_NAMES = {
@@ -869,7 +869,7 @@ def evaluate(client: ReadOnlyGitHubClient, *, source: str) -> list[dict[str, Any
                 "bugbot",
                 "Bugbot manualTriggerOnly=true (mention-only)",
                 detail=(
-                    "dry-run default / live GitHub path cannot read Cursor Bugbot "
+                    "dry-run default / live GitHub path cannot read Linktrend Review Gate "
                     "dashboard; supply fixture bugbot.manualTriggerOnly or confirm "
                     "manually per docs/contracts/BUGBOT-MENTION-ONLY.md"
                 ),

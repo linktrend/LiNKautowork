@@ -2,7 +2,8 @@
 """Validate workflow_dispatch inputs for normal-token Review Ready publisher.
 
 Pure, unit-testable input validation only. Does not mint tokens, publish
-statuses, read secrets, or execute untrusted branch code.
+statuses, read secrets, or execute untrusted branch code. Token resolution
+and AUTOMATION_TOKEN forwarding live in readiness_status.py.
 
 Trusted workflow: .github/workflows/linktrend-review-ready-publisher.yml
 """

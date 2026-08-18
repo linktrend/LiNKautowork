@@ -6,11 +6,21 @@ Success on exact SHA ⇒ branch tip is packager-eligible.
 Later commits are automatically unready (new SHA has no success status).
 Withdrawal posts a non-success status for the same context.
 
-Privileged publish (mark/withdraw) requires the normal automation token in
-AUTOMATION_TOKEN. Ordinary GH_TOKEN / GITHUB_TOKEN must never authorize status
-publication. Local implementers without automation credentials
-use the normal-token workflow dispatch route (see app_backed_review_ready_route;
-action=publish or action=withdraw).
+Privileged publish (mark/withdraw) requires a trusted publisher context
+(``LINKTREND_TRUSTED_REVIEW_READY_PUBLISHER=1``) plus a resolved token.
+
+Canonical token-resolution contract (documentation, diagnostics, resolver,
+and tests must agree):
+
+* Documented input: ``AUTOMATION_TOKEN``.
+* Aliases: ``GH_TOKEN``, ``GITHUB_TOKEN``.
+* Deterministic precedence: ``AUTOMATION_TOKEN`` then ``GH_TOKEN`` then
+  ``GITHUB_TOKEN``. A non-empty documented token is forwarded onto both
+  aliases so it cannot be silently discarded.
+* Ordinary alias values without the trusted flag never authorize status
+  publication. Local implementers without a trusted context use the
+  normal-token workflow dispatch route (see app_backed_review_ready_route;
+  action=publish or action=withdraw). Token values are never logged.
 """
 
 from __future__ import annotations
@@ -32,7 +42,10 @@ DEFAULT_BACKEND = "github"  # or "file" for tests (LINKTREND_STATUS_DIR)
 # Exact safe normal-token publication route (trusted workflow on default branch).
 REVIEW_READY_PUBLISHER_WORKFLOW = "linktrend-review-ready-publisher.yml"
 REVIEW_READY_PUBLISHER_WORKFLOW_NAME = "Linktrend Review Ready Publisher"
-APP_PUBLISH_TOKEN_ENVS = ("GH_TOKEN", "GITHUB_TOKEN")
+TRUSTED_PUBLISHER_FLAG = "LINKTREND_TRUSTED_REVIEW_READY_PUBLISHER"
+# Canonical first; aliases follow. Do not reorder without updating docs/tests.
+PUBLISH_TOKEN_ENVS = ("AUTOMATION_TOKEN", "GH_TOKEN", "GITHUB_TOKEN")
+APP_PUBLISH_TOKEN_ENVS = PUBLISH_TOKEN_ENVS
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
@@ -91,15 +104,65 @@ class ReadyStatus:
         return self.state == "success"
 
 
-def resolve_app_publish_token() -> str:
-    """Return the explicit job-scoped token for status publication."""
-    if os.environ.get("LINKTREND_TRUSTED_REVIEW_READY_PUBLISHER") != "1":
+def _nonempty_token(raw: str | None) -> str:
+    if raw is None:
         return ""
-    for key in APP_PUBLISH_TOKEN_ENVS:
-        raw = os.environ.get(key)
-        if raw is None:
-            continue
-        token = raw.strip()
+    return str(raw).strip()
+
+
+def _present_publish_tokens(env: dict[str, str] | None = None) -> dict[str, str]:
+    """Return non-empty token env names → values. Never log the values."""
+    source = os.environ if env is None else env
+    found: dict[str, str] = {}
+    for key in PUBLISH_TOKEN_ENVS:
+        token = _nonempty_token(source.get(key))
+        if token:
+            found[key] = token
+    return found
+
+
+def trusted_publisher_context(env: dict[str, str] | None = None) -> bool:
+    source = os.environ if env is None else env
+    return (source.get(TRUSTED_PUBLISHER_FLAG) or "").strip() == "1"
+
+
+def forward_automation_token(
+    env: dict[str, str] | None = None,
+) -> dict[str, str]:
+    """Forward documented AUTOMATION_TOKEN onto GH_TOKEN/GITHUB_TOKEN aliases.
+
+    Deterministic precedence: a non-empty AUTOMATION_TOKEN always wins and is
+    copied onto both aliases so gh CLI / HTTP helpers cannot silently discard
+    it in favor of an absent or human alias. When AUTOMATION_TOKEN is unset,
+    existing alias values are preserved (trusted workflow github.token path).
+    Never logs token values.
+    """
+    out = dict(os.environ if env is None else env)
+    auto = _nonempty_token(out.get("AUTOMATION_TOKEN"))
+    if auto:
+        out["AUTOMATION_TOKEN"] = auto
+        out["GH_TOKEN"] = auto
+        out["GITHUB_TOKEN"] = auto
+    return out
+
+
+def automation_token_present(env: dict[str, str] | None = None) -> bool:
+    """True when the documented privileged input is set. Does not return the value."""
+    source = os.environ if env is None else env
+    return bool(_nonempty_token(source.get("AUTOMATION_TOKEN")))
+
+
+def resolve_app_publish_token() -> str:
+    """Return the privileged token for status publication, or empty.
+
+    Requires ``LINKTREND_TRUSTED_REVIEW_READY_PUBLISHER=1``. Resolves
+    AUTOMATION_TOKEN then GH_TOKEN then GITHUB_TOKEN. Does not log values.
+    """
+    if not trusted_publisher_context():
+        return ""
+    forwarded = forward_automation_token()
+    for key in PUBLISH_TOKEN_ENVS:
+        token = _nonempty_token(forwarded.get(key))
         if token:
             return token
     return ""
@@ -179,8 +242,11 @@ def missing_app_publish_token_error(
     )
     prefix_msg = (
         "privileged_publish_requires_github_token: "
-        "AUTOMATION_TOKEN required; "
-        "no GH_TOKEN/GITHUB_TOKEN fallback for Linktrend Review Ready status writes. "
+        "AUTOMATION_TOKEN required in trusted publisher context "
+        f"({TRUSTED_PUBLISHER_FLAG}=1); "
+        "GH_TOKEN/GITHUB_TOKEN are aliases (AUTOMATION_TOKEN precedes); "
+        "no human-token fallback for Linktrend Review Ready status writes. "
+        "no GH_TOKEN/GITHUB_TOKEN fallback for untrusted local publish. "
     )
     if raw and not is_app_backed_publish_branch(raw, prefix):
         return (
@@ -195,12 +261,24 @@ def missing_app_publish_token_error(
         reason=reason,
         phase_prefix=prefix,
     )
-    return prefix_msg + f"Use normal-token route: {route}"
+    present = automation_token_present()
+    present_note = (
+        "Documented AUTOMATION_TOKEN is present and must be forwarded to gh "
+        "via forward_automation_token (never log the value). "
+        if present
+        else ""
+    )
+    return prefix_msg + present_note + f"Use normal-token route: {route}"
 
 
 def _read_status_token() -> str:
-    """Return the explicit job-scoped token used for status reads."""
-    return resolve_app_publish_token()
+    """Return a token for status reads (aliases allowed; no trusted flag)."""
+    forwarded = forward_automation_token()
+    for key in PUBLISH_TOKEN_ENVS:
+        token = _nonempty_token(forwarded.get(key))
+        if token:
+            return token
+    return ""
 
 
 def _gh_token() -> str:

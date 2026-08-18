@@ -36,7 +36,7 @@ Bootstrap a **new agent** onto a short-lived `issue/<id>-<slug>` branch for the 
 - Multi-root: if which repo is being touched is ambiguous, ask (normal ambiguity ask).
 - `cursor/*` for cloud/dashboard agents.
 - `dev/*` rare ad-hoc only.
-- Never merge own PR; never self-review; never touch `staging`/`main`. Bugbot reviews; Integrator merges.
+- Never merge own PR; never self-review; never touch `staging`/`main`. Bugbot reviews; the delivery controller merges through GitHub protection.
 - **Do not ask Carlos for issue id or slug.** Use `scripts/gitops/create_issue_branch.py` (creates or reuses the GitHub issue and branch).
 
 ## Use When
@@ -94,7 +94,7 @@ Remind hard stops in plain English:
 - Do **not** merge into `development`
 - Do **not** self-review (Bugbot reviews)
 - Do **not** promote to `staging` or `main`
-- Do **not** open a PR (Review Packager opens PRs)
+- Do **not** open a PR (the Phase Packager/Coordinator `scripts/gitops/packager_coordinator.py` opens the Phase PR; retained `packager_discover.py` is not that component)
 - Ship waves: **checkpoint only** = commit → push → stop (no PR, no Bugbot)
 - When finished: `scripts/gitops/completion_gate.py review-ready` after `mark-review-ready.sh`
 

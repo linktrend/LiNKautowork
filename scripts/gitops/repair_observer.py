@@ -34,7 +34,8 @@ USAGE_LIMIT_PATTERNS = (
 class ObserverConfig:
     ci_workflow_name: str = "CI"
     branch_policy_workflow_name: str = "Branch Source Policy"
-    bugbot_check_name: str = "Cursor Bugbot"
+    bugbot_check_name: str = "Cursor Bugbot"  # provider check_run name
+    review_gate_check_name: str = "Linktrend Review Gate"
 
     @property
     def workflow_names(self) -> set[str]:
@@ -75,14 +76,24 @@ def load_config(env: dict[str, str] | None = None) -> ObserverConfig:
         or "Branch Source Policy"
     )
     bugbot = (
-        source.get("LINKTREND_BUGBOT_CHECK_NAME")
-        or _config_value(raw, "LINKTREND_BUGBOT_CHECK_NAME", "bugbotCheckName", "bugbot_check_name")
+        source.get("LINKTREND_BUGBOT_PROVIDER_CHECK_NAME")
         or "Cursor Bugbot"
     )
+    review_gate = (
+        source.get("LINKTREND_REVIEW_GATE_CHECK_NAME")
+        or source.get("LINKTREND_BUGBOT_CHECK_NAME")
+        or _config_value(raw, "reviewGateCheckName", "bugbotCheckName", "review_gate_check_name")
+        or "Linktrend Review Gate"
+    )
+    if review_gate == "Cursor Bugbot":
+        raise RuntimeError(
+            "raw_bugbot_required: managed review gate must be 'Linktrend Review Gate'"
+        )
     return ObserverConfig(
         ci_workflow_name=ci,
         branch_policy_workflow_name=branch_policy,
         bugbot_check_name=bugbot,
+        review_gate_check_name=review_gate,
     )
 
 

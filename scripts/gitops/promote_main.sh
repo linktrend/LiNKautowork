@@ -16,7 +16,7 @@ source "${SCRIPT_DIR}/work-branch-allowlist.sh"
 
 MODE="${MODE:-package}"
 MAIN_PROMOTION_MODE="${MAIN_PROMOTION_MODE:-principal-approval}"
-RELEASE_GATE_CHECKS="${RELEASE_GATE_CHECKS:-Verify IDE Development,Enforce allowed PR source branches}"
+RELEASE_GATE_CHECKS="${RELEASE_GATE_CHECKS:-Verify IDE Development,Linktrend Branch Source Policy}"
 TIMEZONE_LABEL="${TIMEZONE_LABEL:-Asia/Taipei}"
 EXPECTED_STAGING_SHA="${EXPECTED_STAGING_SHA:-}"
 EXPECTED_PROMOTE_HEAD="${EXPECTED_PROMOTE_HEAD:-}"
@@ -47,10 +47,16 @@ repair_task_upsert() {
   ec=$?
   set -e
   if [ "$ec" -ne 0 ]; then
-    if [ -n "${GH_TOKEN:-${GITHUB_TOKEN:-}}" ]; then
+    _gh_present="${GH_TOKEN-}"
+    if [ -z "$_gh_present" ]; then
+      _gh_present="${GITHUB_TOKEN-}"
+    fi
+    if [ -n "$_gh_present" ]; then
       echo "FAIL: repair_task.py upsert failed with GitHub token present" >&2
+      unset _gh_present
       return "$ec"
     fi
+    unset _gh_present
     echo "WARN: repair_task.py upsert failed without GitHub token; continuing without repair task" >&2
   fi
   return 0

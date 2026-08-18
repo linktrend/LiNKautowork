@@ -77,6 +77,11 @@ CONTENT_DOCTRINE = (
     ("docs/contracts/MANAGED-CORE-V2.md", "content/doctrine/MANAGED-CORE-V2.md"),
     ("docs/contracts/REPOSITORY-PROTECTION.md", "content/doctrine/REPOSITORY-PROTECTION.md"),
     ("docs/contracts/STREAMLINED-DELIVERY.md", "content/doctrine/STREAMLINED-DELIVERY.md"),
+    ("docs/contracts/SECRET-SCAN-FIXTURES.md", "content/doctrine/SECRET-SCAN-FIXTURES.md"),
+    ("docs/contracts/REPOSITORY-CI-TRIGGER.md", "content/doctrine/REPOSITORY-CI-TRIGGER.md"),
+    ("docs/contracts/LINKTREND-REVIEW-GATE.md", "content/doctrine/LINKTREND-REVIEW-GATE.md"),
+    ("docs/contracts/RECEIPT-SEAL-AND-RECOVERY.md", "content/doctrine/RECEIPT-SEAL-AND-RECOVERY.md"),
+    ("docs/contracts/ATOMIC-WORKFLOW-RULESET-MIGRATION.md", "content/doctrine/ATOMIC-WORKFLOW-RULESET-MIGRATION.md"),
     ("docs/adr/0003-autonomous-ship-pull-promote.md", "content/doctrine/0003-autonomous-ship-pull-promote.md"),
     ("docs/adr/0004-portable-managed-core-v2.md", "content/doctrine/0004-portable-managed-core-v2.md"),
     ("docs/adr/0005-streamlined-delivery-coordinator.md", "content/doctrine/0005-streamlined-delivery-coordinator.md"),
@@ -107,7 +112,15 @@ HOSTED_TEST_FILES = (
     "scripts/tests/test_candidate_lifecycle.py",
     "scripts/tests/test_gate_receipts.py",
     "scripts/tests/test_phase_batch_lifecycle.py",
+    "scripts/tests/test_phase_packager_coordinator.py",
+    "scripts/tests/test_independent_review_convergence.py",
+    "scripts/tests/test_fixture_aware_secret_scan.py",
+    "scripts/tests/test_repository_ci_trigger_contract.py",
+    "scripts/tests/test_linktrend_review_gate.py",
     "scripts/tests/test_promotion_receipt_gate.py",
+    "scripts/tests/test_receipt_seal_and_recovery.py",
+    "scripts/tests/test_delivery_controller.py",
+    "scripts/tests/test_atomic_workflow_ruleset_migration.py",
 )
 
 ID_SAFE = re.compile(r"[^a-z0-9]+")
@@ -349,6 +362,50 @@ def build_entries() -> list[dict[str, Any]]:
         (
             "schemas/gate-receipt.schema.json",
             ".ide-development/schemas/gate-receipt.schema.json",
+        ),
+        (
+            "schemas/phase-record.schema.json",
+            ".ide-development/schemas/phase-record.schema.json",
+        ),
+        (
+            "schemas/phase-handoff.schema.json",
+            ".ide-development/schemas/phase-handoff.schema.json",
+        ),
+        (
+            "schemas/delivery-operation.schema.json",
+            ".ide-development/schemas/delivery-operation.schema.json",
+        ),
+        (
+            "schemas/review-session.schema.json",
+            ".ide-development/schemas/review-session.schema.json",
+        ),
+        (
+            "schemas/finding-ledger.schema.json",
+            ".ide-development/schemas/finding-ledger.schema.json",
+        ),
+        (
+            "schemas/secret-scan-fixtures.schema.json",
+            ".ide-development/schemas/secret-scan-fixtures.schema.json",
+        ),
+        (
+            "schemas/secret-scan-result.schema.json",
+            ".ide-development/schemas/secret-scan-result.schema.json",
+        ),
+        (
+            "schemas/repository-ci-contract.schema.json",
+            ".ide-development/schemas/repository-ci-contract.schema.json",
+        ),
+        (
+            "schemas/ci-component-manifest.schema.json",
+            ".ide-development/schemas/ci-component-manifest.schema.json",
+        ),
+        (
+            "schemas/ci-evidence.schema.json",
+            ".ide-development/schemas/ci-evidence.schema.json",
+        ),
+        (
+            "schemas/linktrend-review-gate.schema.json",
+            ".ide-development/schemas/linktrend-review-gate.schema.json",
         ),
         (
             "schemas/managed-core-release.schema.json",

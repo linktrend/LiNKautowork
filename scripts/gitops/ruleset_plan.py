@@ -18,7 +18,7 @@ CONTEXTS = {
     "development": [
         "Linktrend Phase Ready",
         "Linktrend Fast Gate",
-        "Cursor Bugbot",
+        "Linktrend Review Gate",
         "Linktrend Full Suite",
     ],
     "staging": ["Linktrend Staging Gate"],

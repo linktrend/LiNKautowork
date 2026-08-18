@@ -30,11 +30,11 @@ Every repository that installs the managed system must protect these three branc
 
 | Branch | Ruleset name (when rulesets available) | Managed purpose |
 |--------|----------------------------------------|-----------------|
-| `development` | `development-autonomous-merge` | Strict required checks, work-branch source policy, Bugbot, Integrator auto-merge compatibility |
+| `development` | `development-autonomous-merge` | Strict required checks, work-branch source policy, Bugbot, delivery-controller auto-merge compatibility |
 | `staging` | `staging-autonomous-promote` | Promotion-only PR sources (`promote/staging/*`) + staging-gate checks |
 | `main` | `main-autonomous-release` | Promotion-only PR sources (`promote/main/*`) + release-gate checks + Main Approve compatibility |
 
-Promotion-only source policy is enforced by the managed workflow check **`Enforce allowed PR source branches`** (see `.github/workflows/branch-source-policy.yml`). Protections require that check on all three branches so GitHub cannot merge disallowed heads even if a human clicks merge.
+Promotion-only source policy is enforced by the managed workflow check **`Linktrend Branch Source Policy`** (see `.github/workflows/branch-source-policy.yml`). Protections require that check on all three branches so GitHub cannot merge disallowed heads even if a human clicks merge. The obsolete step title `Enforce allowed PR source branches` must not remain a required context (WP-U05).
 
 ---
 
@@ -42,33 +42,33 @@ Promotion-only source policy is enforced by the managed workflow check **`Enforc
 
 Defaults match IDE Development. Consumers override via repository variables / CLI extras; baselines always union with Bugbot / source-policy where required.
 
-### `development` (Integrator + Bugbot)
+### `development` (delivery controller + Bugbot)
 
 Managed baseline (order stable):
 
-1. `Cursor Bugbot`
+1. `Linktrend Review Gate`
 2. Fast-gate checks — default `Verify IDE Development`, or `LINKTREND_INTEGRATOR_REQUIRED_CHECKS` when provided
-3. `Enforce allowed PR source branches` (always present)
+3. `Linktrend Branch Source Policy` (always present)
 
-Also set repository setting `allow_auto_merge=true` so the Integrator may auto-merge when gates are green.
+Also set repository setting `allow_auto_merge=true` so the delivery controller may auto-merge when gates are green.
 
 ### `staging` (staging-gate)
 
 Managed baseline:
 
 1. Staging-gate checks — default `Verify IDE Development`, or `LINKTREND_STAGING_GATE_CHECKS`
-2. `Enforce allowed PR source branches`
+2. `Linktrend Branch Source Policy`
 
-Do **not** require `Cursor Bugbot` on staging promotion PRs.
+Do **not** require `Linktrend Review Gate` on staging promotion PRs.
 
 ### `main` (release-gate + Main Approve)
 
 Managed baseline:
 
 1. Release-gate checks — default `Verify IDE Development`, or `LINKTREND_RELEASE_GATE_CHECKS`
-2. `Enforce allowed PR source branches`
+2. `Linktrend Branch Source Policy`
 
-Do **not** require `Cursor Bugbot` on main promotion PRs.
+Do **not** require `Linktrend Review Gate` on main promotion PRs.
 Do **not** invent extra human-review rules that conflict with Lisa Main Approve (`docs/contracts/LISA-MAIN-APPROVE-DISPATCH.md`). Preserve existing `bypass_actors` on update. Main Approve remains Principal Approve of the sealed package + release-gate success on the promote head.
 
 ---
@@ -100,7 +100,7 @@ Fail closed only when the desired set cannot be represented on the available Git
 |------|----------|-------------|
 | `plan` (default) | No | Plan emitted (even if drift exists) |
 | `verify` | No | Current external state matches desired plan |
-| `apply` | Yes (explicit) | Desired state written; post-apply verify passes |
+| `apply` | Yes (explicit) | Desired state written atomically across governed branches; post-apply verify passes. Mid-apply failure restores archived before-state and reports incomplete (no false success). |
 | `rollback` | Yes (explicit, from snapshot) | Restored to recorded before-state |
 
 Every plan and apply response includes:
@@ -124,9 +124,9 @@ Never invent a third mechanism. Document the gap for the Principal; do not force
 
 ---
 
-## Integrator / Main Approve compatibility notes
+## Delivery controller / Main Approve compatibility notes
 
-- Development: required checks must include `Cursor Bugbot` + fast-gate; `allow_auto_merge=true`.
+- Development: required checks must include `Linktrend Review Gate` + fast-gate; `allow_auto_merge=true`.
 - Staging / main: merge only via temporary `promote/*` PRs after named gates; never direct-push.
 - Preserve `bypass_actors` on ruleset update so existing App / operator bypasses are not wiped.
 - Preserve non-check ruleset rules and classic `required_pull_request_reviews` / `restrictions` (and similar) on update.

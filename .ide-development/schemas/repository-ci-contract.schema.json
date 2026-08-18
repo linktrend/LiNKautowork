@@ -1,0 +1,174 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/repository-ci-contract.schema.json",
+  "title": "Repository-owned CI trigger contract",
+  "description": "Declares Fast/Full/scheduled/promotion/trusted-governance profiles and mandatory Full coverage components without dictating application test commands.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "aggregateContext",
+    "profiles",
+    "coverageComponents",
+    "trustedGovernance"
+  ],
+  "$defs": {
+    "sha40": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "command": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "envBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["variable", "executablePath"],
+      "properties": {
+        "variable": { "type": "string", "minLength": 1 },
+        "executablePath": { "type": "string", "minLength": 1 }
+      }
+    },
+    "runtimeRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "kind": {
+          "type": "string",
+          "enum": ["executable", "service", "browser", "library", "architecture"]
+        },
+        "allowedVersions": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "bootstrapCommand": { "$ref": "#/$defs/command" },
+        "binding": { "$ref": "#/$defs/envBinding" }
+      }
+    },
+    "artifactContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "producer", "path", "schemaVersion", "consumer"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "producer": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "schemaVersion": { "type": "integer", "minimum": 1 },
+        "consumer": { "type": "string", "minLength": 1 },
+        "stdoutCannotSatisfy": { "type": "boolean", "const": true }
+      }
+    },
+    "coverageComponent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "mandatory", "category"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "mandatory": { "type": "boolean" },
+        "category": {
+          "type": "string",
+          "enum": [
+            "build",
+            "test",
+            "security",
+            "migration",
+            "deployment",
+            "browser",
+            "recovery",
+            "production-resolution",
+            "governance",
+            "other"
+          ]
+        },
+        "runtime": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/runtimeRequirement" }
+        },
+        "artifacts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/artifactContract" }
+        },
+        "commands": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/command" }
+        }
+      }
+    },
+    "profileDeclaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "enum": ["fast", "full", "scheduled", "promotion", "trusted-governance"]
+        },
+        "commands": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/command" }
+        },
+        "requiredCheckContexts": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "timeoutMinutes": { "type": "integer", "minimum": 1 }
+      }
+    }
+  },
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "kind": { "type": "string", "const": "repository-ci-contract" },
+    "aggregateContext": { "type": "string", "minLength": 1 },
+    "profiles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fast", "full", "promotion", "trusted-governance"],
+      "properties": {
+        "fast": { "$ref": "#/$defs/profileDeclaration" },
+        "full": { "$ref": "#/$defs/profileDeclaration" },
+        "scheduled": { "$ref": "#/$defs/profileDeclaration" },
+        "promotion": { "$ref": "#/$defs/profileDeclaration" },
+        "trusted-governance": { "$ref": "#/$defs/profileDeclaration" }
+      }
+    },
+    "coverageComponents": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/coverageComponent" }
+    },
+    "trustedGovernance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pathPrefixes", "requiredProofs"],
+      "properties": {
+        "pathPrefixes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "requiredProofs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": [
+              "gate-contract",
+              "workflow-syntax",
+              "identity-receipt",
+              "ruleset-migration",
+              "rollback",
+              "no-application-path"
+            ]
+          }
+        }
+      }
+    },
+    "expensiveWorkflowMarkers": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

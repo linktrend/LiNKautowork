@@ -7,6 +7,8 @@
 # never execute untrusted tip code with write credentials.
 #
 # Identity: explicit workflow dispatch with the built-in, job-scoped status token.
+# LINKTREND_TRUSTED_REVIEW_READY_PUBLISHER=1 is set only on the publish/withdraw
+# step. Input validation must not carry that flag.
 #
 # Trigger: workflow_dispatch (manual / agent-driven). Dry-run validates without
 # publishing or withdrawing. action=publish (default) or action=withdraw.
@@ -85,7 +87,6 @@ jobs:
         id: inputs
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
-          LINKTREND_TRUSTED_REVIEW_READY_PUBLISHER: "1"
           INPUT_BRANCH: ${{ inputs.branch }}
           INPUT_SHA: ${{ inputs.sha }}
           INPUT_ACTION: ${{ inputs.action }}
@@ -117,6 +118,12 @@ jobs:
 
       - name: Verify remote tip equals immutable SHA; publish or withdraw
         env:
+          # Trusted flag belongs only on this privileged publish/withdraw step.
+          # Built-in github.token is forwarded as AUTOMATION_TOKEN (canonical)
+          # and GH_TOKEN/GITHUB_TOKEN aliases (same value; AUTOMATION_TOKEN precedes).
+          # No human fallback. No custom GitHub App.
+          LINKTREND_TRUSTED_REVIEW_READY_PUBLISHER: "1"
+          AUTOMATION_TOKEN: ${{ github.token }}
           GH_TOKEN: ${{ github.token }}
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -148,9 +155,22 @@ jobs:
           import completion_gate as cg
           import readiness_status as rs
 
-          token = (os.environ.get("GH_TOKEN") or "").strip()
+          # Forward documented AUTOMATION_TOKEN onto aliases without logging values.
+          forwarded = rs.forward_automation_token()
+          os.environ.update(
+              {
+                  key: forwarded[key]
+                  for key in rs.PUBLISH_TOKEN_ENVS
+                  if key in forwarded and forwarded[key]
+              }
+          )
+          token = (rs.resolve_app_publish_token() or "").strip()
           if not token:
-              raise SystemExit("FAIL: built-in workflow token missing")
+              raise SystemExit(
+                  "FAIL: trusted publisher token missing "
+                  "(AUTOMATION_TOKEN required; GH_TOKEN/GITHUB_TOKEN aliases; "
+                  "no human fallback)"
+              )
 
           repo = os.environ["GITHUB_REPOSITORY"]
           branch = os.environ["BRANCH"]

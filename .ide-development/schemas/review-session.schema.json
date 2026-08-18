@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/review-session.schema.json",
+  "title": "Independent-review convergence session",
+  "description": "One review session for one exact repository, base, candidate, tree, scope, and reviewer policy. Review ingest binds that exact headSha and gitTree. Compute units are recorded through an explicit accounting path so maxComputeUnits can stall truthfully. Repair-cycle count is observational; it is never a terminal development gate.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "sessionId",
+    "rootSessionId",
+    "repository",
+    "baseSha",
+    "candidateSha",
+    "gitTree",
+    "scope",
+    "reviewerPolicy",
+    "implementerActor",
+    "reviewerActor",
+    "status",
+    "repairCycleCount",
+    "unattendedCheckpointCycles",
+    "terminalCycleCap",
+    "infrastructureAttempts",
+    "fullEvidence",
+    "priorReview",
+    "recoveryGeneration",
+    "component"
+  ],
+  "$defs": {
+    "sha40": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "actor": { "type": "string", "minLength": 1 },
+    "evidenceBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["valid", "headSha"],
+      "properties": {
+        "valid": { "type": "boolean" },
+        "headSha": { "anyOf": [{ "$ref": "#/$defs/sha40" }, { "type": "null" }] }
+      }
+    }
+  },
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "kind": { "type": "string", "const": "review-session" },
+    "sessionId": { "type": "string", "minLength": 1 },
+    "rootSessionId": { "type": "string", "minLength": 1 },
+    "repository": { "type": "string", "pattern": "^[^/\\s]+/[^/\\s]+$" },
+    "baseSha": { "$ref": "#/$defs/sha40" },
+    "candidateSha": { "$ref": "#/$defs/sha40" },
+    "gitTree": { "$ref": "#/$defs/sha40" },
+    "scope": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "reviewerPolicy": { "type": "string", "minLength": 1 },
+    "implementerActor": { "$ref": "#/$defs/actor" },
+    "reviewerActor": { "$ref": "#/$defs/actor" },
+    "status": {
+      "type": "string",
+      "enum": [
+        "in_progress",
+        "unattended_checkpoint",
+        "continue",
+        "review_clean",
+        "review_stalled",
+        "hold"
+      ]
+    },
+    "repairCycleCount": { "type": "integer", "minimum": 0 },
+    "unattendedCheckpointCycles": { "type": "integer", "const": 3 },
+    "terminalCycleCap": { "type": "null" },
+    "founderAuthority": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["instruction", "scope", "owner", "startedAt"],
+      "properties": {
+        "instruction": { "type": "string", "const": "continue until clean" },
+        "scope": { "type": "string", "minLength": 1 },
+        "owner": { "type": "string", "minLength": 1 },
+        "startedAt": { "type": "number" },
+        "resourceLimit": { "type": ["object", "null"] }
+      }
+    },
+    "resourceLimit": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "maxElapsedSeconds": { "type": ["number", "null"], "minimum": 0 },
+        "maxComputeUnits": { "type": ["number", "null"], "minimum": 0 }
+      }
+    },
+    "infrastructureAttempts": { "type": "integer", "minimum": 0, "maximum": 2 },
+    "infrastructureHead": { "anyOf": [{ "$ref": "#/$defs/sha40" }, { "type": "null" }] },
+    "liveReviewer": { "type": ["object", "null"] },
+    "fullEvidence": { "$ref": "#/$defs/evidenceBinding" },
+    "priorReview": { "$ref": "#/$defs/evidenceBinding" },
+    "requireFullBeforeReview": { "type": "boolean" },
+    "splits": { "type": "array" },
+    "recoveryGeneration": { "type": "integer", "minimum": 0 },
+    "noProgressStreak": { "type": "integer", "minimum": 0 },
+    "startedAt": { "type": "number" },
+    "elapsedSeconds": { "type": "number", "minimum": 0 },
+    "computeUnits": { "type": "number", "minimum": 0 },
+    "holdReason": { "type": "string" },
+    "stallReason": { "type": "string" },
+    "lastBatchId": { "type": "string" },
+    "component": { "type": "string", "const": "independent_review_convergence" }
+  }
+}

@@ -96,9 +96,9 @@ Principal locked (IDE Development redesign):
 2. **`review_ready`:** branch-local `.linktrend/review-ready.json` with `commitSha == HEAD`. Later commits invalidate.
 3. **Review Packager:** Tuesday & Friday **08:00** Asia/Taipei (`0 0 * * 2,5` UTC). Discover eligible review-ready work → deterministic readiness → open/ready PR → Bugbot once.
 4. **Staging promote:** Tuesday & Friday **10:00** Asia/Taipei (`0 2 * * 2,5` UTC). Promote only work already merged into `development`. If not ready: skip and report why. Never force. No prefer-incoming.
-5. **Bugbot:** request command configurable; authoritative default exactly `@cursor review` (with the `@`). Success check remains `Cursor Bugbot`. Hidden idempotency marker `<!-- linktrend-bugbot-requested: <sha> -->`. Normal max 2 requests per PR (initial + one after consolidated corrections). Request accounting counts only comments that contain an executable trigger (`@cursor review` or `bugbot run`) **plus** that marker; bare historical `cursor review` + marker does **not** consume the limit.
+5. **Bugbot:** request command configurable; authoritative default exactly `@cursor review` (with the `@`). Success check remains `Linktrend Review Gate`. Hidden idempotency marker `<!-- linktrend-bugbot-requested: <sha> -->`. Normal max 2 requests per PR (initial + one after consolidated corrections). Request accounting counts only comments that contain an executable trigger (`@cursor review` or `bugbot run`) **plus** that marker; bare historical `cursor review` + marker does **not** consume the limit.
 6. **Named CI gates:** `fast-gate` / `staging-gate` / `release-gate` — never “wait for every visible check.” Missing ≠ success.
-7. **Integrator:** auto-merge only when non-draft → `development`, head SHA = reviewed SHA, fast-gate green, `Cursor Bugbot` success.
+7. **Integrator:** auto-merge only when non-draft → `development`, head SHA = reviewed SHA, fast-gate green, `Linktrend Review Gate` success.
 8. **Review freeze:** do not modify the frozen reviewed branch; continue on another issue branch/worktree.
 9. **Ship 05 / Pull 07** remain authoritative morning wave labels (not 06/08).
 10. Follow-up contracts for Lisa/OpenClaw (no edits in those repos in this change): `docs/contracts/LISA-OPENCLAW-FOLLOW-UP.md`, `docs/contracts/LISA-MAIN-APPROVE-DISPATCH.md`.
@@ -138,3 +138,32 @@ Principal / WP-01 locked:
 3. **Risk exceptions:** Issue-level PRs under `phase-integration` require an explicit risk class (`security`, `authentication`, `database_migration`, `infrastructure`, `major_shared_api`, `unusually_large_scope`, `cross_phase_impact`) via `.linktrend/issue-pr-exception.json`.
 4. **Named gates** remain `fast-gate` / `staging-gate` / `release-gate` on the exact PR head SHA; missing/zero/wrong/stale/skipped-neutral are non-success.
 5. **Ship remains checkpoint-only** in both modes.
+
+## Amendment — 2026-08-17 (Phase Packager/Coordinator)
+
+Factual correction for Update 3:
+
+1. **Phase Packager/Coordinator** is `scripts/gitops/packager_coordinator.py`. Any authorized agent or operator may invoke it. It accepts completed remote issue commits, preserves dependency order, and creates or updates one `phase/*` branch and one draft Phase PR into `development`.
+2. Retained `scripts/gitops/packager_discover.py` still discovers Review-Ready tips into ordinary draft PRs. It is **not** the Phase Packager and does not satisfy Update 3.
+3. Workers remain checkpoint-only. They do not open PRs and do not wait for a nonexistent Packager path.
+4. Checkpoint pushes do not start managed Fast or Full CI. Opening or updating the Phase PR starts Fast and repository-owned PR CI on the exact Phase head. Full cannot start before Fast and required CI pass.
+5. The coordinator produces an exact-identity handoff for the delivery controller. A later Phase head invalidates that handoff. The coordinator cannot merge protected branches or start Full.
+
+## Amendment — 2026-08-18 (Delivery controller)
+
+Factual correction for Update 2:
+
+1. **Delivery controller** is `scripts/gitops/delivery_controller.py`. Any authorized agent or operator may invoke it. It accepts an exact `phase/*` PR handoff, verifies development eligibility, merges through GitHub protection, promotes staging on reusable receipt identity without rerunning Full, prepares main, and completes main only after explicit founder approval.
+2. It replaces the nonexistent Integrator merge actor. Review Ready remains a Packager discovery status and does **not** promise a merge trigger by itself.
+3. Workers cannot invoke a self-merge path. The controller never pushes directly to `development`/`staging`/`main`, never bypasses branch protection, and deletes only controller-created `promote/*` branches after successful merges.
+4. Behavior is identical regardless of which supported agent invokes the command; agent environment markers are ignored for decisions.
+
+## Amendment — 2026-08-17 (Independent-review convergence)
+
+Factual correction for Update 9:
+
+1. **Independent-review convergence** is `scripts/gitops/independent_review_convergence.py`. It tracks one exact-head session, a durable finding ledger, and observational repair-cycle counts.
+2. There is **no arbitrary terminal cycle cap**. Unattended work pauses after three review-repair cycles. Recorded founder `continue until clean` authority permits additional progressing cycles without repeated approval. `apply_repair` fails closed after that unattended pause unless that authority is recorded, and after `review_stalled` / HOLD, preserving the exact stalled head, tree, and ledger. `apply_repair` requires `touched_paths` as a nonempty list of nonempty strings and rejects a string or malformed paths before changing state.
+3. Stop only for repeated unresolved findings, two no-progress cycles, repair reintroduction, redesign/new authority, infrastructure retry exhaustion, or an explicit resource limit. Same-identity severity reductions count as measurable progress. Compute units are recorded through an explicit accounting path so `maxComputeUnits` can stall truthfully. Those stops are truthful HOLD / `review_stalled` packets and cannot fabricate a clean review. `evaluate_progress` short-circuits HOLD and `review_stalled`. `ingest_review` fails closed on those stops; empty findings cannot mark pending or stalled identities corrected or emit `review_clean`.
+4. Distinct nonempty fingerprints never fuzzy-merge; only wording variants of the same identity may match. First-seen findings on repair-touched paths are `introduced_by_repair` and remain blocking; first-seen findings on untouched paths are `newly_discovered_in_unchanged_scope`.
+5. Review ingest requires exact `headSha` and `gitTree`, and `paths` as a nonempty list of nonempty strings. Malformed or non-object findings are `malformed_reviewer_output` with truthful HOLD and no cycle consumption. Repair cancels or invalidates any live reviewer. Implementer and reviewer actors stay separate. Reviewer silence or timeout is never clean and cannot authorize Full or repair until a valid exact-bound review transition explicitly clears the stop. A later source change invalidates prior review and Full evidence. Full never runs while HOLD or `review_stalled`.

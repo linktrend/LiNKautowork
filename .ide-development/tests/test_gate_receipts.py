@@ -151,7 +151,7 @@ class GateReceiptTests(unittest.TestCase):
         self.assertEqual(receipts.verify_receipt(legacy, self.identity, "full-gate").code, "unsupported_version")
 
     def test_digest_and_evidence_tampering_fail_without_credentials(self) -> None:
-        with mock.patch.dict(os.environ, {"LINKTREND_GITOPS_APP_TOKEN": "must-not-be-read"}, clear=False):
+        with mock.patch.dict(os.environ, {"LINKTREND_GITOPS_APP_TOKEN": "ltfx.gate.must_not_be_read.v1"}, clear=False):
             receipt = self._write()
         payload = receipts.load_json(receipt)
         self.assertTrue(payload["receiptDigest"].startswith("sha256:"))

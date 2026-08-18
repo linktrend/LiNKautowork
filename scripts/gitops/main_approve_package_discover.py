@@ -40,7 +40,7 @@ PROMOTE_BRANCH_RE = re.compile(r"^promote/main/([0-9a-f]{12})$")
 CONTRACT = "docs/contracts/LISA-MAIN-APPROVE-DISPATCH.md"
 STORE = "github_promote_pr_marker"
 TZ = ZoneInfo("Asia/Taipei")
-DEFAULT_RELEASE_GATE_CHECKS = "Verify IDE Development,Enforce allowed PR source branches"
+DEFAULT_RELEASE_GATE_CHECKS = "Verify IDE Development,Linktrend Branch Source Policy"
 
 
 def emit(payload: dict[str, Any]) -> None:

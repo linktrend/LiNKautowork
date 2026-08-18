@@ -8,8 +8,10 @@ profile consumed by managed-core. The frozen field meanings are defined in
 
 `phase-integration` is the approved system profile. Issue branches are
 checkpoint-only. Accepted issue commits are integrated serially into one
-`phase/*` branch, and one Phase PR carries the combined result into
-`development`.
+`phase/*` branch by `scripts/gitops/packager_coordinator.py`, and one Phase PR
+carries the combined result into `development`. Retained
+`packager_discover.py` still discovers Review-Ready tips into ordinary draft
+PRs and is not the Phase Packager.
 
 The configuration is `.github/linktrend-delivery-mode.json`:
 
@@ -23,7 +25,9 @@ The configuration is `.github/linktrend-delivery-mode.json`:
 
 Repository-owned fast, full, and release commands stay in the configuration.
 The managed system validates their shape; it does not invent product
-commands.
+commands. Managed Fast and Full execute `python3 scripts/gitops/secret_scan.py`
+on the candidate tree; compiling or unit-testing the scanner is not a substitute.
+See [`SECRET-SCAN-FIXTURES.md`](./SECRET-SCAN-FIXTURES.md).
 
 ## Named gates
 
