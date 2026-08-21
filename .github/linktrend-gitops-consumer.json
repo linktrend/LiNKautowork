@@ -3,6 +3,8 @@
   "fastWorkflowName": "Linktrend Fast Checks",
   "ciWorkflowName": "LiNKautowork CI",
   "branchPolicyWorkflowName": "Branch Source Policy",
-  "bugbotCheckName": "Cursor Bugbot",
-  "runnerType": "github-hosted"
+  "bugbotCheckName": "Linktrend Review Gate",
+  "runnerType": "github-hosted",
+  "reviewGateCheckName": "Linktrend Review Gate",
+  "bugbotProviderCheckName": "Cursor Bugbot"
 }

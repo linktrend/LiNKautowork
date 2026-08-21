@@ -1,0 +1,378 @@
+name: Linktrend Review Gate
+
+# Classifies exact-head Cursor Bugbot provider results into the managed
+# Linktrend Review Gate commit status (WP-U01). Never labels advisory
+# unavailability as a Bugbot pass. Free-text provider heuristics are forbidden.
+#
+# Packager semantic reconcile (#329 + #330):
+# - Checkout/execute scripts only from protected default_branch (#329/#330).
+# - Candidate SHA is data-only (detached worktree); never executed (#330).
+# - Provider/Full Checks evidence requires producer run/job/suite + default-branch
+#   workflow blob identity (#329); details_url alone is forgeable.
+# - Operator variable + repair-task routes stamp authenticated provenance (#330).
+# - detect-findings wires event title/details/annotations into findings-present (#330).
+# - Candidate .linktrend/*.json never authorize success.
+
+on:
+  check_run:
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  classify:
+    name: Classify Bugbot into Linktrend Review Gate
+    if: github.event.check_run.name == 'Cursor Bugbot'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      statuses: write
+      pull-requests: write
+      issues: write
+      checks: read
+      actions: read
+    steps:
+      - name: Checkout trusted default branch only (scripts)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Fetch candidate SHA as data only (never execute)
+        env:
+          HEAD_SHA: ${{ github.event.check_run.head_sha }}
+        run: |
+          set -euo pipefail
+          test -n "${HEAD_SHA}" || { echo "candidate_head_missing"; exit 1; }
+          git fetch --no-tags origin "${HEAD_SHA}"
+          candidate_dir="$(mktemp -d "${RUNNER_TEMP}/linktrend-review-gate-candidate.XXXXXX")"
+          git worktree add --detach "${candidate_dir}" "${HEAD_SHA}"
+          trusted_root="$(cd "${GITHUB_WORKSPACE}" && pwd -P)"
+          candidate_root="$(cd "${candidate_dir}" && pwd -P)"
+          if [ "${candidate_root}" = "${trusted_root}" ]; then
+            echo "FAIL: untrusted data path collapsed into trusted root"
+            exit 1
+          fi
+          # Candidate tree must not replace trusted classifier scripts in workspace.
+          if [ -f "${candidate_dir}/scripts/gitops/linktrend_review_gate.py" ] && \
+             ! cmp -s "${GITHUB_WORKSPACE}/scripts/gitops/linktrend_review_gate.py" \
+                      "${candidate_dir}/scripts/gitops/linktrend_review_gate.py"; then
+            echo "note: candidate classifier differs; trusted default-branch script will execute"
+          fi
+          printf '%s\n' "${candidate_dir}" > "${GITHUB_WORKSPACE}/candidate-dir.txt"
+
+      - name: Classify, alert, fallback, and publish managed gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.check_run.head_sha }}
+          CHECK_CONCLUSION: ${{ github.event.check_run.conclusion }}
+          CHECK_STATUS: ${{ github.event.check_run.status }}
+          CHECK_DETAILS: ${{ github.event.check_run.output.summary }}
+          CHECK_TITLE: ${{ github.event.check_run.output.title }}
+          CHECK_ANNOTATIONS_COUNT: ${{ github.event.check_run.output.annotations_count }}
+          FALLBACK_REVIEWER: ${{ vars.LINKTREND_REVIEW_GATE_FALLBACK_REVIEWER }}
+          FALLBACK_IMPLEMENTER: ${{ vars.LINKTREND_REVIEW_GATE_IMPLEMENTER }}
+          INDEPENDENT_REVIEW_CONFIGURED: ${{ vars.LINKTREND_INDEPENDENT_REVIEW_CONFIGURED }}
+          TRUSTED_PROVIDER_ERROR_JSON: ${{ vars.LINKTREND_REVIEW_GATE_VERIFIED_PROVIDER_ERROR }}
+        run: |
+          set -euo pipefail
+          TRUSTED_ROOT="${GITHUB_WORKSPACE}"
+          GATE_PY="${TRUSTED_ROOT}/scripts/gitops/linktrend_review_gate.py"
+          test -f "${GATE_PY}" || { echo "trusted_classifier_missing"; exit 1; }
+          CANDIDATE_DIR="$(cat "${TRUSTED_ROOT}/candidate-dir.txt")"
+          test -d "${CANDIDATE_DIR}" || { echo "candidate_data_missing"; exit 1; }
+          # Tree and candidate artifacts are data-only; never execute from CANDIDATE_DIR.
+          TREE="$(git -C "${CANDIDATE_DIR}" rev-parse "${HEAD_SHA}^{tree}")"
+          PR_NUMBER="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/pulls" \
+            --jq '.[0].number // empty' || true)"
+
+          # Trusted provider/Full evidence: GitHub Checks bound to authenticated
+          # producer run/job/check-suite identity + default-branch workflow blob (#329).
+          # details_url alone is forgeable; never read candidate .linktrend/*.json.
+          DEFAULT_BRANCH="${{ github.event.repository.default_branch }}"
+          CHECK_RUNS_FILE="$(mktemp)"
+          WORKFLOW_RUNS_FILE="$(mktemp)"
+          WORKFLOW_JOBS_FILE="$(mktemp)"
+          WORKFLOW_FILE_SHAS_FILE="$(mktemp)"
+          trap 'rm -f "${CHECK_RUNS_FILE}" "${WORKFLOW_RUNS_FILE}" "${WORKFLOW_JOBS_FILE}" "${WORKFLOW_FILE_SHAS_FILE}"' EXIT
+          gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/check-runs?per_page=100" \
+            >"${CHECK_RUNS_FILE}" \
+            || { echo "HOLD: check_runs_unreadable"; exit 1; }
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${HEAD_SHA}&per_page=100" \
+            >"${WORKFLOW_RUNS_FILE}" \
+            || { echo "HOLD: workflow_runs_unreadable"; exit 1; }
+          python3 "${GATE_PY}" resolve-workflow-jobs \
+            --repository "${GITHUB_REPOSITORY}" \
+            --workflow-runs-json "${WORKFLOW_RUNS_FILE}" \
+            --output "${WORKFLOW_JOBS_FILE}" \
+            || { echo "HOLD: workflow_jobs_unreadable"; exit 1; }
+          python3 "${GATE_PY}" resolve-workflow-file-shas \
+            --repository "${GITHUB_REPOSITORY}" \
+            --default-branch "${DEFAULT_BRANCH}" \
+            --workflow-runs-json "${WORKFLOW_RUNS_FILE}" \
+            --output "${WORKFLOW_FILE_SHAS_FILE}" \
+            || { echo "HOLD: workflow_file_shas_unreadable"; exit 1; }
+
+          PROVIDER_JSON=""
+          PROVIDER_CHANNEL=""
+          PROVIDER_EXTRACT="$(
+            python3 "${GATE_PY}" extract-trusted-provider-evidence \
+              --head-sha "${HEAD_SHA}" \
+              --default-branch "${DEFAULT_BRANCH}" \
+              --check-runs-json "${CHECK_RUNS_FILE}" \
+              --workflow-runs-json "${WORKFLOW_RUNS_FILE}" \
+              --workflow-jobs-json "${WORKFLOW_JOBS_FILE}" \
+              --workflow-file-shas-json "${WORKFLOW_FILE_SHAS_FILE}"
+          )" || {
+            echo "HOLD: provider_evidence_extract_failed"; exit 1
+          }
+          if [ -n "${PROVIDER_EXTRACT}" ] && [ "${PROVIDER_EXTRACT}" != "null" ]; then
+            PROVIDER_JSON="$(jq -c '.providerError // empty' <<<"${PROVIDER_EXTRACT}")"
+            PROVIDER_CHANNEL="$(jq -r '.evidenceChannel // empty' <<<"${PROVIDER_EXTRACT}")"
+            if [ -z "${PROVIDER_JSON}" ] || [ "${PROVIDER_JSON}" = "null" ]; then
+              PROVIDER_JSON=""
+              PROVIDER_CHANNEL=""
+            fi
+          fi
+
+          # Fallback trusted routes (#330): operator variable + repair-task API with provenance.
+          if [ -z "${PROVIDER_JSON}" ]; then
+            if [ -n "${TRUSTED_PROVIDER_ERROR_JSON:-}" ]; then
+              PROVIDER_JSON="$(
+                python3 "${GATE_PY}" authenticate-provider-error \
+                  --provider-error-json "${TRUSTED_PROVIDER_ERROR_JSON}" \
+                  --provenance-kind github.repository_variable \
+                  --head-sha "${HEAD_SHA}" \
+                  --evidence-ref "vars.LINKTREND_REVIEW_GATE_VERIFIED_PROVIDER_ERROR"
+              )" || { echo "untrusted_or_mismatched_operator_provider_error"; PROVIDER_JSON=""; }
+              if [ -n "${PROVIDER_JSON}" ] && [ "${PROVIDER_JSON}" != "null" ]; then
+                PROVIDER_CHANNEL="operator_privileged_input"
+              else
+                PROVIDER_JSON=""
+              fi
+            fi
+          fi
+          if [ -z "${PROVIDER_JSON}" ]; then
+            PROVIDER_JSON="$(
+              gh api --paginate --slurp \
+                "repos/${GITHUB_REPOSITORY}/issues?state=open&labels=linktrend-repair-usage-limit&per_page=100" \
+                | python3 "${GATE_PY}" resolve-usage-limit-provider-error \
+                    --head-sha "${HEAD_SHA}" \
+                    --slurp-json -
+            )" || { echo "HOLD: usage_limit_repair_lookup_failed"; exit 1; }
+            if [ "${PROVIDER_JSON}" = "null" ] || [ -z "${PROVIDER_JSON}" ]; then
+              PROVIDER_JSON=""
+              PROVIDER_CHANNEL=""
+            else
+              PROVIDER_CHANNEL="repair_observer_record"
+            fi
+          fi
+          # Explicitly ignore candidate-planted provider-error files (never read).
+          if [ -f "${CANDIDATE_DIR}/.linktrend/review-gate-provider-error.json" ]; then
+            echo "note: ignoring_candidate_provider_error_file"
+          fi
+
+          # Wire CHECK_DETAILS / title / annotations into findings-present (#330).
+          FINDINGS_JSON="$(
+            python3 "${GATE_PY}" detect-findings \
+              --annotations-count "${CHECK_ANNOTATIONS_COUNT:-0}" \
+              --check-title "${CHECK_TITLE:-}" \
+              --check-details "${CHECK_DETAILS:-}" \
+              --bugbot-conclusion "${CHECK_CONCLUSION:-}"
+          )"
+          FINDINGS_PRESENT="$(jq -r .findingsPresent <<<"${FINDINGS_JSON}")"
+          echo "findings_decision=${FINDINGS_JSON}"
+
+          # Infrastructure markers: paginated slurp via stdin (never argv / ARG_MAX).
+          MARKERS_URL="repos/${GITHUB_REPOSITORY}/issues/comments"
+          if [ -n "${PR_NUMBER}" ]; then
+            MARKERS_URL="repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments"
+          fi
+          ATTEMPTS="$(
+            gh api --paginate --slurp "${MARKERS_URL}" \
+              | python3 "${GATE_PY}" flatten-comment-bodies --slurp-json - \
+              | python3 "${GATE_PY}" count-infra-attempts \
+                  --head-sha "${HEAD_SHA}" --markers-json - \
+              | jq -r .attempts
+          )" || { echo "HOLD: infra_marker_read_failed"; exit 1; }
+          case "${ATTEMPTS}" in
+            ''|*[!0-9]*) echo "HOLD: infra_marker_invalid_json"; exit 1 ;;
+          esac
+          if [ -n "${PROVIDER_JSON}" ]; then
+            ATTEMPTS=$((ATTEMPTS + 1))
+          fi
+
+          ARGS=(
+            python3 "${GATE_PY}" classify
+            --repository "${GITHUB_REPOSITORY}"
+            --head-sha "${HEAD_SHA}"
+            --git-tree "${TREE}"
+            --bugbot-state "${CHECK_STATUS}"
+            --bugbot-conclusion "${CHECK_CONCLUSION}"
+            --infrastructure-attempts "${ATTEMPTS}"
+            --result-head-sha "${HEAD_SHA}"
+          )
+          if [ -n "${CHECK_ANNOTATIONS_COUNT}" ]; then
+            case "${CHECK_ANNOTATIONS_COUNT}" in
+              ''|*[!0-9]*) echo "HOLD: annotations_count_invalid"; exit 1 ;;
+              *) ARGS+=(--annotations-count "${CHECK_ANNOTATIONS_COUNT}") ;;
+            esac
+          fi
+          if [ -n "${PR_NUMBER}" ]; then
+            ARGS+=(--pull-request "${PR_NUMBER}")
+          fi
+          if [ -n "${PROVIDER_JSON}" ]; then
+            ARGS+=(--provider-error-json "${PROVIDER_JSON}")
+            if [ -n "${PROVIDER_CHANNEL}" ]; then
+              ARGS+=(--provider-evidence-channel "${PROVIDER_CHANNEL}")
+            fi
+          fi
+          if [ "${FINDINGS_PRESENT}" = "true" ]; then
+            ARGS+=(--findings-present)
+          fi
+          OUT="$("${ARGS[@]}")"
+          echo "${OUT}"
+          STATE="$(jq -r .commitStatus.state <<<"${OUT}")"
+          DESC="$(jq -r .commitStatus.description <<<"${OUT}")"
+          CONTEXT="$(jq -r .commitStatus.context <<<"${OUT}")"
+          CLAIM="$(jq -r .classification.bugbotPassedClaim <<<"${OUT}")"
+          OUTCOME="$(jq -r .classification.outcome <<<"${OUT}")"
+          GATE_SUCCESS="$(jq -r .classification.gateSuccess <<<"${OUT}")"
+          ALERT="$(jq -r .classification.alertFounder <<<"${OUT}")"
+          if [ "${OUTCOME}" = "advisory-unavailable" ] && [ "${CLAIM}" = "true" ]; then
+            echo "advisory_must_not_claim_bugbot_pass"; exit 1
+          fi
+
+          # Exact Full receipt/check required before publishing a successful gate.
+          # Fail-closed producer binding (#329): only extract-trusted-full-receipt authorizes Full
+          # evidence. Empty/null extract → full_receipt_missing_trusted_check (no name-only Checks
+          # fallback). #330 GATE_PY/default-branch/candidate-as-data/provenance applies only on the
+          # producer-bound path with evidence-channel. Never candidate full-suite-receipt.json.
+          # Preserve receipt gitTree; never overwrite with live TREE.
+          # Job checks often lack output.summary; overlay the producer-bound retained
+          # FullSuiteReceipt artifact (candidateIdentity.gitTree) after extract binding.
+          if [ "${GATE_SUCCESS}" = "true" ]; then
+            if [ -f "${CANDIDATE_DIR}/.linktrend/full-suite-receipt.json" ]; then
+              echo "note: ignoring_candidate_full_suite_receipt_file"
+            fi
+            FULL_EXTRACT="$(
+              python3 "${GATE_PY}" extract-trusted-full-receipt \
+                --head-sha "${HEAD_SHA}" \
+                --default-branch "${DEFAULT_BRANCH}" \
+                --check-runs-json "${CHECK_RUNS_FILE}" \
+                --workflow-runs-json "${WORKFLOW_RUNS_FILE}" \
+                --workflow-jobs-json "${WORKFLOW_JOBS_FILE}" \
+                --workflow-file-shas-json "${WORKFLOW_FILE_SHAS_FILE}"
+            )" \
+              || { echo "full_receipt_check_lookup_failed"; exit 1; }
+            if [ -z "${FULL_EXTRACT}" ] || [ "${FULL_EXTRACT}" = "null" ]; then
+              echo "full_receipt_missing_trusted_check"; exit 1
+            fi
+            FULL_RUN_ID="$(jq -r '.workflowRunId // empty' <<<"${FULL_EXTRACT}")"
+            test -n "${FULL_RUN_ID}" || { echo "full_receipt_missing_workflow_run_id"; exit 1; }
+            RETAINED_DIR="$(mktemp -d)"
+            ARTIFACTS_JSON="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${FULL_RUN_ID}/artifacts?per_page=100")" \
+              || { echo "full_receipt_artifacts_unreadable"; exit 1; }
+            ARTIFACT_NAME="$(jq -r --arg suffix "-${FULL_RUN_ID}" '
+              [.artifacts[] | select(.expired == false)
+                | select(.name | startswith("linktrend-full-suite-receipt-"))
+                | select(.name | endswith($suffix))]
+              | if length == 1 then .[0].name else empty end
+            ' <<<"${ARTIFACTS_JSON}")"
+            test -n "${ARTIFACT_NAME}" || { echo "full_receipt_artifact_not_unique_or_missing=${FULL_RUN_ID}"; exit 1; }
+            ARTIFACT_ID="$(jq -r --arg name "${ARTIFACT_NAME}" '
+              .artifacts[] | select(.name == $name) | .id
+            ' <<<"${ARTIFACTS_JSON}")"
+            test -n "${ARTIFACT_ID}" || { echo "full_receipt_artifact_id_missing"; exit 1; }
+            gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}/zip" > "${RETAINED_DIR}/receipt.zip" \
+              || { echo "full_receipt_artifact_download_failed"; exit 1; }
+            unzip -qo "${RETAINED_DIR}/receipt.zip" -d "${RETAINED_DIR}" \
+              || { echo "full_receipt_artifact_unzip_failed"; exit 1; }
+            test -f "${RETAINED_DIR}/full-suite-receipt.json" \
+              || { echo "full_receipt_artifact_missing_json"; exit 1; }
+            FULL_EXTRACT="$(
+              python3 "${GATE_PY}" overlay-retained-full-receipt \
+                --extract-json "${FULL_EXTRACT}" \
+                --retained-receipt-json "$(cat "${RETAINED_DIR}/full-suite-receipt.json")"
+            )" \
+              || { echo "full_receipt_retained_overlay_failed"; exit 1; }
+            FULL_JSON="$(jq -c '.receipt' <<<"${FULL_EXTRACT}")"
+            FULL_CHANNEL="$(jq -r '.evidenceChannel' <<<"${FULL_EXTRACT}")"
+            FULL_JSON="$(python3 "${GATE_PY}" normalize-full-receipt \
+              --receipt-json "${FULL_JSON}" \
+              --provenance-kind github.actions.artifact \
+              --provenance-head-sha "${HEAD_SHA}" \
+              --provenance-evidence-ref "producer-bound-artifact:${FULL_RUN_ID}:${ARTIFACT_NAME}")"
+            python3 "${GATE_PY}" require-full-receipt \
+              --gate-success \
+              --full-receipt-json "${FULL_JSON}" \
+              --head-sha "${HEAD_SHA}" \
+              --git-tree "${TREE}" \
+              --evidence-channel "${FULL_CHANNEL}"
+          fi
+
+          # Durable founder alert (deduped via prior alert ISSUE BODIES) — fail closed.
+          if [ "${ALERT}" = "true" ]; then
+            CLASS_JSON="$(jq -c .classification <<<"${OUT}")"
+            ALERT_JSON="$(python3 "${GATE_PY}" founder-alert \
+              --classification-json "${CLASS_JSON}")"
+            DECISION="$(
+              gh api --paginate --slurp \
+                "repos/${GITHUB_REPOSITORY}/issues?state=all&filter=all&per_page=100" \
+                | python3 "${GATE_PY}" flatten-issue-bodies --slurp-json - \
+                | python3 "${GATE_PY}" founder-alert-dedupe \
+                    --head-sha "${HEAD_SHA}" \
+                    --issue-bodies-json - \
+                    --alert-required \
+                    --bodies-readable
+            )" || { echo "HOLD: founder_alert_dedupe_unreadable"; exit 1; }
+            echo "${DECISION}" | jq -e 'type=="object"' >/dev/null \
+              || { echo "HOLD: founder_alert_dedupe_unreadable"; exit 1; }
+            if [ "$(jq -r .publish <<<"${DECISION}")" = "true" ]; then
+              TITLE="$(jq -r .title <<<"${ALERT_JSON}")"
+              BODY="$(jq -r .body <<<"${ALERT_JSON}")"
+              gh api --method POST "repos/${GITHUB_REPOSITORY}/issues" \
+                -f title="${TITLE}" \
+                -f body="${BODY}" >/tmp/review-gate-alert.json \
+                || { echo "founder_alert_publish_failed"; exit 1; }
+            fi
+            INFRA_MARKER="$(jq -r '.infraAttemptMarker // empty' <<<"${OUT}")"
+            if [ -n "${INFRA_MARKER}" ]; then
+              [ -n "${PR_NUMBER}" ] || { echo "infra_attempt_marker_requires_pr"; exit 1; }
+              gh api --method POST "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+                -f body="${INFRA_MARKER}" >/dev/null \
+                || { echo "infra_attempt_marker_persist_failed"; exit 1; }
+            fi
+          fi
+
+          if [ "${OUTCOME}" = "advisory-unavailable" ] && [ "${INDEPENDENT_REVIEW_CONFIGURED}" = "true" ]; then
+            [ -n "${FALLBACK_REVIEWER}" ] || { echo "fallback_reviewer_missing"; exit 1; }
+            [ -n "${FALLBACK_IMPLEMENTER}" ] || { echo "fallback_implementer_missing"; exit 1; }
+            FALLBACK="$(python3 "${GATE_PY}" fallback \
+              --outcome "${OUTCOME}" \
+              --independent-review-configured \
+              --reviewer-actor "${FALLBACK_REVIEWER}" \
+              --implementer-actor "${FALLBACK_IMPLEMENTER}" \
+              --evidence-head "${HEAD_SHA}" \
+              --live-head "${HEAD_SHA}")"
+            COMMENT="$(python3 "${GATE_PY}" fallback-comment \
+              --fallback-json "${FALLBACK}" --head-sha "${HEAD_SHA}")"
+            if [ "$(jq -r .posted <<<"${COMMENT}")" = "true" ]; then
+              [ -n "${PR_NUMBER}" ] || { echo "fallback_requires_pr"; exit 1; }
+              BODY="$(jq -r .body <<<"${COMMENT}")"
+              EXISTING="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+                --jq '.[].body' || true)"
+              MARKER="$(jq -r .marker <<<"${COMMENT}")"
+              if ! printf '%s\n' "${EXISTING}" | grep -Fq "${MARKER}"; then
+                gh api --method POST "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+                  -f body="${BODY}" >/dev/null
+              fi
+            fi
+          fi
+
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/statuses/${HEAD_SHA}" \
+            -f state="${STATE}" \
+            -f context="${CONTEXT}" \
+            -f description="${DESC}"
