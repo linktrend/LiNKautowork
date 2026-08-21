@@ -330,39 +330,62 @@ def _as_root(repo_root: Path | str) -> Path:
     return Path(repo_root).resolve()
 
 
+def _installed_relative_path(relative_path: str) -> str:
+    if relative_path.startswith("core/managed-core/"):
+        return ".ide-development/" + relative_path.removeprefix("core/managed-core/")
+    if relative_path.startswith("core/contracts/"):
+        return ".ide-development/contracts/" + relative_path.removeprefix(
+            "core/contracts/"
+        )
+    if relative_path.startswith("core/execution/"):
+        return ".ide-development/execution/" + relative_path.removeprefix(
+            "core/execution/"
+        )
+    raise ValueError(f"unsupported protocol discovery path: {relative_path}")
+
+
 def discover_runtime(repo_root: Path | str) -> ProtocolDiscovery:
     root = _as_root(repo_root)
-    missing = [rel for rel in REQUIRED_DISCOVERY_PATHS if not (root / rel).is_file()]
-    if missing:
-        raise FileNotFoundError(
-            "coding execution protocol surfaces missing: " + ", ".join(missing)
-        )
-    example = root / EXAMPLE_MANIFEST_RELATIVE_PATH
+    source_paths = {rel: root / rel for rel in REQUIRED_DISCOVERY_PATHS}
+    if all(path.is_file() for path in source_paths.values()):
+        paths = source_paths
+        example = root / EXAMPLE_MANIFEST_RELATIVE_PATH
+    else:
+        paths = {
+            rel: root / _installed_relative_path(rel)
+            for rel in REQUIRED_DISCOVERY_PATHS
+        }
+        missing = [str(path.relative_to(root)) for path in paths.values() if not path.is_file()]
+        if missing:
+            raise FileNotFoundError(
+                "coding execution protocol surfaces missing: " + ", ".join(missing)
+            )
+        example = root / _installed_relative_path(EXAMPLE_MANIFEST_RELATIVE_PATH)
     return ProtocolDiscovery(
         protocol_id=PROTOCOL_ID,
         protocol_version=PROTOCOL_VERSION,
         repo_root=root,
-        protocol_document=root / PROTOCOL_DOCUMENT_RELATIVE_PATH,
-        control_contract=root / CONTROL_CONTRACT_RELATIVE_PATH,
-        schema_path=root / SCHEMA_RELATIVE_PATH,
-        doctrine_path=root / DOCTRINE_RELATIVE_PATH,
-        hosted_capacity_doctrine=root / HOSTED_CAPACITY_DOCTRINE_RELATIVE_PATH,
-        continuous_utilization_config=root / CONTINUOUS_UTILIZATION_CONFIG_RELATIVE_PATH,
-        continuous_utilization_schema=root / CONTINUOUS_UTILIZATION_SCHEMA_RELATIVE_PATH,
-        continuous_utilization_example=root / CONTINUOUS_UTILIZATION_EXAMPLE_RELATIVE_PATH,
+        protocol_document=paths[PROTOCOL_DOCUMENT_RELATIVE_PATH],
+        control_contract=paths[CONTROL_CONTRACT_RELATIVE_PATH],
+        schema_path=paths[SCHEMA_RELATIVE_PATH],
+        doctrine_path=paths[DOCTRINE_RELATIVE_PATH],
+        hosted_capacity_doctrine=paths[HOSTED_CAPACITY_DOCTRINE_RELATIVE_PATH],
+        continuous_utilization_config=paths[CONTINUOUS_UTILIZATION_CONFIG_RELATIVE_PATH],
+        continuous_utilization_schema=paths[CONTINUOUS_UTILIZATION_SCHEMA_RELATIVE_PATH],
+        continuous_utilization_example=paths[CONTINUOUS_UTILIZATION_EXAMPLE_RELATIVE_PATH],
         example_manifest=example if example.is_file() else None,
-        verification_liveness_contract=root / VERIFICATION_LIVENESS_CONTRACT_RELATIVE_PATH,
-        verification_run_schema=root / VERIFICATION_RUN_SCHEMA_RELATIVE_PATH,
-        verification_liveness_doctrine=root / VERIFICATION_LIVENESS_DOCTRINE_RELATIVE_PATH,
-        verification_liveness_config=root / VERIFICATION_LIVENESS_CONFIG_RELATIVE_PATH,
-        verification_liveness_schema=root / VERIFICATION_LIVENESS_SCHEMA_RELATIVE_PATH,
-        verification_run_managed_schema=root / VERIFICATION_RUN_MANAGED_SCHEMA_RELATIVE_PATH,
-        verification_run_example=root / VERIFICATION_RUN_EXAMPLE_RELATIVE_PATH,
-        verification_run_managed_example=root / VERIFICATION_RUN_MANAGED_EXAMPLE_RELATIVE_PATH,
-        transactional_dispatch_contract=root / TRANSACTIONAL_DISPATCH_CONTRACT_RELATIVE_PATH,
-        transactional_dispatch_config=root / TRANSACTIONAL_DISPATCH_CONFIG_RELATIVE_PATH,
-        transactional_dispatch_schema=root / TRANSACTIONAL_DISPATCH_SCHEMA_RELATIVE_PATH,
-        transactional_dispatch_doctrine=root / TRANSACTIONAL_DISPATCH_DOCTRINE_RELATIVE_PATH,
+        verification_liveness_contract=paths[VERIFICATION_LIVENESS_CONTRACT_RELATIVE_PATH],
+        verification_run_schema=paths[VERIFICATION_RUN_SCHEMA_RELATIVE_PATH],
+        verification_liveness_doctrine=paths[VERIFICATION_LIVENESS_DOCTRINE_RELATIVE_PATH],
+        verification_liveness_config=paths[VERIFICATION_LIVENESS_CONFIG_RELATIVE_PATH],
+        verification_liveness_schema=paths[VERIFICATION_LIVENESS_SCHEMA_RELATIVE_PATH],
+        verification_run_managed_schema=paths[VERIFICATION_RUN_MANAGED_SCHEMA_RELATIVE_PATH],
+        verification_run_example=paths[VERIFICATION_RUN_EXAMPLE_RELATIVE_PATH],
+        verification_run_managed_example=paths[VERIFICATION_RUN_MANAGED_EXAMPLE_RELATIVE_PATH],
+        transactional_dispatch_contract=paths[TRANSACTIONAL_DISPATCH_CONTRACT_RELATIVE_PATH],
+        transactional_dispatch_config=paths[TRANSACTIONAL_DISPATCH_CONFIG_RELATIVE_PATH],
+        transactional_dispatch_schema=paths[TRANSACTIONAL_DISPATCH_SCHEMA_RELATIVE_PATH],
+        transactional_dispatch_doctrine=paths[TRANSACTIONAL_DISPATCH_DOCTRINE_RELATIVE_PATH],
     )
 
 

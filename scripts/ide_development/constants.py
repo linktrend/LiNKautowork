@@ -13,8 +13,8 @@ EXIT_INVALID_PACKAGE = 12
 EXIT_ROLLBACK_FAILURE = 13
 
 SCHEMA_VERSION = 1
-INSTALLER_VERSION = "2.5.0"
-PACKAGE_VERSION_TARGET = "2.5.0"
+INSTALLER_VERSION = "2.5.1"
+PACKAGE_VERSION_TARGET = "2.5.1"
 PACKAGE_NAME = "ide-development-managed-core"
 
 # Release-candidate packaging (Lane D) — archives under ignored build/

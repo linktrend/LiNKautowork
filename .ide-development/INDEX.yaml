@@ -1,5 +1,5 @@
 # Managed-core discovery index
-version: "2.5.0"
+version: "2.5.1"
 status: v2-github-hosted-phase-delivery
 contract: docs/contracts/MANAGED-CORE-V2.md
 adr: docs/adr/0004-portable-managed-core-v2.md
@@ -44,7 +44,7 @@ directories:
   config: versioned GitHub-hosted delivery defaults
   content: managed content payload
   platforms: Cursor and Codex adapter sources (WP3)
-  migrations: reviewed supersession catalog and redacted external cleanup plan
+  migrations: reviewed supersession catalog
   migration: discovery alias pointer only (no duplicate catalog file)
 verification_liveness:
   runtime: ../execution/verification_liveness.py

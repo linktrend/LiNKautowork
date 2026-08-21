@@ -69,17 +69,9 @@ except ModuleNotFoundError:  # pragma: no cover - script-style execution
     )
 
 try:
-    from scripts.gitops.bugbot_user_credentials import (
-        BugbotUserCredentialsError,
-        require_bugbot_user_token,
-    )
     from scripts.gitops.github_auth import GitHubAuthError, resolve_phase_api_token
     from scripts.gitops.issue_checkpoint import bind_issue_completion, parse_immutable_evidence_payload
 except ModuleNotFoundError:  # pragma: no cover - script-style execution
-    from bugbot_user_credentials import (  # type: ignore
-        BugbotUserCredentialsError,
-        require_bugbot_user_token,
-    )
     from github_auth import GitHubAuthError, resolve_phase_api_token  # type: ignore
     from issue_checkpoint import bind_issue_completion, parse_immutable_evidence_payload  # type: ignore
 
@@ -443,12 +435,8 @@ def resolve_production_adapters(repository: str) -> tuple[LiveGitHub, GitPushAda
         token, _source = resolve_phase_api_token()
     except GitHubAuthError as exc:
         raise CoordinatorError(exc.code, exc.detail) from exc
-    try:
-        carlos = require_bugbot_user_token("pr_create")
-    except BugbotUserCredentialsError as exc:
-        raise CoordinatorError("missing_github_credentials", str(exc)) from exc
     return (
-        LiveGitHub(repository=repository, automation_token=token, **{"user_token": carlos}),
+        LiveGitHub(repository=repository, automation_token=token, user_token=token),
         GitPushAdapter(),
     )
 

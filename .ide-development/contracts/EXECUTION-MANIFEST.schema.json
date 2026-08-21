@@ -1,0 +1,612 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/contracts/execution-manifest.schema.json",
+  "title": "Coding Execution Protocol execution-manifest",
+  "description": "Schema-valid execution program manifest for Coding Execution Protocol 1.0.1.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "protocol",
+    "program",
+    "baseline",
+    "packets",
+    "controls"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "protocol": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "amendment"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "const": "coding-execution-protocol"
+        },
+        "version": {
+          "type": "string",
+          "const": "1.0.1"
+        },
+        "amendment": {
+          "type": "string",
+          "const": "V25_BOOTSTRAP_LEAN"
+        }
+      }
+    },
+    "program": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "name": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "targetRelease": { "type": "string", "minLength": 1, "maxLength": 64 }
+      }
+    },
+    "baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "commit", "tree"],
+      "properties": {
+        "repository": { "$ref": "#/$defs/repository" },
+        "commit": { "$ref": "#/$defs/sha40" },
+        "tree": { "$ref": "#/$defs/sha40" },
+        "ref": { "type": "string", "minLength": 1, "maxLength": 256 }
+      }
+    },
+    "packets": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/packet" }
+    },
+    "issues": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/issue" }
+    },
+    "controls": {
+      "$ref": "#/$defs/controls"
+    }
+  },
+  "$defs": {
+    "sha40": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "repository": {
+      "type": "string",
+      "pattern": "^[^/\\s]+/[^/\\s]+$"
+    },
+    "packetId": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9]*-[0-9]{2,}$"
+    },
+    "issueId": {
+      "type": "string",
+      "pattern": "^ISS-[0-9]{2,}$"
+    },
+    "packet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "ownedPaths", "verificationCommands"],
+      "properties": {
+        "id": { "$ref": "#/$defs/packetId" },
+        "title": { "type": "string", "minLength": 1 },
+        "issues": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/issueId" },
+          "uniqueItems": true
+        },
+        "ownedPaths": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "prohibitedPaths": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "verificationCommands": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 }
+          }
+        },
+        "dependencies": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/packetId" },
+          "uniqueItems": true
+        },
+        "executionState": {
+          "type": "string",
+          "enum": ["PLAN", "RUNNING", "COMPLETE", "ARCHIVE_CONFIRMED"]
+        },
+        "acceptedCommit": { "$ref": "#/$defs/sha40" },
+        "acceptedTree": { "$ref": "#/$defs/sha40" },
+        "completionEvidence": { "$ref": "#/$defs/completionEvidence" },
+        "archiveEvidence": { "$ref": "#/$defs/archiveEvidence" },
+        "attempts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/attempt" }
+        },
+        "writeLock": { "$ref": "#/$defs/writeLock" },
+        "orchestrationLease": { "$ref": "#/$defs/packetLease" },
+        "heartbeat": { "$ref": "#/$defs/heartbeat" },
+        "verificationReceipt": { "$ref": "#/$defs/verificationReceipt" },
+        "retryExhaustion": { "$ref": "#/$defs/retryExhaustion" }
+      }
+    },
+    "issue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "packetId", "title"],
+      "properties": {
+        "id": { "$ref": "#/$defs/issueId" },
+        "packetId": { "$ref": "#/$defs/packetId" },
+        "title": { "type": "string", "minLength": 1 }
+      }
+    },
+    "attempt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "authoritative": { "type": "boolean" },
+        "lifecycle": { "type": "string" },
+        "rawStatus": { "type": "string" },
+        "endedAt": { "type": ["string", "null"] },
+        "result": { "type": ["string", "null"] },
+        "reason": { "type": ["string", "null"] }
+      }
+    },
+    "writeLock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["active"],
+      "properties": {
+        "active": { "type": "boolean" },
+        "attemptId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "packetLease": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["holder", "nonce", "expiresAt"],
+      "properties": {
+        "holder": { "type": "string", "minLength": 1 },
+        "nonce": { "type": "string", "minLength": 1 },
+        "expiresAt": { "type": "string", "minLength": 1 },
+        "packetId": { "$ref": "#/$defs/packetId" },
+        "repository": { "$ref": "#/$defs/repository" }
+      }
+    },
+    "completionEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "type": "string" },
+        "commit": { "type": "string" },
+        "tree": { "type": "string" },
+        "summary": { "type": "string" }
+      }
+    },
+    "archiveEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "apiReadback": { "type": "boolean" },
+        "readback": {}
+      }
+    },
+    "heartbeat": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sequence", "writtenAt", "readback", "commit", "tree"],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 1 },
+        "writtenAt": { "type": "string", "minLength": 1 },
+        "readback": { "type": "boolean" },
+        "payloadDigest": { "type": "string", "minLength": 1 },
+        "commit": { "$ref": "#/$defs/sha40" },
+        "tree": { "$ref": "#/$defs/sha40" },
+        "attemptId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "verificationReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checkoutRef", "commit", "tree", "promotableIdentity"],
+      "properties": {
+        "checkoutRef": { "type": "string", "minLength": 1 },
+        "commit": { "$ref": "#/$defs/sha40" },
+        "tree": { "$ref": "#/$defs/sha40" },
+        "kind": { "type": "string", "minLength": 1 },
+        "promotableIdentity": { "type": "boolean" },
+        "mergeRefEvidence": {
+          "type": ["object", "null"],
+          "additionalProperties": true
+        }
+      }
+    },
+    "retryExhaustion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "exhausted", "reason", "recovery"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["ordinary_source", "infrastructure", "code_failure"]
+        },
+        "exhausted": { "type": "boolean" },
+        "reason": { "type": "string", "minLength": 1 },
+        "recovery": {
+          "type": "string",
+          "enum": ["continue", "new_identity", "hold", "named_exception"]
+        }
+      }
+    },
+    "controls": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "exactCandidateInvalidation",
+        "boundedRetry",
+        "orchestrationLease",
+        "resourceUncertainty",
+        "automaticApproval",
+        "gitAuthority",
+        "publisherAuthority",
+        "autoworkDiscovery",
+        "issueCheckpoint",
+        "administratorRecovery",
+        "durableHeartbeat",
+        "checkoutBoundVerification",
+        "retryExhaustion",
+        "hostedCapacityScheduler"
+      ],
+      "properties": {
+        "exactCandidateInvalidation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["enabled", "identityFields"],
+          "properties": {
+            "enabled": { "type": "boolean", "const": true },
+            "identityFields": {
+              "type": "array",
+              "minItems": 3,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "enum": [
+                  "repository",
+                  "commit",
+                  "tree",
+                  "workflowDigest",
+                  "profileDigest"
+                ]
+              }
+            }
+          }
+        },
+        "boundedRetry": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "ordinarySourceRepairs",
+            "infrastructureAttemptsPerCandidate",
+            "codeFailureRetries"
+          ],
+          "properties": {
+            "ordinarySourceRepairs": {
+              "type": "integer",
+              "const": 3
+            },
+            "infrastructureAttemptsPerCandidate": {
+              "type": "integer",
+              "const": 2
+            },
+            "codeFailureRetries": {
+              "type": "integer",
+              "const": 0
+            }
+          }
+        },
+        "orchestrationLease": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["required", "scope"],
+          "properties": {
+            "required": { "type": "boolean", "const": true },
+            "scope": {
+              "type": "string",
+              "enum": ["packet-repository"]
+            },
+            "ttlSeconds": {
+              "type": "integer",
+              "minimum": 60,
+              "maximum": 86400
+            }
+          }
+        },
+        "resourceUncertainty": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["failClosed"],
+          "properties": {
+            "failClosed": { "type": "boolean", "const": true },
+            "unknownIsBlocking": { "type": "boolean", "const": true }
+          }
+        },
+        "automaticApproval": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["checkpoint", "reservedActions"],
+          "properties": {
+            "checkpoint": {
+              "type": "string",
+              "enum": ["automatic"]
+            },
+            "stagingPromote": {
+              "type": "string",
+              "enum": ["automatic-on-receipt-identity"]
+            },
+            "reservedActions": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "enum": [
+                  "main_promote",
+                  "publish_release",
+                  "deploy_production",
+                  "github_protection_change",
+                  "provider_live_mutation"
+                ]
+              }
+            },
+            "forbiddenActors": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "enum": ["self_review", "self_merge", "prefer_incoming"]
+              }
+            }
+          }
+        },
+        "gitAuthority": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "workBranchPattern",
+            "protectedRefs",
+            "implementerMayOpenPr",
+            "implementerMayMerge",
+            "nestedSelfInstall"
+          ],
+          "properties": {
+            "workBranchPattern": {
+              "type": "string",
+              "const": "issue/<n>-<slug>"
+            },
+            "protectedRefs": {
+              "type": "array",
+              "minItems": 3,
+              "items": {
+                "type": "string",
+                "enum": ["development", "staging", "main"]
+              },
+              "uniqueItems": true
+            },
+            "implementerMayOpenPr": { "type": "boolean", "const": false },
+            "implementerMayMerge": { "type": "boolean", "const": false },
+            "nestedSelfInstall": { "type": "boolean", "const": false }
+          }
+        },
+        "publisherAuthority": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "canonicalForV25",
+            "legacyPublishers",
+            "missingOrFailedClassification"
+          ],
+          "properties": {
+            "canonicalForV25": {
+              "type": "string",
+              "const": "none"
+            },
+            "legacyPublishers": {
+              "type": "array",
+              "minItems": 4,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "enum": [
+                  "linktrend-review-ready-publisher",
+                  "mark-review-ready.sh-as-publisher",
+                  "review-ready.json",
+                  "user-pat-publisher"
+                ]
+              }
+            },
+            "missingOrFailedClassification": {
+              "type": "string",
+              "const": "WAIVED_LEGACY_GATE"
+            }
+          }
+        },
+        "autoworkDiscovery": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["requiredWhenCallable"],
+          "properties": {
+            "requiredWhenCallable": { "type": "boolean", "const": true },
+            "unavailableIsHold": { "type": "boolean", "const": true }
+          }
+        },
+        "issueCheckpoint": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "acceptWithoutReviewReady",
+            "acceptWithoutToken",
+            "requiredEvidence"
+          ],
+          "properties": {
+            "acceptWithoutReviewReady": { "type": "boolean", "const": true },
+            "acceptWithoutToken": { "type": "boolean", "const": true },
+            "requiredEvidence": {
+              "type": "array",
+              "minItems": 5,
+              "maxItems": 5,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "enum": [
+                  "exact_pushed_commit_tree",
+                  "scoped_diff",
+                  "focused_tests",
+                  "independent_terra_verification",
+                  "manifest_evidence"
+                ]
+              }
+            }
+          }
+        },
+        "administratorRecovery": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "namedExceptionOnly",
+            "afterReplacementProof",
+            "allowedOperations"
+          ],
+          "properties": {
+            "namedExceptionOnly": { "type": "boolean", "const": true },
+            "afterReplacementProof": { "type": "boolean", "const": true },
+            "allowedOperations": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "enum": ["protection_snapshot", "restore", "readback"]
+              }
+            }
+          }
+        },
+        "durableHeartbeat": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["writeReadbackRequired", "persistBeforeMutation"],
+          "properties": {
+            "writeReadbackRequired": { "type": "boolean", "const": true },
+            "persistBeforeMutation": { "type": "boolean", "const": true }
+          }
+        },
+        "checkoutBoundVerification": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["bindToCheckout", "forbidMergeRefIdentity"],
+          "properties": {
+            "bindToCheckout": { "type": "boolean", "const": true },
+            "forbidMergeRefIdentity": { "type": "boolean", "const": true }
+          }
+        },
+        "retryExhaustion": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "diagnoseBeforeRecovery",
+            "forbidSilentRetry",
+            "ordinaryRecovery",
+            "infrastructureRecovery",
+            "codeFailureRecovery"
+          ],
+          "properties": {
+            "diagnoseBeforeRecovery": { "type": "boolean", "const": true },
+            "forbidSilentRetry": { "type": "boolean", "const": true },
+            "ordinaryRecovery": { "type": "string", "const": "new_identity" },
+            "infrastructureRecovery": { "type": "string", "const": "hold" },
+            "codeFailureRecovery": { "type": "string", "const": "new_identity" }
+          }
+        },
+        "hostedCapacityScheduler": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "requireCompleteSnapshot",
+            "busyIsNotDiagnosis",
+            "hostedConcurrencyAuthority",
+            "maxAdmittedSlots",
+            "unknownProbeSeconds",
+            "backstopSeconds",
+            "prioritization",
+            "utilizationGapEvent",
+            "recomputeOnEvents"
+          ],
+          "properties": {
+            "requireCompleteSnapshot": { "type": "boolean", "const": true },
+            "busyIsNotDiagnosis": { "type": "boolean", "const": true },
+            "unknownIsBlocking": { "type": "boolean", "const": true },
+            "hostedConcurrencyAuthority": {
+              "type": "string",
+              "const": "execution-protocol"
+            },
+            "maxAdmittedSlots": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["local", "hosted"],
+              "properties": {
+                "local": { "type": "integer", "const": 1 },
+                "hosted": { "type": "integer", "minimum": 1, "maximum": 8 }
+              }
+            },
+            "unknownProbeSeconds": { "type": "integer", "const": 600 },
+            "backstopSeconds": { "type": "integer", "const": 600 },
+            "prioritization": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "type": "string",
+                "enum": ["priority", "fifo", "dependencyReady"]
+              }
+            },
+            "utilizationGapEvent": {
+              "type": "string",
+              "const": "UTILIZATION_GAP"
+            },
+            "recomputeOnEvents": {
+              "type": "array",
+              "minItems": 5,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "enum": [
+                  "admission",
+                  "completion",
+                  "invalidation",
+                  "probe_timeout",
+                  "api_rejection",
+                  "utilization_gap_repair"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
