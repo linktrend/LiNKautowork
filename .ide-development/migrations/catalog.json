@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "catalogId": "ide-development-managed-core-migrations",
-  "packageVersion": "2.3.6",
+  "packageVersion": "2.5.1",
   "description": "Reviewed Wave 1 supersession catalog. Removals require exact identity and contentHash match; mismatches fail closed.",
   "entries": [
     {
@@ -286,6 +286,14 @@
       "action": "remove",
       "reason": "Former live ruleset mutation wrapper; external protection remains approval-gated W3 authority.",
       "sincePackageVersion": "2.2.0"
+    },
+    {
+      "identity": ".ide-development/migrations/external-cleanup-plan.json",
+      "path": ".ide-development/migrations/external-cleanup-plan.json",
+      "contentHash": "sha256:8404f3c27f84d54539a9c928ce35a08180d67341c288fc4373b210a84727e53a",
+      "action": "remove",
+      "reason": "Remove the exact v2.5.0 portfolio-specific rollout cleanup plan from the reusable package.",
+      "sincePackageVersion": "2.5.1"
     }
   ]
 }

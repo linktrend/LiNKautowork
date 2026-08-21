@@ -416,10 +416,6 @@ def build_entries() -> list[dict[str, Any]]:
             ".ide-development/content/config/transactional-dispatch.json",
         ),
         ("migrations/catalog.json", ".ide-development/migrations/catalog.json"),
-        (
-            "migrations/external-cleanup-plan.json",
-            ".ide-development/migrations/external-cleanup-plan.json",
-        ),
         ("migrations/schema.json", ".ide-development/migrations/schema.json"),
         ("migrations/README.md", ".ide-development/migrations/README.md"),
         ("schemas/manifest.schema.json", ".ide-development/schemas/manifest.schema.json"),
@@ -569,6 +565,18 @@ def build_entries() -> list[dict[str, Any]]:
         )
 
     execution_runtime_files = (
+        (
+            "core/execution/CODING-EXECUTION-PROTOCOL.md",
+            ".ide-development/execution/CODING-EXECUTION-PROTOCOL.md",
+        ),
+        (
+            "core/contracts/EXECUTION-CONTROL-CONTRACT.md",
+            ".ide-development/contracts/EXECUTION-CONTROL-CONTRACT.md",
+        ),
+        (
+            "core/contracts/EXECUTION-MANIFEST.schema.json",
+            ".ide-development/contracts/EXECUTION-MANIFEST.schema.json",
+        ),
         ("core/execution/__init__.py", ".ide-development/execution/__init__.py"),
         ("core/execution/lifecycle.py", ".ide-development/execution/lifecycle.py"),
         ("core/execution/protocol.py", ".ide-development/execution/protocol.py"),

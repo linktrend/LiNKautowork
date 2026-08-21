@@ -236,23 +236,14 @@ Apply of App installs, secrets, variables, Bugbot dashboard toggles, or rulesets
 |---|---|---|
 | System source | IDE Development | Authors `core/managed-core/`; runs internal verification suites; **not** a consumer rollout entry |
 | Internal self-verification | IDE Development | May execute installer tests against disposable temp repos only; may build RC archives for proof |
-| Consumer rollout | Other LiNKtrend repos | **Deferred** until WP04 Principal approval. Inventory + gate in `docs/GITOPS-CONSUMER-ROLLOUT.md`. WP1–WP03 complete on system source; WP04 packet prepared / not executed. |
+| Consumer rollout | Program Run targets | A Program Run supplies the complete target inventory and rollout topology for that execution. It may contain one target or many. |
 
-Locked consumer rollout order (documentation/ops; not executed — Work Packet 04 / Principal gate):
-
-1. `openclaw_prime`
-2. `LiNKplatform`
-3. `LiNKskills`
-4. `LiNKbrain`
-5. `LiNKsites`
-6. `LiNKdeveloper`
-7. `LiNKlibraries`
-8. `LiNKautowork`
-9. `LiNKtrading-codebase`
+The reusable package does not define repository names, a fixed canary, rollout order,
+cohort size, or concurrency. Those values come exclusively from the Program Run.
 
 Hard stops:
 
-- no real consumer mutation without Principal-gated WP04 approval
+- no real consumer mutation without the Program Run's required approval
 - no nested self-install into IDE Development (timeless)
 - no live GitHub settings/credential/tag/release changes without Principal / approval gate
 - no Claude runtime additions
