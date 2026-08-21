@@ -17,6 +17,12 @@ Always materialize:
 
 These skills are self-contained for GitOps bootstrap/compliance. They must not depend on `.cursor` being read.
 
+## Non-skill loader (ISS-04)
+
+`skills-loader.mjs` plus `skills-lock.json` are the Codex retrieval surface.
+They are not skills. Physical `.agents/skills/<name>/SKILL.md` copies stay
+until dual-app proof authorizes removal.
+
 ## Remaining approved skills
 
 `skills-manifest.json` lists the approved repository skills. The installer copies each present package skill source into `.agents/skills/<name>/SKILL.md` when packaging includes that skill under the managed-core `skills/` tree.

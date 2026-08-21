@@ -167,3 +167,39 @@ Factual correction for Update 9:
 3. Stop only for repeated unresolved findings, two no-progress cycles, repair reintroduction, redesign/new authority, infrastructure retry exhaustion, or an explicit resource limit. Same-identity severity reductions count as measurable progress. Compute units are recorded through an explicit accounting path so `maxComputeUnits` can stall truthfully. Those stops are truthful HOLD / `review_stalled` packets and cannot fabricate a clean review. `evaluate_progress` short-circuits HOLD and `review_stalled`. `ingest_review` fails closed on those stops; empty findings cannot mark pending or stalled identities corrected or emit `review_clean`.
 4. Distinct nonempty fingerprints never fuzzy-merge; only wording variants of the same identity may match. First-seen findings on repair-touched paths are `introduced_by_repair` and remain blocking; first-seen findings on untouched paths are `newly_discovered_in_unchanged_scope`.
 5. Review ingest requires exact `headSha` and `gitTree`, and `paths` as a nonempty list of nonempty strings. Malformed or non-object findings are `malformed_reviewer_output` with truthful HOLD and no cycle consumption. Repair cancels or invalidates any live reviewer. Implementer and reviewer actors stay separate. Reviewer silence or timeout is never clean and cannot authorize Full or repair until a valid exact-bound review transition explicitly clears the stop. A later source change invalidates prior review and Full evidence. Full never runs while HOLD or `review_stalled`.
+
+## Amendment — 2026-08-20 (`V25_BOOTSTRAP_LEAN`)
+
+Founder-approved Coding Execution Protocol 1.0.1 amendment `V25_BOOTSTRAP_LEAN`:
+
+1. A v2.5 Issue checkpoint is accepted from exact pushed commit/tree, scoped diff, focused tests, independent Terra verification, and manifest evidence. Review Ready and publisher tokens are not required.
+2. No singular legacy publisher is canonical for v2.5, including `linktrend-review-ready-publisher`.
+3. A failed or missing legacy publisher is `WAIVED_LEGACY_GATE`, never PASS and never an implementation failure.
+4. A later exact-head administrator recovery is only a named exception after substantive replacement proof, limited to protection snapshot, restore, and readback.
+
+## Amendment — 2026-08-20 (PKT-01 durable heartbeat, receipts, retry recovery, hosted capacity)
+
+Founder-authorized PKT-01 follow-on to Coding Execution Protocol 1.0.1:
+
+1. RUNNING packet mutation requires a durable heartbeat write plus matching readback bound to the checkout identity.
+2. Verification receipts bind to exact checkout commit/tree; merge-ref identity is never promotable.
+3. Retry exhaustion must be diagnosed before recovery; silent same-identity retry is forbidden.
+4. Hosted-capacity scheduling requires a complete resource snapshot; allocator busy/exhausted is not a diagnosis until then. This amendment does not authorize paid or Fast hosted runs.
+
+## Amendment — 2026-08-20 (PKT-01 continuous-utilization runtime)
+
+Founder-authorized continuation of PKT-01:
+
+1. Continuous utilization is a packaged contract: doctrine, config, schema, example, and MANIFEST surfaces plus the deterministic scheduler runtime.
+2. Hosted concurrency authority is `execution-protocol`. Canonical maxima are local 1 and hosted 2. Unknown probes and the 10-minute backstop recompute instead of guessing.
+3. `UTILIZATION_GAP` is an event that must be repaired by recomputation, not by paid or Fast fallback.
+4. Invalidation delays only the changed identity. Completion unlocks the next eligible job.
+
+## Amendment — 2026-08-20 (PKT-05 lean Issue checkpoint and Phase recovery)
+
+GitOps implementation of `V25_BOOTSTRAP_LEAN`:
+
+1. Issue checkpoints are token-independent. Review Ready / `AUTOMATION_TOKEN` / Issue PR / hosted completion status are nonrequirements.
+2. Legacy publisher/status outcomes are `WAIVED_LEGACY_GATE`, never PASS.
+3. Phase delivery remains one protected Phase PR/gate, exact review, conditional Full, and founder gate for `main`.
+4. Administrator recovery is a named exact-head exception: freeze, protection snapshot, `gh pr merge --admin --match-head-commit` first, minimum temporary exception only if needed, exact authorized merge, immediate restore/readback.

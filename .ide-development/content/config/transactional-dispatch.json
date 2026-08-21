@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "amendment": "V25_PKT08_REVISION_60_FINAL_CONTROLS",
+  "controlIdempotencyKey": "pkt08-b44060-transactional-dispatch-and-approved-design-authority-v1",
+  "writeAheadIntent": true,
+  "apiAcceptedStatusCode": 201,
+  "interruptionRecovery": "authoritative-idempotency-readback",
+  "casCommitReadback": "same-turn",
+  "maxCasAttempts": 3,
+  "deadlineBudgetGuard": true,
+  "dispatchSemantics": "exactly-once-logical",
+  "conversationIsAuthority": false,
+  "designAuthority": "APPROVED-manifest",
+  "redundantExecutorDesignApproval": "suppress",
+  "unsolicitedDesignOnlyTerminalResume": "once"
+}

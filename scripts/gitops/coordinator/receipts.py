@@ -45,6 +45,7 @@ RECEIPT_SCHEMA_VERSION = 2
 REJECTION_CODES = frozenset(
     {
         "repository_mismatch",
+        "head_mismatch",
         "gate_mismatch",
         "tree_mismatch",
         "dependency_mismatch",
@@ -588,6 +589,8 @@ def verify_receipt(
             raise ReceiptError("profile_mismatch", "receipt profile identity does not match candidate")
         if receipt_identity.workflow_digest != candidate.workflow_digest:
             raise ReceiptError("workflow_mismatch", "receipt workflow identity does not match candidate")
+        if receipt_identity.head_commit != candidate.head_commit:
+            raise ReceiptError("head_mismatch", "receipt commit does not match candidate")
         if workflow_run_id is not None and parsed.workflow_run_id != workflow_run_id:
             raise ReceiptError("run_mismatch", "receipt workflow run does not match expected run")
         if workflow_run_attempt is not None and parsed.workflow_run_attempt != workflow_run_attempt:

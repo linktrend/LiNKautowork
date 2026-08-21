@@ -93,6 +93,7 @@ class Fixture:
             require_evidence=kwargs.get("require_evidence", True),
             expected_repository=kwargs.get("expected_repository", "owner/name"),
             require_live_pr=kwargs.get("require_live_pr", False),
+            evidence_payloads=kwargs.get("evidence_payloads"),
         )
 
 
@@ -208,6 +209,31 @@ class PhasePackagerCoordinatorTests(unittest.TestCase):
         with self.assertRaisesRegex(coordinator.CoordinatorError, "evidence_missing"):
             self.fx.assemble([bare])
 
+        status_only = self.fx.accept_issue(32, "statusonly.txt", "status-only\n", ready=False)
+        self.fx.github.ready_shas.add(status_only.sha)
+        with self.assertRaisesRegex(coordinator.CoordinatorError, "evidence_missing"):
+            self.fx.assemble([status_only])
+
+    def test_lean_evidence_payload_accepts_without_review_ready_status(self) -> None:
+        source = self.fx.accept_issue(33, "lean.txt", "lean\n", ready=False)
+        tree = git(self.fx.work, "rev-parse", f"{source.sha}^{{tree}}")
+        payload = {
+            "schemaVersion": 1,
+            "kind": "v25-issue-checkpoint",
+            "headSha": source.sha,
+            "gitTree": tree,
+            "pushed": True,
+            "scopedDiff": True,
+            "focusedTests": {"passed": True},
+            "independentTerraVerification": True,
+            "manifestEvidence": True,
+            "classification": "tests",
+            "acceptance": "PKT-05 lean checkpoint",
+        }
+        result = self.fx.assemble([source], evidence_payloads={source.sha: payload})
+        self.assertEqual(result["acceptedCommits"][0]["sha"], source.sha)
+        self.assertNotIn(source.sha, self.fx.github.ready_shas)
+
     def test_overlapping_and_conflicting_commits_stop(self) -> None:
         left = self.fx.accept_issue(12, "shared.txt", "left\n")
         git(self.fx.work, "checkout", "-B", "issue/13-shared", "development")
@@ -218,6 +244,12 @@ class PhasePackagerCoordinatorTests(unittest.TestCase):
         git(self.fx.work, "push", "-q", "-u", "origin", "issue/13-shared")
         git(self.fx.work, "checkout", "development")
         self.fx.github.ready_shas.add(right_sha)
+        self.fx.github.evidence[right_sha] = {
+            "schemaVersion": 1,
+            "headSha": right_sha,
+            "classification": "tests",
+            "acceptance": "lean-or-schema-v1",
+        }
         with self.assertRaisesRegex(coordinator.CoordinatorError, "overlapping_commits"):
             self.fx.assemble(
                 [

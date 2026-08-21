@@ -21,6 +21,7 @@ import hashlib
 import json
 import os
 import re
+import subprocess
 import sys
 import urllib.error
 import urllib.request
@@ -38,6 +39,8 @@ try:
         verify_receipt_payload,
     )
     from scripts.gitops.coordinator.receipts import compute_receipt_digest
+    from scripts.gitops.github_auth import GitHubAuthError, resolve_phase_api_token
+    from scripts.gitops.administrator_recovery import MemoryProtection, recover_phase_merge
 except ModuleNotFoundError:  # pragma: no cover - script-style execution
     from delivery_modes import is_phase_branch, is_valid_sha, normalize_sha  # type: ignore
     from packager_coordinator import consume_handoff  # type: ignore
@@ -48,6 +51,8 @@ except ModuleNotFoundError:  # pragma: no cover - script-style execution
         verify_receipt_payload,
     )
     from coordinator.receipts import compute_receipt_digest  # type: ignore
+    from github_auth import GitHubAuthError, resolve_phase_api_token  # type: ignore
+    from administrator_recovery import MemoryProtection, recover_phase_merge  # type: ignore
 
 COMPONENT_KIND = "delivery_controller"
 IS_DELIVERY_CONTROLLER = True
@@ -84,6 +89,66 @@ REQUIRED_CHECK_NAMES = (
 )
 
 
+@dataclass(frozen=True)
+class StagedRolloutConfig:
+    """Configurable stage and gate identity for one rollout path."""
+
+    phase_branch_prefix: str = "phase/"
+    development_branch: str = "development"
+    staging_branch: str = "staging"
+    main_branch: str = "main"
+    required_checks: tuple[str, ...] = REQUIRED_CHECK_NAMES
+
+    def __post_init__(self) -> None:
+        branches = (
+            self.development_branch,
+            self.staging_branch,
+            self.main_branch,
+        )
+        if any(not isinstance(value, str) or not re.fullmatch(r"[A-Za-z0-9._/-]+", value) for value in branches):
+            raise ValueError("invalid_rollout_branch")
+        if len(set(branches)) != len(branches):
+            raise ValueError("duplicate_rollout_branch")
+        if not isinstance(self.phase_branch_prefix, str) or not re.fullmatch(
+            r"[A-Za-z0-9._/-]+/", self.phase_branch_prefix
+        ):
+            raise ValueError("invalid_phase_branch_prefix")
+        if not self.required_checks or any(
+            not isinstance(value, str) or not value.strip() for value in self.required_checks
+        ):
+            raise ValueError("invalid_required_checks")
+
+    @classmethod
+    def from_mapping(cls, payload: Mapping[str, Any] | None) -> "StagedRolloutConfig":
+        if payload is None:
+            return cls()
+        if not isinstance(payload, Mapping):
+            raise ValueError("invalid_rollout_config")
+        allowed = {
+            "phaseBranchPrefix",
+            "developmentBranch",
+            "stagingBranch",
+            "mainBranch",
+            "requiredChecks",
+        }
+        if set(payload) - allowed:
+            raise ValueError("unknown_rollout_config_field")
+        defaults = cls()
+        required_checks = payload.get("requiredChecks", defaults.required_checks)
+        if not isinstance(required_checks, (list, tuple)):
+            raise ValueError("invalid_required_checks")
+        return cls(
+            phase_branch_prefix=str(payload.get("phaseBranchPrefix", defaults.phase_branch_prefix)),
+            development_branch=str(payload.get("developmentBranch", defaults.development_branch)),
+            staging_branch=str(payload.get("stagingBranch", defaults.staging_branch)),
+            main_branch=str(payload.get("mainBranch", defaults.main_branch)),
+            required_checks=tuple(required_checks),
+        )
+
+
+StagedRollout = StagedRolloutConfig
+
+
 class ControllerError(ValueError):
     """Fail-closed delivery-controller rejection."""
 
@@ -109,6 +174,8 @@ class GitHubPort(Protocol):
         number: int,
         expected_head: str,
         method: str = "merge",
+        admin: bool = False,
+        match_head_commit: bool = True,
     ) -> dict[str, Any]:
         ...
 
@@ -143,6 +210,7 @@ class MemoryGitHub:
     protected_push_attempts: list[dict[str, str]] = field(default_factory=list)
     merge_rejections: dict[int, str] = field(default_factory=dict)
     next_number: int = 1
+    require_admin_bypass: bool = False
 
     def get_pull_request(self, *, repository: str, number: int) -> dict[str, Any]:
         if repository != self.repository:
@@ -159,6 +227,8 @@ class MemoryGitHub:
         number: int,
         expected_head: str,
         method: str = "merge",
+        admin: bool = False,
+        match_head_commit: bool = True,
     ) -> dict[str, Any]:
         if repository != self.repository:
             raise ControllerError("wrong_repository", repository)
@@ -166,8 +236,10 @@ class MemoryGitHub:
             raise ControllerError("protected_merge_rejected", self.merge_rejections[number])
         pr = self.get_pull_request(repository=repository, number=number)
         head = normalize_sha(str(pr.get("headSha") or ""))
-        if head != normalize_sha(expected_head):
+        if match_head_commit and head != normalize_sha(expected_head):
             raise ControllerError("stale_pr_head", f"live={head}:expected={expected_head}")
+        if self.require_admin_bypass and not admin:
+            raise ControllerError("protected_merge_rejected", "admin_bypass_required")
         if bool(pr.get("isDraft")):
             raise ControllerError("draft_pr", str(number))
         if str(pr.get("state") or "").lower() not in {"open", ""}:
@@ -187,6 +259,8 @@ class MemoryGitHub:
             "base": base,
             "baseBefore": base_before,
             "directPush": False,
+            "admin": bool(admin),
+            "matchHeadCommit": bool(match_head_commit),
         }
         self.merges.append(record)
         return dict(record)
@@ -322,15 +396,25 @@ class LiveGitHub:
         number: int,
         expected_head: str,
         method: str = "merge",
+        admin: bool = False,
+        match_head_commit: bool = True,
     ) -> dict[str, Any]:
         live = self.get_pull_request(repository=repository, number=number)
         head = normalize_sha(str(live.get("headSha") or ""))
-        if head != normalize_sha(expected_head):
+        if match_head_commit and head != normalize_sha(expected_head):
             raise ControllerError("stale_pr_head", f"live={head}:expected={expected_head}")
         if bool(live.get("isDraft")):
             raise ControllerError("draft_pr", str(number))
         if str(live.get("state") or "").lower() != "open":
             raise ControllerError("pr_not_open", str(number))
+        if admin:
+            return self._merge_with_gh_admin(
+                repository=repository,
+                number=number,
+                expected_head=expected_head,
+                method=method,
+                live=live,
+            )
         payload = self._request(
             "PUT",
             f"https://api.github.com/repos/{repository}/pulls/{number}/merge",
@@ -346,8 +430,58 @@ class LiveGitHub:
             "method": method,
             "headSha": normalize_sha(expected_head),
             "mergeCommitSha": normalize_sha(str(payload.get("sha") or "")),
+            "directPush": False,
+            "admin": False,
+            "matchHeadCommit": bool(match_head_commit),
+            "base": str(live.get("base") or ""),
+        }
+
+    def _merge_with_gh_admin(
+        self,
+        *,
+        repository: str,
+        number: int,
+        expected_head: str,
+        method: str,
+        live: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        """Named recovery path: ``gh pr merge --admin --match-head-commit`` first."""
+
+        flags = {"merge": "--merge", "squash": "--squash", "rebase": "--rebase"}
+        method_flag = flags.get(method, "--merge")
+        env = os.environ.copy()
+        env["GH_TOKEN"] = self.automation_token
+        env["GITHUB_TOKEN"] = self.automation_token
+        completed = subprocess.run(
+            [
+                "gh",
+                "pr",
+                "merge",
+                str(number),
+                "--repo",
+                repository,
+                "--admin",
+                "--match-head-commit",
+                normalize_sha(expected_head),
+                method_flag,
+            ],
+            capture_output=True,
+            text=True,
+            env=env,
+            check=False,
+        )
+        if completed.returncode != 0:
+            detail = (completed.stderr or completed.stdout or "gh pr merge --admin failed").strip()[:240]
+            raise ControllerError("protected_merge_rejected", detail)
+        return {
+            "number": number,
+            "method": method,
+            "headSha": normalize_sha(expected_head),
+            "mergeCommitSha": normalize_sha(str(live.get("mergeCommitSha") or "")),
             "base": str(live.get("base") or ""),
             "directPush": False,
+            "admin": True,
+            "matchHeadCommit": True,
         }
 
     def create_pull_request(
@@ -441,17 +575,18 @@ class LiveGitHub:
 
 
 def resolve_production_github(repository: str) -> LiveGitHub:
-    """Fail closed unless a trusted normal automation token is configured."""
+    """Fail closed unless a GitHub API token is configured for Phase operations.
+
+    Does not require AUTOMATION_TOKEN or AUTOMATION_TOKEN_SOURCE. Those names are
+    waived legacy publisher credentials, not the v2.5 Phase delivery contract.
+    """
 
     if not repository or repository.count("/") != 1:
         raise ControllerError("missing_repository", "delivery requires --repository owner/name")
-    token = (os.environ.get("AUTOMATION_TOKEN") or "").strip()
-    source = (os.environ.get("AUTOMATION_TOKEN_SOURCE") or "").strip()
-    if not token or source != "github_token":
-        raise ControllerError(
-            "missing_github_credentials",
-            "delivery requires AUTOMATION_TOKEN with AUTOMATION_TOKEN_SOURCE=github_token",
-        )
+    try:
+        token, _source = resolve_phase_api_token()
+    except GitHubAuthError as exc:
+        raise ControllerError(exc.code, exc.detail) from exc
     return LiveGitHub(repository=repository, automation_token=token)
 
 
@@ -495,6 +630,17 @@ def require_promotion_source_equality(
         )
 
 
+def _rollout_config(rollout: StagedRolloutConfig | None) -> StagedRolloutConfig:
+    return rollout if rollout is not None else StagedRolloutConfig()
+
+
+def _promotion_branch(config: StagedRolloutConfig, stage: str, source_sha: str) -> str:
+    branch = f"promote/{stage}/{normalize_sha(source_sha)[:12]}"
+    if not re.fullmatch(r"promote/[A-Za-z0-9._/-]+/[0-9a-f]{12}", branch):
+        raise ControllerError("invalid_promote_branch", branch)
+    return branch
+
+
 def agent_env_fingerprint(environ: Mapping[str, str] | None = None) -> str:
     """Sanitize agent markers so behavior cannot depend on which agent invoked."""
 
@@ -521,9 +667,11 @@ def accept_phase_pr(
     repository: str,
     live_head: str,
     live_tree: str | None = None,
+    rollout: StagedRolloutConfig | None = None,
 ) -> dict[str, Any]:
     """Bind delivery to one exact non-draft phase/* → development PR."""
 
+    config = _rollout_config(rollout)
     ok, detail = consume_handoff(
         handoff,
         live_head=live_head,
@@ -532,10 +680,10 @@ def accept_phase_pr(
     )
     if not ok:
         raise ControllerError(detail, "handoff rejected")
-    if str(pr.get("base") or "") != "development":
+    if str(pr.get("base") or "") != config.development_branch:
         raise ControllerError("wrong_target", str(pr.get("base") or ""))
     head_ref = str(pr.get("head") or pr.get("headRefName") or "")
-    if not is_phase_branch(head_ref):
+    if not is_phase_branch(head_ref, config.phase_branch_prefix):
         raise ControllerError("wrong_source", head_ref)
     if bool(pr.get("isDraft")):
         raise ControllerError("draft_pr", str(pr.get("number") or ""))
@@ -554,16 +702,21 @@ def accept_phase_pr(
     return {
         "number": int(pr.get("number") or 0),
         "head": head_ref,
-        "base": "development",
+        "base": config.development_branch,
         "headSha": head,
         "gitTree": normalize_sha(str(live_tree or handoff.get("gitTree") or "")),
         "repository": repository,
     }
 
 
-def _check_named_gates(checks: Mapping[str, Any] | None, *, live_head: str) -> None:
+def _check_named_gates(
+    checks: Mapping[str, Any] | None,
+    *,
+    live_head: str,
+    required_checks: tuple[str, ...] = REQUIRED_CHECK_NAMES,
+) -> None:
     payload = checks if isinstance(checks, Mapping) else {}
-    for name in REQUIRED_CHECK_NAMES:
+    for name in required_checks:
         row = payload.get(name)
         if not isinstance(row, Mapping):
             raise ControllerError("required_gate_missing", name)
@@ -582,6 +735,7 @@ def _check_repository_owned_ci(
     *,
     live_head: str,
     required_names: list[str] | None = None,
+    system_checks: tuple[str, ...] = REQUIRED_CHECK_NAMES,
 ) -> None:
     """Distinct gate: repository-owned required CI on the exact candidate head."""
 
@@ -591,7 +745,7 @@ def _check_repository_owned_ci(
         raise ControllerError("repository_ci_missing", "repository-owned required CI list is required")
     results = payload.get("results") if isinstance(payload.get("results"), Mapping) else payload
     for name in names:
-        if name in REQUIRED_CHECK_NAMES:
+        if name in system_checks:
             raise ControllerError("repository_ci_collides_with_system", name)
         row = results.get(name) if isinstance(results, Mapping) else None
         if not isinstance(row, Mapping):
@@ -619,20 +773,27 @@ def verify_development_eligibility(
     receipt: Mapping[str, Any],
     candidate_identity: Mapping[str, Any],
     conflict: bool = False,
+    rollout: StagedRolloutConfig | None = None,
 ) -> dict[str, Any]:
     """Require exact gates, repo-owned CI, genuine receipt, and an unchanged Phase PR head."""
 
+    config = _rollout_config(rollout)
     accepted = accept_phase_pr(
         pr,
         handoff,
         repository=repository,
         live_head=live_head,
         live_tree=live_tree,
+        rollout=config,
     )
     if conflict:
         raise ControllerError("merge_conflict", str(accepted["number"]))
-    _check_named_gates(named_checks, live_head=live_head)
-    _check_repository_owned_ci(repository_ci, live_head=live_head)
+    _check_named_gates(named_checks, live_head=live_head, required_checks=config.required_checks)
+    _check_repository_owned_ci(
+        repository_ci,
+        live_head=live_head,
+        system_checks=config.required_checks,
+    )
     gates = evaluate_development_gates(gate_payload, live_head)
     if not gates.accepted:
         raise ControllerError(gates.code, gates.detail)
@@ -661,12 +822,14 @@ def merge_to_development(
     expected_head: str,
     role: str,
     actor: str = "delivery-controller",
+    rollout: StagedRolloutConfig | None = None,
 ) -> dict[str, Any]:
     """Merge through GitHub protection. Never push directly to development."""
 
+    config = _rollout_config(rollout)
     require_controller_role(role)
     try:
-        github.push_protected(repository=repository, branch="development", sha=expected_head)
+        github.push_protected(repository=repository, branch=config.development_branch, sha=expected_head)
     except ControllerError as exc:
         if exc.code != "direct_push_forbidden":
             raise
@@ -676,11 +839,13 @@ def merge_to_development(
             number=pr_number,
             expected_head=expected_head,
             method="merge",
+            admin=False,
+            match_head_commit=True,
         )
     )
     return {
         "status": "merged",
-        "stage": "development",
+        "stage": config.development_branch,
         "pr": pr_number,
         "actor": actor,
         "role": role,
@@ -704,9 +869,11 @@ def promote_to_staging(
     release_gate: Mapping[str, Any],
     role: str,
     full_suite_invoked: bool = False,
+    rollout: StagedRolloutConfig | None = None,
 ) -> dict[str, Any]:
     """Promote via temporary promote/staging/* PR using exact receipt reuse."""
 
+    config = _rollout_config(rollout)
     require_controller_role(role)
     require_promotion_source_equality(
         stage="staging",
@@ -725,14 +892,12 @@ def promote_to_staging(
     if identity_tree != normalize_sha(candidate_tree):
         raise ControllerError("changed_staging_content", "promotion tree differs from receipt identity")
     short = normalize_sha(development_sha)[:12]
-    branch = f"promote/staging/{short}"
-    if not PROMOTE_STAGING_RE.fullmatch(branch):
-        raise ControllerError("invalid_promote_branch", branch)
+    branch = _promotion_branch(config, config.staging_branch, development_sha)
     marker = {
         "schemaVersion": 1,
-        "stage": "staging",
-        "sourceBranch": "development",
-        "targetBranch": "staging",
+        "stage": config.staging_branch,
+        "sourceBranch": config.development_branch,
+        "targetBranch": config.staging_branch,
         "sourceSha": normalize_sha(development_sha),
         "targetSha": normalize_sha(staging_sha),
         "candidateHead": normalize_sha(candidate_sha),
@@ -744,8 +909,8 @@ def promote_to_staging(
         lambda: github.create_pull_request(
             repository=repository,
             head=branch,
-            base="staging",
-            title=f"Promote development {short} to staging",
+            base=config.staging_branch,
+            title=f"Promote {config.development_branch} {short} to {config.staging_branch}",
             body=body,
             head_sha=candidate_sha,
         )
@@ -755,11 +920,14 @@ def promote_to_staging(
             repository=repository,
             number=int(pr["number"]),
             expected_head=candidate_sha,
+            method="merge",
+            admin=False,
+            match_head_commit=True,
         )
     )
     return {
         "status": "merged",
-        "stage": "staging",
+        "stage": config.staging_branch,
         "pr": int(pr["number"]),
         "promoteBranch": branch,
         "sourceSha": normalize_sha(development_sha),
@@ -784,9 +952,11 @@ def prepare_main_promotion(
     candidate_identity: Mapping[str, Any],
     release_gate: Mapping[str, Any],
     role: str,
+    rollout: StagedRolloutConfig | None = None,
 ) -> dict[str, Any]:
     """Open promote/main/* and wait for explicit founder approval."""
 
+    config = _rollout_config(rollout)
     require_controller_role(role)
     require_promotion_source_equality(
         stage="main",
@@ -800,12 +970,12 @@ def prepare_main_promotion(
     if not receipt_decision.accepted:
         raise ControllerError("receipt_rejected", f"{receipt_decision.code}:{receipt_decision.detail}")
     short = normalize_sha(staging_sha)[:12]
-    branch = f"promote/main/{short}"
+    branch = _promotion_branch(config, config.main_branch, staging_sha)
     marker = {
         "schemaVersion": 1,
-        "stage": "main",
-        "sourceBranch": "staging",
-        "targetBranch": "main",
+        "stage": config.main_branch,
+        "sourceBranch": config.staging_branch,
+        "targetBranch": config.main_branch,
         "sourceSha": normalize_sha(staging_sha),
         "targetSha": normalize_sha(main_sha),
         "candidateHead": normalize_sha(candidate_sha),
@@ -818,15 +988,18 @@ def prepare_main_promotion(
         lambda: github.create_pull_request(
             repository=repository,
             head=branch,
-            base="main",
-            title=f"Promote staging {short} to main (awaiting founder approval)",
+            base=config.main_branch,
+            title=(
+                f"Promote {config.staging_branch} {short} to {config.main_branch} "
+                "(awaiting founder approval)"
+            ),
             body=body,
             head_sha=candidate_sha,
         )
     )
     return {
         "status": "waiting_founder_approval",
-        "stage": "main",
+        "stage": config.main_branch,
         "pr": int(pr["number"]),
         "promoteBranch": branch,
         "sourceSha": normalize_sha(staging_sha),
@@ -849,9 +1022,11 @@ def complete_main_promotion(
     approval: Mapping[str, Any],
     receipt: Mapping[str, Any],
     role: str,
+    rollout: StagedRolloutConfig | None = None,
 ) -> dict[str, Any]:
     """Merge main only after exact founder approval; reject ambiguous/stale."""
 
+    config = _rollout_config(rollout)
     require_controller_role(role)
     require_promotion_source_equality(
         stage="main",
@@ -882,6 +1057,9 @@ def complete_main_promotion(
             repository=repository,
             number=pr_number,
             expected_head=expected_head,
+            method="merge",
+            admin=False,
+            match_head_commit=True,
         )
     )
     return {
@@ -930,9 +1108,11 @@ def cleanup_temporary_branches(
     branches: list[str],
     merge_succeeded: bool,
     controller_owned: Mapping[str, bool] | None = None,
+    rollout: StagedRolloutConfig | None = None,
 ) -> dict[str, Any]:
     """Delete only controller-created promote/* branches after successful merges."""
 
+    config = _rollout_config(rollout)
     if not merge_succeeded:
         raise ControllerError("cleanup_before_success", "temporary branches preserved until successful merge")
     owned = controller_owned or {}
@@ -942,7 +1122,11 @@ def cleanup_temporary_branches(
         name = branch.removeprefix("refs/heads/")
         if name in PROTECTED_BRANCHES:
             raise ControllerError("protected_ref_delete", name)
-        if not (PROMOTE_STAGING_RE.fullmatch(name) or PROMOTE_MAIN_RE.fullmatch(name)):
+        allowed_patterns = (
+            _promotion_branch(config, config.staging_branch, "0" * 40)[:-12] + "[0-9a-f]{12}",
+            _promotion_branch(config, config.main_branch, "0" * 40)[:-12] + "[0-9a-f]{12}",
+        )
+        if not any(re.fullmatch(pattern, name) for pattern in allowed_patterns):
             preserved.append(name)
             continue
         if owned and not owned.get(name, False):
@@ -1035,9 +1219,11 @@ def deliver_phase_to_development(
     actor: str = "delivery-controller",
     conflict: bool = False,
     record_path: Path | None = None,
+    rollout: StagedRolloutConfig | None = None,
 ) -> dict[str, Any]:
     """End-to-end development merge for one exact Phase PR."""
 
+    config = _rollout_config(rollout)
     eligibility = verify_development_eligibility(
         handoff=handoff,
         pr=pr,
@@ -1050,6 +1236,7 @@ def deliver_phase_to_development(
         receipt=receipt,
         candidate_identity=candidate_identity,
         conflict=conflict,
+        rollout=config,
     )
     try:
         merged = merge_to_development(
@@ -1059,6 +1246,7 @@ def deliver_phase_to_development(
             expected_head=live_head,
             role=role,
             actor=actor,
+            rollout=config,
         )
     except ControllerError as exc:
         return stop_on_protected_merge_rejection(exc)
@@ -1073,6 +1261,53 @@ def deliver_phase_to_development(
     return record
 
 
+def recover_phase_to_development(
+    *,
+    github: GitHubPort,
+    protections: Any,
+    repository: str,
+    handoff: Mapping[str, Any],
+    pr: Mapping[str, Any],
+    live_head: str,
+    live_tree: str,
+    named_exception: str,
+    replacement_proof: bool,
+    allow_temporary_exception: bool = False,
+    obsolete_status_state: str = "missing",
+    role: str,
+) -> dict[str, Any]:
+    """Named exact-head administrator recovery after replacement proof."""
+
+    require_controller_role(role)
+    accepted = accept_phase_pr(
+        pr,
+        handoff,
+        repository=repository,
+        live_head=live_head,
+        live_tree=live_tree,
+    )
+    try:
+        return recover_phase_merge(
+            github=github,
+            protections=protections,
+            repository=repository,
+            pr_number=int(accepted["number"]),
+            phase_branch=str(accepted["head"]),
+            expected_head=live_head,
+            expected_tree=live_tree,
+            live_head=live_head,
+            live_tree=live_tree,
+            named_exception=named_exception,
+            replacement_proof=replacement_proof,
+            allow_temporary_exception=allow_temporary_exception,
+            obsolete_status_state=obsolete_status_state,
+        )
+    except Exception as exc:
+        if hasattr(exc, "code"):
+            raise ControllerError(str(getattr(exc, "code")), str(getattr(exc, "detail", exc))) from exc
+        raise
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Agent-agnostic delivery controller (WP-U02)")
     parser.add_argument(
@@ -1085,6 +1320,7 @@ def main(argv: list[str] | None = None) -> int:
             "complete-main",
             "cleanup",
             "agent-identical",
+            "recover-phase",
         ],
     )
     parser.add_argument("--repository", default="")
@@ -1109,12 +1345,22 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--branches", default="")
     parser.add_argument("--payload-json", default="")
     parser.add_argument("--out", default="")
+    parser.add_argument("--named-exception", default="")
+    parser.add_argument("--replacement-proof", action="store_true")
+    parser.add_argument("--allow-temporary-exception", action="store_true")
+    parser.add_argument("--obsolete-status-state", default="missing")
+    parser.add_argument(
+        "--rollout-json",
+        default="",
+        help="Optional staged-rollout config with branch and required-check identities",
+    )
     args = parser.parse_args(argv)
 
     def load(path: str) -> Any:
         return json.loads(Path(path).read_text(encoding="utf-8"))
 
     try:
+        rollout = StagedRolloutConfig.from_mapping(load(args.rollout_json)) if args.rollout_json else None
         if args.command == "agent-identical":
             payload = load(args.payload_json) if args.payload_json else {"ok": True}
             result = run_identical_under_agents(
@@ -1139,6 +1385,7 @@ def main(argv: list[str] | None = None) -> int:
                 repository_ci=load(args.repository_ci_json),
                 receipt=load(args.receipt),
                 candidate_identity=load(args.identity_json),
+                rollout=rollout,
             )
         else:
             require_controller_role(args.role)
@@ -1150,6 +1397,7 @@ def main(argv: list[str] | None = None) -> int:
                     pr_number=args.pr_number,
                     expected_head=args.expected_head or args.live_head,
                     role=args.role,
+                    rollout=rollout,
                 )
             elif args.command == "promote-staging":
                 payload = load(args.promote_json)
@@ -1165,6 +1413,7 @@ def main(argv: list[str] | None = None) -> int:
                     release_gate=load(args.release_json),
                     role=args.role,
                     full_suite_invoked=bool(payload.get("fullSuiteInvoked")),
+                    rollout=rollout,
                 )
             elif args.command == "prepare-main":
                 payload = load(args.promote_json)
@@ -1178,6 +1427,7 @@ def main(argv: list[str] | None = None) -> int:
                     candidate_identity=load(args.identity_json),
                     release_gate=load(args.release_json),
                     role=args.role,
+                    rollout=rollout,
                 )
             elif args.command == "complete-main":
                 result = complete_main_promotion(
@@ -1190,6 +1440,7 @@ def main(argv: list[str] | None = None) -> int:
                     approval=load(args.approval_json),
                     receipt=load(args.receipt),
                     role=args.role,
+                    rollout=rollout,
                 )
             elif args.command == "cleanup":
                 branches = [item for item in args.branches.split(",") if item]
@@ -1201,6 +1452,27 @@ def main(argv: list[str] | None = None) -> int:
                     branches=branches,
                     merge_succeeded=True,
                     controller_owned=owned,
+                    rollout=rollout,
+                )
+            elif args.command == "recover-phase":
+                if os.environ.get("LINKTREND_STATUS_BACKEND") != "file":
+                    raise ControllerError(
+                        "recovery_requires_injected_protection_port",
+                        "live administrator recovery requires an injected ProtectionPort",
+                    )
+                result = recover_phase_to_development(
+                    github=github,
+                    protections=MemoryProtection(repository=args.repository),
+                    repository=args.repository,
+                    handoff=load(args.handoff),
+                    pr=load(args.pr_json),
+                    live_head=args.live_head,
+                    live_tree=args.live_tree,
+                    named_exception=args.named_exception,
+                    replacement_proof=bool(args.replacement_proof),
+                    allow_temporary_exception=bool(args.allow_temporary_exception),
+                    obsolete_status_state=args.obsolete_status_state,
+                    role=args.role,
                 )
             else:  # pragma: no cover
                 raise ControllerError("unknown_command", args.command)

@@ -81,7 +81,7 @@ class GateReceiptTests(unittest.TestCase):
             workflow_files=[".github/workflows/check.yml"],
         )
 
-    def test_exact_identity_and_different_commit_same_tree_pass(self) -> None:
+    def test_exact_identity_rejects_different_commit_same_tree(self) -> None:
         receipt = self._write()
         self.assertTrue(receipts.verify_receipt(receipts.load_json(receipt), self.identity, "full-gate"))
         old_source = self.identity.head_commit
@@ -90,9 +90,9 @@ class GateReceiptTests(unittest.TestCase):
         self.assertNotEqual(old_source, newer.head_commit)
         self.assertEqual(self.identity.git_tree, newer.git_tree)
         verdict = receipts.verify_receipt(receipts.load_json(receipt), newer, "full-gate")
-        self.assertEqual(verdict.code, "accepted")
-        self.assertEqual(verdict.source_commit, old_source)
-        self.assertEqual(verdict.promotion_commit, newer.head_commit)
+        self.assertEqual(verdict.code, "head_mismatch")
+        self.assertIsNone(verdict.source_commit)
+        self.assertIsNone(verdict.promotion_commit)
 
     def test_source_dependency_profile_and_workflow_changes_fail(self) -> None:
         receipt = self._write()

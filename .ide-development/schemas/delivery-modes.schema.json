@@ -267,6 +267,57 @@
           "properties": {
             "bugbot": { "type": "string", "const": "final-candidate-only" }
           }
+        },
+        "amendment": { "type": "string", "const": "V25_BOOTSTRAP_LEAN" },
+        "issueCheckpoint": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["acceptWithoutReviewReady", "acceptWithoutToken", "requiredEvidence"],
+          "properties": {
+            "acceptWithoutReviewReady": { "type": "boolean", "const": true },
+            "acceptWithoutToken": { "type": "boolean", "const": true },
+            "requiredEvidence": {
+              "type": "array",
+              "minItems": 5,
+              "maxItems": 5,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "enum": [
+                  "exact_pushed_commit_tree",
+                  "scoped_diff",
+                  "focused_tests",
+                  "independent_terra_verification",
+                  "manifest_evidence"
+                ]
+              }
+            }
+          }
+        },
+        "publisherAuthority": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["canonicalForV25", "missingOrFailedClassification"],
+          "properties": {
+            "canonicalForV25": { "type": "string", "const": "none" },
+            "missingOrFailedClassification": { "type": "string", "const": "WAIVED_LEGACY_GATE" }
+          }
+        },
+        "administratorRecovery": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["namedExceptionOnly", "preferAdminMatchHeadCommit"],
+          "properties": {
+            "namedExceptionOnly": { "type": "boolean", "const": true },
+            "preferAdminMatchHeadCommit": { "type": "boolean", "const": true },
+            "allowedOperations": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["protection_snapshot", "restore", "readback"]
+              }
+            }
+          }
         }
       }
     },

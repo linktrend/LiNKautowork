@@ -47,6 +47,18 @@ on:
         description: "Exact 40-character Phase PR head for canary-only Full"
         required: false
         type: string
+      target_baseline_sha:
+        description: "Runtime-supplied exact 40-character target baseline SHA"
+        required: false
+        type: string
+      target_baseline_ref:
+        description: "Runtime-supplied authoritative remote target ref"
+        required: false
+        type: string
+
+env:
+  LINKTREND_TARGET_BASELINE_SHA: ${{ github.event.pull_request.base.sha || inputs.target_baseline_sha }}
+  LINKTREND_TARGET_BASELINE_REF: ${{ inputs.target_baseline_ref || format('origin/{0}', github.event.pull_request.base.ref) }}
 
 permissions: {}
 
@@ -78,7 +90,7 @@ jobs:
       - name: Checkout exact sealed Phase head in unprivileged PR context
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.expected_head || github.event.pull_request.head.sha }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -188,7 +200,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          git diff --check
+          python3 scripts/gitops/generated_output_closure.py --finalize
           python3 scripts/gitops/run_delivery_profile.py full
           python3 scripts/gitops/require_exact_ci_success.py \
             --repository "${GITHUB_REPOSITORY}" --head "${EXPECTED_HEAD}"
@@ -398,7 +410,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          git diff --check
+          python3 scripts/gitops/generated_output_closure.py --finalize
           python3 scripts/gitops/run_delivery_profile.py full
           python3 scripts/gitops/require_exact_ci_success.py \
             --repository "${GITHUB_REPOSITORY}" --head "${EXPECTED_HEAD}"

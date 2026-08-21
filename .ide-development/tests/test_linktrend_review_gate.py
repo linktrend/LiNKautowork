@@ -261,6 +261,10 @@ class LinktrendReviewGateTests(unittest.TestCase):
         self.assertIn("needs: full", (ROOT / ".github/workflows/linktrend-integrator-merge.yml").read_text())
         integrator = (ROOT / ".github/workflows/linktrend-integrator-merge.yml").read_text()
         self.assertIn("gitTree={identity.git_tree}", integrator)
+        self.assertIn(
+            "ref: ${{ github.event_name == 'workflow_dispatch' && inputs.expected_head || github.event.pull_request.head.sha }}",
+            integrator,
+        )
         self.assertEqual(
             integrator,
             (ROOT / "core/github/managed-workflows/linktrend-integrator-merge.yml").read_text(),

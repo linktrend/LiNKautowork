@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "kind": "generated-output-closure",
+  "maxPasses": 3,
+  "outputs": [
+    {
+      "id": "secret-scan-fixtures",
+      "output": ".github/linktrend-secret-scan-fixtures.json",
+      "generator": [
+        "python3",
+        "scripts/gitops/generated_output_closure.py",
+        "--generate-fixtures"
+      ],
+      "invalidatingSources": [
+        "**"
+      ],
+      "dependsOn": []
+    }
+  ]
+}

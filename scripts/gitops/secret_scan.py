@@ -21,6 +21,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+try:
+    from scripts.gitops.generated_output_closure import ClosureError, candidate_source_tree as closure_candidate_source_tree
+except ModuleNotFoundError:  # pragma: no cover - script-style execution
+    from generated_output_closure import ClosureError, candidate_source_tree as closure_candidate_source_tree  # type: ignore
+
 SCANNER_POLICY_VERSION = "secret-scan-policy/v1"
 POLICY_SHAPE_RE = re.compile(r"^secret-scan-policy/[A-Za-z0-9._-]+$")
 SYNTHETIC_PREFIX = "ltfx."
@@ -197,18 +202,17 @@ def tracked_files(root: Path) -> list[str]:
 
 
 def candidate_content_tree(root: Path) -> str:
-    """40-hex identity of tracked index objects excluding the declaration file."""
-    digest = hashlib.sha1()
-    for entry in tracked_entries(root):
-        if entry.path == DECLARATION_REL:
-            continue
-        digest.update(entry.mode.encode("ascii"))
-        digest.update(b" ")
-        digest.update(entry.oid.encode("ascii"))
-        digest.update(b" ")
-        digest.update(entry.path.encode("utf-8"))
-        digest.update(b"\n")
-    return digest.hexdigest()
+    """40-hex identity excluding every declaratively generated output."""
+    graph_paths = (
+        root / "core/managed-core/config/generated-output-closure.json",
+        root / ".ide-development/config/generated-output-closure.json",
+    )
+    if any(path.is_file() for path in graph_paths):
+        try:
+            return closure_candidate_source_tree(root)
+        except ClosureError as exc:
+            raise SecretScanError("generated_output_graph_invalid", str(exc)) from exc
+    return closure_candidate_source_tree(root, graph_path=None)
 
 
 def _shannon(value: str) -> float:
@@ -377,6 +381,8 @@ def _is_code_expression(value: str) -> bool:
     if re.search(r"[\[\]+]|::", stripped):
         return True
     if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.]*", stripped) and "." in stripped:
+        return True
+    if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.]*(?:\([^)]*\)|\))+", stripped):
         return True
     return False
 

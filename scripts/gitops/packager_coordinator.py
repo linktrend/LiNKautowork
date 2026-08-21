@@ -73,11 +73,15 @@ try:
         BugbotUserCredentialsError,
         require_bugbot_user_token,
     )
+    from scripts.gitops.github_auth import GitHubAuthError, resolve_phase_api_token
+    from scripts.gitops.issue_checkpoint import bind_issue_completion, parse_immutable_evidence_payload
 except ModuleNotFoundError:  # pragma: no cover - script-style execution
     from bugbot_user_credentials import (  # type: ignore
         BugbotUserCredentialsError,
         require_bugbot_user_token,
     )
+    from github_auth import GitHubAuthError, resolve_phase_api_token  # type: ignore
+    from issue_checkpoint import bind_issue_completion, parse_immutable_evidence_payload  # type: ignore
 
 COMPONENT_KIND = "phase_packager_coordinator"
 IS_PHASE_PACKAGER = True
@@ -130,7 +134,11 @@ class GitHubPort(Protocol):
     def list_open_phase_prs(self, *, repository: str, head: str, base: str) -> list[dict[str, Any]]:
         ...
 
-    def completion_bound(self, sha: str) -> tuple[bool, str]:
+    def completion_bound(
+        self,
+        sha: str,
+        evidence_payload: Mapping[str, Any] | None = None,
+    ) -> tuple[bool, str]:
         ...
 
     def add_label(self, pr_number: int, label: str) -> None:
@@ -206,14 +214,24 @@ class MemoryGitHub:
         found = self.prs.get(key)
         return [dict(found)] if found else []
 
-    def completion_bound(self, sha: str) -> tuple[bool, str]:
+    def completion_bound(
+        self,
+        sha: str,
+        evidence_payload: Mapping[str, Any] | None = None,
+    ) -> tuple[bool, str]:
         subject = normalize_sha(sha)
-        evidence = self.evidence.get(subject)
-        if isinstance(evidence, dict) and normalize_sha(str(evidence.get("headSha") or "")) == subject:
-            return True, "completion_evidence"
-        if subject in {normalize_sha(item) for item in self.ready_shas}:
-            return True, "review_ready_status"
-        return False, "evidence_missing"
+        payload = evidence_payload if isinstance(evidence_payload, Mapping) else self.evidence.get(subject)
+        review_state = (
+            "success"
+            if subject in {normalize_sha(item) for item in self.ready_shas}
+            else "missing"
+        )
+        ok, detail, _meta = bind_issue_completion(
+            sha=subject,
+            evidence=dict(payload) if isinstance(payload, Mapping) else None,
+            review_ready_state=review_state,
+        )
+        return ok, detail
 
     def add_label(self, pr_number: int, label: str) -> None:
         self.labels.append((pr_number, label))
@@ -392,22 +410,18 @@ class LiveGitHub:
             raise CoordinatorError("github_api_failed", "pull list was not an array")
         return [self._pr_identity(row, created=False) for row in listed if isinstance(row, Mapping)]
 
-    def completion_bound(self, sha: str) -> tuple[bool, str]:
+    def completion_bound(
+        self,
+        sha: str,
+        evidence_payload: Mapping[str, Any] | None = None,
+    ) -> tuple[bool, str]:
         subject = normalize_sha(sha)
-        payload = self._request(
-            "GET",
-            f"https://api.github.com/repos/{self.repository}/commits/{subject}/status",
-            self.automation_token,
+        ok, detail, _meta = bind_issue_completion(
+            sha=subject,
+            evidence=dict(evidence_payload) if isinstance(evidence_payload, Mapping) else None,
+            review_ready_state="missing",
         )
-        if not isinstance(payload, Mapping):
-            return False, "evidence_missing"
-        statuses = payload.get("statuses") if isinstance(payload.get("statuses"), list) else []
-        for row in statuses:
-            if not isinstance(row, Mapping):
-                continue
-            if row.get("context") == "Linktrend Review Ready" and str(row.get("state") or "").lower() == "success":
-                return True, "review_ready_status"
-        return False, "evidence_missing"
+        return ok, detail
 
     def add_label(self, pr_number: int, label: str) -> None:
         raise CoordinatorError("label_not_permitted", f"{pr_number}:{label}")
@@ -417,17 +431,18 @@ class LiveGitHub:
 
 
 def resolve_production_adapters(repository: str) -> tuple[LiveGitHub, GitPushAdapter]:
-    """Fail closed unless live GitHub and push configuration are present."""
+    """Fail closed unless live GitHub and push configuration are present.
+
+    Phase API credentials are GH_TOKEN/GITHUB_TOKEN. AUTOMATION_TOKEN is a
+    waived legacy publisher token and is not canonical for v2.5.
+    """
 
     if not repository or "/" not in repository or repository.count("/") != 1:
         raise CoordinatorError("missing_repository", "assemble requires --repository owner/name")
-    token = (os.environ.get("AUTOMATION_TOKEN") or "").strip()
-    source = (os.environ.get("AUTOMATION_TOKEN_SOURCE") or "").strip()
-    if not token or source != "github_token":
-        raise CoordinatorError(
-            "missing_github_credentials",
-            "assemble requires AUTOMATION_TOKEN with AUTOMATION_TOKEN_SOURCE=github_token",
-        )
+    try:
+        token, _source = resolve_phase_api_token()
+    except GitHubAuthError as exc:
+        raise CoordinatorError(exc.code, exc.detail) from exc
     try:
         carlos = require_bugbot_user_token("pr_create")
     except BugbotUserCredentialsError as exc:
@@ -652,6 +667,7 @@ def _validate_source(
     github: GitHubPort,
     remote: str,
     require_evidence: bool,
+    evidence_payloads: Mapping[str, Any] | None = None,
 ) -> None:
     if not _object_exists(repo, source.sha):
         raise CoordinatorError("missing_commit", source.sha)
@@ -672,7 +688,14 @@ def _validate_source(
     if not _is_ancestor(repo, source.sha, remote_sha) and remote_sha != source.sha:
         raise CoordinatorError("stale_commit", source.branch)
     if require_evidence:
-        ok, detail = github.completion_bound(source.sha)
+        payload = None
+        if evidence_payloads:
+            payload = (
+                evidence_payloads.get(source.sha)
+                or evidence_payloads.get(normalize_sha(source.sha))
+                or evidence_payloads.get("*")
+            )
+        ok, detail = github.completion_bound(source.sha, evidence_payload=payload)
         if not ok:
             raise CoordinatorError("evidence_missing", f"{source.branch}:{detail}")
 
@@ -924,6 +947,7 @@ def assemble_phase(
     expected_repository: str | None = None,
     pusher: PushPort | None = None,
     require_live_pr: bool = False,
+    evidence_payloads: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Create or update exactly one Phase branch and draft PR representation."""
 
@@ -957,7 +981,14 @@ def assemble_phase(
         seen_numbers.add(number)
         seen_shas.add(source.sha)
         ordered.append(source)
-        _validate_source(repo, source, github=github, remote=remote, require_evidence=require_evidence)
+        _validate_source(
+            repo,
+            source,
+            github=github,
+            remote=remote,
+            require_evidence=require_evidence,
+            evidence_payloads=evidence_payloads,
+        )
 
     development_sha = _remote_sha(repo, remote, development) or _git(repo, "rev-parse", development)
     if not is_valid_sha(development_sha):
@@ -1126,6 +1157,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--required-ci", default="{}")
     parser.add_argument("--workflow", default="")
     parser.add_argument("--no-evidence", action="store_true")
+    parser.add_argument(
+        "--evidence-json",
+        default="",
+        help="Explicit immutable evidence payload (JSON object or sha->payload map) for out-of-tree hosted validation",
+    )
     args = parser.parse_args(argv)
 
     if args.command == "fast-contract":
@@ -1158,6 +1194,25 @@ def main(argv: list[str] | None = None) -> int:
         print("assemble requires --repository and one or more --accept branch@sha", file=sys.stderr)
         return 2
     sources = [parse_accept(raw, order) for order, raw in enumerate(args.accept, start=1)]
+    evidence_payloads: dict[str, Any] | None = None
+    if args.evidence_json:
+        try:
+            loaded = parse_immutable_evidence_payload(args.evidence_json)
+        except Exception as exc:  # noqa: BLE001
+            print(f"assemble --evidence-json invalid: {exc}", file=sys.stderr)
+            return 2
+        if not isinstance(loaded, dict):
+            print("assemble --evidence-json must be a JSON object", file=sys.stderr)
+            return 2
+        if loaded.get("headSha") or loaded.get("kind"):
+            sha = normalize_sha(str(loaded.get("headSha") or ""))
+            evidence_payloads = {sha: loaded} if sha else {"*": loaded}
+        else:
+            evidence_payloads = {
+                normalize_sha(str(key)): value
+                for key, value in loaded.items()
+                if isinstance(value, dict)
+            }
     try:
         github, pusher = resolve_production_adapters(args.repository)
         result = assemble_phase(
@@ -1172,6 +1227,7 @@ def main(argv: list[str] | None = None) -> int:
             require_evidence=not args.no_evidence,
             expected_repository=args.repository,
             require_live_pr=True,
+            evidence_payloads=evidence_payloads,
         )
     except (CoordinatorError, PhaseLifecycleError) as exc:
         payload = exc.to_dict() if hasattr(exc, "to_dict") else {"code": "failed", "detail": str(exc)}

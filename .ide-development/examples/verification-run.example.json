@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "amendment": "V25_PKT08_VERIFICATION_LIVENESS",
+  "runId": "PKT-08-FULL-EXAMPLE",
+  "packetId": "PKT-08",
+  "profile": "Full",
+  "repository": "linktrend/IDE-Development",
+  "canonicalCheckout": "/canonical/checkout",
+  "cwd": "/canonical/checkout",
+  "commit": "004bd5faa1e14ee100a018e16dcb049f0fb2d8eb",
+  "tree": "6c55220132cc7e9a1baef06f8c147ee9ac9431e7",
+  "command": [
+    "python3",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "tests"
+  ],
+  "commandDigest": "sha256:83873fc24ed14f10093e19ccf1a8ee77cd9b3160b1d685fbeab2750cff0f25de",
+  "logPath": "/canonical/checkout/.linktrend/verification/PKT-08-FULL-EXAMPLE.log",
+  "receiptPath": "/canonical/checkout/.linktrend/verification/PKT-08-FULL-EXAMPLE.receipt.json",
+  "startedAt": "2026-08-20T12:00:00Z",
+  "lastHeartbeatAt": "2026-08-20T12:00:30Z",
+  "timeoutSeconds": 7200,
+  "durableHandle": {
+    "kind": "hosted_check",
+    "id": "check-pkt08-example"
+  },
+  "state": "STARTED",
+  "restartCount": 0
+}

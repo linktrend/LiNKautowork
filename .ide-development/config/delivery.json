@@ -32,6 +32,7 @@
     "reuseExactReceipt": true,
     "identity": [
       "repository",
+      "headCommit",
       "gitTree",
       "dependencyDigest",
       "profileDigest",
@@ -40,5 +41,26 @@
   },
   "review": {
     "bugbot": "final-candidate-only"
+  },
+  "amendment": "V25_BOOTSTRAP_LEAN",
+  "issueCheckpoint": {
+    "acceptWithoutReviewReady": true,
+    "acceptWithoutToken": true,
+    "requiredEvidence": [
+      "exact_pushed_commit_tree",
+      "scoped_diff",
+      "focused_tests",
+      "independent_terra_verification",
+      "manifest_evidence"
+    ]
+  },
+  "publisherAuthority": {
+    "canonicalForV25": "none",
+    "missingOrFailedClassification": "WAIVED_LEGACY_GATE"
+  },
+  "administratorRecovery": {
+    "namedExceptionOnly": true,
+    "preferAdminMatchHeadCommit": true,
+    "allowedOperations": ["protection_snapshot", "restore", "readback"]
   }
 }
