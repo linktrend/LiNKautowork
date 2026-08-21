@@ -21,7 +21,7 @@ core/managed-core/
   VERSION                   # package semver (2.3.5 target)
   MANIFEST.json             # live install set (built by scripts/ide_development/build_manifest.py)
   config/                   # versioned hosted delivery defaults; commands remain consumer-owned
-  schemas/                  # authoritative JSON Schemas
+  schemas/                  # authoritative JSON Schemas, including PKT-08 liveness
   examples/                 # minimal valid examples for focused validation
   content/                  # managed content payload (doctrine/skills/…)
   skills/                   # approved shared skills mirrored for packaging
@@ -29,6 +29,12 @@ core/managed-core/
   migrations/               # reviewed supersession catalog (canonical)
   migration/                # discovery alias pointer only (no catalog duplicate)
 ```
+
+PKT-08 durable verification-liveness is packaged as
+`content/config/verification-liveness.json`,
+`schemas/verification-run.schema.json`, the matching example and doctrine, and
+the standalone `execution/verification_liveness.py` runtime. The extracted
+package validates these bytes without importing the IDE Development checkout.
 
 ### Consumer materialization (normative)
 

@@ -22,6 +22,19 @@ checks. Only an exact final seal may trigger Bugbot and the full suite. A
 successful receipt is reused for promotion only when all frozen identity
 digests match. Main promotion requires Carlos's explicit approval.
 
+## v2.5 Issue checkpoint (`V25_BOOTSTRAP_LEAN`)
+
+Issue checkpoints are accepted from exact pushed commit/tree, scoped diff,
+focused tests, independent Terra verification, and manifest evidence. Review
+Ready publication, `AUTOMATION_TOKEN`, Issue PRs, hosted completion status,
+and legacy publisher status are nonrequirements. Legacy publisher/status
+outcomes are `WAIVED_LEGACY_GATE`, never PASS, and never bypass substantive
+proof. Review Ready does not itself trigger a merge and is not Issue-checkpoint
+proof. Administrator recovery is a named exact-head exception after replacement
+proof: protection snapshot, `gh pr merge --admin --match-head-commit` first,
+minimum temporary exception only if needed, exact authorized merge, immediate
+restore and readback.
+
 ## Stop conditions
 
 Stop on a changed sealed head, missing or stale evidence, failed protection or

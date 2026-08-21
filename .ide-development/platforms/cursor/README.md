@@ -12,6 +12,12 @@ Physical Cursor discovery surfaces sourced from the installed managed core.
 
 Files are physical copies (no checkout-to-checkout symlinks).
 
+## Non-skill loader (ISS-04)
+
+`skills-loader.mjs` plus `skills-lock.json` are the Cursor retrieval surface.
+They are not skills. Physical `.cursor/skills/<name>/SKILL.md` copies stay
+until dual-app proof authorizes removal.
+
 ## Required entrypoints
 
 - Rules: managed bootstrap + branching

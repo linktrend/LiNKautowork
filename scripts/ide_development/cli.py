@@ -167,6 +167,8 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Skip lane evidence path checks (still requires packaging unit tests)",
     )
+    rc_create.add_argument("--baseline-sha", help="Runtime-supplied exact target baseline SHA")
+    rc_create.add_argument("--baseline-ref", help="Runtime-supplied authoritative remote target ref")
     rc_verify = rc_sub.add_parser(
         "verify",
         parents=[rc_common],
@@ -204,6 +206,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                     allow_dirty=bool(args.allow_dirty),
                     skip_install_verify=bool(args.skip_install_verify),
                     skip_evidence=bool(args.skip_evidence),
+                    candidate_baseline_sha=args.baseline_sha,
+                    candidate_baseline_ref=args.baseline_ref,
                 )
                 _emit(payload, as_json=as_json)
                 return EXIT_OK

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "amendment": "V25_PKT08_VERIFICATION_LIVENESS",
+  "profile": "Full",
+  "timeoutSeconds": 7200,
+  "heartbeatIntervalSeconds": 30,
+  "staleAfterSeconds": 120,
+  "maxAutomaticRestarts": 1,
+  "artifactRoot": ".linktrend/verification",
+  "states": [
+    "STARTED",
+    "LIVE",
+    "TERMINAL",
+    "ORPHANED",
+    "TIMED_OUT",
+    "RESTARTED"
+  ],
+  "paidFallback": false,
+  "fastFallback": false
+}

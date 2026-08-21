@@ -77,7 +77,7 @@ class PromotionReceiptGateTests(unittest.TestCase):
         git(self.repo, "commit", "--allow-empty", "-qm", "different commit same content")
         self.assertEqual(
             verify_receipt_file(self.receipt, repo_path=self.repo, dependencies=["deps.lock"]).code,
-            "accepted",
+            "head_mismatch",
         )
         (self.repo / "app.txt").write_text("two\n", encoding="utf-8")
         git(self.repo, "add", ".")

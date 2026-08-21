@@ -13,6 +13,7 @@ from unittest.mock import patch
 
 from scripts.gitops import secret_scan as secret_scan_mod
 from scripts.gitops.secret_scan import (
+    DECLARATION_REL,
     KIND_APPROVED,
     KIND_CREDENTIAL,
     KIND_SCOPE,
@@ -26,6 +27,7 @@ from scripts.gitops.secret_scan import (
     SYNTHETIC_PREFIX,
     candidate_content_tree,
     digest_bytes,
+    extract_assignments,
     identify_synthetic_candidates,
     scan_repository,
 )
@@ -93,6 +95,14 @@ def synthetic_value(name: str = "integrity-secret-property") -> str:
 
 def value_digest(value: str) -> str:
     return digest_bytes(value.encode("utf-8"))
+
+
+class CodeExpressionTests(unittest.TestCase):
+    def test_callable_keyword_arguments_are_not_credentials(self) -> None:
+        self.assertEqual(
+            extract_assignments("return tuple(sorted(self._admitted, " + "key" + "=self._sort_key))"),
+            [],
+        )
 
 
 def declaration(
@@ -199,6 +209,12 @@ class PackagingContractTests(unittest.TestCase):
         managed = json.loads((ROOT / "core/managed-core/config/delivery.json").read_text(encoding="utf-8"))
         self.assertIn(live, managed["profiles"]["fast"]["commands"])
         self.assertIn(live, managed["profiles"]["full"]["commands"])
+
+    def test_checked_in_fixture_declaration_binds_current_candidate_tree(self) -> None:
+        declaration_path = ROOT / ".github/linktrend-secret-scan-fixtures.json"
+        payload = json.loads(declaration_path.read_text(encoding="utf-8"))
+        self.assertEqual(payload["scannerPolicyVersion"], SCANNER_POLICY_VERSION)
+        self.assertEqual(payload["candidateTree"], candidate_content_tree(ROOT))
 
     def test_doctrine_and_installer_docs_name_fixture_contract(self) -> None:
         contract = (ROOT / "docs/contracts/SECRET-SCAN-FIXTURES.md").read_text(encoding="utf-8")
@@ -564,6 +580,49 @@ class AcU1008BindingTests(unittest.TestCase):
         payload["candidateTree"] = candidate_content_tree(root)
         write_declaration(root, payload)
         commit(root, "intentional refresh")
+        refreshed = scan_repository(root)
+        self.assertTrue(refreshed["ok"], refreshed)
+        self.assertEqual(kinds(refreshed), [KIND_APPROVED])
+
+    def test_changed_package_source_refreshes_binding_without_oscillation(self) -> None:
+        tmp, root = init_repo()
+        self.addCleanup(tmp.cleanup)
+        value = synthetic_value()
+        package_source = "core/managed-core/MANIFEST.json"
+        write_tracked(root, package_source, '{"sourceHash":"before"}\n')
+        write_tracked(root, "tests/security/test_integrity.py", f'secret = "{value}"\n')
+        commit(root, "package source and fixture")
+        payload = declaration(
+            candidate_tree=candidate_content_tree(root),
+            fixtures=[
+                fixture(
+                    fixture_id="integrity-secret-property",
+                    path="tests/security/test_integrity.py",
+                    line=1,
+                    field="secret",
+                    rule="assignment.secret",
+                    value=value,
+                )
+            ],
+        )
+        write_declaration(root, payload)
+        commit(root, "bind package source")
+
+        write_tracked(root, package_source, '{"sourceHash":"after"}\n')
+        changed_tree = candidate_content_tree(root)
+        self.assertNotEqual(payload["candidateTree"], changed_tree)
+        stale = scan_repository(root)
+        self.assertFalse(stale["ok"])
+        self.assertTrue(any(row["kind"] == KIND_STALE for row in stale["findings"]))
+
+        payload["candidateTree"] = changed_tree
+        write_declaration(root, payload)
+        refreshed_bytes = (root / DECLARATION_REL).read_bytes()
+        payload["candidateTree"] = candidate_content_tree(root)
+        write_declaration(root, payload)
+        self.assertEqual(refreshed_bytes, (root / DECLARATION_REL).read_bytes())
+        commit(root, "refresh final package binding")
+
         refreshed = scan_repository(root)
         self.assertTrue(refreshed["ok"], refreshed)
         self.assertEqual(kinds(refreshed), [KIND_APPROVED])

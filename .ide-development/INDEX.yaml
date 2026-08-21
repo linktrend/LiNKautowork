@@ -1,5 +1,5 @@
 # Managed-core discovery index
-version: "2.4.0"
+version: "2.5.0"
 status: v2-github-hosted-phase-delivery
 contract: docs/contracts/MANAGED-CORE-V2.md
 adr: docs/adr/0004-portable-managed-core-v2.md
@@ -22,6 +22,9 @@ schemas:
   - schemas/finding-ledger.schema.json
   - schemas/secret-scan-fixtures.schema.json
   - schemas/secret-scan-result.schema.json
+  - schemas/generated-output-closure.schema.json
+  - schemas/manifest-persistence.schema.json
+  - schemas/transactional-dispatch.schema.json
   - schemas/repository-ci-contract.schema.json
   - schemas/ci-component-manifest.schema.json
   - schemas/ci-evidence.schema.json
@@ -29,16 +32,29 @@ schemas:
   - schemas/external-state-fixture.schema.json
   - schemas/external-state-plan.schema.json
   - schemas/external-state-verify.schema.json
+  - schemas/verification-run.schema.json
+  - schemas/verification-liveness.schema.json
 examples:
   - examples/manifest.example.json
   - examples/installed-state.example.json
   - examples/transaction.example.json
+  - examples/verification-run.example.json
+  - content/config/transactional-dispatch.json
 directories:
   config: versioned GitHub-hosted delivery defaults
   content: managed content payload
   platforms: Cursor and Codex adapter sources (WP3)
   migrations: reviewed supersession catalog and redacted external cleanup plan
   migration: discovery alias pointer only (no duplicate catalog file)
+verification_liveness:
+  runtime: ../execution/verification_liveness.py
+  contract: ../contracts/VERIFICATION-LIVENESS-CONTRACT.md
+  config: content/config/verification-liveness.json
+  states: [STARTED, LIVE, TERMINAL, ORPHANED, TIMED_OUT, RESTARTED]
+revision_60_final_controls:
+  runtime: ../execution/transactional_dispatch.py
+  contract: ../contracts/PKT08-REVISION-60-FINAL-CONTROLS.md
+  config: content/config/transactional-dispatch.json
   MANIFEST.json: live package manifest (deterministic builder)
 out_of_scope:
   - claude

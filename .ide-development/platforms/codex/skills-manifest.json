@@ -4,6 +4,15 @@
   "discoveryRoot": ".agents/skills",
   "noCursorDependency": true,
   "claudeOutOfScope": true,
+  "nonSkillLoader": {
+    "source": "platforms/codex/skills-loader.mjs",
+    "destination": ".agents/skills-loader.mjs",
+    "lockSource": "platforms/codex/skills-lock.json",
+    "lockDestination": ".agents/skills-lock.json",
+    "mode": "managed-file",
+    "skill": false,
+    "note": "ISS-04 lock loader. Physical SKILL.md copies stay until dual-app proof."
+  },
   "required": [
     {
       "name": "agentsetup",

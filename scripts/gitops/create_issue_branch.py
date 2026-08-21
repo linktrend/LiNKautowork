@@ -4,7 +4,9 @@
 Fail closed on auth/create/sync failure — never invent local issue IDs.
 Prints machine-readable KEY=value lines: ISSUE_NUMBER, BRANCH, WORKTREE, SLUG.
 
-Idempotent reuse requires matching title AND label `linktrend-agentsetup`.
+Idempotent reuse prefers matching title AND label `linktrend-agentsetup`. When
+repository policy prevents label creation, exact-title reuse remains available
+and issue creation continues without the optional label.
 Rejects closed issues when --issue-number is given.
 """
 
@@ -95,7 +97,7 @@ def gh_auth_ok(repo: str) -> None:
         die(f"cannot access repo {repo}: {(p2.stderr or '').strip()}", 1)
 
 
-def ensure_agentsetup_label(repo: str) -> None:
+def ensure_agentsetup_label(repo: str) -> bool:
     p = subprocess.run(
         ["gh", "label", "list", "--repo", repo, "--json", "name", "--limit", "100"],
         text=True,
@@ -108,8 +110,8 @@ def ensure_agentsetup_label(repo: str) -> None:
         except json.JSONDecodeError:
             names = []
     if AGENTSETUP_LABEL in names:
-        return
-    subprocess.run(
+        return True
+    created = subprocess.run(
         [
             "gh",
             "label",
@@ -126,6 +128,7 @@ def ensure_agentsetup_label(repo: str) -> None:
         capture_output=True,
         check=False,
     )
+    return created.returncode == 0
 
 
 def find_open_issue_by_title_and_label(repo: str, title: str) -> int | None:
@@ -166,6 +169,24 @@ def find_open_issue_by_title_and_label(repo: str, title: str) -> int | None:
     return None
 
 
+def find_open_issue_by_exact_title(repo: str, title: str) -> int | None:
+    """Fallback idempotency when repository policy forbids label creation."""
+    p = subprocess.run(
+        [
+            "gh", "issue", "list", "--repo", repo, "--state", "open",
+            "--limit", "100", "--json", "number,title",
+        ],
+        text=True,
+        capture_output=True,
+    )
+    if p.returncode != 0:
+        die(f"gh issue list failed: {(p.stderr or '').strip()}")
+    matches = [row for row in json.loads(p.stdout or "[]") if row.get("title") == title]
+    if len(matches) > 1:
+        die(f"multiple open issues have exact title: {title}")
+    return int(matches[0]["number"]) if matches else None
+
+
 def validate_issue(repo: str, number: int) -> str:
     p = subprocess.run(
         [
@@ -193,12 +214,15 @@ def validate_issue(repo: str, number: int) -> str:
 
 
 def create_issue(repo: str, title: str) -> int:
-    ensure_agentsetup_label(repo)
-    existing = find_open_issue_by_title_and_label(repo, title)
+    label_available = ensure_agentsetup_label(repo)
+    existing = (
+        find_open_issue_by_title_and_label(repo, title)
+        if label_available
+        else find_open_issue_by_exact_title(repo, title)
+    )
     if existing is not None:
         return existing
-    p = subprocess.run(
-        [
+    create_args = [
             "gh",
             "issue",
             "create",
@@ -208,38 +232,30 @@ def create_issue(repo: str, title: str) -> int:
             title,
             "--body",
             "Created by create_issue_branch.py",
-            "--label",
-            AGENTSETUP_LABEL,
-        ],
+        ]
+    if label_available:
+        create_args.extend(["--label", AGENTSETUP_LABEL])
+    p = subprocess.run(
+        create_args,
         text=True,
         capture_output=True,
     )
     if p.returncode != 0:
-        # Label may be missing mid-race — retry without relying on create flags
-        ensure_agentsetup_label(repo)
-        p = subprocess.run(
-            [
-                "gh",
-                "issue",
-                "create",
-                "--repo",
-                repo,
-                "--title",
-                title,
-                "--body",
-                "Created by create_issue_branch.py",
-                "--label",
-                AGENTSETUP_LABEL,
-            ],
-            text=True,
-            capture_output=True,
-        )
+        # A label can disappear or become unavailable between discovery and
+        # creation. Retry once without optional metadata; never invent an id.
+        if label_available and "label" in (p.stderr or "").lower():
+            p = subprocess.run(create_args[:-2], text=True, capture_output=True)
+            label_available = False
     if p.returncode != 0:
         die(f"gh issue create failed: {(p.stderr or '').strip()}")
     url = (p.stdout or "").strip()
     m = re.search(r"/issues/(\d+)", url)
     if not m:
-        again = find_open_issue_by_title_and_label(repo, title)
+        again = (
+            find_open_issue_by_title_and_label(repo, title)
+            if label_available
+            else find_open_issue_by_exact_title(repo, title)
+        )
         if again is not None:
             return again
         die(f"could not parse issue number from: {url}")

@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/continuous-utilization.schema.json",
+  "title": "Coding Execution Protocol continuous-utilization scheduler config",
+  "description": "Packaged continuous-utilization contract for deterministic local/hosted admission. Does not dispatch paid models, Fast gates, or GitHub workflows.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "hostedConcurrencyAuthority",
+    "maxAdmittedSlots",
+    "unknownProbeSeconds",
+    "backstopSeconds",
+    "prioritization",
+    "utilizationGapEvent",
+    "recomputeOnEvents"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "hostedConcurrencyAuthority": {
+      "type": "string",
+      "const": "execution-protocol"
+    },
+    "maxAdmittedSlots": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["local", "hosted"],
+      "properties": {
+        "local": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "hosted": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8
+        }
+      }
+    },
+    "unknownProbeSeconds": {
+      "type": "integer",
+      "const": 600
+    },
+    "backstopSeconds": {
+      "type": "integer",
+      "const": 600
+    },
+    "prioritization": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "string",
+        "enum": ["priority", "fifo", "dependencyReady"]
+      }
+    },
+    "utilizationGapEvent": {
+      "type": "string",
+      "const": "UTILIZATION_GAP"
+    },
+    "recomputeOnEvents": {
+      "type": "array",
+      "minItems": 5,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "admission",
+          "completion",
+          "invalidation",
+          "probe_timeout",
+          "api_rejection",
+          "utilization_gap_repair"
+        ]
+      }
+    }
+  }
+}

@@ -341,6 +341,7 @@ class AcU0909StallConditionsTests(unittest.TestCase):
         )
         self.assertEqual(decision.status, STATUS_REVIEW_STALLED)
         self.assertEqual(decision.reason, STALL_NO_PROGRESS)
+        self.assertEqual(session.no_progress_streak, 2)
 
     def test_repair_reintroduction_stalls(self) -> None:
         session, entries, _clock = open_default()

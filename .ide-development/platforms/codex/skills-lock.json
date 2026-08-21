@@ -1,0 +1,1766 @@
+{
+  "contractVersion": "skills.lock.v0.2",
+  "packet": "PKT-03",
+  "issue": "ISS-04",
+  "rollbackCommit": "004bd5faa1e14ee100a018e16dcb049f0fb2d8eb",
+  "rollbackTree": "6c55220132cc7e9a1baef06f8c147ee9ac9431e7",
+  "provider": {
+    "repository": "linktrend/LiNKskills",
+    "commit": "e3d80fd22a05a4f68207e130c50b772b5acffda4",
+    "tree": "69a131b46a73a4ef724694bfe240b1a11652bcc9"
+  },
+  "providerLockDigest": "sha256:67df14f6b376063dd049dfd4138aa7f723cedf8af800e66666f5110c7c68ddac",
+  "physicalRemovalAuthorized": false,
+  "dualAppProof": {
+    "codex": "HOLD",
+    "cursor": "HOLD"
+  },
+  "uniqueSkillCount": 43,
+  "qualifiedCount": 7,
+  "retiredCount": 36,
+  "copyCount": 88,
+  "overlapWithLinkskills": [
+    "git-safeguard",
+    "persistent-qa",
+    "repository-manager",
+    "skill-template",
+    "tool-architect"
+  ],
+  "skills": [
+    {
+      "skillId": "action-queue",
+      "version": "0.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:32aff5fd66bfe8d724377ded1a278b54258c07c3cb567a1a4369589d499f6ac2",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "agentcomply",
+      "version": "1.3.0",
+      "decision": "qualified",
+      "authority": "required_local_adapter",
+      "lifecycle": "published",
+      "qualification": "qualified",
+      "availability": "available",
+      "entrypointDigest": "sha256:f941bc86476a19ccea49425319259d18fde98b3fc09e6bad636d013100eaab5c",
+      "fragmentLevel": 2,
+      "fragments": [
+        {
+          "fragmentId": "skill-md",
+          "fragmentLevel": 2,
+          "path": "SKILL.md",
+          "digest": "sha256:f941bc86476a19ccea49425319259d18fde98b3fc09e6bad636d013100eaab5c"
+        }
+      ],
+      "note": "GitOps bootstrap adapter; not a LiNKskills catalog skill"
+    },
+    {
+      "skillId": "agentsetup",
+      "version": "1.3.0",
+      "decision": "qualified",
+      "authority": "required_local_adapter",
+      "lifecycle": "published",
+      "qualification": "qualified",
+      "availability": "available",
+      "entrypointDigest": "sha256:932c1c7d28632449432c65bc8ce64461f60866eb2135a68f45bf475dcac63887",
+      "fragmentLevel": 2,
+      "fragments": [
+        {
+          "fragmentId": "skill-md",
+          "fragmentLevel": 2,
+          "path": "SKILL.md",
+          "digest": "sha256:932c1c7d28632449432c65bc8ce64461f60866eb2135a68f45bf475dcac63887"
+        }
+      ],
+      "note": "GitOps bootstrap adapter; not a LiNKskills catalog skill"
+    },
+    {
+      "skillId": "api-patterns",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:f819bbb51d4d8a32a1621085d0931c8cc4c63f581d9ac0507e88af7eb81f4a05",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "app-builder",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:88bf10494963cc68ecaf7ca532020e45d843516557089f2c48cfe319d051a555",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "architecture",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:d9934b0c38d5f67d2018a4b452e3f3f1faed29150996ca064406e29bcc767bc0",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "bash-linux",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:86e46e58c1a561ced5fd8e5ae0300cd50a9866ec7213f840d8eb097e91ce0d60",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "ci-cd-and-automation",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:b8b8c95f16acfd71e8ce12004d395ae1b8cf598343edcbabd3bba8eaa8586e3f",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "code-review-and-quality",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:88413831483002f87b2a09d4f5abec73cdbdaeb20084a35ea58eac50b6555f91",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "code-simplification",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:5d904fa246d06c962703618d92d8941239546a0febe6079a281f79f98a8043b8",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "context-engineering",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:b2002e82a3e2eeb6e751c278fa46cf32ce8b049777939b78c4dbf955ef822869",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "data-table",
+      "version": "0.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:800a8f2e1483ba4c5bc82c76dd4e194c15772e28585fb8a59d4ec77bb2e90857",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "database-design",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:845fbafe70e56e76de946b123d981cd67f97c97b51a8ff7f5d560d804db60b08",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "deployment-procedures",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:c60479dc3f85a8f67505bd433d59833bd8906033231cc4f57ace1392f6ae5171",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "deprecation-and-migration",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:65b7fbca07a60c6632e83bfa6bd2ce1d0cad051da23d3ec6640d316396c83207",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "documentation-and-adrs",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:d604210ca058350c9b25643fc5ddfcbd71ed1771e5f6f6d50acb74b21a9e57af",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "frontend-ui-engineering",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:a54588d8d901f0fb6fdf3d5220c5286f45c68e4c12d94909822856e9bd895d8a",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "git-safeguard",
+      "version": "1.1.0",
+      "decision": "qualified",
+      "authority": "linkskills",
+      "lifecycle": "published",
+      "qualification": "qualified",
+      "availability": "available",
+      "releaseHash": "sha256:22c16d5d1812d45ceaeccbbfe037c9ddfb9629606f4444d57141f4bd434d0a59",
+      "bundleHash": "sha256:808212d33c68ceac0a71c0df1a8932b91fbae4ea763271e3981ad137e937f8ae",
+      "manifestHash": "sha256:92ade7246334328477e835073434aedabc35992070eeb88117b9c96ea150dba4",
+      "entrypointDigest": "sha256:54309e7a843917890103cee609e36ab5cf9b1d6e0424d2dd0d124637e8eefe86",
+      "fragmentLevel": 2,
+      "fragments": [
+        {
+          "fragmentId": "skill-md",
+          "fragmentLevel": 2,
+          "path": "SKILL.md",
+          "digest": "sha256:d4d95d7d23eb45ad03d044920343aa006c67974016c04240e07a5b99d3cc88e0"
+        },
+        {
+          "fragmentId": "references__api-specs.md",
+          "fragmentLevel": 3,
+          "path": "references/api-specs.md",
+          "digest": "sha256:3f1e0ee72063c933f9d5925919e3ba0b874d3b08abff6f7ec16b1622feecd950"
+        },
+        {
+          "fragmentId": "references__changelog.md",
+          "fragmentLevel": 3,
+          "path": "references/changelog.md",
+          "digest": "sha256:4af710894152d7a95097c3b35972734d5d69c46c7e99d12382698346f6dd15f8"
+        },
+        {
+          "fragmentId": "references__old-patterns.md",
+          "fragmentLevel": 3,
+          "path": "references/old-patterns.md",
+          "digest": "sha256:c37d90d1888dc266837b57a9dd6d054e6040d960dc7a0ff881861a1060d9ed67"
+        },
+        {
+          "fragmentId": "references__schemas.json",
+          "fragmentLevel": 5,
+          "path": "references/schemas.json",
+          "digest": "sha256:bf70082040cb328337fc879b042efb6ab659d4ecccc57c2f76616201dcc2ae18"
+        },
+        {
+          "fragmentId": "references__skill-pack.json",
+          "fragmentLevel": 3,
+          "path": "references/skill-pack.json",
+          "digest": "sha256:085d22217cce9b81d587b211cdf1a60e123e164066ec79a1bac570b43a0e77b6"
+        }
+      ]
+    },
+    {
+      "skillId": "i18n-localization",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:9ae1a55d015d65cbb45b4a89a0afbe586a9b9b4cec94454959db2657e55b5c31",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "incremental-implementation",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:ec316b4b0042bce9cc514e69a3bd412d4e40010c5bfe160448cb36635d6617a7",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "intelligent-routing",
+      "version": "2.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:90fa5436668f24629df801ceadaed67bf3fb7fa1eda28bfd01e258dbeb1e7dba",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "lint-and-validate",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:b7f622ed24a11aaec2cfd89e4262b1990344ab778ef1e3901989897dca299778",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "mcp-builder",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:837ec7585cd549f9dc1ccd99f5665a7e6b51306d0e4ac81061fba43bdb82a9b9",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "mobile-design",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:eff13cba214b7dd00b7bfee52a347bc4d0d6cea1d6ba5adace75f7e4ae0067b0",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "model-routing",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:b11c34346a463a025d95a2cdc15d7e4f997dff1007cdf6dd4e2afd0bbc0037a1",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "nodejs-best-practices",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:d2f143d35a22847843857479502d93d62036a5e1002f797f9a79c82e0bf6b21c",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "observability-and-instrumentation",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:d13f7024b230ba3012e212860c34a5d235230b64ba2148089505040d8e00e576",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "parallel-agents",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:028f348befe22ddc9bac8574a85632b9973af661d716ccfb47432c99a7168ab0",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "performance-optimization",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:c4846094d378126337eca2ee26c46f22f685e305cfefe0b5f10f43f7780f99b5",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "persistent-qa",
+      "version": "1.0.0",
+      "decision": "qualified",
+      "authority": "linkskills",
+      "lifecycle": "published",
+      "qualification": "qualified",
+      "availability": "available",
+      "releaseHash": "sha256:bcedc011e516b52e4d3de19371b132e82abfcfe74384069e1081ed4657f5f9a7",
+      "bundleHash": "sha256:e68c5bba51f58979cae57a3a66551b5168dfa349fd6c442df0ba77a28a4f3753",
+      "manifestHash": "sha256:f541179ada437a7749bfeb109948fa0129d726207b2e4e51360f40f7f1e8bdd8",
+      "entrypointDigest": "sha256:03087bf817616a7bfbb5eedbc48cad93cd44f2fd75fafc3efbeb9f79074cac9c",
+      "fragmentLevel": 2,
+      "fragments": [
+        {
+          "fragmentId": "skill-md",
+          "fragmentLevel": 2,
+          "path": "SKILL.md",
+          "digest": "sha256:6cc84f03c27bb21e01fb29966d174c433050670b6a78fe015b94c4c477d62d25"
+        },
+        {
+          "fragmentId": "references__api-specs.md",
+          "fragmentLevel": 3,
+          "path": "references/api-specs.md",
+          "digest": "sha256:879bfe499180b57500c86f66f8baacf5c68443e0dce925a38657d8d88c13e38f"
+        },
+        {
+          "fragmentId": "references__changelog.md",
+          "fragmentLevel": 3,
+          "path": "references/changelog.md",
+          "digest": "sha256:2a729d89efeab099f4a473411ff0b6b13c1512e0d5b3fe8e5b8510cfffd4f2c4"
+        },
+        {
+          "fragmentId": "references__old-patterns.md",
+          "fragmentLevel": 3,
+          "path": "references/old-patterns.md",
+          "digest": "sha256:bfd5130c1fc68de3509649497be6e530faca027f07ef8ccc8e919a73a6e7a218"
+        },
+        {
+          "fragmentId": "references__schemas.json",
+          "fragmentLevel": 5,
+          "path": "references/schemas.json",
+          "digest": "sha256:7b28e52b1f39777359a3a3a5dc69e1fd37df4177d818aae550f32d3e18770a99"
+        }
+      ]
+    },
+    {
+      "skillId": "personal-information-forms",
+      "version": "0.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:44b1b2d94de4b9b467aa2dc688320ae76fdef461438785a32e50cdd70250c325",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "powershell-windows",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:b800eff9a79b1e48974982116ddf35ed13f50e026705966d1063c66f89a81edc",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "python-patterns",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:2642aa922df5df2c7a03c8920549063533cf051fc433250b614c7b2f9d306d2e",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "repository-manager",
+      "version": "1.0.0",
+      "decision": "qualified",
+      "authority": "linkskills",
+      "lifecycle": "published",
+      "qualification": "qualified",
+      "availability": "available",
+      "releaseHash": "sha256:077c41f59bccd3374523af465846f9cac09a89876b8852798d0dc4204cbf2fe8",
+      "bundleHash": "sha256:80b2ee930fdb8e829d6e62b465ae6168d61287c4b7d90070c682c33f07aacb41",
+      "manifestHash": "sha256:2e92c80f553f8f572f338ff834ed4eb57655a5982b6e0628f36663215f8daf5a",
+      "entrypointDigest": "sha256:4459bca6ba52919cde9d7e279a09ac90b1603d850a1f8bd675c350dd1f98e24e",
+      "fragmentLevel": 2,
+      "fragments": [
+        {
+          "fragmentId": "skill-md",
+          "fragmentLevel": 2,
+          "path": "SKILL.md",
+          "digest": "sha256:ea05ae50dc07d81dfcf67f8fdf9cb12bb0c3ed00db0511cc3c5b4ad6c3238f33"
+        },
+        {
+          "fragmentId": "references__api-specs.md",
+          "fragmentLevel": 3,
+          "path": "references/api-specs.md",
+          "digest": "sha256:5df5e32201cd17c0a3a96d71798dc1836e26a8ed7f47b50aec7c1be14ccfe497"
+        },
+        {
+          "fragmentId": "references__changelog.md",
+          "fragmentLevel": 3,
+          "path": "references/changelog.md",
+          "digest": "sha256:6ba545607e467bf71ba173c3e76cf67e98a3930894e22be4df0046d39a0a4d60"
+        },
+        {
+          "fragmentId": "references__old-patterns.md",
+          "fragmentLevel": 3,
+          "path": "references/old-patterns.md",
+          "digest": "sha256:2a35b32d5e796c4d88fe996c154ef5c25a547e69598da521c5344f780aaf5918"
+        },
+        {
+          "fragmentId": "references__schemas.json",
+          "fragmentLevel": 5,
+          "path": "references/schemas.json",
+          "digest": "sha256:bf70082040cb328337fc879b042efb6ab659d4ecccc57c2f76616201dcc2ae18"
+        },
+        {
+          "fragmentId": "references__skill-pack.json",
+          "fragmentLevel": 3,
+          "path": "references/skill-pack.json",
+          "digest": "sha256:cc78f5317bee3d330ad28d140c3ef42b07ec5196bb40fb11abb70e9b9765fa03"
+        }
+      ]
+    },
+    {
+      "skillId": "rust-pro",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:19432a1c0433ccbbe6e2da5ecc8b3c1e031e85d87e9602209c0078ddbf4726b6",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "security-and-hardening",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:4d8575cd00667f27ec1cd8a55931b258e7090f2f77f936bc180245ea90600e59",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "server-management",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:8b67557b9171537c8a8f7a266a29d5fd9e9de3de74426f34a9166e924329b11f",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "skill-template",
+      "version": "1.2.0",
+      "decision": "qualified",
+      "authority": "linkskills",
+      "lifecycle": "published",
+      "qualification": "qualified",
+      "availability": "available",
+      "releaseHash": "sha256:1f83a3094345fe846e5f7b55958ae97912f98fd797cad602e079638858cb43c5",
+      "bundleHash": "sha256:cd4959dfc970615c855202a06348fb7a5bf536f7a60c4e4df710c48bff63f6d1",
+      "manifestHash": "sha256:37d329229d5dd3e691b68ae4231881affb883e99f0a28937097d190bf57c38ff",
+      "entrypointDigest": "sha256:f849d5f316f3477c6f6c25a03ca64e209c957e225df5d34fddba56369fcc8818",
+      "fragmentLevel": 2,
+      "fragments": [
+        {
+          "fragmentId": "skill-md",
+          "fragmentLevel": 2,
+          "path": "SKILL.md",
+          "digest": "sha256:ee59b21506bcc2bc4b66efd98f0ffffbc1d1ea4649138417a0ac2904dae1b399"
+        },
+        {
+          "fragmentId": "references__api-specs.md",
+          "fragmentLevel": 3,
+          "path": "references/api-specs.md",
+          "digest": "sha256:8563a4a16e1edcc0e3906d96b818fd07c8067136a5f34883c420a580290bf9f6"
+        },
+        {
+          "fragmentId": "references__changelog.md",
+          "fragmentLevel": 3,
+          "path": "references/changelog.md",
+          "digest": "sha256:b06075da74a472a8509d56b39c545ba4cc1864f8b9e686232b5245ae69e7cfff"
+        },
+        {
+          "fragmentId": "references__old-patterns.md",
+          "fragmentLevel": 3,
+          "path": "references/old-patterns.md",
+          "digest": "sha256:7f92ae4bda416bd1bacd42c88b7bdc6ead7153f8f099cfef784b05a897ca0cd8"
+        },
+        {
+          "fragmentId": "references__schemas.json",
+          "fragmentLevel": 5,
+          "path": "references/schemas.json",
+          "digest": "sha256:bf70082040cb328337fc879b042efb6ab659d4ecccc57c2f76616201dcc2ae18"
+        },
+        {
+          "fragmentId": "references__simple-profile.md",
+          "fragmentLevel": 3,
+          "path": "references/simple-profile.md",
+          "digest": "sha256:7f9ba63ee05fc54dcf219ae8923c0e8bf93818f5ba348daa548d641e3fb6f526"
+        },
+        {
+          "fragmentId": "references__skill-pack.json",
+          "fragmentLevel": 3,
+          "path": "references/skill-pack.json",
+          "digest": "sha256:83c3eb57598c0e82540ba78d1ea81cedcaa5d072164e287ec62fa2360a68a2cf"
+        }
+      ]
+    },
+    {
+      "skillId": "source-driven-development",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:8fc8474d31500ef636f67abb69148a30021d1c9d1704bbe18892f270656b5ddc",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "tailwind-patterns",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:6fb71055bf393119ad5161202fdc0841f86d09698130cbace2f34099df178cc6",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "testing-patterns",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:d875ded30e28adbb2348fd435937c45f725b1cf8af2a55d11e63074af87c468e",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    },
+    {
+      "skillId": "tool-architect",
+      "version": "1.0.0",
+      "decision": "qualified",
+      "authority": "linkskills",
+      "lifecycle": "published",
+      "qualification": "qualified",
+      "availability": "available",
+      "releaseHash": "sha256:4d1a854bbec38c0e5e97d98af9d8f89793dc9bfc589a63fe1f9212468ebff70f",
+      "bundleHash": "sha256:1178e2e95e9e3de10794e391aa60b7204bd5bfb31d1f919a3906cf30853c17d2",
+      "manifestHash": "sha256:a6c299683ceded41cf759fc5ba86addffef959c4343654e2353ab7e4f490e503",
+      "entrypointDigest": "sha256:1c367c10cebef6644b9e63291025efac0c6c2f1d4d6813a89289a7257c2f5a5b",
+      "fragmentLevel": 2,
+      "fragments": [
+        {
+          "fragmentId": "skill-md",
+          "fragmentLevel": 2,
+          "path": "SKILL.md",
+          "digest": "sha256:37ea3c498d52cd21848da5684e53583297d1541e28e1d1ffedd7ab70f10f2bb7"
+        },
+        {
+          "fragmentId": "references__api-specs.md",
+          "fragmentLevel": 3,
+          "path": "references/api-specs.md",
+          "digest": "sha256:9e2e5be00a790a98cfac42d5aa54498cd4a54972c62aa76661ddf4031ce21866"
+        },
+        {
+          "fragmentId": "references__changelog.md",
+          "fragmentLevel": 3,
+          "path": "references/changelog.md",
+          "digest": "sha256:a8641a9631d660596ba717ef6ee1f093f2844afe38b38c5b93f92ce1c7d16dd9"
+        },
+        {
+          "fragmentId": "references__old-patterns.md",
+          "fragmentLevel": 3,
+          "path": "references/old-patterns.md",
+          "digest": "sha256:6c55819aab46a2449333cc87d4bdd2252a6cbba1072ffb544b77066d154018d9"
+        },
+        {
+          "fragmentId": "references__schemas.json",
+          "fragmentLevel": 5,
+          "path": "references/schemas.json",
+          "digest": "sha256:c408590e9e2f5d8dd88af5ca931789075aec914d1dc9165a959937ef85035c8b"
+        },
+        {
+          "fragmentId": "references__skill-pack.json",
+          "fragmentLevel": 3,
+          "path": "references/skill-pack.json",
+          "digest": "sha256:11c26002548a644c38178ba456392c0a13b4130b7f45ad93922935e58ce7ab25"
+        }
+      ]
+    },
+    {
+      "skillId": "webapp-testing",
+      "version": "1.0.0",
+      "decision": "retired",
+      "authority": "none",
+      "lifecycle": "retired",
+      "qualification": "withdrawn",
+      "availability": "withdrawn",
+      "entrypointDigest": "sha256:b4f6e174ebec11a91660dd64404f5a0372b8ad6262e094b6fee97e753205ae09",
+      "retirementReason": "not_in_linkskills_catalog",
+      "fragmentLevel": 0,
+      "fragments": []
+    }
+  ],
+  "copies": [
+    {
+      "surface": "core",
+      "path": "core/skills/action-queue/SKILL.md",
+      "skillId": "action-queue",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:32aff5fd66bfe8d724377ded1a278b54258c07c3cb567a1a4369589d499f6ac2"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/agentcomply/SKILL.md",
+      "skillId": "agentcomply",
+      "decision": "qualified",
+      "authority": "required_local_adapter",
+      "digest": "sha256:f941bc86476a19ccea49425319259d18fde98b3fc09e6bad636d013100eaab5c"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/agentsetup/SKILL.md",
+      "skillId": "agentsetup",
+      "decision": "qualified",
+      "authority": "required_local_adapter",
+      "digest": "sha256:932c1c7d28632449432c65bc8ce64461f60866eb2135a68f45bf475dcac63887"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/api-patterns/SKILL.md",
+      "skillId": "api-patterns",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:f819bbb51d4d8a32a1621085d0931c8cc4c63f581d9ac0507e88af7eb81f4a05"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/app-builder/SKILL.md",
+      "skillId": "app-builder",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:88bf10494963cc68ecaf7ca532020e45d843516557089f2c48cfe319d051a555"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/architecture/SKILL.md",
+      "skillId": "architecture",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:d9934b0c38d5f67d2018a4b452e3f3f1faed29150996ca064406e29bcc767bc0"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/bash-linux/SKILL.md",
+      "skillId": "bash-linux",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:86e46e58c1a561ced5fd8e5ae0300cd50a9866ec7213f840d8eb097e91ce0d60"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/ci-cd-and-automation/SKILL.md",
+      "skillId": "ci-cd-and-automation",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:b8b8c95f16acfd71e8ce12004d395ae1b8cf598343edcbabd3bba8eaa8586e3f"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/code-review-and-quality/SKILL.md",
+      "skillId": "code-review-and-quality",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:88413831483002f87b2a09d4f5abec73cdbdaeb20084a35ea58eac50b6555f91"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/code-simplification/SKILL.md",
+      "skillId": "code-simplification",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:5d904fa246d06c962703618d92d8941239546a0febe6079a281f79f98a8043b8"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/context-engineering/SKILL.md",
+      "skillId": "context-engineering",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:b2002e82a3e2eeb6e751c278fa46cf32ce8b049777939b78c4dbf955ef822869"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/data-table/SKILL.md",
+      "skillId": "data-table",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:800a8f2e1483ba4c5bc82c76dd4e194c15772e28585fb8a59d4ec77bb2e90857"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/database-design/SKILL.md",
+      "skillId": "database-design",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:845fbafe70e56e76de946b123d981cd67f97c97b51a8ff7f5d560d804db60b08"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/deployment-procedures/SKILL.md",
+      "skillId": "deployment-procedures",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:c60479dc3f85a8f67505bd433d59833bd8906033231cc4f57ace1392f6ae5171"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/deprecation-and-migration/SKILL.md",
+      "skillId": "deprecation-and-migration",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:65b7fbca07a60c6632e83bfa6bd2ce1d0cad051da23d3ec6640d316396c83207"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/documentation-and-adrs/SKILL.md",
+      "skillId": "documentation-and-adrs",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:d604210ca058350c9b25643fc5ddfcbd71ed1771e5f6f6d50acb74b21a9e57af"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/frontend-ui-engineering/SKILL.md",
+      "skillId": "frontend-ui-engineering",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:a54588d8d901f0fb6fdf3d5220c5286f45c68e4c12d94909822856e9bd895d8a"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/git-safeguard/SKILL.md",
+      "skillId": "git-safeguard",
+      "decision": "qualified",
+      "authority": "linkskills",
+      "digest": "sha256:54309e7a843917890103cee609e36ab5cf9b1d6e0424d2dd0d124637e8eefe86"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/i18n-localization/SKILL.md",
+      "skillId": "i18n-localization",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:9ae1a55d015d65cbb45b4a89a0afbe586a9b9b4cec94454959db2657e55b5c31"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/incremental-implementation/SKILL.md",
+      "skillId": "incremental-implementation",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:ec316b4b0042bce9cc514e69a3bd412d4e40010c5bfe160448cb36635d6617a7"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/intelligent-routing/SKILL.md",
+      "skillId": "intelligent-routing",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:90fa5436668f24629df801ceadaed67bf3fb7fa1eda28bfd01e258dbeb1e7dba"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/lint-and-validate/SKILL.md",
+      "skillId": "lint-and-validate",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:b7f622ed24a11aaec2cfd89e4262b1990344ab778ef1e3901989897dca299778"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/mcp-builder/SKILL.md",
+      "skillId": "mcp-builder",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:837ec7585cd549f9dc1ccd99f5665a7e6b51306d0e4ac81061fba43bdb82a9b9"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/mobile-design/SKILL.md",
+      "skillId": "mobile-design",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:eff13cba214b7dd00b7bfee52a347bc4d0d6cea1d6ba5adace75f7e4ae0067b0"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/model-routing/SKILL.md",
+      "skillId": "model-routing",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:b11c34346a463a025d95a2cdc15d7e4f997dff1007cdf6dd4e2afd0bbc0037a1"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/nodejs-best-practices/SKILL.md",
+      "skillId": "nodejs-best-practices",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:d2f143d35a22847843857479502d93d62036a5e1002f797f9a79c82e0bf6b21c"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/observability-and-instrumentation/SKILL.md",
+      "skillId": "observability-and-instrumentation",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:d13f7024b230ba3012e212860c34a5d235230b64ba2148089505040d8e00e576"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/parallel-agents/SKILL.md",
+      "skillId": "parallel-agents",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:028f348befe22ddc9bac8574a85632b9973af661d716ccfb47432c99a7168ab0"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/performance-optimization/SKILL.md",
+      "skillId": "performance-optimization",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:c4846094d378126337eca2ee26c46f22f685e305cfefe0b5f10f43f7780f99b5"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/persistent-qa/SKILL.md",
+      "skillId": "persistent-qa",
+      "decision": "qualified",
+      "authority": "linkskills",
+      "digest": "sha256:03087bf817616a7bfbb5eedbc48cad93cd44f2fd75fafc3efbeb9f79074cac9c"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/personal-information-forms/SKILL.md",
+      "skillId": "personal-information-forms",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:44b1b2d94de4b9b467aa2dc688320ae76fdef461438785a32e50cdd70250c325"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/powershell-windows/SKILL.md",
+      "skillId": "powershell-windows",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:b800eff9a79b1e48974982116ddf35ed13f50e026705966d1063c66f89a81edc"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/python-patterns/SKILL.md",
+      "skillId": "python-patterns",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:2642aa922df5df2c7a03c8920549063533cf051fc433250b614c7b2f9d306d2e"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/repository-manager/SKILL.md",
+      "skillId": "repository-manager",
+      "decision": "qualified",
+      "authority": "linkskills",
+      "digest": "sha256:4459bca6ba52919cde9d7e279a09ac90b1603d850a1f8bd675c350dd1f98e24e"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/rust-pro/SKILL.md",
+      "skillId": "rust-pro",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:19432a1c0433ccbbe6e2da5ecc8b3c1e031e85d87e9602209c0078ddbf4726b6"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/security-and-hardening/SKILL.md",
+      "skillId": "security-and-hardening",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:4d8575cd00667f27ec1cd8a55931b258e7090f2f77f936bc180245ea90600e59"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/server-management/SKILL.md",
+      "skillId": "server-management",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:8b67557b9171537c8a8f7a266a29d5fd9e9de3de74426f34a9166e924329b11f"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/skill-template/SKILL.md",
+      "skillId": "skill-template",
+      "decision": "qualified",
+      "authority": "linkskills",
+      "digest": "sha256:f849d5f316f3477c6f6c25a03ca64e209c957e225df5d34fddba56369fcc8818"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/source-driven-development/SKILL.md",
+      "skillId": "source-driven-development",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:8fc8474d31500ef636f67abb69148a30021d1c9d1704bbe18892f270656b5ddc"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/tailwind-patterns/SKILL.md",
+      "skillId": "tailwind-patterns",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:6fb71055bf393119ad5161202fdc0841f86d09698130cbace2f34099df178cc6"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/testing-patterns/SKILL.md",
+      "skillId": "testing-patterns",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:d875ded30e28adbb2348fd435937c45f725b1cf8af2a55d11e63074af87c468e"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/tool-architect/SKILL.md",
+      "skillId": "tool-architect",
+      "decision": "qualified",
+      "authority": "linkskills",
+      "digest": "sha256:1c367c10cebef6644b9e63291025efac0c6c2f1d4d6813a89289a7257c2f5a5b"
+    },
+    {
+      "surface": "core",
+      "path": "core/skills/webapp-testing/SKILL.md",
+      "skillId": "webapp-testing",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:b4f6e174ebec11a91660dd64404f5a0372b8ad6262e094b6fee97e753205ae09"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/action-queue/SKILL.md",
+      "skillId": "action-queue",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:32aff5fd66bfe8d724377ded1a278b54258c07c3cb567a1a4369589d499f6ac2"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/agentcomply/SKILL.md",
+      "skillId": "agentcomply",
+      "decision": "qualified",
+      "authority": "required_local_adapter",
+      "digest": "sha256:f941bc86476a19ccea49425319259d18fde98b3fc09e6bad636d013100eaab5c"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/agentsetup/SKILL.md",
+      "skillId": "agentsetup",
+      "decision": "qualified",
+      "authority": "required_local_adapter",
+      "digest": "sha256:932c1c7d28632449432c65bc8ce64461f60866eb2135a68f45bf475dcac63887"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/api-patterns/SKILL.md",
+      "skillId": "api-patterns",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:f819bbb51d4d8a32a1621085d0931c8cc4c63f581d9ac0507e88af7eb81f4a05"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/app-builder/SKILL.md",
+      "skillId": "app-builder",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:88bf10494963cc68ecaf7ca532020e45d843516557089f2c48cfe319d051a555"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/architecture/SKILL.md",
+      "skillId": "architecture",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:d9934b0c38d5f67d2018a4b452e3f3f1faed29150996ca064406e29bcc767bc0"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/bash-linux/SKILL.md",
+      "skillId": "bash-linux",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:86e46e58c1a561ced5fd8e5ae0300cd50a9866ec7213f840d8eb097e91ce0d60"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/ci-cd-and-automation/SKILL.md",
+      "skillId": "ci-cd-and-automation",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:b8b8c95f16acfd71e8ce12004d395ae1b8cf598343edcbabd3bba8eaa8586e3f"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/code-review-and-quality/SKILL.md",
+      "skillId": "code-review-and-quality",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:88413831483002f87b2a09d4f5abec73cdbdaeb20084a35ea58eac50b6555f91"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/code-simplification/SKILL.md",
+      "skillId": "code-simplification",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:5d904fa246d06c962703618d92d8941239546a0febe6079a281f79f98a8043b8"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/context-engineering/SKILL.md",
+      "skillId": "context-engineering",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:b2002e82a3e2eeb6e751c278fa46cf32ce8b049777939b78c4dbf955ef822869"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/data-table/SKILL.md",
+      "skillId": "data-table",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:800a8f2e1483ba4c5bc82c76dd4e194c15772e28585fb8a59d4ec77bb2e90857"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/database-design/SKILL.md",
+      "skillId": "database-design",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:845fbafe70e56e76de946b123d981cd67f97c97b51a8ff7f5d560d804db60b08"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/deployment-procedures/SKILL.md",
+      "skillId": "deployment-procedures",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:c60479dc3f85a8f67505bd433d59833bd8906033231cc4f57ace1392f6ae5171"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/deprecation-and-migration/SKILL.md",
+      "skillId": "deprecation-and-migration",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:65b7fbca07a60c6632e83bfa6bd2ce1d0cad051da23d3ec6640d316396c83207"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/documentation-and-adrs/SKILL.md",
+      "skillId": "documentation-and-adrs",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:d604210ca058350c9b25643fc5ddfcbd71ed1771e5f6f6d50acb74b21a9e57af"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/frontend-ui-engineering/SKILL.md",
+      "skillId": "frontend-ui-engineering",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:a54588d8d901f0fb6fdf3d5220c5286f45c68e4c12d94909822856e9bd895d8a"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/git-safeguard/SKILL.md",
+      "skillId": "git-safeguard",
+      "decision": "qualified",
+      "authority": "linkskills",
+      "digest": "sha256:54309e7a843917890103cee609e36ab5cf9b1d6e0424d2dd0d124637e8eefe86"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/i18n-localization/SKILL.md",
+      "skillId": "i18n-localization",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:9ae1a55d015d65cbb45b4a89a0afbe586a9b9b4cec94454959db2657e55b5c31"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/incremental-implementation/SKILL.md",
+      "skillId": "incremental-implementation",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:ec316b4b0042bce9cc514e69a3bd412d4e40010c5bfe160448cb36635d6617a7"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/intelligent-routing/SKILL.md",
+      "skillId": "intelligent-routing",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:90fa5436668f24629df801ceadaed67bf3fb7fa1eda28bfd01e258dbeb1e7dba"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/lint-and-validate/SKILL.md",
+      "skillId": "lint-and-validate",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:b7f622ed24a11aaec2cfd89e4262b1990344ab778ef1e3901989897dca299778"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/mcp-builder/SKILL.md",
+      "skillId": "mcp-builder",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:837ec7585cd549f9dc1ccd99f5665a7e6b51306d0e4ac81061fba43bdb82a9b9"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/mobile-design/SKILL.md",
+      "skillId": "mobile-design",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:eff13cba214b7dd00b7bfee52a347bc4d0d6cea1d6ba5adace75f7e4ae0067b0"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/model-routing/SKILL.md",
+      "skillId": "model-routing",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:b11c34346a463a025d95a2cdc15d7e4f997dff1007cdf6dd4e2afd0bbc0037a1"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/nodejs-best-practices/SKILL.md",
+      "skillId": "nodejs-best-practices",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:d2f143d35a22847843857479502d93d62036a5e1002f797f9a79c82e0bf6b21c"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/observability-and-instrumentation/SKILL.md",
+      "skillId": "observability-and-instrumentation",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:d13f7024b230ba3012e212860c34a5d235230b64ba2148089505040d8e00e576"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/parallel-agents/SKILL.md",
+      "skillId": "parallel-agents",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:028f348befe22ddc9bac8574a85632b9973af661d716ccfb47432c99a7168ab0"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/performance-optimization/SKILL.md",
+      "skillId": "performance-optimization",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:c4846094d378126337eca2ee26c46f22f685e305cfefe0b5f10f43f7780f99b5"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/persistent-qa/SKILL.md",
+      "skillId": "persistent-qa",
+      "decision": "qualified",
+      "authority": "linkskills",
+      "digest": "sha256:03087bf817616a7bfbb5eedbc48cad93cd44f2fd75fafc3efbeb9f79074cac9c"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/personal-information-forms/SKILL.md",
+      "skillId": "personal-information-forms",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:44b1b2d94de4b9b467aa2dc688320ae76fdef461438785a32e50cdd70250c325"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/powershell-windows/SKILL.md",
+      "skillId": "powershell-windows",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:b800eff9a79b1e48974982116ddf35ed13f50e026705966d1063c66f89a81edc"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/python-patterns/SKILL.md",
+      "skillId": "python-patterns",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:2642aa922df5df2c7a03c8920549063533cf051fc433250b614c7b2f9d306d2e"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/repository-manager/SKILL.md",
+      "skillId": "repository-manager",
+      "decision": "qualified",
+      "authority": "linkskills",
+      "digest": "sha256:4459bca6ba52919cde9d7e279a09ac90b1603d850a1f8bd675c350dd1f98e24e"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/rust-pro/SKILL.md",
+      "skillId": "rust-pro",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:19432a1c0433ccbbe6e2da5ecc8b3c1e031e85d87e9602209c0078ddbf4726b6"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/security-and-hardening/SKILL.md",
+      "skillId": "security-and-hardening",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:4d8575cd00667f27ec1cd8a55931b258e7090f2f77f936bc180245ea90600e59"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/server-management/SKILL.md",
+      "skillId": "server-management",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:8b67557b9171537c8a8f7a266a29d5fd9e9de3de74426f34a9166e924329b11f"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/skill-template/SKILL.md",
+      "skillId": "skill-template",
+      "decision": "qualified",
+      "authority": "linkskills",
+      "digest": "sha256:f849d5f316f3477c6f6c25a03ca64e209c957e225df5d34fddba56369fcc8818"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/source-driven-development/SKILL.md",
+      "skillId": "source-driven-development",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:8fc8474d31500ef636f67abb69148a30021d1c9d1704bbe18892f270656b5ddc"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/tailwind-patterns/SKILL.md",
+      "skillId": "tailwind-patterns",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:6fb71055bf393119ad5161202fdc0841f86d09698130cbace2f34099df178cc6"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/testing-patterns/SKILL.md",
+      "skillId": "testing-patterns",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:d875ded30e28adbb2348fd435937c45f725b1cf8af2a55d11e63074af87c468e"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/tool-architect/SKILL.md",
+      "skillId": "tool-architect",
+      "decision": "qualified",
+      "authority": "linkskills",
+      "digest": "sha256:1c367c10cebef6644b9e63291025efac0c6c2f1d4d6813a89289a7257c2f5a5b"
+    },
+    {
+      "surface": "cursor",
+      "path": ".cursor/skills/webapp-testing/SKILL.md",
+      "skillId": "webapp-testing",
+      "decision": "retired",
+      "authority": "none",
+      "digest": "sha256:b4f6e174ebec11a91660dd64404f5a0372b8ad6262e094b6fee97e753205ae09"
+    },
+    {
+      "surface": "agents",
+      "path": ".agents/skills/agentcomply/SKILL.md",
+      "skillId": "agentcomply",
+      "decision": "qualified",
+      "authority": "required_local_adapter",
+      "digest": "sha256:485f8b4cd607c5369eb7d590e2d017caf8b3df94da468a0ca65bde3742686478"
+    },
+    {
+      "surface": "agents",
+      "path": ".agents/skills/agentsetup/SKILL.md",
+      "skillId": "agentsetup",
+      "decision": "qualified",
+      "authority": "required_local_adapter",
+      "digest": "sha256:c2221987821ec1db3d07913e9c2be63874c759651a3fa6f0ff0ac5af6f295e99"
+    }
+  ],
+  "packageMirrors": [
+    {
+      "path": "core/managed-core/skills/action-queue/SKILL.md",
+      "skillId": "action-queue",
+      "decision": "retired",
+      "digest": "sha256:32aff5fd66bfe8d724377ded1a278b54258c07c3cb567a1a4369589d499f6ac2"
+    },
+    {
+      "path": "core/managed-core/skills/agentcomply/SKILL.md",
+      "skillId": "agentcomply",
+      "decision": "qualified",
+      "digest": "sha256:f941bc86476a19ccea49425319259d18fde98b3fc09e6bad636d013100eaab5c"
+    },
+    {
+      "path": "core/managed-core/skills/agentsetup/SKILL.md",
+      "skillId": "agentsetup",
+      "decision": "qualified",
+      "digest": "sha256:932c1c7d28632449432c65bc8ce64461f60866eb2135a68f45bf475dcac63887"
+    },
+    {
+      "path": "core/managed-core/skills/api-patterns/SKILL.md",
+      "skillId": "api-patterns",
+      "decision": "retired",
+      "digest": "sha256:f819bbb51d4d8a32a1621085d0931c8cc4c63f581d9ac0507e88af7eb81f4a05"
+    },
+    {
+      "path": "core/managed-core/skills/app-builder/SKILL.md",
+      "skillId": "app-builder",
+      "decision": "retired",
+      "digest": "sha256:88bf10494963cc68ecaf7ca532020e45d843516557089f2c48cfe319d051a555"
+    },
+    {
+      "path": "core/managed-core/skills/architecture/SKILL.md",
+      "skillId": "architecture",
+      "decision": "retired",
+      "digest": "sha256:d9934b0c38d5f67d2018a4b452e3f3f1faed29150996ca064406e29bcc767bc0"
+    },
+    {
+      "path": "core/managed-core/skills/bash-linux/SKILL.md",
+      "skillId": "bash-linux",
+      "decision": "retired",
+      "digest": "sha256:86e46e58c1a561ced5fd8e5ae0300cd50a9866ec7213f840d8eb097e91ce0d60"
+    },
+    {
+      "path": "core/managed-core/skills/ci-cd-and-automation/SKILL.md",
+      "skillId": "ci-cd-and-automation",
+      "decision": "retired",
+      "digest": "sha256:b8b8c95f16acfd71e8ce12004d395ae1b8cf598343edcbabd3bba8eaa8586e3f"
+    },
+    {
+      "path": "core/managed-core/skills/code-review-and-quality/SKILL.md",
+      "skillId": "code-review-and-quality",
+      "decision": "retired",
+      "digest": "sha256:88413831483002f87b2a09d4f5abec73cdbdaeb20084a35ea58eac50b6555f91"
+    },
+    {
+      "path": "core/managed-core/skills/code-simplification/SKILL.md",
+      "skillId": "code-simplification",
+      "decision": "retired",
+      "digest": "sha256:5d904fa246d06c962703618d92d8941239546a0febe6079a281f79f98a8043b8"
+    },
+    {
+      "path": "core/managed-core/skills/context-engineering/SKILL.md",
+      "skillId": "context-engineering",
+      "decision": "retired",
+      "digest": "sha256:b2002e82a3e2eeb6e751c278fa46cf32ce8b049777939b78c4dbf955ef822869"
+    },
+    {
+      "path": "core/managed-core/skills/data-table/SKILL.md",
+      "skillId": "data-table",
+      "decision": "retired",
+      "digest": "sha256:800a8f2e1483ba4c5bc82c76dd4e194c15772e28585fb8a59d4ec77bb2e90857"
+    },
+    {
+      "path": "core/managed-core/skills/database-design/SKILL.md",
+      "skillId": "database-design",
+      "decision": "retired",
+      "digest": "sha256:845fbafe70e56e76de946b123d981cd67f97c97b51a8ff7f5d560d804db60b08"
+    },
+    {
+      "path": "core/managed-core/skills/deployment-procedures/SKILL.md",
+      "skillId": "deployment-procedures",
+      "decision": "retired",
+      "digest": "sha256:c60479dc3f85a8f67505bd433d59833bd8906033231cc4f57ace1392f6ae5171"
+    },
+    {
+      "path": "core/managed-core/skills/deprecation-and-migration/SKILL.md",
+      "skillId": "deprecation-and-migration",
+      "decision": "retired",
+      "digest": "sha256:65b7fbca07a60c6632e83bfa6bd2ce1d0cad051da23d3ec6640d316396c83207"
+    },
+    {
+      "path": "core/managed-core/skills/documentation-and-adrs/SKILL.md",
+      "skillId": "documentation-and-adrs",
+      "decision": "retired",
+      "digest": "sha256:d604210ca058350c9b25643fc5ddfcbd71ed1771e5f6f6d50acb74b21a9e57af"
+    },
+    {
+      "path": "core/managed-core/skills/frontend-ui-engineering/SKILL.md",
+      "skillId": "frontend-ui-engineering",
+      "decision": "retired",
+      "digest": "sha256:a54588d8d901f0fb6fdf3d5220c5286f45c68e4c12d94909822856e9bd895d8a"
+    },
+    {
+      "path": "core/managed-core/skills/git-safeguard/SKILL.md",
+      "skillId": "git-safeguard",
+      "decision": "qualified",
+      "digest": "sha256:54309e7a843917890103cee609e36ab5cf9b1d6e0424d2dd0d124637e8eefe86"
+    },
+    {
+      "path": "core/managed-core/skills/i18n-localization/SKILL.md",
+      "skillId": "i18n-localization",
+      "decision": "retired",
+      "digest": "sha256:9ae1a55d015d65cbb45b4a89a0afbe586a9b9b4cec94454959db2657e55b5c31"
+    },
+    {
+      "path": "core/managed-core/skills/incremental-implementation/SKILL.md",
+      "skillId": "incremental-implementation",
+      "decision": "retired",
+      "digest": "sha256:ec316b4b0042bce9cc514e69a3bd412d4e40010c5bfe160448cb36635d6617a7"
+    },
+    {
+      "path": "core/managed-core/skills/intelligent-routing/SKILL.md",
+      "skillId": "intelligent-routing",
+      "decision": "retired",
+      "digest": "sha256:90fa5436668f24629df801ceadaed67bf3fb7fa1eda28bfd01e258dbeb1e7dba"
+    },
+    {
+      "path": "core/managed-core/skills/lint-and-validate/SKILL.md",
+      "skillId": "lint-and-validate",
+      "decision": "retired",
+      "digest": "sha256:b7f622ed24a11aaec2cfd89e4262b1990344ab778ef1e3901989897dca299778"
+    },
+    {
+      "path": "core/managed-core/skills/mcp-builder/SKILL.md",
+      "skillId": "mcp-builder",
+      "decision": "retired",
+      "digest": "sha256:837ec7585cd549f9dc1ccd99f5665a7e6b51306d0e4ac81061fba43bdb82a9b9"
+    },
+    {
+      "path": "core/managed-core/skills/mobile-design/SKILL.md",
+      "skillId": "mobile-design",
+      "decision": "retired",
+      "digest": "sha256:eff13cba214b7dd00b7bfee52a347bc4d0d6cea1d6ba5adace75f7e4ae0067b0"
+    },
+    {
+      "path": "core/managed-core/skills/model-routing/SKILL.md",
+      "skillId": "model-routing",
+      "decision": "retired",
+      "digest": "sha256:b11c34346a463a025d95a2cdc15d7e4f997dff1007cdf6dd4e2afd0bbc0037a1"
+    },
+    {
+      "path": "core/managed-core/skills/nodejs-best-practices/SKILL.md",
+      "skillId": "nodejs-best-practices",
+      "decision": "retired",
+      "digest": "sha256:d2f143d35a22847843857479502d93d62036a5e1002f797f9a79c82e0bf6b21c"
+    },
+    {
+      "path": "core/managed-core/skills/observability-and-instrumentation/SKILL.md",
+      "skillId": "observability-and-instrumentation",
+      "decision": "retired",
+      "digest": "sha256:d13f7024b230ba3012e212860c34a5d235230b64ba2148089505040d8e00e576"
+    },
+    {
+      "path": "core/managed-core/skills/parallel-agents/SKILL.md",
+      "skillId": "parallel-agents",
+      "decision": "retired",
+      "digest": "sha256:028f348befe22ddc9bac8574a85632b9973af661d716ccfb47432c99a7168ab0"
+    },
+    {
+      "path": "core/managed-core/skills/performance-optimization/SKILL.md",
+      "skillId": "performance-optimization",
+      "decision": "retired",
+      "digest": "sha256:c4846094d378126337eca2ee26c46f22f685e305cfefe0b5f10f43f7780f99b5"
+    },
+    {
+      "path": "core/managed-core/skills/persistent-qa/SKILL.md",
+      "skillId": "persistent-qa",
+      "decision": "qualified",
+      "digest": "sha256:03087bf817616a7bfbb5eedbc48cad93cd44f2fd75fafc3efbeb9f79074cac9c"
+    },
+    {
+      "path": "core/managed-core/skills/personal-information-forms/SKILL.md",
+      "skillId": "personal-information-forms",
+      "decision": "retired",
+      "digest": "sha256:44b1b2d94de4b9b467aa2dc688320ae76fdef461438785a32e50cdd70250c325"
+    },
+    {
+      "path": "core/managed-core/skills/powershell-windows/SKILL.md",
+      "skillId": "powershell-windows",
+      "decision": "retired",
+      "digest": "sha256:b800eff9a79b1e48974982116ddf35ed13f50e026705966d1063c66f89a81edc"
+    },
+    {
+      "path": "core/managed-core/skills/python-patterns/SKILL.md",
+      "skillId": "python-patterns",
+      "decision": "retired",
+      "digest": "sha256:2642aa922df5df2c7a03c8920549063533cf051fc433250b614c7b2f9d306d2e"
+    },
+    {
+      "path": "core/managed-core/skills/repository-manager/SKILL.md",
+      "skillId": "repository-manager",
+      "decision": "qualified",
+      "digest": "sha256:4459bca6ba52919cde9d7e279a09ac90b1603d850a1f8bd675c350dd1f98e24e"
+    },
+    {
+      "path": "core/managed-core/skills/rust-pro/SKILL.md",
+      "skillId": "rust-pro",
+      "decision": "retired",
+      "digest": "sha256:19432a1c0433ccbbe6e2da5ecc8b3c1e031e85d87e9602209c0078ddbf4726b6"
+    },
+    {
+      "path": "core/managed-core/skills/security-and-hardening/SKILL.md",
+      "skillId": "security-and-hardening",
+      "decision": "retired",
+      "digest": "sha256:4d8575cd00667f27ec1cd8a55931b258e7090f2f77f936bc180245ea90600e59"
+    },
+    {
+      "path": "core/managed-core/skills/server-management/SKILL.md",
+      "skillId": "server-management",
+      "decision": "retired",
+      "digest": "sha256:8b67557b9171537c8a8f7a266a29d5fd9e9de3de74426f34a9166e924329b11f"
+    },
+    {
+      "path": "core/managed-core/skills/skill-template/SKILL.md",
+      "skillId": "skill-template",
+      "decision": "qualified",
+      "digest": "sha256:f849d5f316f3477c6f6c25a03ca64e209c957e225df5d34fddba56369fcc8818"
+    },
+    {
+      "path": "core/managed-core/skills/source-driven-development/SKILL.md",
+      "skillId": "source-driven-development",
+      "decision": "retired",
+      "digest": "sha256:8fc8474d31500ef636f67abb69148a30021d1c9d1704bbe18892f270656b5ddc"
+    },
+    {
+      "path": "core/managed-core/skills/tailwind-patterns/SKILL.md",
+      "skillId": "tailwind-patterns",
+      "decision": "retired",
+      "digest": "sha256:6fb71055bf393119ad5161202fdc0841f86d09698130cbace2f34099df178cc6"
+    },
+    {
+      "path": "core/managed-core/skills/testing-patterns/SKILL.md",
+      "skillId": "testing-patterns",
+      "decision": "retired",
+      "digest": "sha256:d875ded30e28adbb2348fd435937c45f725b1cf8af2a55d11e63074af87c468e"
+    },
+    {
+      "path": "core/managed-core/skills/tool-architect/SKILL.md",
+      "skillId": "tool-architect",
+      "decision": "qualified",
+      "digest": "sha256:1c367c10cebef6644b9e63291025efac0c6c2f1d4d6813a89289a7257c2f5a5b"
+    },
+    {
+      "path": "core/managed-core/skills/webapp-testing/SKILL.md",
+      "skillId": "webapp-testing",
+      "decision": "retired",
+      "digest": "sha256:b4f6e174ebec11a91660dd64404f5a0372b8ad6262e094b6fee97e753205ae09"
+    }
+  ],
+  "lockDigest": "sha256:12201702eb811c472712be0642139aa16ffe2279db8f2e88e4b0391ce95a0918"
+}
