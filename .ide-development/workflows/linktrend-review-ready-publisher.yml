@@ -1,6 +1,14 @@
 # Linktrend Review Ready Publisher — built-in-token completion bridge
 # Sync: scripts/sync-managed-workflows.sh
 #
+# V25_BOOTSTRAP_LEAN: this workflow is a waived legacy publisher, not canonical
+# for v2.5 Issue checkpoints. Outcomes are classified WAIVED_LEGACY_GATE, never
+# PASS, and must never bypass substantive proof, security, exact identity,
+# scope, review, or rollback. Issue checkpoint acceptance is token-independent
+# (exact commit/tree + scoped diff + focused tests + independent Terra
+# verification + manifest evidence). Do not treat AUTOMATION_TOKEN or this
+# status as Issue-checkpoint or Phase-delivery proof.
+#
 # Privileged status publication for context "Linktrend Review Ready".
 # Workflow YAML and validation/publish scripts come from the protected default
 # branch only. The target issue branch / SHA is checked out as data only —

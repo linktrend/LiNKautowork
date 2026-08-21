@@ -1136,6 +1136,13 @@ def _has_broad_promotion_trigger(text: str) -> bool:
     # Explicit promotion-only workflows are fine.
     if re.search(r"(?m)^[ \t]+branches:\s*\[?\s*['\"]?promote/", text):
         return False
+    # An expensive PR workflow whose job is explicitly restricted to phase/*
+    # heads cannot run for promote/* heads, even when its base is development.
+    if re.search(
+        r"startsWith\(github\.event\.pull_request\.head\.ref,\s*['\"]phase/['\"]\)",
+        text,
+    ):
+        return False
     # Path filters alone do not protect promotion PRs that still match paths.
     has_pr_or_push = bool(re.search(r"(?m)^[ \t]*(pull_request|push)\s*:", text))
     if not has_pr_or_push:

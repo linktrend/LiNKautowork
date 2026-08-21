@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "hostedConcurrencyAuthority": "execution-protocol",
+  "maxAdmittedSlots": {
+    "local": 1,
+    "hosted": 2
+  },
+  "unknownProbeSeconds": 600,
+  "backstopSeconds": 600,
+  "prioritization": ["priority", "dependencyReady", "fifo"],
+  "utilizationGapEvent": "UTILIZATION_GAP",
+  "recomputeOnEvents": [
+    "admission",
+    "completion",
+    "invalidation",
+    "probe_timeout",
+    "api_rejection",
+    "utilization_gap_repair"
+  ]
+}

@@ -48,3 +48,11 @@ This contract does not authorize live repository settings, credential,
 service, host, Docker, billing, consumer, pull-request, merge, or release
 operations. Those operations require the W3 external procedure and explicit
 operator authority.
+
+## v2.5 Issue checkpoint (`V25_BOOTSTRAP_LEAN`)
+
+Issue checkpoints do not require Review Ready or `AUTOMATION_TOKEN`. Legacy
+publisher/status outcomes are `WAIVED_LEGACY_GATE`, never PASS. Phase delivery
+still uses one Phase PR, exact review, conditional Full, and the founder gate
+for `main`. Administrator recovery is a named exact-head exception after
+replacement proof.

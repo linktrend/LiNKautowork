@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# Reject commits that leave PIPELINE-STATE.json in an invalid transition state.
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+VALIDATOR=""
+for candidate in \
+  "$ROOT/core/runtime/validate-application-pipeline.mjs" \
+  "$ROOT/.cursor/runtime/validate-application-pipeline.mjs"
+do
+  if [[ -f "$candidate" ]]; then
+    VALIDATOR="$candidate"
+    break
+  fi
+done
+
+STATE_LIST="$(
+  {
+    git diff --cached --name-only --diff-filter=ACMR
+    git diff --name-only --diff-filter=ACMR
+  } | grep -E '(^|/)PIPELINE-STATE\.json$' | sort -u || true
+)"
+
+if [[ -z "$STATE_LIST" ]]; then
+  exit 0
+fi
+
+# A staged PIPELINE-STATE.json means this repo is actively using the fixed
+# application pipeline, so the validator MUST be present too (it ships
+# vendored alongside via the core/.cursor symlink pattern). A missing
+# validator here is a broken/incomplete IDE Development install, not an
+# "this repo doesn't use the pipeline" signal — fail closed per Law 16
+# ("Quality gates must stop progression, not merely warn"), never silently
+# no-op just because the check itself couldn't be found.
+if [[ -z "$VALIDATOR" ]]; then
+  echo "pre-commit: REJECT — PIPELINE-STATE.json changed but no application-pipeline validator" >&2
+  echo "  found at core/runtime/validate-application-pipeline.mjs or .cursor/runtime/validate-application-pipeline.mjs." >&2
+  echo "  This repo is using the fixed application pipeline but IDE Development isn't fully" >&2
+  echo "  installed/vendored — fix the install before committing pipeline-state changes." >&2
+  exit 1
+fi
+
+FAILED=0
+while IFS= read -r rel; do
+  [[ -z "$rel" ]] && continue
+  TMP="$(mktemp)"
+  if git cat-file -e ":$rel" 2>/dev/null; then
+    git show ":$rel" >"$TMP"
+  elif [[ -f "$ROOT/$rel" ]]; then
+    cp "$ROOT/$rel" "$TMP"
+  else
+    rm -f "$TMP"
+    continue
+  fi
+  WORK_DIR="$(dirname "$ROOT/$rel")"
+  WORK_STATE="$WORK_DIR/.hook-pipeline-state-check.json"
+  cp "$TMP" "$WORK_STATE"
+  if ! node "$VALIDATOR" --state "$WORK_STATE" --check-consistency; then
+    echo "pre-commit: REJECT invalid pipeline state in $rel" >&2
+    FAILED=1
+  fi
+  rm -f "$TMP" "$WORK_STATE"
+done <<< "$STATE_LIST"
+
+exit "$FAILED"

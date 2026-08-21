@@ -564,6 +564,29 @@ class RepositoryCiTriggerContractTests(unittest.TestCase):
             with self.assertRaises(ContractError):
                 installer_audit_repository_ci_triggers(root, mutate=True, rollout_scope=False)
 
+    def test_installer_audit_accepts_expensive_workflow_guarded_to_phase_heads(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            workflows = Path(tmp) / ".github" / "workflows"
+            workflows.mkdir(parents=True)
+            (workflows / "full.yml").write_text(
+                """name: Full matrix
+on:
+  pull_request:
+    branches: [development]
+    types: [labeled]
+jobs:
+  full:
+    if: startsWith(github.event.pull_request.head.ref, 'phase/')
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo e2e browser matrix
+""",
+                encoding="utf-8",
+            )
+            result = audit_workflow_triggers(workflows, contract=self.contract)
+            self.assertTrue(result["ok"], result)
+            self.assertEqual(result["conflicts"], [])
+
     def test_audit_live_ide_development_workflows_report(self) -> None:
         # Factory CI currently has a broad trigger; audit must detect it without mutating.
         result = audit_workflow_triggers(ROOT / ".github" / "workflows", contract=self.contract)

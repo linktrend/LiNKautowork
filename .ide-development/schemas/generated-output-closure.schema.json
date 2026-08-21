@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/generated-output-closure.schema.json",
+  "title": "PKT-08 generated-output closure graph",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "maxPasses", "outputs"],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "kind": {
+      "type": "string",
+      "const": "generated-output-closure"
+    },
+    "maxPasses": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10
+    },
+    "outputs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "output",
+          "generator",
+          "invalidatingSources",
+          "dependsOn"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "output": {
+            "type": "string",
+            "minLength": 1
+          },
+          "generator": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "invalidatingSources": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalOutputs": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "dependsOn": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "audits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["DOGFOOD_IMPROVEMENT_CLOSURE", "LEAN_DESIGN"],
+      "properties": {
+        "DOGFOOD_IMPROVEMENT_CLOSURE": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["correctiveEventMappings", "executableCommands"],
+          "properties": {
+            "correctiveEventMappings": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id", "source", "events", "control"],
+                "properties": {
+                  "id": {"type": "string", "minLength": 1},
+                  "source": {"type": "string", "minLength": 1},
+                  "events": {
+                    "type": "object",
+                    "minProperties": 1,
+                    "additionalProperties": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "control": {"type": "string", "minLength": 1}
+                }
+              }
+            },
+            "executableCommands": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id", "command"],
+                "properties": {
+                  "id": {"type": "string", "minLength": 1},
+                  "command": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {"type": "string", "minLength": 1}
+                  }
+                }
+              }
+            }
+          }
+        },
+        "LEAN_DESIGN": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["limits"],
+          "properties": {
+            "limits": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["maxCorrectiveMappings", "maxCorrectiveEvents"],
+              "properties": {
+                "maxCorrectiveMappings": {"type": "integer", "minimum": 1},
+                "maxCorrectiveEvents": {"type": "integer", "minimum": 1}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

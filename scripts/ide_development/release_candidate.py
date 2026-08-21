@@ -52,6 +52,11 @@ from .constants import (
 from .errors import InstallerError, InvalidPackageError
 from .hashing import sha256_bytes, sha256_file
 
+try:
+    from scripts.gitops.generated_output_closure import ClosureError, finalize_candidate
+except ModuleNotFoundError:  # pragma: no cover - package-style execution
+    from gitops.generated_output_closure import ClosureError, finalize_candidate  # type: ignore
+
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parents[1]
 
@@ -333,7 +338,7 @@ def _scan_bytes_for_host_paths(rel: str, data: bytes, *, repo_root: Path) -> Non
         return
     abs_root = str(repo_root.resolve())
     # Only refuse when the absolute checkout path appears (host leakage).
-    if abs_root in text:
+    if re.search(rf"(?<![A-Za-z0-9_]){re.escape(abs_root)}(?:[/\\]|$)", text):
         raise ReleaseCandidateError(
             f"Refusing host absolute path in package content: {rel}",
             details={"path": rel},
@@ -626,8 +631,21 @@ def create_release_candidate(
     allow_dirty: bool = False,
     skip_install_verify: bool = False,
     skip_evidence: bool = False,
+    candidate_baseline_sha: str | None = None,
+    candidate_baseline_ref: str | None = None,
 ) -> dict[str, Any]:
     """Create deterministic RC archives + metadata under build/."""
+    try:
+        finalize_candidate(
+            repo_root,
+            baseline_sha=candidate_baseline_sha,
+            baseline_ref=candidate_baseline_ref,
+        )
+    except ClosureError as exc:
+        raise ReleaseCandidateError(
+            "Generated-output closure failed before candidate construction",
+            details={"code": exc.code, **exc.diagnostics, "detail": exc.detail},
+        ) from exc
     if not allow_dirty and worktree_is_dirty(repo_root):
         raise ReleaseCandidateError(
             "Refusing release-candidate creation: worktree is dirty",
@@ -850,6 +868,8 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Skip lane evidence path checks (still requires packaging unit tests)",
     )
+    create.add_argument("--baseline-sha", help="Runtime-supplied exact target baseline SHA")
+    create.add_argument("--baseline-ref", help="Runtime-supplied authoritative remote target ref")
 
     verify = sub.add_parser("verify", help="Extract archive and install into a clean temp repo")
     verify.add_argument(
@@ -877,6 +897,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 allow_dirty=bool(args.allow_dirty),
                 skip_install_verify=bool(args.skip_install_verify),
                 skip_evidence=bool(args.skip_evidence),
+                candidate_baseline_sha=args.baseline_sha,
+                candidate_baseline_ref=args.baseline_ref,
             )
         elif args.action == "verify":
             payload = verify_release_candidate_archive(

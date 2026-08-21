@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "amendment": "V25_PKT08_MANIFEST_PERSISTENCE_RECOVERY",
+  "maxCompareAndRetryAttempts": 3,
+  "requiredAuthorities": [
+    "cursor",
+    "github",
+    "git"
+  ],
+  "reconstructedTransitions": [
+    "dispatch",
+    "run",
+    "integration",
+    "archive",
+    "UTILIZATION_GAP"
+  ],
+  "conversationIsAuthority": false,
+  "duplicateDispatch": "suppress",
+  "notifyAfterRepeatedFailure": true
+}
