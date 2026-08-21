@@ -1,155 +1,75 @@
 # Agent Completion Contract
 
-**Status:** Active
+**Status:** Active. Amended `V25_BOOTSTRAP_LEAN` 2026-08-20.
 **Date:** 2026-08-01
 **Owner:** IDE Development (GitOps)
 
 ## Purpose
 
-Define how Implementers finish a work session without opening PRs or falsely claiming review-ready.
+Define how Implementers finish a work session without opening PRs or claiming hosted/production proof they do not have.
 
-## Authority
+## Authority (`V25_BOOTSTRAP_LEAN`)
 
-`review-ready` is the authoritative, fail-closed completion path. The gate validates the exact pushed branch state and machine-readable evidence before **`Linktrend Review Ready`** may be published.
+A v2.5 **Issue checkpoint** is accepted when all of the following are present:
 
-**Production publisher:** GitHub's built-in workflow token from the trusted
-`linktrend-review-ready-publisher.yml` workflow on the protected default branch,
-with `LINKTREND_TRUSTED_REVIEW_READY_PUBLISHER=1` on the publish/withdraw step
-only. The documented privileged input is `AUTOMATION_TOKEN`; `GH_TOKEN` and
-`GITHUB_TOKEN` are aliases with deterministic precedence
-(`AUTOMATION_TOKEN` then `GH_TOKEN` then `GITHUB_TOKEN`). The privileged
-normal-token route accepts `AUTOMATION_TOKEN` and forwards it onto those aliases
-without logging the value. Local `completion_gate.py review-ready` remains the
-implementer entrypoint: it validates first, then either publishes when a
-privileged token is already present in that trusted context, or **fails closed**
-and explains the normal-token dispatch route when local privileged credentials
-are unavailable. It must never substitute Carlos's user token, ambient
-`GITHUB_TOKEN` without the trusted flag, or any other human credential to
-publish the status.
+1. exact pushed commit and tree
+2. scoped diff
+3. focused tests
+4. independent Terra verification
+5. manifest evidence
 
-Bare `--tests-ok`, `COMPLETION_TESTS_OK=1`, and arbitrary text in `COMPLETION_EVIDENCE` are not sufficient production proof.
+Review Ready publication, `AUTOMATION_TOKEN`, an Issue PR, hosted completion status, and legacy publisher status are **nonrequirements**. They must not block checkpoint acceptance.
 
-There is **no** `.linktrend/review-ready.json` readiness file and no readiness marker commit in the feature diff. Do not create, discover, or consult that path.
+`python3 scripts/gitops/completion_gate.py checkpoint` is the implementer entrypoint. `review-ready` remains a compatibility mode that **never publishes** and classifies the legacy publisher as **`WAIVED_LEGACY_GATE`** (never PASS, never an implementation failure). That waived outcome must never bypass substantive proof, security, exact identity, scope, review, or rollback.
+
+There is **no** `.linktrend/review-ready.json` readiness file. Do not create, discover, or consult that path. Local proof must never be represented as hosted or production proof. When hosted validation needs out-of-tree evidence, pass an explicit immutable evidence payload (`--evidence-json`) bound to the exact SHA/tree.
 
 ## Modes (`scripts/gitops/completion_gate.py`)
 
 | Mode | Meaning | Exit |
 |---|---|---|
-| `checkpoint` | Commit+push save; work unfinished | `0` ok |
-| `review-ready` | Validate finished work, then publish **`Linktrend Review Ready`** (or fail closed with normal-token route diagnostics) | `0` ok, `78` incomplete, `1` failed |
+| `checkpoint` | Save point, or v2.5 Issue-checkpoint acceptance when lean evidence is present | `0` ok, `78` incomplete |
+| `review-ready` | Validate evidence, then waive legacy Review Ready publication (`WAIVED_LEGACY_GATE`, never PASS) | `0` waived, `78` incomplete |
 | `blocked` | Write durable blocker JSON | `2` blocked |
 | `status` | Report current completion state | `0` ok |
-| `write-evidence` | Write schema-versioned completion evidence for current `HEAD` | `0` ok |
+| `write-evidence` | Write schema-versioned completion / lean checkpoint evidence for current `HEAD` | `0` ok |
 
 Exit codes: `0` ok, `78` incomplete, `2` blocked, `1` failed.
 
 ## States
 
 - `checkpointed_unfinished`
-- `review_ready`
+- `checkpoint_accepted`
+- `waived_legacy_gate`
 - `blocked`
 - `failed`
 
-## `review_ready` requirements (all required)
+## v2.5 Issue checkpoint requirements
 
-Order is part of the contract:
+1. `HEAD` resolves to a SHA and matching git tree.
+2. Working tree is clean; branch is not `development`, `staging`, `main`, or detached.
+3. `HEAD == origin/<branch>` after fetch (exact pushed identity).
+4. Machine-readable evidence bound to that exact SHA/tree covering scoped diff, focused tests, independent Terra verification, and manifest evidence.
+5. No GitHub token, Review Ready status, Issue PR, or hosted completion status is required.
 
-1. Verify exact pushed SHA and branch state:
-   - `HEAD` resolves to a SHA.
-   - working tree is clean.
-   - branch is not `development`, `staging`, `main`, or detached.
-   - **normal-token publication requires** verified `issue/<number>-<slug>` (digits + lowercase slug) **or** a configured Phase tip matching `phaseBranchPrefix` + lowercase slug (default `phase/<slug>`). Ordinary allowlist prefixes (`feature/`, `dev/`, `cursor/`, …) may still exist for work/Pull, but `review-ready` on the production GitHub backend fails closed with an actionable migration path — it must never advertise a doomed `gh workflow run … -f branch=feature/…` command. Phase eligibility does not weaken issue-branch slug safeguards.
-   - `HEAD == origin/<branch>` after fetch.
-2. Require machine-readable evidence JSON tied to that exact `HEAD` SHA.
-3. Only after those checks pass, publish **`Linktrend Review Ready`** through the privileged normal-token path (`scripts/gitops/readiness_status.py` with `AUTOMATION_TOKEN` in a trusted publisher context, or via the trusted publisher workflow which forwards `github.token` as `AUTOMATION_TOKEN`). `GH_TOKEN` / `GITHUB_TOKEN` are aliases; `AUTOMATION_TOKEN` precedes them and must not be silently discarded. Never publish with a user PAT / restricted Carlos identity / ordinary `GITHUB_TOKEN` fallback outside that trusted context.
+Bare `--tests-ok`, `COMPLETION_TESTS_OK=1`, and arbitrary text in `COMPLETION_EVIDENCE` are not sufficient.
 
-The successful status is an output of completion, not an input prerequisite.
+## Phase delivery (not Issue checkpoint)
 
-## normal-token route (when local publish cannot proceed)
-
-When `completion_gate.py review-ready` validates successfully but cannot publish because no privileged normal automation token is available locally (normal implementer machine):
-
-1. Leave evidence on the pushed tip (do not invent a readiness file).
-2. Dispatch **`linktrend-review-ready-publisher`** (`workflow_dispatch`) from the **protected default branch** workflow source.
-3. Bind only this repository's exact `issue/<number>-<slug>` **or** configured `phase/<slug>` branch and immutable tip SHA (plus any inputs the workflow schema requires). Dry-run when testing.
-4. The workflow re-validates branch naming, exact remote SHA, evidence schema, clean/pushed tip, and (for Issue tips) issue/branch relationship from trusted scripts; the untrusted branch supplies data only.
-5. On success it posts commit status context **`Linktrend Review Ready`** = `success` on that exact SHA so Review Packager discovery is unchanged.
-
-If the current branch is still a legacy allowed name (`feature/`, `dev/`, …) rather than `issue/<number>-<slug>` or a configured Phase tip, the gate **does not** emit a publisher dispatch command. It fails truthfully with `app_publish_requires_issue_branch` (legacy-compatible error code) and a remediation path: migrate via `python3 scripts/gitops/create_issue_branch.py` or `/agentcomply`, move the tip, push, rewrite evidence for the new HEAD SHA, then re-run `review-ready`.
-
-See `core/github/REVIEW-READY.md` for the dispatch contract and rollback (withdraw is normal-token `action=withdraw` on the same trusted publisher workflow; local `clear-review-ready.sh` fails closed without normal automation credentials).
-
-## Evidence schema (`schemaVersion: 1`)
-
-Completion evidence must be JSON and must be tied to the exact `HEAD` being marked:
-
-```json
-{
-  "schemaVersion": 1,
-  "headSha": "<exact HEAD SHA>",
-  "classification": "tests",
-  "acceptance": "Acceptance criteria summary",
-  "commands": [
-    {
-      "cmd": "scripts/tests/test-gitops-lifecycle.sh",
-      "exitCode": 0,
-      "evidencePath": ".linktrend/test-gitops-lifecycle.out"
-    }
-  ]
-}
-```
-
-Allowed `classification` values:
-
-- `tests`: normal implementation proof. Every command must have `exitCode: 0`.
-- `docs_only`: documentation-only proof. It still records validation commands and must include `docsOnlyJustification` with at least 20 characters.
+One Phase PR into `development`, exact review, conditional Full, and the founder gate for `main` remain the protected delivery path. The delivery controller merges through GitHub protection. Administrator recovery is a named exception after replacement proof: freeze the exact Phase head, snapshot protections, prefer `gh pr merge --admin --match-head-commit`, apply a minimum temporary exception only if needed, merge only that exact authorized head, restore immediately, read back, and record obsolete publisher/status as waived not passed.
 
 ## Hard rules
 
 - Implementers **never** open or update PRs. The Phase Packager/Coordinator (`scripts/gitops/packager_coordinator.py`) opens the Phase PR. Retained `packager_discover.py` is not that component.
-- Ship waves = checkpoint only (no Bugbot, no review-ready unless truly finished).
-- Incomplete review-ready claims must fail closed (exit `78`), not soft-succeed.
-- Agents call `python3 scripts/gitops/completion_gate.py review-ready` directly, or call `write-evidence` first and then `review-ready`.
-- `scripts/mark-review-ready.sh` is only a compatibility wrapper. It requires an evidence file and delegates to the gate. It must never be used as a pre-gate publisher.
+- Ship waves = checkpoint only.
+- Do **not** attempt the Review Ready publisher or a hosted publisher fallback from implementer sessions.
 - Do **not** create or use `.linktrend/review-ready.json`.
-- Carlos's restricted user identity must not publish statuses (its Packager/Bugbot scope is unchanged).
-
-## Automatic completion behavior for agents
-
-When an issue appears complete:
-
-1. Run the appropriate tests/checks for the touched surface.
-2. Repair ordinary failures automatically, with at most **3** bounded repair cycles. This implementer bound is not the independent-review convergence policy. Pre-land independent review uses progress-based continuation in `scripts/gitops/independent_review_convergence.py`: no arbitrary terminal cycle cap, unattended pause after three review-repair cycles, and recorded founder `continue until clean` authority for additional progressing cycles.
-3. Write machine-readable evidence with `completion_gate.py write-evidence` or an equivalent schema-versioned JSON file under `.linktrend/`.
-4. Call `python3 scripts/gitops/completion_gate.py review-ready` only after validation succeeds.
-5. If the gate fails closed for missing privileged publish credentials, follow the normal-token route diagnostics (dispatch the publisher for this repo/branch/SHA). Do not invent a local status publish with a user token.
-6. If validation or repair cannot complete, leave the branch ineligible and write a durable blocker:
-
-```bash
-python3 scripts/gitops/completion_gate.py blocked \
-  --reason "why completion is blocked" \
-  --attempted-repairs 3
-```
+- Never represent local proof as hosted/production proof.
 
 ## Related
 
-System repository paths:
-
 - `docs/AUTONOMOUS-GIT-OPERATIONS.md`
-- `core/github/REVIEW-READY.md`
-- `docs/contracts/GITHUB-APP-GITOPS-CREDENTIALS.md`
-- `docs/contracts/REPAIR-DISPATCHER.md`
-- `docs/archive/work-packets/2026-08-01-wave-2-completion.md` (historical archive reference only)
-
-Consumer installs (packaged doctrine under `.ide-development/content/doctrine/`): use sibling `AUTONOMOUS-GIT-OPERATIONS.md` in the same directory. Root `docs/` and `core/github/` paths above are system-source contracts and are not assumed present at those locations in every consumer.
-
-## Blocked completion (local cache + durable record)
-
-`completion_gate.py blocked` writes `.linktrend/completion-blocker.json` under the workdir.
-`.linktrend/` is **gitignored**, so that file is only a **machine-local cache** — it is not by itself a durable cross-machine blocker.
-
-The same `blocked` mode resolves the current repository from the checkout (`gh repo view` or validated `origin`, never `upstream`-only / ambiguous forks) and upserts a durable **repair task** (`immediate_approval_required`) via `repair_task.py` when authenticated access exists.
-
-If repository resolution or durable write fails, the command still exits `2` with `durableRecord=false` and `warning=LOCAL_CACHE_ONLY...`. Agents must **not** claim the blocker was durably registered on GitHub in that case.
-
-Do not force-add or commit `.linktrend/`.
+- `core/execution/CODING-EXECUTION-PROTOCOL.md`
+- `core/contracts/EXECUTION-CONTROL-CONTRACT.md`
+- `scripts/gitops/issue_checkpoint.py`
+- `scripts/gitops/administrator_recovery.py`

@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/verification-liveness.schema.json",
+  "title": "PKT-08 verification-liveness config",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "amendment",
+    "profile",
+    "timeoutSeconds",
+    "heartbeatIntervalSeconds",
+    "staleAfterSeconds",
+    "maxAutomaticRestarts",
+    "artifactRoot",
+    "states",
+    "paidFallback",
+    "fastFallback"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "amendment": {
+      "type": "string",
+      "const": "V25_PKT08_VERIFICATION_LIVENESS"
+    },
+    "profile": {
+      "type": "string",
+      "const": "Full"
+    },
+    "timeoutSeconds": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "heartbeatIntervalSeconds": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "staleAfterSeconds": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "maxAutomaticRestarts": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "artifactRoot": {
+      "type": "string",
+      "const": ".linktrend/verification"
+    },
+    "states": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "STARTED",
+          "LIVE",
+          "TERMINAL",
+          "ORPHANED",
+          "TIMED_OUT",
+          "RESTARTED"
+        ]
+      }
+    },
+    "paidFallback": {
+      "type": "boolean",
+      "const": false
+    },
+    "fastFallback": {
+      "type": "boolean",
+      "const": false
+    }
+  }
+}

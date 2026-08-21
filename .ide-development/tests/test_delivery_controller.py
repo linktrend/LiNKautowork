@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from scripts.gitops import delivery_controller as controller
 from scripts.gitops import packager_discover as discover
@@ -292,6 +294,39 @@ class DeliveryControllerTests(unittest.TestCase):
                 release_gate={"status": "passed", "testProfile": "release"},
                 role="operator",
                 full_suite_invoked=True,
+            )
+
+    def test_staged_rollout_uses_configured_stage_names_on_critical_path(self) -> None:
+        rollout = controller.StagedRolloutConfig.from_mapping(
+            {
+                "phaseBranchPrefix": "candidate/",
+                "developmentBranch": "integrated",
+                "stagingBranch": "canary",
+                "mainBranch": "production",
+                "requiredChecks": ["System Fast", "System Full"],
+            }
+        )
+        result = controller.promote_to_staging(
+            github=self.github,
+            repository="owner/name",
+            development_sha=self.head,
+            staging_sha=_sha(7),
+            candidate_sha=self.head,
+            candidate_tree=self.tree,
+            receipt=self.receipt,
+            candidate_identity=self.identity,
+            release_gate={"status": "passed", "testProfile": "release", "fullSuiteInvoked": False},
+            role="operator",
+            rollout=rollout,
+        )
+        self.assertEqual(result["stage"], "canary")
+        self.assertEqual(result["promoteBranch"], f"promote/canary/{self.head[:12]}")
+        self.assertEqual(self.github.prs[1]["base"], "canary")
+
+    def test_staged_rollout_rejects_duplicate_stage_identity(self) -> None:
+        with self.assertRaisesRegex(ValueError, "duplicate_rollout_branch"):
+            controller.StagedRolloutConfig.from_mapping(
+                {"developmentBranch": "same", "stagingBranch": "same"}
             )
 
     def test_changed_staging_content_is_rejected(self) -> None:
@@ -762,10 +797,6 @@ class DeliveryControllerTests(unittest.TestCase):
         )
         self.assertEqual(owned, {branch: True})
 
-        import os
-        import tempfile
-        from unittest import mock
-
         evidence_path = Path(tempfile.mkdtemp()) / "merge.json"
         evidence_path.write_text(json.dumps({"status": "merged", "promoteBranch": branch}), encoding="utf-8")
         self.github.refs[branch] = self.head
@@ -802,6 +833,27 @@ class DeliveryControllerTests(unittest.TestCase):
                     ]
                 )
                 self.assertEqual(rc_fail, 2)
+
+    def test_production_github_accepts_gh_token_without_automation_token(self) -> None:
+        saved = {
+            key: os.environ.pop(key, None)
+            for key in ("AUTOMATION_TOKEN", "AUTOMATION_TOKEN_SOURCE", "GH_TOKEN", "GITHUB_TOKEN")
+        }
+        try:
+            os.environ["GH_TOKEN"] = "ghs_phase_api"
+            live = controller.resolve_production_github("owner/name")
+            self.assertEqual(live.automation_token, "ghs_phase_api")
+            os.environ.pop("GH_TOKEN", None)
+            os.environ["AUTOMATION_TOKEN"] = "ghs_publisher"
+            os.environ["AUTOMATION_TOKEN_SOURCE"] = "github_token"
+            with self.assertRaisesRegex(controller.ControllerError, "legacy_publisher_token_not_canonical"):
+                controller.resolve_production_github("owner/name")
+        finally:
+            for key, value in saved.items():
+                if value is None:
+                    os.environ.pop(key, None)
+                else:
+                    os.environ[key] = value
 
     def test_index_manifest_schema_and_hosted_fast_cover_controller(self) -> None:
         index = (ROOT / "core/managed-core/INDEX.yaml").read_text(encoding="utf-8")

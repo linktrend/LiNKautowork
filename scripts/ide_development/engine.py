@@ -334,6 +334,9 @@ def run_verify(
         },
         repositoryCiTriggerAudit=ci_trigger_audit,
     )
+    # The verify response replaces planning drift with the authoritative
+    # byte-level report; keep its summary consistent with that public field.
+    payload["summary"]["driftCount"] = len(meaningful)
     if plan.has_conflicts:
         return EngineResult(exit_code=EXIT_CONFLICT, payload=payload)
     if meaningful or needs_work:

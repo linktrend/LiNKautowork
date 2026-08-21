@@ -35,7 +35,11 @@ RECEIPT_PROFILE_ARGS=()
 COORDINATOR_RECEIPT_ROOT="${LINKTREND_COORDINATOR_RECEIPT_ROOT:-${HOME}/.linktrend/ide-coordinator/receipts}"
 
 case "${MAIN_PROMOTION_MODE}" in
-  principal-approval|automatic) ;;
+  principal-approval) ;;
+  automatic)
+    echo "FAIL: automatic main promotion is disabled; explicit Principal approval is required" >&2
+    exit 1
+    ;;
   *) echo "FAIL: unsupported main promotion mode ${MAIN_PROMOTION_MODE}" >&2; exit 1 ;;
 esac
 
@@ -306,10 +310,6 @@ EOF
   exit 0
 fi
 
-if [ "${MODE}" = "automatic" ]; then
-  MAIN_PROMOTION_MODE="automatic"
-  MODE="approve-merge"
-fi
 if [ "${MODE}" != "approve-merge" ]; then
   write_out "failed" "unknown MODE=${MODE}"
   exit 1

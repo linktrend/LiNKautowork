@@ -21,14 +21,27 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Iterator
 
-from .constants import (
-    DEFAULT_MARKER_BEGIN,
-    DEFAULT_MARKER_END,
-    PACKAGE_NAME,
-    PACKAGE_VERSION_TARGET,
-    SCHEMA_VERSION,
-)
-from .hashing import sha256_file
+try:
+    from .constants import (
+        DEFAULT_MARKER_BEGIN,
+        DEFAULT_MARKER_END,
+        PACKAGE_NAME,
+        PACKAGE_VERSION_TARGET,
+        SCHEMA_VERSION,
+    )
+    from .hashing import sha256_file
+except ImportError:  # pragma: no cover - direct script entrypoint
+    parent = Path(__file__).resolve().parent.parent
+    if str(parent) not in sys.path:
+        sys.path.insert(0, str(parent))
+    from ide_development.constants import (  # type: ignore
+        DEFAULT_MARKER_BEGIN,
+        DEFAULT_MARKER_END,
+        PACKAGE_NAME,
+        PACKAGE_VERSION_TARGET,
+        SCHEMA_VERSION,
+    )
+    from ide_development.hashing import sha256_file  # type: ignore
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parents[1]
@@ -70,6 +83,38 @@ LIFECYCLE_CURSOR_RULES = (
     "05-security-cost-and-side-effects.mdc",
 )
 
+REQUIRED_RUNTIME_PACKAGE_SOURCES = (
+    "scripts/gitops/repository_ci_contract.py",
+    "scripts/gitops/promotion_receipt_gate.py",
+)
+
+# Preserve the source-relative layout under one managed runtime root so the
+# application adapters and provider clients keep working after extraction and
+# consumer installation. This is executable canary/runtime payload, not a
+# second authority or consumer-owned product source.
+APPLICATION_RUNTIME_FILES = (
+    "scripts/ide_development/app_canary.mjs",
+    "core/managed-core/platforms/codex/adapter.mjs",
+    "core/managed-core/platforms/cursor/adapter.mjs",
+    "core/link-integrations/README.md",
+    "core/link-integrations/autowork.mjs",
+    "core/link-integrations/brain.mjs",
+    "core/link-integrations/clients.mjs",
+    "core/link-integrations/config.mjs",
+    "core/link-integrations/errors.mjs",
+    "core/link-integrations/index.mjs",
+    "core/link-integrations/libraries.mjs",
+    "core/link-integrations/mcp.mjs",
+    "core/link-integrations/pins.mjs",
+    "core/link-integrations/platform.mjs",
+    "core/link-integrations/redaction.mjs",
+    "core/link-integrations/registry.mjs",
+    "core/link-integrations/skills-loader.mjs",
+    "core/link-integrations/skills-lock.json",
+    "core/link-integrations/skills.mjs",
+    "core/link-integrations/transport.mjs",
+)
+
 # Doctrine files mirrored into .ide-development/content/ for consumer offline use.
 CONTENT_DOCTRINE = (
     ("docs/contracts/AGENT-COMPLETION.md", "content/doctrine/AGENT-COMPLETION.md"),
@@ -78,6 +123,19 @@ CONTENT_DOCTRINE = (
     ("docs/contracts/REPOSITORY-PROTECTION.md", "content/doctrine/REPOSITORY-PROTECTION.md"),
     ("docs/contracts/STREAMLINED-DELIVERY.md", "content/doctrine/STREAMLINED-DELIVERY.md"),
     ("docs/contracts/SECRET-SCAN-FIXTURES.md", "content/doctrine/SECRET-SCAN-FIXTURES.md"),
+    ("core/contracts/GENERATED-OUTPUT-CLOSURE.md", "content/doctrine/GENERATED-OUTPUT-CLOSURE.md"),
+    (
+        "core/contracts/MANIFEST-PERSISTENCE-RECOVERY.md",
+        "content/doctrine/MANIFEST-PERSISTENCE-RECOVERY.md",
+    ),
+    (
+        "core/contracts/PKT08-REVISION-60-FINAL-CONTROLS.md",
+        "content/doctrine/PKT08-REVISION-60-FINAL-CONTROLS.md",
+    ),
+    (
+        "core/execution/CODING-EXECUTION-PROTOCOL.md",
+        "content/doctrine/CODING-EXECUTION-PROTOCOL.md",
+    ),
     ("docs/contracts/REPOSITORY-CI-TRIGGER.md", "content/doctrine/REPOSITORY-CI-TRIGGER.md"),
     ("docs/contracts/LINKTREND-REVIEW-GATE.md", "content/doctrine/LINKTREND-REVIEW-GATE.md"),
     ("docs/contracts/RECEIPT-SEAL-AND-RECOVERY.md", "content/doctrine/RECEIPT-SEAL-AND-RECOVERY.md"),
@@ -115,6 +173,9 @@ HOSTED_TEST_FILES = (
     "scripts/tests/test_phase_packager_coordinator.py",
     "scripts/tests/test_independent_review_convergence.py",
     "scripts/tests/test_fixture_aware_secret_scan.py",
+    "scripts/tests/test_candidate_baseline_resolution.py",
+    "scripts/tests/test_generated_output_closure.py",
+    "scripts/tests/test_manifest_persistence_recovery.py",
     "scripts/tests/test_repository_ci_trigger_contract.py",
     "scripts/tests/test_linktrend_review_gate.py",
     "scripts/tests/test_promotion_receipt_gate.py",
@@ -299,12 +360,37 @@ def sync_package_payload() -> None:
 
 
 def _gitops_script_sources() -> list[str]:
+    """Return physical managed-runtime scripts for package construction.
+
+    A runtime manifest is an authoritative package input.  Silently skipping
+    a missing source would produce an archive whose installer can start but
+    cannot load one of its package-local dependencies.
+    """
     manifest = json.loads(
         (REPO_ROOT / "core" / "github" / "managed-runtime" / "MANIFEST.json").read_text(
             encoding="utf-8"
         )
     )
-    return list(manifest.get("files") or [])
+    sources = list(manifest.get("files") or [])
+    missing_declarations = [
+        rel for rel in REQUIRED_RUNTIME_PACKAGE_SOURCES if rel not in sources
+    ]
+    if missing_declarations:
+        raise ValueError(
+            "Managed runtime manifest omits required package sources: "
+            + ", ".join(missing_declarations)
+        )
+    missing = [
+        rel
+        for rel in sources
+        if not (REPO_ROOT / rel).is_file() or (REPO_ROOT / rel).is_symlink()
+    ]
+    if missing:
+        raise FileNotFoundError(
+            "Managed runtime package sources missing or symlinked: "
+            + ", ".join(sorted(missing))
+        )
+    return sources
 
 
 def build_entries() -> list[dict[str, Any]]:
@@ -317,6 +403,18 @@ def build_entries() -> list[dict[str, Any]]:
         ("INDEX.yaml", ".ide-development/INDEX.yaml"),
         ("content/README.md", ".ide-development/content/README.md"),
         ("config/delivery.json", ".ide-development/config/delivery.json"),
+        (
+            "content/config/generated-output-closure.consumer.json",
+            ".ide-development/config/generated-output-closure.json",
+        ),
+        (
+            "content/config/manifest-persistence.json",
+            ".ide-development/content/config/manifest-persistence.json",
+        ),
+        (
+            "content/config/transactional-dispatch.json",
+            ".ide-development/content/config/transactional-dispatch.json",
+        ),
         ("migrations/catalog.json", ".ide-development/migrations/catalog.json"),
         (
             "migrations/external-cleanup-plan.json",
@@ -388,6 +486,18 @@ def build_entries() -> list[dict[str, Any]]:
             ".ide-development/schemas/secret-scan-fixtures.schema.json",
         ),
         (
+            "schemas/generated-output-closure.schema.json",
+            ".ide-development/schemas/generated-output-closure.schema.json",
+        ),
+        (
+            "schemas/manifest-persistence.schema.json",
+            ".ide-development/schemas/manifest-persistence.schema.json",
+        ),
+        (
+            "schemas/transactional-dispatch.schema.json",
+            ".ide-development/schemas/transactional-dispatch.schema.json",
+        ),
+        (
             "schemas/secret-scan-result.schema.json",
             ".ide-development/schemas/secret-scan-result.schema.json",
         ),
@@ -426,6 +536,22 @@ def build_entries() -> list[dict[str, Any]]:
             "platforms/cursor/materialization-manifest.json",
             ".ide-development/platforms/cursor/materialization-manifest.json",
         ),
+        (
+            "platforms/codex/skills-loader.mjs",
+            ".ide-development/platforms/codex/skills-loader.mjs",
+        ),
+        (
+            "platforms/codex/skills-lock.json",
+            ".ide-development/platforms/codex/skills-lock.json",
+        ),
+        (
+            "platforms/cursor/skills-loader.mjs",
+            ".ide-development/platforms/cursor/skills-loader.mjs",
+        ),
+        (
+            "platforms/cursor/skills-lock.json",
+            ".ide-development/platforms/cursor/skills-lock.json",
+        ),
     ]
     for src_tail, dest in identity_files:
         source = f"core/managed-core/{src_tail}"
@@ -439,6 +565,172 @@ def build_entries() -> list[dict[str, Any]]:
                 platform="all",
                 merge="replace",
                 source_hash=_hash_rel(source),
+            )
+        )
+
+    execution_runtime_files = (
+        ("core/execution/__init__.py", ".ide-development/execution/__init__.py"),
+        ("core/execution/lifecycle.py", ".ide-development/execution/lifecycle.py"),
+        ("core/execution/protocol.py", ".ide-development/execution/protocol.py"),
+        ("core/execution/scheduler.py", ".ide-development/execution/scheduler.py"),
+        (
+            "core/execution/verification_liveness.py",
+            ".ide-development/execution/verification_liveness.py",
+        ),
+        (
+            "core/execution/manifest_persistence.py",
+            ".ide-development/execution/manifest_persistence.py",
+        ),
+        (
+            "core/execution/transactional_dispatch.py",
+            ".ide-development/execution/transactional_dispatch.py",
+        ),
+        ("core/execution/rollout.py", ".ide-development/execution/rollout.py"),
+        (
+            "core/execution/examples/verification-run.example.json",
+            ".ide-development/execution/examples/verification-run.example.json",
+        ),
+    )
+    for source, destination in execution_runtime_files:
+        entries.append(
+            _entry(
+                entry_id=f"execution-runtime-{_slug(Path(source).name)}",
+                ownership="managed-core",
+                source=source,
+                destination=destination,
+                mode="0644",
+                platform="all",
+                merge="replace",
+                source_hash=_hash_rel(source),
+                notes="PKT-01 deterministic execution admission runtime.",
+            )
+        )
+
+    for source in APPLICATION_RUNTIME_FILES:
+        destination = f".ide-development/runtime/{source}"
+        entries.append(
+            _entry(
+                entry_id=f"application-runtime-{_slug(source)}",
+                ownership="managed-core",
+                source=source,
+                destination=destination,
+                mode="0755" if source.endswith("app_canary.mjs") else "0644",
+                platform="all",
+                merge="replace",
+                source_hash=_hash_rel(source),
+                notes="Portable Codex/Cursor provider adapter and installed canary runtime.",
+            )
+        )
+
+    transactional_dispatch_files = (
+        (
+            "core/contracts/PKT08-REVISION-60-FINAL-CONTROLS.md",
+            ".ide-development/contracts/PKT08-REVISION-60-FINAL-CONTROLS.md",
+        ),
+        (
+            "core/managed-core/content/doctrine/PKT08-REVISION-60-FINAL-CONTROLS.md",
+            ".ide-development/content/doctrine/PKT08-REVISION-60-FINAL-CONTROLS.md",
+        ),
+    )
+    for source, destination in transactional_dispatch_files:
+        entries.append(
+            _entry(
+                entry_id=f"revision-60-final-controls-{_slug(destination)}",
+                ownership="managed-core",
+                source=source,
+                destination=destination,
+                mode="0644",
+                platform="all",
+                merge="replace",
+                source_hash=_hash_rel(source),
+                notes="PKT-08 revision-60 final controls.",
+            )
+        )
+
+    verification_liveness_files = (
+        (
+            "core/contracts/VERIFICATION-LIVENESS-CONTRACT.md",
+            ".ide-development/contracts/VERIFICATION-LIVENESS-CONTRACT.md",
+        ),
+        (
+            "core/contracts/VERIFICATION-RUN.schema.json",
+            ".ide-development/contracts/VERIFICATION-RUN.schema.json",
+        ),
+        (
+            "core/managed-core/content/config/verification-liveness.json",
+            ".ide-development/content/config/verification-liveness.json",
+        ),
+        (
+            "core/managed-core/content/doctrine/VERIFICATION-LIVENESS.md",
+            ".ide-development/content/doctrine/VERIFICATION-LIVENESS.md",
+        ),
+        (
+            "core/managed-core/schemas/verification-liveness.schema.json",
+            ".ide-development/schemas/verification-liveness.schema.json",
+        ),
+        (
+            "core/managed-core/schemas/verification-run.schema.json",
+            ".ide-development/schemas/verification-run.schema.json",
+        ),
+        (
+            "core/managed-core/examples/verification-run.example.json",
+            ".ide-development/examples/verification-run.example.json",
+        ),
+    )
+    for source, destination in verification_liveness_files:
+        entries.append(
+            _entry(
+                entry_id=f"verification-liveness-{_slug(destination)}",
+                ownership="managed-core",
+                source=source,
+                destination=destination,
+                mode="0644",
+                platform="all",
+                merge="replace",
+                source_hash=_hash_rel(source),
+                notes="PKT-08 durable verification-liveness contract.",
+            )
+        )
+
+    continuous_utilization_files = (
+        (
+            "core/managed-core/content/config/continuous-utilization.json",
+            ".ide-development/content/config/continuous-utilization.json",
+            "config-continuous-utilization-json",
+        ),
+        (
+            "core/managed-core/schemas/continuous-utilization.schema.json",
+            ".ide-development/schemas/continuous-utilization.schema.json",
+            "schema-continuous-utilization-schema-json",
+        ),
+        (
+            "core/managed-core/examples/continuous-utilization.example.json",
+            ".ide-development/examples/continuous-utilization.example.json",
+            "example-continuous-utilization-example-json",
+        ),
+        (
+            "core/managed-core/content/doctrine/HOSTED-CAPACITY-SCHEDULER.md",
+            ".ide-development/content/doctrine/HOSTED-CAPACITY-SCHEDULER.md",
+            "doctrine-hosted-capacity-scheduler-md",
+        ),
+        (
+            "core/managed-core/content/doctrine/CODING-EXECUTION-PROTOCOL.md",
+            ".ide-development/content/doctrine/CODING-EXECUTION-PROTOCOL.md",
+            "doctrine-coding-execution-protocol-md",
+        ),
+    )
+    for source, destination, entry_id in continuous_utilization_files:
+        entries.append(
+            _entry(
+                entry_id=entry_id,
+                ownership="managed-core",
+                source=source,
+                destination=destination,
+                mode="0644",
+                platform="all",
+                merge="replace",
+                source_hash=_hash_rel(source),
+                notes="PKT-01 packaged continuous-utilization contract.",
             )
         )
 
@@ -520,9 +812,30 @@ def build_entries() -> list[dict[str, Any]]:
                     mode="0644",
                     platform="all",
                     merge="replace",
-                    source_hash=_hash_rel(pkg_src),
-                )
+                source_hash=_hash_rel(pkg_src),
             )
+        )
+
+    for src_tail, dest, platform in (
+        ("platforms/codex/skills-loader.mjs", ".agents/skills-loader.mjs", "codex"),
+        ("platforms/codex/skills-lock.json", ".agents/skills-lock.json", "codex"),
+        ("platforms/cursor/skills-loader.mjs", ".cursor/skills-loader.mjs", "cursor"),
+        ("platforms/cursor/skills-lock.json", ".cursor/skills-lock.json", "cursor"),
+    ):
+        source = f"core/managed-core/{src_tail}"
+        entries.append(
+            _entry(
+                entry_id=f"{platform}-non-skill-{_slug(Path(src_tail).name)}",
+                ownership="managed-entrypoint",
+                source=source,
+                destination=dest,
+                mode="0644",
+                platform=platform,
+                merge="replace",
+                source_hash=_hash_rel(source),
+                notes="ISS-04 non-skill lock loader. Not a SKILL.md.",
+            )
+        )
 
     # --- Required Cursor entrypoints ---
     cursor_required = [
@@ -808,6 +1121,9 @@ def build_entries() -> list[dict[str, Any]]:
     for rel in (
         "scripts/gitops/repository_protection.py",
         "scripts/manage-repository-protections.sh",
+        "scripts/install-git-hooks.sh",
+        ".githooks/pre-commit",
+        ".githooks/pre-push",
         "scripts/ide-development.py",
     ):
         path = REPO_ROOT / rel

@@ -3,25 +3,16 @@
 
 Modes: checkpoint | review-ready | blocked | status | write-evidence
 
-review-ready is fail-closed and AUTHORITATIVE for publishing Linktrend Review Ready:
-  1) validate branch/push/clean tree
-  2) validate machine-readable evidence record tied to exact HEAD SHA
-  3) only then publish success status via readiness_status
+v2.5 (V25_BOOTSTRAP_LEAN): Issue checkpoints are accepted from exact pushed
+commit/tree + scoped diff + focused tests + independent Terra verification +
+manifest evidence. Review Ready publication, AUTOMATION_TOKEN, Issue PRs,
+hosted completion status, and legacy publisher status are nonrequirements.
 
-Agents must not call mark-review-ready.sh before this gate.
-mark-review-ready.sh is a thin wrapper that delegates here.
+review-ready never publishes. Legacy publisher/status outcomes are
+WAIVED_LEGACY_GATE, never PASS, and never bypass substantive proof.
 
-Evidence JSON (COMPLETION_EVIDENCE_FILE or --evidence-file), tied to HEAD:
-{
-  "schemaVersion": 1,
-  "headSha": "<40-char sha>",
-  "classification": "tests" | "docs_only",
-  "acceptance": "…",
-  "commands": [{"cmd":"…","exitCode":0,"evidencePath":"optional"}],
-  "docsOnlyJustification": "required if docs_only, at least 20 chars"
-}
-
-Exit codes: 0 ok | 78 incomplete | 2 blocked | 1 failed
+Evidence JSON (COMPLETION_EVIDENCE_FILE, --evidence-file, or --evidence-json),
+tied to HEAD. Local proof must not be labeled hosted or production.
 """
 
 from __future__ import annotations
@@ -44,6 +35,25 @@ try:
     import readiness_status as rs
 except ImportError:  # pragma: no cover
     rs = None  # type: ignore
+
+try:
+    from issue_checkpoint import (
+        WAIVED_LEGACY_GATE,
+        bind_issue_completion,
+        classify_legacy_status,
+        parse_immutable_evidence_payload,
+        proof_class_of,
+        reject_local_as_hosted,
+    )
+except ImportError:  # pragma: no cover
+    from scripts.gitops.issue_checkpoint import (  # type: ignore
+        WAIVED_LEGACY_GATE,
+        bind_issue_completion,
+        classify_legacy_status,
+        parse_immutable_evidence_payload,
+        proof_class_of,
+        reject_local_as_hosted,
+    )
 
 try:
     from packager_logic import is_allowed_work_branch
@@ -141,6 +151,11 @@ def tree_clean(workdir: Path) -> bool:
 
 def head_sha(workdir: Path) -> str:
     p = run(["git", "rev-parse", "HEAD"], cwd=workdir)
+    return (p.stdout or "").strip() if p.returncode == 0 else ""
+
+
+def head_tree(workdir: Path) -> str:
+    p = run(["git", "rev-parse", "HEAD^{tree}"], cwd=workdir)
     return (p.stdout or "").strip() if p.returncode == 0 else ""
 
 
@@ -354,6 +369,34 @@ def write_blocker(path: Path, blocker: dict) -> None:
     path.write_text(json.dumps(blocker, indent=2) + "\n", encoding="utf-8")
 
 
+def _load_checkpoint_evidence(args: argparse.Namespace, workdir: Path, sha: str) -> tuple[dict | None, str]:
+    raw_json = str(getattr(args, "evidence_json", "") or os.environ.get("COMPLETION_EVIDENCE_JSON") or "")
+    if raw_json.strip():
+        try:
+            payload = parse_immutable_evidence_payload(raw_json)
+        except Exception as exc:  # noqa: BLE001
+            return None, str(getattr(exc, "code", None) or exc)
+        return payload, ""
+    ev_path = Path(
+        args.evidence_file
+        or os.environ.get("COMPLETION_EVIDENCE_FILE")
+        or ""
+    )
+    if not str(ev_path):
+        default = workdir / ".linktrend/completion-evidence.json"
+        ev_path = default if default.is_file() else ev_path
+    if not str(ev_path):
+        return None, ""
+    if not ev_path.is_absolute():
+        ev_path = workdir / ev_path
+    if not ev_path.is_file():
+        return None, ""
+    try:
+        return load_evidence(ev_path), ""
+    except (OSError, json.JSONDecodeError, FileNotFoundError) as exc:
+        return None, f"evidence_unreadable:{exc}"
+
+
 def cmd_write_evidence(args: argparse.Namespace) -> int:
     """Helper to write a valid evidence record for the current HEAD."""
     workdir = Path(args.workdir).resolve()
@@ -362,6 +405,7 @@ def cmd_write_evidence(args: argparse.Namespace) -> int:
         emit({"state": "failed", "error": "no_sha"})
         return EXIT_FAILED
     classification = args.classification
+    tree = head_tree(workdir)
     payload: dict = {
         "schemaVersion": 1,
         "headSha": sha,
@@ -380,6 +424,24 @@ def cmd_write_evidence(args: argparse.Namespace) -> int:
     payload["commands"] = cmds
     if classification == "docs_only":
         payload["docsOnlyJustification"] = args.docs_justification
+    if any(
+        (
+            getattr(args, "scoped_diff", False),
+            getattr(args, "focused_tests", False),
+            getattr(args, "terra_verified", False),
+            getattr(args, "manifest_evidence", False),
+            str(getattr(args, "proof_class", "") or ""),
+        )
+    ):
+        payload["kind"] = "v25-issue-checkpoint"
+        payload["amendment"] = "V25_BOOTSTRAP_LEAN"
+        payload["gitTree"] = tree
+        payload["pushed"] = True
+        payload["scopedDiff"] = bool(getattr(args, "scoped_diff", False))
+        payload["focusedTests"] = {"passed": bool(getattr(args, "focused_tests", False))}
+        payload["independentTerraVerification"] = bool(getattr(args, "terra_verified", False))
+        payload["manifestEvidence"] = bool(getattr(args, "manifest_evidence", False))
+        payload["proofClass"] = str(getattr(args, "proof_class", "") or "local")
     rel = (
         args.evidence_file
         or os.environ.get("COMPLETION_EVIDENCE_FILE")
@@ -393,31 +455,87 @@ def cmd_write_evidence(args: argparse.Namespace) -> int:
         return EXIT_FAILED
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    emit({"mode": "write-evidence", "path": str(out), "headSha": sha})
-    return EXIT_OK
-
-
-def cmd_checkpoint(args: argparse.Namespace) -> int:
-    workdir = Path(args.workdir).resolve()
     emit(
         {
-            "mode": "checkpoint",
-            "state": "checkpointed_unfinished",
-            "at": utc_now(),
-            "branch": branch_name(workdir),
-            "sha": head_sha(workdir),
-            "clean": tree_clean(workdir),
-            "detail": "checkpoint only; no PR; no Review Ready publish",
+            "mode": "write-evidence",
+            "path": str(out),
+            "headSha": sha,
+            "gitTree": tree,
+            "proofClass": payload.get("proofClass", "local"),
         }
     )
     return EXIT_OK
 
 
+def cmd_checkpoint(args: argparse.Namespace) -> int:
+    workdir = Path(args.workdir).resolve()
+    sha = head_sha(workdir)
+    tree = head_tree(workdir)
+    tip_ok, tip_detail = origin_tip_matches(workdir)
+    evidence, ev_error = _load_checkpoint_evidence(args, workdir, sha)
+    payload = {
+        "mode": "checkpoint",
+        "state": "checkpointed_unfinished",
+        "at": utc_now(),
+        "branch": branch_name(workdir),
+        "sha": sha,
+        "gitTree": tree,
+        "clean": tree_clean(workdir),
+        "pushed": tip_ok,
+        "originTipDetail": tip_detail,
+        "reviewReadyRequired": False,
+        "automationTokenRequired": False,
+        "classification": WAIVED_LEGACY_GATE,
+        "legacyPublisher": classify_legacy_status("missing"),
+        "pass": False,
+        "detail": "checkpoint only; no PR; no Review Ready publish",
+    }
+    if ev_error:
+        payload["state"] = "failed"
+        payload["error"] = ev_error
+        emit(payload)
+        return EXIT_FAILED
+    if evidence is not None:
+        claimed = str(getattr(args, "proof_class", "") or proof_class_of(evidence))
+        try:
+            reject_local_as_hosted(actual_proof_class=proof_class_of(evidence), claimed_proof_class=claimed)
+        except Exception as exc:  # noqa: BLE001
+            payload["state"] = "failed"
+            payload["error"] = str(getattr(exc, "code", None) or exc)
+            emit(payload)
+            return EXIT_FAILED
+        ok, detail, meta = bind_issue_completion(
+            sha=sha,
+            tree=tree,
+            evidence=evidence,
+            review_ready_state="missing",
+            claimed_proof_class=claimed,
+        )
+        payload.update(meta)
+        payload["detail"] = detail
+        payload["proofClass"] = meta.get("proofClass") or proof_class_of(evidence)
+        if ok:
+            payload["state"] = "checkpoint_accepted"
+            payload["accepted"] = True
+            emit(payload)
+            return EXIT_OK
+        payload["state"] = "failed"
+        payload["accepted"] = False
+        emit(payload)
+        return EXIT_INCOMPLETE
+    emit(payload)
+    return EXIT_OK
+
+
 def cmd_review_ready(args: argparse.Namespace) -> int:
-    """Validate THEN publish. Never publish on failed validation."""
+    """v2.5: validate substantive evidence, then waive legacy Review Ready publication.
+
+    Never publishes, never PASSes publisher/status, and never bypasses proof.
+    """
     workdir = Path(args.workdir).resolve()
     missing: list[str] = []
     sha = head_sha(workdir)
+    tree = head_tree(workdir)
     if not sha:
         missing.append("no_sha")
 
@@ -427,14 +545,6 @@ def cmd_review_ready(args: argparse.Namespace) -> int:
         missing.append("protected_or_detached_branch")
     elif not is_allowed_work_branch(br, phase_prefix):
         missing.append(f"disallowed_branch:{br}")
-    elif _status_backend_name() != "file" and not is_app_backed_publish_branch(
-        br, phase_prefix
-    ):
-        # Production / GitHub backend: the normal-token publisher is the privileged path.
-        # Issue slug safeguards stay; Phase tips under configured prefix are eligible.
-        # Do not pretend feature/dev/cursor branches can dispatch the publisher route.
-        # File backend remains available for offline unit fixtures.
-        missing.append(f"app_publish_requires_issue_branch:{br}")
 
     if not tree_clean(workdir):
         missing.append("dirty_tree")
@@ -443,88 +553,71 @@ def cmd_review_ready(args: argparse.Namespace) -> int:
     if not tip_ok:
         missing.append(f"origin_tip:{tip_detail}")
 
-    ev_path = Path(
-        args.evidence_file
-        or os.environ.get("COMPLETION_EVIDENCE_FILE")
-        or ".linktrend/completion-evidence.json"
-    )
-    if not ev_path.is_absolute():
-        ev_path = workdir / ev_path
-    try:
-        evidence = load_evidence(ev_path)
+    evidence, ev_error = _load_checkpoint_evidence(args, workdir, sha)
+    if ev_error:
+        missing.append(ev_error)
+    if evidence is None:
+        ev_path = Path(
+            args.evidence_file
+            or os.environ.get("COMPLETION_EVIDENCE_FILE")
+            or ".linktrend/completion-evidence.json"
+        )
+        if not ev_path.is_absolute():
+            ev_path = workdir / ev_path
+        try:
+            evidence = load_evidence(ev_path)
+        except (OSError, json.JSONDecodeError, FileNotFoundError) as e:
+            missing.append(f"evidence_unreadable:{e}")
+            evidence = None
+    if evidence is not None:
         missing.extend(validate_evidence(evidence, sha))
-    except (OSError, json.JSONDecodeError, FileNotFoundError) as e:
-        missing.append(f"evidence_unreadable:{e}")
 
-    # Refuse bare --tests-ok / arbitrary COMPLETION_EVIDENCE text as production proof
     if args.tests_ok or os.environ.get("COMPLETION_TESTS_OK"):
-        # Allowed only as supplement when evidence file already validates; never alone
         pass
-    if not ev_path.is_file():
-        if args.tests_ok or os.environ.get("COMPLETION_EVIDENCE"):
-            missing.append("bare_flags_insufficient_use_evidence_file")
+    if evidence is None and (args.tests_ok or os.environ.get("COMPLETION_EVIDENCE")):
+        missing.append("bare_flags_insufficient_use_evidence_file")
 
     if missing:
-        # Ensure we did NOT publish
         payload: dict = {
             "mode": "review-ready",
             "state": "failed",
             "claim": "incomplete",
             "published": False,
+            "pass": False,
+            "classification": WAIVED_LEGACY_GATE,
             "missing": missing,
             "sha": sha,
             "at": utc_now(),
         }
-        if any(m.startswith("app_publish_requires_issue_branch:") for m in missing):
-            payload["branch"] = br
-            payload["remediation"] = app_branch_migration_remediation(br)
-            payload["detail"] = payload["remediation"]
         emit(payload)
         return EXIT_INCOMPLETE
 
-    issue_id = args.issue_id or os.environ.get("COMPLETION_ISSUE_ID") or ""
-    if not issue_id:
-        m = re.match(r"^issue/([A-Za-z0-9._]+)-", br)
-        if m:
-            issue_id = m.group(1)
-        elif is_app_backed_publish_branch(br, phase_prefix) and not is_app_backed_issue_branch(
-            br
-        ):
-            issue_id = f"phase:{br.split('/', 1)[-1]}"
-        else:
-            issue_id = "unknown"
-    notes = args.notes or os.environ.get("COMPLETION_NOTES") or "completion_gate"
-    ok, detail = publish_ready(sha, issue_id, notes, branch=br, workdir=workdir)
-    if not ok:
-        emit(
-            _review_ready_publish_failure_payload(
-                sha=sha, branch=br, error=detail, workdir=workdir
-            )
-        )
-        return EXIT_FAILED
-
-    # Confirm published
-    ready, ready_detail = ready_status_ok(sha)
-    if not ready:
-        emit(
-            _review_ready_publish_failure_payload(
-                sha=sha,
-                branch=br,
-                error=f"post_publish_verify_failed:{ready_detail}",
-                workdir=workdir,
-            )
-        )
-        return EXIT_FAILED
-
+    ok, detail, meta = bind_issue_completion(
+        sha=sha,
+        tree=tree,
+        evidence=evidence,
+        review_ready_state="missing",
+    )
+    legacy = classify_legacy_status("missing")
     emit(
         {
             "mode": "review-ready",
-            "state": "review_ready",
-            "published": True,
+            "state": "waived_legacy_gate",
+            "published": False,
+            "pass": False,
+            "classification": WAIVED_LEGACY_GATE,
+            "checkpointAccepted": bool(ok),
+            "checkpointDetail": detail,
             "sha": sha,
+            "gitTree": tree,
             "branch": br,
             "at": utc_now(),
-            "detail": "Linktrend Review Ready published after validation; Packager opens PR",
+            "legacyPublisher": legacy,
+            "detail": (
+                "Review Ready publication is a waived v2.5 nonrequirement; "
+                "Issue checkpoint acceptance does not use AUTOMATION_TOKEN or the legacy publisher"
+            ),
+            **{k: v for k, v in meta.items() if k not in {"legacyPublisher"}},
         }
     )
     return EXIT_OK
@@ -694,22 +787,41 @@ def cmd_blocked(args: argparse.Namespace) -> int:
 def cmd_status(args: argparse.Namespace) -> int:
     workdir = Path(args.workdir).resolve()
     sha = head_sha(workdir)
+    tree = head_tree(workdir)
     tip_ok, tip_detail = origin_tip_matches(workdir)
+    evidence, _ev_error = _load_checkpoint_evidence(args, workdir, sha)
+    checkpoint_ok = False
+    checkpoint_detail = "no_evidence"
+    if evidence is not None and sha:
+        checkpoint_ok, checkpoint_detail, _meta = bind_issue_completion(
+            sha=sha,
+            tree=tree,
+            evidence=evidence,
+            review_ready_state="missing",
+        )
     ready, ready_detail = ready_status_ok(sha) if sha else (False, "no_sha")
+    legacy = classify_legacy_status("success" if ready else "missing")
     state = "checkpointed_unfinished"
-    if ready and tip_ok and tree_clean(workdir):
-        state = "review_ready"
+    if checkpoint_ok and tip_ok and tree_clean(workdir):
+        state = "checkpoint_accepted"
     emit(
         {
             "mode": "status",
             "state": state,
             "sha": sha,
+            "gitTree": tree,
             "branch": branch_name(workdir),
             "clean": tree_clean(workdir),
             "originTipOk": tip_ok,
             "originTipDetail": tip_detail,
-            "reviewReady": ready,
+            "checkpointAccepted": checkpoint_ok,
+            "checkpointDetail": checkpoint_detail,
+            "reviewReady": False,
+            "reviewReadyRequired": False,
             "reviewReadyDetail": ready_detail,
+            "legacyPublisher": legacy,
+            "classification": WAIVED_LEGACY_GATE,
+            "pass": False,
             "at": utc_now(),
         }
     )
@@ -743,6 +855,12 @@ def main(argv: list[str]) -> int:
         default=[],
         help="exitCode|cmd  or  exitCode|evidencePath|cmd (repeatable)",
     )
+    ap.add_argument("--evidence-json", default="", help="explicit immutable evidence payload JSON")
+    ap.add_argument("--proof-class", default="", help="local | hosted | production")
+    ap.add_argument("--scoped-diff", action="store_true")
+    ap.add_argument("--focused-tests", action="store_true")
+    ap.add_argument("--terra-verified", action="store_true")
+    ap.add_argument("--manifest-evidence", action="store_true")
     args = ap.parse_args(argv)
 
     try:

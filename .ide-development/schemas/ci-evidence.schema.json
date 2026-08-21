@@ -7,7 +7,9 @@
     { "$ref": "#/$defs/preflightEvidence" },
     { "$ref": "#/$defs/cacheEvidence" },
     { "$ref": "#/$defs/artifactEvidence" },
-    { "$ref": "#/$defs/affectedSurfaceEvidence" }
+    { "$ref": "#/$defs/affectedSurfaceEvidence" },
+    { "$ref": "#/$defs/profileInventoryEvidence" },
+    { "$ref": "#/$defs/recoveryEvidence" }
   ],
   "$defs": {
     "sha40": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
@@ -165,6 +167,132 @@
         },
         "typecheckInsufficient": { "type": "boolean" },
         "exportHit": { "type": "boolean" }
+      }
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "gitTree",
+        "headCommit",
+        "dependencyDigest",
+        "profileDigest",
+        "workflowDigest"
+      ],
+      "properties": {
+        "repository": { "type": "string", "minLength": 1 },
+        "gitTree": { "$ref": "#/$defs/sha40" },
+        "headCommit": { "$ref": "#/$defs/sha40" },
+        "dependencyDigest": { "$ref": "#/$defs/digest" },
+        "profileDigest": { "$ref": "#/$defs/digest" },
+        "workflowDigest": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "profileInventoryEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "kind",
+        "profile",
+        "boundary",
+        "risk",
+        "commands",
+        "complete",
+        "ok",
+        "inventoryDigest"
+      ],
+      "properties": {
+        "schemaVersion": { "type": "integer", "const": 1 },
+        "kind": { "type": "string", "const": "ci-profile-inventory" },
+        "profile": { "type": "string", "enum": ["focused", "fast", "full"] },
+        "boundary": { "type": "string", "enum": ["focused", "fast", "full"] },
+        "config": { "type": ["string", "null"] },
+        "risk": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["level", "surface", "reason", "changedPaths"],
+          "properties": {
+            "level": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+            "surface": { "type": "string", "enum": ["", "application", "governance", "mixed", "unknown"] },
+            "reason": { "type": "string", "minLength": 1 },
+            "changedPaths": { "type": "array", "items": { "type": "string" } },
+            "mutatingCommands": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "commands": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "argv", "boundary", "status"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1 },
+              "argv": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "type": "string", "minLength": 1 }
+              },
+              "boundary": { "type": "string", "enum": ["focused", "fast", "full"] },
+              "status": { "type": "string", "enum": ["passed", "failed", "omitted"] },
+              "reason": { "type": "string", "minLength": 1 },
+              "exitCode": { "type": "integer" },
+              "elapsedMs": { "type": "integer", "minimum": 0 },
+              "stdoutTail": { "type": "string" },
+              "stderrTail": { "type": "string" },
+              "mutationDetected": { "type": "boolean" }
+            }
+          }
+        },
+        "complete": { "type": "boolean" },
+        "ok": { "type": "boolean" },
+        "executedCount": { "type": "integer", "minimum": 0 },
+        "failedCount": { "type": "integer", "minimum": 0 },
+        "omittedCount": { "type": "integer", "minimum": 0 },
+        "elapsedMs": { "type": "integer", "minimum": 0 },
+        "workspaceMutated": { "type": "boolean" },
+        "identity": {
+          "anyOf": [
+            { "$ref": "#/$defs/identity" },
+            { "type": "null" }
+          ]
+        },
+        "identityDigest": {
+          "anyOf": [
+            { "$ref": "#/$defs/digest" },
+            { "type": "null" }
+          ]
+        },
+        "inventoryDigest": { "$ref": "#/$defs/digest" },
+        "reused": { "type": "boolean" },
+        "reuse": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["reusable", "code"],
+          "properties": {
+            "reusable": { "type": "boolean" },
+            "code": { "type": "string", "minLength": 1 },
+            "identityDigest": { "$ref": "#/$defs/digest" },
+            "previousIdentityDigest": { "$ref": "#/$defs/digest" },
+            "currentIdentityDigest": { "$ref": "#/$defs/digest" }
+          }
+        }
+      }
+    },
+    "recoveryEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "kind", "safe", "code", "action", "reuse"],
+      "properties": {
+        "schemaVersion": { "type": "integer", "const": 1 },
+        "kind": { "type": "string", "const": "ci-recovery-evidence" },
+        "safe": { "type": "boolean" },
+        "code": { "type": "string", "minLength": 1 },
+        "action": { "type": "string", "minLength": 1 },
+        "reuse": { "type": "boolean" },
+        "elapsedMs": { "type": "integer", "minimum": 0 }
       }
     }
   }

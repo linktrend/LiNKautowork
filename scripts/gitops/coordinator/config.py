@@ -25,6 +25,7 @@ HOSTED_RUNNER = "ubuntu-24.04-arm"
 MAX_TIMEOUT_MINUTES = 60
 RECEIPT_IDENTITY_FIELDS = (
     "repository",
+    "headCommit",
     "gitTree",
     "dependencyDigest",
     "profileDigest",
@@ -433,7 +434,7 @@ def _promotion(value: Any) -> PromotionConfig:
     ):
         _fail(
             "incomplete_receipt_identity",
-            "identity must contain repository, gitTree, dependencyDigest, profileDigest, and workflowDigest",
+            "identity must contain repository, headCommit, gitTree, dependencyDigest, profileDigest, and workflowDigest",
             "promotion.identity",
         )
     return PromotionConfig(identity=RECEIPT_IDENTITY_FIELDS)
@@ -452,7 +453,21 @@ def _review(value: Any) -> ReviewConfig:
 
 def _new_config(payload: Mapping[str, Any]) -> DeliveryConfig:
     expected = {"schemaVersion", "mode", "compute", "profiles", "promotion", "review"}
-    _object(dict(payload), path="configuration", fields=expected)
+    optional = {
+        "amendment",
+        "issueCheckpoint",
+        "publisherAuthority",
+        "administratorRecovery",
+    }
+    extra = set(payload) - expected - optional
+    missing = expected - set(payload)
+    if extra or missing:
+        detail = "provide the required hosted delivery fields"
+        if missing:
+            detail += f"; missing: {', '.join(sorted(missing))}"
+        if extra:
+            detail += f"; remove unknown: {', '.join(sorted(extra))}"
+        _fail("unknown_or_missing_field", detail, "configuration")
     if payload["schemaVersion"] != 2:
         _fail("unsupported_schema", "schemaVersion must be 2 for the hosted profile", "schemaVersion")
     if payload["mode"] not in {MODE_ISSUE_PR, MODE_PHASE_INTEGRATION}:

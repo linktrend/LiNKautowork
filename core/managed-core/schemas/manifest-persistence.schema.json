@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/manifest-persistence.schema.json",
+  "title": "PKT-08 manifest persistence recovery config",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "amendment",
+    "maxCompareAndRetryAttempts",
+    "requiredAuthorities",
+    "reconstructedTransitions",
+    "conversationIsAuthority",
+    "duplicateDispatch",
+    "notifyAfterRepeatedFailure"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "amendment": {
+      "type": "string",
+      "const": "V25_PKT08_MANIFEST_PERSISTENCE_RECOVERY"
+    },
+    "maxCompareAndRetryAttempts": {
+      "type": "integer",
+      "const": 3
+    },
+    "requiredAuthorities": {
+      "type": "array",
+      "const": ["cursor", "github", "git"]
+    },
+    "reconstructedTransitions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": ["dispatch", "run", "integration", "archive", "UTILIZATION_GAP"]
+      }
+    },
+    "conversationIsAuthority": {
+      "type": "boolean",
+      "const": false
+    },
+    "duplicateDispatch": {
+      "type": "string",
+      "const": "suppress"
+    },
+    "notifyAfterRepeatedFailure": {
+      "type": "boolean",
+      "const": true
+    }
+  }
+}

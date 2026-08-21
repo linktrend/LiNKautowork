@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/transactional-dispatch.schema.json",
+  "title": "PKT-08 revision-60 final controls",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "amendment",
+    "controlIdempotencyKey",
+    "writeAheadIntent",
+    "apiAcceptedStatusCode",
+    "interruptionRecovery",
+    "casCommitReadback",
+    "maxCasAttempts",
+    "deadlineBudgetGuard",
+    "dispatchSemantics",
+    "conversationIsAuthority",
+    "designAuthority",
+    "redundantExecutorDesignApproval",
+    "unsolicitedDesignOnlyTerminalResume"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "amendment": {
+      "type": "string",
+      "const": "V25_PKT08_REVISION_60_FINAL_CONTROLS"
+    },
+    "controlIdempotencyKey": {
+      "type": "string",
+      "const": "pkt08-b44060-transactional-dispatch-and-approved-design-authority-v1"
+    },
+    "writeAheadIntent": {
+      "type": "boolean",
+      "const": true
+    },
+    "apiAcceptedStatusCode": {
+      "type": "integer",
+      "const": 201
+    },
+    "interruptionRecovery": {
+      "type": "string",
+      "const": "authoritative-idempotency-readback"
+    },
+    "casCommitReadback": {
+      "type": "string",
+      "const": "same-turn"
+    },
+    "maxCasAttempts": {
+      "type": "integer",
+      "const": 3
+    },
+    "deadlineBudgetGuard": {
+      "type": "boolean",
+      "const": true
+    },
+    "dispatchSemantics": {
+      "type": "string",
+      "const": "exactly-once-logical"
+    },
+    "conversationIsAuthority": {
+      "type": "boolean",
+      "const": false
+    },
+    "designAuthority": {
+      "type": "string",
+      "const": "APPROVED-manifest"
+    },
+    "redundantExecutorDesignApproval": {
+      "type": "string",
+      "const": "suppress"
+    },
+    "unsolicitedDesignOnlyTerminalResume": {
+      "type": "string",
+      "const": "once"
+    }
+  }
+}

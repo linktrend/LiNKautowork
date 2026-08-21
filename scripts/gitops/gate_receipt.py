@@ -80,6 +80,7 @@ def _parser() -> argparse.ArgumentParser:
     verify.add_argument("--workflow-file", action="append", default=[])
     verify.add_argument("--workflow-run-id", type=int)
     verify.add_argument("--workflow-run-attempt", type=int)
+    verify.add_argument("--workflow-head-commit")
     verify.add_argument("--gate", required=True, help="required gate id")
     return parser
 
@@ -122,6 +123,7 @@ def main(argv: list[str] | None = None) -> int:
                 args.gate,
                 workflow_run_id=args.workflow_run_id,
                 workflow_run_attempt=args.workflow_run_attempt,
+                workflow_head_commit=args.workflow_head_commit,
             )
             _json_output(
                 {

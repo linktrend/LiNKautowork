@@ -122,6 +122,20 @@
       "required": true
     },
     {
+      "source": "platforms/cursor/skills-loader.mjs",
+      "destination": ".cursor/skills-loader.mjs",
+      "mode": "managed-file",
+      "required": true,
+      "note": "ISS-04 non-skill loader. Not a SKILL.md."
+    },
+    {
+      "source": "platforms/cursor/skills-lock.json",
+      "destination": ".cursor/skills-lock.json",
+      "mode": "managed-file",
+      "required": true,
+      "note": "ISS-04 immutable skills lock. Physical copies stay until dual-app proof."
+    },
+    {
       "source": "skills/action-queue/SKILL.md",
       "destination": ".cursor/skills/action-queue/SKILL.md",
       "mode": "managed-file",

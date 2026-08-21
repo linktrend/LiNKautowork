@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# Reject pushes that would publish an invalid PIPELINE-STATE.json on the branch tip.
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+GENERATED_OUTPUT_CLOSURE=""
+for candidate in \
+  "$ROOT/scripts/gitops/generated_output_closure.py" \
+  "$ROOT/.ide-development/scripts/gitops/generated_output_closure.py"
+do
+  if [[ -f "$candidate" ]]; then
+    GENERATED_OUTPUT_CLOSURE="$candidate"
+    break
+  fi
+done
+
+if [[ -n "$GENERATED_OUTPUT_CLOSURE" ]]; then
+  if ! python3 "$GENERATED_OUTPUT_CLOSURE" --finalize; then
+    echo "pre-push: REJECT candidate finalization (runtime baseline, closure, or whitespace)" >&2
+    exit 1
+  fi
+else
+  echo "pre-push: REJECT — generated-output closure runtime is missing" >&2
+  exit 1
+fi
+
+VALIDATOR=""
+for candidate in \
+  "$ROOT/core/runtime/validate-application-pipeline.mjs" \
+  "$ROOT/.cursor/runtime/validate-application-pipeline.mjs"
+do
+  if [[ -f "$candidate" ]]; then
+    VALIDATOR="$candidate"
+    break
+  fi
+done
+
+STATE_LIST="$(git ls-files | grep -E '(^|/)PIPELINE-STATE\.json$' || true)"
+
+if [[ -z "$STATE_LIST" ]]; then
+  exit 0
+fi
+
+# See pre-commit's matching comment: a tracked PIPELINE-STATE.json with no
+# validator present is a broken install, not a "not using the pipeline"
+# signal — fail closed (Law 16), never silently no-op.
+if [[ -z "$VALIDATOR" ]]; then
+  echo "pre-push: REJECT — PIPELINE-STATE.json is tracked but no application-pipeline validator" >&2
+  echo "  found at core/runtime/validate-application-pipeline.mjs or .cursor/runtime/validate-application-pipeline.mjs." >&2
+  echo "  This repo is using the fixed application pipeline but IDE Development isn't fully" >&2
+  echo "  installed/vendored — fix the install before pushing pipeline-state changes." >&2
+  exit 1
+fi
+
+FAILED=0
+while IFS= read -r rel; do
+  [[ -z "$rel" ]] && continue
+  if [[ ! -f "$ROOT/$rel" ]]; then
+    continue
+  fi
+  if ! node "$VALIDATOR" --state "$ROOT/$rel" --check-consistency; then
+    echo "pre-push: REJECT invalid pipeline state in $rel" >&2
+    FAILED=1
+  fi
+done <<< "$STATE_LIST"
+
+exit "$FAILED"
