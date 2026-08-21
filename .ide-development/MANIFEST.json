@@ -4239,7 +4239,7 @@
       "id": "gitops-scripts-gitops-run-delivery-profile-py",
       "ownershipClass": "managed",
       "source": "scripts/gitops/run_delivery_profile.py",
-      "sourceHash": "sha256:d9656d3f20a3e7a820e9162eb700abff8e20810bf0de5cb8426f64c9f771efc2",
+      "sourceHash": "sha256:bd71c2a1f5e5d75f6de755208cb6ab809d5d23e31fa45918c9648e1cad717425",
       "destination": "scripts/gitops/run_delivery_profile.py",
       "mode": "0644",
       "platform": "github",

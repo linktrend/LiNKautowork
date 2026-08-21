@@ -336,7 +336,18 @@ def _tracked_workspace_digest(root: Path) -> str | None:
     # second identical status can then differ even though no file changed.
     # `git diff HEAD` is content based, includes staged and unstaged tracked
     # changes, and deliberately excludes harmless untracked interpreter caches.
-    diff = _run_git(root, "diff", "--binary", "HEAD", "--")
+    # Force Git to resolve any racily-clean index entries first.  On fast CI
+    # filesystems a commit and the following profile can share a timestamp;
+    # without this refresh, the first comparison can report a transient diff
+    # which disappears after the first read.
+    subprocess.run(
+        ["git", "update-index", "-q", "--refresh"],
+        cwd=root,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    diff = _run_git(root, "diff", "--no-ext-diff", "--binary", "HEAD", "--")
     return digest_bytes(diff.encode("utf-8"))
 
 

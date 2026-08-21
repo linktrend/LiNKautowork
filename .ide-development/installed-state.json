@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "packageName": "ide-development-managed-core",
   "packageVersion": "2.5.0",
-  "installedAt": "2026-08-21T04:57:07Z",
+  "installedAt": "2026-08-21T05:04:13Z",
   "files": {
     ".agents/skills-loader.mjs": {
       "id": "codex-non-skill-skills-loader-mjs",
@@ -690,8 +690,8 @@
     },
     ".ide-development/MANIFEST.json": {
       "id": "package-manifest",
-      "sourceHash": "sha256:b7e37ea462f7ac3502faec280cab65faa84c2f7157dc011066096ced6b23890b",
-      "contentHash": "sha256:b7e37ea462f7ac3502faec280cab65faa84c2f7157dc011066096ced6b23890b",
+      "sourceHash": "sha256:6afb44a441b4db17c2015d854a74f042c0172c0e1b3f19a90e59e6a283a05050",
+      "contentHash": "sha256:6afb44a441b4db17c2015d854a74f042c0172c0e1b3f19a90e59e6a283a05050",
       "mode": "0644"
     },
     ".ide-development/README.md": {
@@ -2238,8 +2238,8 @@
     },
     "scripts/gitops/run_delivery_profile.py": {
       "id": "gitops-scripts-gitops-run-delivery-profile-py",
-      "sourceHash": "sha256:d9656d3f20a3e7a820e9162eb700abff8e20810bf0de5cb8426f64c9f771efc2",
-      "contentHash": "sha256:d9656d3f20a3e7a820e9162eb700abff8e20810bf0de5cb8426f64c9f771efc2",
+      "sourceHash": "sha256:bd71c2a1f5e5d75f6de755208cb6ab809d5d23e31fa45918c9648e1cad717425",
+      "contentHash": "sha256:bd71c2a1f5e5d75f6de755208cb6ab809d5d23e31fa45918c9648e1cad717425",
       "mode": "0644"
     },
     "scripts/gitops/secret_scan.py": {
