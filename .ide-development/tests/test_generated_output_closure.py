@@ -163,6 +163,56 @@ class GeneratedOutputGraphTests(unittest.TestCase):
         self.assertEqual(payload["fixtures"][0]["id"], "existing-approval")
         self.assertEqual(len(payload["fixtures"]), 1)
 
+    def test_fixture_generator_relocates_repeated_identity_when_cardinality_is_unchanged(self) -> None:
+        tmp, root = init_repo()
+        self.addCleanup(tmp.cleanup)
+        approved_bytes = ".".join(("ltfx", "fixture", "repeated", "v1"))
+        digest = "sha256:" + hashlib.sha256(approved_bytes.encode("utf-8")).hexdigest()
+        write(
+            root,
+            "fixture.py",
+            '# moved\n{} = "{}"\n# moved again\n{} = "{}"\n'.format(
+                "to" + "ken", approved_bytes, "to" + "ken", approved_bytes
+            ),
+        )
+        fixtures = []
+        for fixture_id, line in (("first", 1), ("second", 2)):
+            fixtures.append(
+                {
+                    "id": fixture_id,
+                    "path": "fixture.py",
+                    "line": line,
+                    "field": "token",
+                    "rule": "assignment.secret",
+                    "digest": digest,
+                    "bytes": approved_bytes,
+                    "purpose": "synthetic regression fixture",
+                    "production": False,
+                }
+            )
+        write(
+            root,
+            ".github/linktrend-secret-scan-fixtures.json",
+            json.dumps(
+                {
+                    "schemaVersion": 1,
+                    "kind": "secret-scan-fixtures",
+                    "scannerPolicyVersion": "secret-scan-policy/v1",
+                    "candidateTree": "0" * 40,
+                    "fixtures": fixtures,
+                },
+                indent=2,
+            )
+            + "\n",
+        )
+        commit(root, "repeated stale fixture locations")
+        _generate_secret_scan_fixtures(root)
+        payload = json.loads(
+            (root / ".github/linktrend-secret-scan-fixtures.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual([row["line"] for row in payload["fixtures"]], [2, 4])
+        self.assertEqual([row["id"] for row in payload["fixtures"]], ["first", "second"])
+
     def test_dogfood_and_lean_design_audits_cover_packaged_controls(self) -> None:
         result = audit_dogfood_improvement_closure(ROOT)
         self.assertTrue(result["ok"])

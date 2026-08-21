@@ -958,6 +958,7 @@ def _generate_secret_scan_fixtures(repo_root: Path) -> int:
     for row in candidates:
         identity = (row.get("path"), row.get("field"), row.get("rule"), row.get("digest"))
         by_identity.setdefault(identity, []).append(row)
+    fixtures_by_identity: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
     for fixture in payload.get("fixtures", []):
         identity = (
             fixture.get("path"),
@@ -965,12 +966,20 @@ def _generate_secret_scan_fixtures(repo_root: Path) -> int:
             fixture.get("rule"),
             fixture.get("digest"),
         )
+        fixtures_by_identity.setdefault(identity, []).append(fixture)
+    for identity, declared in fixtures_by_identity.items():
         matches = by_identity.get(identity, [])
-        if len(matches) == 1:
-            # Relocate an existing approval only when its immutable detection
-            # identity has one exact destination. This cannot approve new
-            # bytes, paths, fields, rules, or digests.
-            fixture["line"] = matches[0]["line"]
+        if len(matches) != len(declared) or not matches:
+            continue
+        # Relocate an existing approval only when the immutable detection
+        # identity and its cardinality are unchanged. Repeated identical
+        # fixtures are paired in source order, which handles line-only shifts
+        # without approving new bytes, paths, fields, rules, or digests.
+        for fixture, match in zip(
+            sorted(declared, key=lambda row: int(row["line"])),
+            sorted(matches, key=lambda row: int(row["line"])),
+        ):
+            fixture["line"] = match["line"]
     payload["candidateTree"] = candidate_source_tree(repo_root)
     declaration.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     return 0

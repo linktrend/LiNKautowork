@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "packageName": "ide-development-managed-core",
   "packageVersion": "2.5.0",
-  "installedAt": "2026-08-21T05:04:13Z",
+  "installedAt": "2026-08-21T05:20:40Z",
   "files": {
     ".agents/skills-loader.mjs": {
       "id": "codex-non-skill-skills-loader-mjs",
@@ -690,8 +690,8 @@
     },
     ".ide-development/MANIFEST.json": {
       "id": "package-manifest",
-      "sourceHash": "sha256:6afb44a441b4db17c2015d854a74f042c0172c0e1b3f19a90e59e6a283a05050",
-      "contentHash": "sha256:6afb44a441b4db17c2015d854a74f042c0172c0e1b3f19a90e59e6a283a05050",
+      "sourceHash": "sha256:6d74d2f65bdd3c3b1f98813de737e437b5c427a5561f2eaf77fac649fd96fda1",
+      "contentHash": "sha256:6d74d2f65bdd3c3b1f98813de737e437b5c427a5561f2eaf77fac649fd96fda1",
       "mode": "0644"
     },
     ".ide-development/README.md": {
@@ -1800,8 +1800,8 @@
     },
     ".ide-development/tests/test_generated_output_closure.py": {
       "id": "test-test-generated-output-closure-py",
-      "sourceHash": "sha256:d26a97e7bcb37fd203b81a44816639f34323d89498857a88b78a221c02edc01f",
-      "contentHash": "sha256:d26a97e7bcb37fd203b81a44816639f34323d89498857a88b78a221c02edc01f",
+      "sourceHash": "sha256:5522789e7c5bb6b0706c0709c27a000a364d231a7ac3e1b202ec0c41fe969716",
+      "contentHash": "sha256:5522789e7c5bb6b0706c0709c27a000a364d231a7ac3e1b202ec0c41fe969716",
       "mode": "0644"
     },
     ".ide-development/tests/test_independent_review_convergence.py": {
@@ -2082,8 +2082,8 @@
     },
     "scripts/gitops/generated_output_closure.py": {
       "id": "gitops-scripts-gitops-generated-output-closure-py",
-      "sourceHash": "sha256:3b8d972f46dad2386e4b50357028b8102b9ec57c91d0b348ef1388a7bf66e4be",
-      "contentHash": "sha256:3b8d972f46dad2386e4b50357028b8102b9ec57c91d0b348ef1388a7bf66e4be",
+      "sourceHash": "sha256:aabcbac485d74821d8288b89ea6d35c608e3776226059f7db467581dc4889d62",
+      "contentHash": "sha256:aabcbac485d74821d8288b89ea6d35c608e3776226059f7db467581dc4889d62",
       "mode": "0644"
     },
     "scripts/gitops/github_auth.py": {
