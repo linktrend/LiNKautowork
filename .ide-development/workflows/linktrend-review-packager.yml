@@ -100,7 +100,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/gitops/generated_output_closure.py --finalize
-          python3 scripts/gitops/run_delivery_profile.py fast
+          python3 scripts/gitops/run_delivery_profile.py fast --preflight
 
       - name: Retain fast-check evidence
         if: always()
@@ -122,7 +122,7 @@ jobs:
           retention-days: 30
 
   reconciled-fast:
-    name: Linktrend Fast Checks
+    name: Linktrend Reconciled Fast Checks
     if: github.event_name == 'workflow_dispatch' && inputs.mode == 'reconciled'
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 5
@@ -160,4 +160,4 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/gitops/generated_output_closure.py --finalize
-          python3 scripts/gitops/run_delivery_profile.py fast
+          python3 scripts/gitops/run_delivery_profile.py fast --preflight

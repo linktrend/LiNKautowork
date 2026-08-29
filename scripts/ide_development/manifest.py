@@ -41,6 +41,12 @@ class ManifestEntry:
     marker_begin: str | None = None
     marker_end: str | None = None
     notes: str | None = None
+    owner: str = PACKAGE_NAME
+    mutability_policy: str = "read-only"
+    removal_policy: str = "preserve"
+    capability_id: str | None = None
+    capability_version: str | None = None
+    requires: tuple[str, ...] = ()
 
     @property
     def destination_posix(self) -> str:
@@ -54,6 +60,7 @@ class Manifest:
     package_version: str
     entries: tuple[ManifestEntry, ...]
     path: Path
+    capabilities: tuple["Capability", ...] = ()
 
     def active_entries(self) -> tuple[ManifestEntry, ...]:
         out: list[ManifestEntry] = []
@@ -66,6 +73,14 @@ class Manifest:
                 continue
             out.append(entry)
         return tuple(out)
+
+
+@dataclass(frozen=True)
+class Capability:
+    id: str
+    version: str
+    entry_ids: tuple[str, ...] = ()
+    requires: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -101,14 +116,23 @@ def _require_str(obj: dict[str, Any], key: str, *, allow_empty: bool = False) ->
 
 
 def load_package_version(package_root: Path, manifest_obj: dict[str, Any]) -> str:
+    declared: str | None = None
     if "packageVersion" in manifest_obj and isinstance(manifest_obj["packageVersion"], str):
-        return manifest_obj["packageVersion"].strip().lstrip("v")
+        declared = manifest_obj["packageVersion"].strip().lstrip("v")
     for rel in (DEFAULT_PACKAGE_VERSION_REL, DEFAULT_PACKAGE_VERSION_FALLBACK_REL):
         version_path = package_root / rel
         if version_path.is_file():
             text = version_path.read_text(encoding="utf-8").strip()
             if text:
-                return text.lstrip("v")
+                version = text.lstrip("v")
+                if declared is not None and declared != version:
+                    raise InvalidPackageError(
+                        "Package version collision: MANIFEST.json and VERSION differ",
+                        details={"manifest": declared, "versionFile": version},
+                    )
+                return declared or version
+    if declared is not None:
+        return declared
     raise InvalidPackageError("Package version missing (manifest.packageVersion or VERSION)")
 
 
@@ -187,6 +211,27 @@ def parse_manifest_entry(raw: Any, *, index: int) -> ManifestEntry:
     if notes is not None and not isinstance(notes, str):
         raise InvalidPackageError(f"notes must be a string for {entry_id}")
 
+    owner = obj.get("owner", PACKAGE_NAME)
+    if not isinstance(owner, str) or not owner.strip():
+        raise InvalidPackageError(f"owner must be a non-empty string for {entry_id}")
+    mutability = obj.get("mutabilityPolicy", "read-only")
+    if mutability != "read-only":
+        raise InvalidPackageError(f"Unsupported mutabilityPolicy for {entry_id}: {mutability}")
+    removal_default = "exact-match" if merge == "remove-if-matches" else "preserve"
+    removal = obj.get("removalPolicy", removal_default)
+    if removal not in {"preserve", "exact-match", "transaction-only"}:
+        raise InvalidPackageError(f"Unsupported removalPolicy for {entry_id}: {removal}")
+    capability_id = obj.get("capabilityId")
+    if capability_id is not None and (not isinstance(capability_id, str) or not capability_id.strip()):
+        raise InvalidPackageError(f"capabilityId must be a non-empty string for {entry_id}")
+    capability_version = obj.get("capabilityVersion")
+    if capability_version is not None and (not isinstance(capability_version, str) or not capability_version.strip()):
+        raise InvalidPackageError(f"capabilityVersion must be a non-empty string for {entry_id}")
+    requires_raw = obj.get("requires", [])
+    if not isinstance(requires_raw, list) or any(not isinstance(item, str) or not item.strip() for item in requires_raw):
+        raise InvalidPackageError(f"requires must be an array of non-empty strings for {entry_id}")
+    requires = tuple(sorted(set(requires_raw)))
+
     return ManifestEntry(
         id=entry_id,
         ownership_class=ownership,
@@ -201,7 +246,69 @@ def parse_manifest_entry(raw: Any, *, index: int) -> ManifestEntry:
         marker_begin=marker_begin,
         marker_end=marker_end,
         notes=notes,
+        owner=owner.strip(),
+        mutability_policy=mutability,
+        removal_policy=removal,
+        capability_id=capability_id.strip() if isinstance(capability_id, str) else None,
+        capability_version=capability_version.strip() if isinstance(capability_version, str) else None,
+        requires=requires,
     )
+
+
+def _parse_capabilities(raw: Any) -> tuple[Capability, ...]:
+    if raw is None:
+        return ()
+    if not isinstance(raw, list):
+        raise InvalidPackageError("manifest capabilities must be an array")
+    result: list[Capability] = []
+    seen: set[str] = set()
+    for index, item in enumerate(raw):
+        row = _require_mapping(item, f"capabilities[{index}]")
+        capability_id = _require_str(row, "id")
+        version = _require_str(row, "version")
+        if capability_id in seen:
+            raise InvalidPackageError(f"Duplicate capability id: {capability_id}")
+        entry_ids = row.get("entryIds", [])
+        requires = row.get("requires", [])
+        if not isinstance(entry_ids, list) or any(not isinstance(value, str) or not value.strip() for value in entry_ids):
+            raise InvalidPackageError(f"capabilities[{index}].entryIds must be an array of strings")
+        if not isinstance(requires, list) or any(not isinstance(value, str) or not value.strip() for value in requires):
+            raise InvalidPackageError(f"capabilities[{index}].requires must be an array of strings")
+        seen.add(capability_id)
+        result.append(Capability(capability_id, version, tuple(sorted(set(entry_ids))), tuple(sorted(set(requires)))))
+    return tuple(sorted(result, key=lambda item: item.id))
+
+
+def validate_capability_closure(manifest: Manifest) -> None:
+    """Reject duplicate or missing capability dependencies before installation."""
+    declared = {entry.id for entry in manifest.entries}
+    declared.update(capability.id for capability in manifest.capabilities)
+    versions: dict[str, str] = {}
+    for entry in manifest.entries:
+        if entry.capability_id:
+            previous = versions.setdefault(entry.capability_id, entry.capability_version or "")
+            if previous != (entry.capability_version or ""):
+                raise InvalidPackageError(
+                    f"Capability version collision for {entry.capability_id}"
+                )
+            declared.add(entry.capability_id)
+        for required in entry.requires:
+            if required not in declared:
+                raise InvalidPackageError(
+                    f"Manifest capability dependency is absent: {entry.id} requires {required}"
+                )
+    capability_ids = {capability.id for capability in manifest.capabilities}
+    for capability in manifest.capabilities:
+        if any(entry_id not in {entry.id for entry in manifest.entries} for entry_id in capability.entry_ids):
+            raise InvalidPackageError(f"Capability {capability.id} references an absent manifest entry")
+        for required in capability.requires:
+            if required not in declared:
+                raise InvalidPackageError(
+                    f"Manifest capability dependency is absent: {capability.id} requires {required}"
+                )
+        if capability.id in versions and versions[capability.id] not in {"", capability.version}:
+            raise InvalidPackageError(f"Capability version collision for {capability.id}")
+        versions[capability.id] = capability.version
 
 
 def load_manifest(package_root: Path, *, manifest_rel: PurePosixPath | str | None = None) -> Manifest:
@@ -263,13 +370,17 @@ def load_manifest(package_root: Path, *, manifest_rel: PurePosixPath | str | Non
         seen_dests.add(entry.destination)
         entries.append(entry)
     entries.sort(key=lambda e: (e.destination, e.id))
-    return Manifest(
+    capabilities = _parse_capabilities(obj.get("capabilities"))
+    manifest = Manifest(
         schema_version=schema_version,
         package_name=package_name,
         package_version=package_version,
         entries=tuple(entries),
         path=path,
+        capabilities=capabilities,
     )
+    validate_capability_closure(manifest)
+    return manifest
 
 
 def load_migration_catalog(

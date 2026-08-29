@@ -23,7 +23,22 @@ from scripts.gitops.promotion_receipt_gate import verify_receipt_file, verify_re
 CONTRACT_REL = ".github/linktrend-repository-ci-contract.json"
 CONTRACT_KIND = "repository-ci-contract"
 MANIFEST_KIND = "ci-component-manifest"
-AGGREGATE_CONTEXT_DEFAULT = "Linktrend Repository CI Gate"
+AGGREGATE_CONTEXT_DEFAULT = "Linktrend Full Suite"
+SOURCE_POLICY_CONTEXT = "Linktrend Branch Source Policy"
+FAST_CONTEXT = "Linktrend Fast Checks"
+FULL_CONTEXT = "Linktrend Full Suite"
+RECEIPT_CONTEXT = "Linktrend Receipt Gate"
+VERIFY_CONTEXT = "Verify IDE Development"
+STALE_CONTEXTS = frozenset(
+    {
+        "Linktrend Repository CI Gate",
+        "Branch Source Policy",
+        "Enforce allowed PR source branches",
+        "Cursor Bugbot",
+        "Linktrend Review Gate",
+        "Linktrend Review Ready",
+    }
+)
 SCHEMA_VERSION = 1
 
 PROFILE_NONE = "none"
@@ -104,26 +119,26 @@ def default_contract() -> dict[str, Any]:
             "fast": {
                 "id": "fast",
                 "commands": [],
-                "requiredCheckContexts": ["Linktrend Fast Checks"],
+                "requiredCheckContexts": [FAST_CONTEXT],
                 "timeoutMinutes": 5,
             },
             "full": {
                 "id": "full",
                 "commands": [],
-                "requiredCheckContexts": [AGGREGATE_CONTEXT_DEFAULT],
+                "requiredCheckContexts": [FULL_CONTEXT],
             },
             "promotion": {
                 "id": "promotion",
                 "commands": [],
                 "requiredCheckContexts": [
-                    "Branch Source Policy",
-                    "Linktrend Receipt Gate",
+                    SOURCE_POLICY_CONTEXT,
+                    RECEIPT_CONTEXT,
                 ],
             },
             "trusted-governance": {
                 "id": "trusted-governance",
                 "commands": [],
-                "requiredCheckContexts": [AGGREGATE_CONTEXT_DEFAULT],
+                "requiredCheckContexts": [VERIFY_CONTEXT],
             },
         },
         "coverageComponents": [
@@ -169,12 +184,25 @@ def validate_contract(contract: Mapping[str, Any]) -> dict[str, Any]:
     aggregate = contract.get("aggregateContext")
     if not isinstance(aggregate, str) or not aggregate.strip():
         raise ContractError("contract_aggregate_missing")
+    if aggregate in STALE_CONTEXTS:
+        raise ContractError("contract_aggregate_stale", aggregate)
     profiles = contract.get("profiles")
     if not isinstance(profiles, Mapping):
         raise ContractError("contract_profiles_missing")
     for name in (PROFILE_FAST, PROFILE_FULL, PROFILE_PROMOTION, PROFILE_TRUSTED):
         if name not in profiles or not isinstance(profiles[name], Mapping):
             raise ContractError("contract_profile_missing", name)
+        contexts = profiles[name].get("requiredCheckContexts", [])
+        if not isinstance(contexts, list):
+            raise ContractError("contract_contexts_invalid", name)
+        normalized = [str(context).strip() for context in contexts]
+        if any(not context for context in normalized):
+            raise ContractError("contract_context_empty", name)
+        if len(normalized) != len(set(normalized)):
+            raise ContractError("contract_context_duplicate", name)
+        stale = sorted(set(normalized) & STALE_CONTEXTS)
+        if stale:
+            raise ContractError("contract_context_stale", f"{name}:{','.join(stale)}")
     components = contract.get("coverageComponents")
     if not isinstance(components, list) or not components:
         raise ContractError("contract_coverage_missing")
@@ -783,6 +811,75 @@ def compute_cache_key(
         "keyFixedBeforeMutation": True,
         "advisory": True,
         "warnings": [],
+    }
+
+
+def preflight_expensive_fanout(
+    *,
+    candidate_head: str,
+    active_runs: Sequence[Mapping[str, Any]],
+    hosted_compute_available: bool | None,
+    workflow_name: str = "",
+) -> dict[str, Any]:
+    """Admit one expensive candidate and return bounded cancellation work.
+
+    This is deliberately read-only: callers may cancel only the returned stale
+    run ids after the preflight result is accepted.  A second active run for
+    the same workflow and candidate is a fail-closed duplicate, while active
+    runs for older heads are obsolete and may be cancelled.
+    """
+
+    if not _is_sha40(candidate_head):
+        return {"ok": False, "code": "fanout_candidate_invalid", "cancelRunIds": []}
+    if hosted_compute_available is not True:
+        code = (
+            "hosted_compute_unavailable"
+            if hosted_compute_available is False
+            else "hosted_compute_availability_unknown"
+        )
+        return {
+            "ok": False,
+            "code": code,
+            "candidateHead": candidate_head,
+            "cancelRunIds": [],
+            "duplicateRunIds": [],
+        }
+
+    active_statuses = {"queued", "in_progress", "waiting", "pending"}
+    relevant: list[dict[str, Any]] = []
+    for raw in active_runs:
+        if not isinstance(raw, Mapping):
+            continue
+        name = str(raw.get("workflow") or raw.get("workflowName") or "").strip()
+        if workflow_name and name and name != workflow_name:
+            continue
+        status = str(raw.get("status") or "").strip().lower()
+        if status not in active_statuses:
+            continue
+        run_id = raw.get("id") or raw.get("runId")
+        if run_id is None or not str(run_id).isdigit() or int(run_id) < 1:
+            continue
+        head = str(raw.get("head") or raw.get("headSha") or raw.get("head_sha") or "").lower()
+        relevant.append({"id": int(run_id), "head": head, "status": status})
+
+    duplicates = [row["id"] for row in relevant if row["head"] == candidate_head]
+    obsolete = [row["id"] for row in relevant if row["head"] and row["head"] != candidate_head]
+    if len(duplicates) > 1:
+        return {
+            "ok": False,
+            "code": "duplicate_expensive_candidate",
+            "candidateHead": candidate_head,
+            "duplicateRunIds": duplicates,
+            "cancelRunIds": obsolete,
+        }
+    return {
+        "ok": True,
+        "code": "expensive_fanout_admitted",
+        "candidateHead": candidate_head,
+        "duplicateRunIds": duplicates,
+        "cancelRunIds": obsolete,
+        "cancelObsolete": bool(obsolete),
+        "maxActiveCandidateRuns": 1,
     }
 
 

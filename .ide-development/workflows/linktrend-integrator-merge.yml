@@ -6,7 +6,7 @@ run-name: Full Suite PR #${{ github.event.pull_request.number }} @ ${{ github.ev
 # default-branch workflow_dispatch context.
 on:
   pull_request:
-    branches: [development]
+    branches: [development, staging]
     types: [labeled]
   workflow_dispatch:
     inputs:
@@ -71,7 +71,11 @@ jobs:
     name: Linktrend Full Suite
     if: >-
       ((github.event_name == 'workflow_dispatch' && inputs.mode != 'reconciled' && inputs.mode != 'recovery') || github.event.label.name == 'linktrend-full-suite') &&
-      (github.event_name == 'workflow_dispatch' || (startsWith(github.event.pull_request.head.ref, 'phase/') && github.event.pull_request.head.repo.full_name == github.repository))
+      (github.event_name == 'workflow_dispatch' || (
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        ((github.event.pull_request.base.ref == 'development' && startsWith(github.event.pull_request.head.ref, 'phase/')) ||
+         (github.event.pull_request.base.ref == 'staging' && startsWith(github.event.pull_request.head.ref, 'promote/staging/')))
+      ))
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 60
     permissions:
@@ -137,7 +141,11 @@ jobs:
           live_repo="$(jq -r .head.repo.full_name <<<"${pr}")"
           [[ "${PR_NUMBER}" =~ ^[1-9][0-9]*$ ]] || { echo "full_suite_canary_pr_invalid"; exit 1; }
           [[ "${EXPECTED_HEAD}" =~ ^[0-9a-f]{40}$ ]] || { echo "full_suite_canary_head_invalid"; exit 1; }
-          case "${live_branch}" in phase/*) ;; *) echo "full_suite_requires_phase_branch=${live_branch}"; exit 1;; esac
+          live_base="$(jq -r .base.ref <<<"${pr}")"
+          case "${live_branch}:${live_base}" in
+            phase/*:development|promote/staging/*:staging) ;;
+            *) echo "full_suite_source_branch_target_invalid=${live_branch}->${live_base}"; exit 1 ;;
+          esac
           test "${EXPECTED_SOURCE_BRANCH}" = "${live_branch}" || {
             echo "full_suite_source_branch_mismatch: expected=${EXPECTED_SOURCE_BRANCH} live=${live_branch}"; exit 1;
           }
@@ -196,14 +204,10 @@ jobs:
           echo "exact dispatch-time seal accepted"
 
       - name: Run full profile
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           python3 scripts/gitops/generated_output_closure.py --finalize
-          python3 scripts/gitops/run_delivery_profile.py full
-          python3 scripts/gitops/require_exact_ci_success.py \
-            --repository "${GITHUB_REPOSITORY}" --head "${EXPECTED_HEAD}"
+          python3 scripts/gitops/run_delivery_profile.py full --preflight
 
       - name: Write exact full-suite receipt
         if: success()
@@ -320,7 +324,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ github.ref_name }}
-          fetch-depth: 0
+          fetch-depth: 1
           persist-credentials: false
       - name: Verify an exact already-installed reconciled tree
         env:
@@ -340,7 +344,7 @@ jobs:
           python3 scripts/gitops/require_exact_ci_success.py --repository "${GITHUB_REPOSITORY}" --head "${EXPECTED_COMMIT}" --workflow-name "${SECURITY_WORKFLOW_NAME}"
           checks_json="${RUNNER_TEMP}/linktrend-reconciled-checks.json"
           printf '{"fast":"success","ci":"success","security":"success"}\n' > "${checks_json}"
-          git fetch origin staging main
+          git fetch --no-tags --depth=1 origin staging main
           staging_tree="$(git merge-tree --write-tree origin/staging "${EXPECTED_COMMIT}")"
           main_tree="$(git merge-tree --write-tree origin/main "${EXPECTED_COMMIT}")"
           python3 scripts/gitops/verify_reconciled_tree.py \
@@ -411,7 +415,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/gitops/generated_output_closure.py --finalize
-          python3 scripts/gitops/run_delivery_profile.py full
+          python3 scripts/gitops/run_delivery_profile.py full --preflight
           python3 scripts/gitops/require_exact_ci_success.py \
             --repository "${GITHUB_REPOSITORY}" --head "${EXPECTED_HEAD}"
 

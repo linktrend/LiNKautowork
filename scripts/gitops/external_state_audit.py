@@ -35,6 +35,9 @@ BUGBOT_USER_TOKEN_SECRET = "LINKTREND_BUGBOT_USER_TOKEN"
 BUGBOT_CHECK_NAME = "Linktrend Review Gate"
 SOURCE_POLICY_CHECK = "Linktrend Branch Source Policy"
 STATUS_CONTEXT = "Linktrend Review Ready"
+OBSOLETE_REQUIRED_CONTEXTS = frozenset(
+    {"Cursor Bugbot", BUGBOT_CHECK_NAME, STATUS_CONTEXT}
+)
 
 RULESET_NAMES = {
     "development": "development-autonomous-merge",
@@ -111,6 +114,8 @@ def _check(
     status: str,
     detail: str = "",
 ) -> dict[str, Any]:
+    if check_id.startswith("bugbot."):
+        required = False
     return {
         "id": check_id,
         "category": category,
@@ -137,7 +142,7 @@ def required_checklist() -> list[dict[str, Any]]:
         {
             "id": "bugbot.user_token_secret",
             "category": "bugbot",
-            "required": True,
+            "required": False,
             "expected": (
                 f"{BUGBOT_USER_TOKEN_SECRET} Actions secret name present "
                 "(value never read)"
@@ -146,13 +151,13 @@ def required_checklist() -> list[dict[str, Any]]:
         {
             "id": "bugbot.manual_trigger_only",
             "category": "bugbot",
-            "required": True,
+            "required": False,
             "expected": "Bugbot manualTriggerOnly=true (mention-only)",
         },
         {
             "id": "bugbot.check_name",
             "category": "bugbot",
-            "required": True,
+            "required": False,
             "expected": f"Integrator/ruleset Bugbot check name is {BUGBOT_CHECK_NAME!r}",
         },
         {
@@ -170,7 +175,7 @@ def required_checklist() -> list[dict[str, Any]]:
             "required": True,
             "expected": (
                 f"Active ruleset {RULESET_NAMES['development']!r} requires "
-                f"{BUGBOT_CHECK_NAME!r} and {SOURCE_POLICY_CHECK!r}"
+                f"{SOURCE_POLICY_CHECK!r} without obsolete Bugbot/Review Gate contexts"
             ),
         },
         {
@@ -733,10 +738,17 @@ def _evaluate_ruleset_branch(
     enforcement = (detail_rs or match).get("enforcement") or match.get("enforcement")
     checks = _extract_ruleset_checks(detail_rs or match)
     missing_ctx = [c for c in expected_parts if c not in checks]
-    if require_bugbot is False and BUGBOT_CHECK_NAME in checks:
-        # Bugbot on staging/main is drift from managed baseline (should not be required).
-        # Still ok for presence of source policy; report soft detail only if source ok.
-        pass
+    stale_contexts = sorted(OBSOLETE_REQUIRED_CONTEXTS.intersection(checks))
+    if require_bugbot is False and stale_contexts:
+        return _check(
+            check_id=check_id,
+            category="protection",
+            required=True,
+            expected=expected,
+            observed=",".join(checks),
+            status="drift",
+            detail=f"obsolete required context remains: {', '.join(stale_contexts)}",
+        )
 
     if enforcement and enforcement != "active":
         return _check(
@@ -1095,19 +1107,11 @@ def evaluate(client: ReadOnlyGitHubClient, *, source: str) -> list[dict[str, Any
 
     # --- protection.development / staging / main ---
     if unchecked:
-        for branch, require_bugbot in (
-            ("development", True),
-            ("staging", False),
-            ("main", False),
-        ):
+        for branch in ("development", "staging", "main"):
             name = RULESET_NAMES[branch]
             exp = (
                 f"Active ruleset {name!r} requires "
-                + (
-                    f"{BUGBOT_CHECK_NAME!r} and {SOURCE_POLICY_CHECK!r}"
-                    if require_bugbot
-                    else f"{SOURCE_POLICY_CHECK!r} (no Bugbot)"
-                )
+                f"{SOURCE_POLICY_CHECK!r} (no obsolete review contexts)"
             )
             results.append(_unchecked(f"protection.{branch}_ruleset", "protection", exp))
     else:
@@ -1119,19 +1123,11 @@ def evaluate(client: ReadOnlyGitHubClient, *, source: str) -> list[dict[str, Any
                 if rulesets_cap == "unavailable"
                 else ("forbidden" if rulesets_cap == "forbidden" else "blocked")
             )
-            for branch, require_bugbot in (
-                ("development", True),
-                ("staging", False),
-                ("main", False),
-            ):
+            for branch in ("development", "staging", "main"):
                 name = RULESET_NAMES[branch]
                 exp = (
                     f"Active ruleset {name!r} requires "
-                    + (
-                        f"{BUGBOT_CHECK_NAME!r} and {SOURCE_POLICY_CHECK!r}"
-                        if require_bugbot
-                        else f"{SOURCE_POLICY_CHECK!r} (no Bugbot)"
-                    )
+                    f"{SOURCE_POLICY_CHECK!r} (no obsolete review contexts)"
                 )
                 results.append(
                     _check(
@@ -1146,7 +1142,7 @@ def evaluate(client: ReadOnlyGitHubClient, *, source: str) -> list[dict[str, Any
                 )
         else:
             results.append(
-                _evaluate_ruleset_branch(client, branch="development", require_bugbot=True)
+                _evaluate_ruleset_branch(client, branch="development", require_bugbot=False)
             )
             results.append(
                 _evaluate_ruleset_branch(client, branch="staging", require_bugbot=False)

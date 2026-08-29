@@ -30,7 +30,7 @@ Every repository that installs the managed system must protect these three branc
 
 | Branch | Ruleset name (when rulesets available) | Managed purpose |
 |--------|----------------------------------------|-----------------|
-| `development` | `development-autonomous-merge` | Strict required checks, work-branch source policy, Bugbot, delivery-controller auto-merge compatibility |
+| `development` | `development-autonomous-merge` | Strict required checks, work-branch source policy, delivery-controller auto-merge compatibility |
 | `staging` | `staging-autonomous-promote` | Promotion-only PR sources (`promote/staging/*`) + staging-gate checks |
 | `main` | `main-autonomous-release` | Promotion-only PR sources (`promote/main/*`) + release-gate checks + Main Approve compatibility |
 
@@ -40,15 +40,18 @@ Promotion-only source policy is enforced by the managed workflow check **`Linktr
 
 ## Managed required-check baselines
 
-Defaults match IDE Development. Consumers override via repository variables / CLI extras; baselines always union with Bugbot / source-policy where required.
+Defaults match IDE Development. Consumers override via repository variables / CLI extras; baselines always union with the active source-policy check.
 
-### `development` (delivery controller + Bugbot)
+### `development` (delivery controller)
 
 Managed baseline (order stable):
 
-1. `Linktrend Review Gate`
-2. Fast-gate checks — default `Verify IDE Development`, or `LINKTREND_INTEGRATOR_REQUIRED_CHECKS` when provided
-3. `Linktrend Branch Source Policy` (always present)
+1. Fast-gate checks — default `Verify IDE Development`, or `LINKTREND_INTEGRATOR_REQUIRED_CHECKS` when provided
+2. `Linktrend Branch Source Policy` (always present)
+
+`Cursor Bugbot`, `Linktrend Review Gate`, and `Linktrend Review Ready` are obsolete
+advisory/provider contexts. The v2.5.1 migration removes them from required
+status checks rather than waiting for credentials or synthetic success states.
 
 Also set repository setting `allow_auto_merge=true` so the delivery controller may auto-merge when gates are green.
 
@@ -126,7 +129,7 @@ Never invent a third mechanism. Document the gap for the Principal; do not force
 
 ## Delivery controller / Main Approve compatibility notes
 
-- Development: required checks must include `Linktrend Review Gate` + fast-gate; `allow_auto_merge=true`.
+- Development: required checks must include the active fast-gate and branch-source policy; `allow_auto_merge=true`.
 - Staging / main: merge only via temporary `promote/*` PRs after named gates; never direct-push.
 - Preserve `bypass_actors` on ruleset update so existing App / operator bypasses are not wiped.
 - Preserve non-check ruleset rules and classic `required_pull_request_reviews` / `restrictions` (and similar) on update.

@@ -93,9 +93,16 @@ def verify_receipt_payload(
     receipt: Mapping[str, Any],
     candidate_identity: Mapping[str, Any] | CandidateIdentity,
     required_gate: str,
+    transition_receipt: Mapping[str, Any] | None = None,
     **verification: Any,
 ) -> Decision:
-    verdict = verify_receipt(receipt, candidate_identity, required_gate, **verification)
+    verdict = verify_receipt(
+        receipt,
+        candidate_identity,
+        required_gate,
+        transition_receipt=transition_receipt,
+        **verification,
+    )
     detail = verdict.message or verdict.code
     if verdict.accepted and verdict.source_commit and verdict.promotion_commit:
         detail = f"{detail}; sourceCommit={verdict.source_commit}; promotionCommit={verdict.promotion_commit}"
@@ -129,6 +136,7 @@ def verify_receipt_file(
     expected_command_digest: str | None = None,
     expected_workflow_digest: str | None = None,
     expected_evidence_digests: Mapping[str, str] | None = None,
+    transition_receipt_path: str | Path | None = None,
 ) -> Decision:
     try:
         receipt = load_json(receipt_path)
@@ -148,6 +156,7 @@ def verify_receipt_file(
             receipt,
             identity,
             required_gate,
+            transition_receipt=load_json(transition_receipt_path) if transition_receipt_path is not None else None,
             workflow_run_id=workflow_run_id,
             workflow_run_attempt=workflow_run_attempt,
             workflow_head_commit=workflow_head_commit,
@@ -162,14 +171,13 @@ def verify_receipt_file(
 
 
 def evaluate_development_gates(payload: Mapping[str, Any], expected_head_sha: str) -> Decision:
-    """Require exact seal, fast, Bugbot, and full/not-required on one head."""
+    """Require exact seal, fast, and full/not-required on one head."""
     head = _sha(expected_head_sha)
     if not head:
         return Decision(False, "invalid_head", "expected development head SHA is invalid")
     aliases = {
         "seal": ("seal", "sealed", "phaseReady"),
         "fast": ("fast", "fastGate", "fast-gate"),
-        "bugbot": ("bugbot", "cursorBugbot", "Cursor Bugbot", "reviewGate", "Linktrend Review Gate"),
         "full": ("full", "fullSuite", "full-gate"),
     }
     for name, keys in aliases.items():
@@ -184,7 +192,7 @@ def evaluate_development_gates(payload: Mapping[str, Any], expected_head_sha: st
         observed = _sha(_field(row, "sha", "headSha", "sourceSha"))
         if not observed or observed != head:
             return Decision(False, f"{name}_stale", f"{name} is not bound to the exact sealed head")
-    return Decision(True, "accepted", "exact seal, fast, Bugbot, and full/not-required gates passed")
+    return Decision(True, "accepted", "exact seal, fast, and full/not-required gates passed")
 
 
 def evaluate_main_approval(
@@ -251,6 +259,7 @@ def evaluate_automatic_main(
     workflow_run_attempt: int | None = None,
     workflow_head_commit: str | None = None,
     runner_label: str | None = None,
+    transition_receipt: Mapping[str, Any] | None = None,
 ) -> Decision:
     """Automatic main is still gate- and receipt-bound; mode changes no gates."""
     release_decision = evaluate_release_path(release)
@@ -264,6 +273,7 @@ def evaluate_automatic_main(
         workflow_run_attempt=workflow_run_attempt,
         workflow_head_commit=workflow_head_commit,
         runner_label=runner_label,
+        transition_receipt=transition_receipt,
     )
     if not receipt_decision.accepted:
         return receipt_decision
@@ -350,6 +360,7 @@ def main(argv: list[str] | None = None) -> int:
     verify.add_argument("--runner-label")
     verify.add_argument("--command-digest")
     verify.add_argument("--expected-workflow-digest")
+    verify.add_argument("--transition-receipt", type=Path)
     verify.add_argument("--gate", required=True)
 
     development = commands.add_parser("development")
@@ -384,6 +395,7 @@ def main(argv: list[str] | None = None) -> int:
                 runner_label=args.runner_label,
                 expected_command_digest=args.command_digest,
                 expected_workflow_digest=args.expected_workflow_digest,
+                transition_receipt_path=args.transition_receipt,
             )
         elif args.command == "development":
             decision = evaluate_development_gates(load_json(args.input), args.head_sha)

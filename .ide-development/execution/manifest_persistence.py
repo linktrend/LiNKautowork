@@ -90,6 +90,86 @@ class ManifestRead:
     transition_event: Mapping[str, Any] | None = None
 
 
+@dataclass(frozen=True)
+class DurableStateRead:
+    """A CAS envelope for durable controller state."""
+
+    revision: int
+    digest: str | None
+    state: Mapping[str, Any]
+
+
+def canonical_state_digest(state: Mapping[str, Any]) -> str:
+    """Digest arbitrary JSON state using the same canonicalization as manifests."""
+
+    data = json.dumps(
+        state, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ).encode("utf-8")
+    return "sha256:" + hashlib.sha256(data).hexdigest()
+
+
+def read_durable_state(store: Any) -> DurableStateRead | None:
+    """Read and validate a state envelope supplied by a controller store."""
+
+    raw = store.read()
+    if raw is None:
+        return None
+    state = raw.get("state") if isinstance(raw, Mapping) else None
+    if not isinstance(state, Mapping):
+        raise ManifestPersistenceError(
+            "durable_state_invalid", "durable state envelope must contain an object state"
+        )
+    revision = raw.get("revision")
+    digest = raw.get("digest")
+    if not isinstance(revision, int) or revision < 0:
+        raise ManifestPersistenceError(
+            "durable_state_invalid", "durable state revision must be a non-negative integer"
+        )
+    expected = canonical_state_digest(state)
+    if digest not in (None, expected):
+        raise ManifestPersistenceError(
+            "durable_state_digest_mismatch", "durable state digest does not match state"
+        )
+    return DurableStateRead(revision, digest or expected, dict(state))
+
+
+def persist_durable_state(
+    state: Mapping[str, Any],
+    store: Any,
+    *,
+    max_attempts: int = MAX_PERSISTENCE_ATTEMPTS,
+) -> dict[str, Any]:
+    """CAS-write controller state and require an exact durable readback."""
+
+    if max_attempts < 1:
+        raise ValueError("max_attempts_must_be_positive")
+    payload = copy.deepcopy(dict(state))
+    digest = canonical_state_digest(payload)
+    for _ in range(max_attempts):
+        current = read_durable_state(store)
+        revision = 0 if current is None else current.revision
+        expected_digest = None if current is None else current.digest
+        try:
+            store.compare_and_write(
+                revision,
+                expected_digest,
+                {"state": payload, "digest": digest},
+            )
+        except ManifestPersistenceError:
+            continue
+        readback = read_durable_state(store)
+        if (
+            readback is not None
+            and readback.revision == revision + 1
+            and readback.digest == digest
+            and dict(readback.state) == payload
+        ):
+            return {"revision": readback.revision, "digest": digest, "state": dict(readback.state)}
+    raise ManifestPersistenceError(
+        "durable_storage_exhausted", "controller state CAS/readback attempts exhausted"
+    )
+
+
 def canonical_manifest_digest(manifest: Mapping[str, Any]) -> str:
     data = json.dumps(manifest, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     return "sha256:" + hashlib.sha256(data).hexdigest()
@@ -412,6 +492,46 @@ def _safe_action_from(
     value = pending(snapshot.get("safeAction") or snapshot.get("repairAction"))
     if value is not None:
         return value
+    # A portfolio heartbeat may expose accepted dependency-ready packets
+    # rather than a pre-written safeAction. Admit only a provider with a live
+    # safe slot; the caller persists this synthetic intent before dispatching.
+    ready_work = snapshot.get("readyWork")
+    if ready_work is None and isinstance(cursor, Mapping):
+        ready_work = cursor.get("readyWork")
+    capacity = snapshot.get("safeCapacity") or snapshot.get("capacity")
+    if not isinstance(ready_work, list) or not isinstance(capacity, Mapping):
+        return None
+    running = snapshot.get("running")
+    running_by_provider = {"cursor": 0, "luna": 0}
+    if isinstance(running, list):
+        for worker in running:
+            if not isinstance(worker, Mapping):
+                continue
+            provider = str(worker.get("provider") or "").lower()
+            bucket = "luna" if "luna" in provider or "codex" in provider else "cursor"
+            running_by_provider[bucket] += 1
+    for packet in ready_work:
+        if not isinstance(packet, Mapping) or packet.get("accepted") is False:
+            continue
+        provider = str(packet.get("provider") or "cursor").lower()
+        bucket = "luna" if "luna" in provider or "codex" in provider else "cursor"
+        try:
+            limit = int(capacity.get(bucket) or 0)
+        except (TypeError, ValueError):
+            limit = 0
+        if running_by_provider[bucket] >= limit:
+            continue
+        packet_id = str(packet.get("packetId") or packet.get("id") or "").strip()
+        if not packet_id:
+            continue
+        return {
+            "id": "ready-" + packet_id,
+            "safe": True,
+            "action": "dispatch-packet",
+            "packetId": packet_id,
+            "provider": bucket,
+            "payload": dict(packet),
+        }
     return None
 
 
@@ -655,6 +775,23 @@ def reconcile_manifest_heartbeat(
     if requirements:
         requirement = requirements[0]
         action = _safe_action_from(current, snapshot)
+        if action is not None and requirement.get("code") == "compatible_ready_work":
+            current_action = current.get("safeAction")
+            if not isinstance(current_action, Mapping) or current_action.get("safe") is not True:
+                updated = copy.deepcopy(current)
+                updated["safeAction"] = copy.deepcopy(dict(action))
+                persisted = persist_manifest(updated, store, max_attempts=max_attempts)
+                current_record = _read_record(store)
+                if current_record is None:  # pragma: no cover
+                    raise ManifestPersistenceError(
+                        "readback_missing", "ready-work intent readback is missing"
+                    )
+                current = dict(current_record.manifest)
+                action = _safe_action_from(current, snapshot)
+                if action is None:
+                    raise ManifestPersistenceError(
+                        "ready_work_intent_missing", "ready-work intent was not read back"
+                    )
         if action is not None and requirement.get("code") in {
             "expired_lease",
             "persisted_undispatched_safe_intent",
@@ -673,7 +810,7 @@ def reconcile_manifest_heartbeat(
                 "identity": dict(identity),
                 "dispatchable": True,
             }
-        elif requirement.get("code") == UTILIZATION_GAP:
+        elif requirement.get("code") in {"compatible_ready_work", UTILIZATION_GAP}:
             required_action = {
                 "id": _heartbeat_action_id(
                     UTILIZATION_GAP, dict(identity), dict(requirement)

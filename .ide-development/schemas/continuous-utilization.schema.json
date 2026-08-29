@@ -27,18 +27,29 @@
     "maxAdmittedSlots": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["local", "hosted"],
+      "required": ["local"],
       "properties": {
         "local": {
           "type": "integer",
           "minimum": 1,
           "maximum": 1
-        },
-        "hosted": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 8
         }
+      }
+    },
+    "adaptiveConcurrency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "capacityEvidence", "identityFields", "spendCeilingEvidence", "safetyConstraintEvidence", "evidenceMaxAgeSeconds"],
+      "properties": {
+        "mode": { "type": "string", "const": "minimum_of_live_evidence" },
+        "capacityEvidence": { "type": "string", "const": "authenticated_cursor_account" },
+        "identityFields": {
+          "type": "array",
+          "const": ["accountId", "apiKeyName", "teamId", "programRunId"]
+        },
+        "spendCeilingEvidence": { "type": "string", "const": "required" },
+        "safetyConstraintEvidence": { "type": "string", "const": "required" },
+        "evidenceMaxAgeSeconds": { "type": "integer", "minimum": 1, "maximum": 3600 }
       }
     },
     "unknownProbeSeconds": {

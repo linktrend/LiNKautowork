@@ -63,8 +63,15 @@
       "required": ["phaseRecord", "handoff"],
       "properties": {
         "phaseRecord": { "type": "string", "const": ".linktrend/phase-delivery-record.json" },
-        "handoff": { "type": "string", "const": ".linktrend/phase-handoff.json" }
+        "handoff": { "type": "string", "const": ".linktrend/phase-handoff.json" },
+        "providerConsumerHandoff": {
+          "type": "string",
+          "const": ".linktrend/provider-consumer-handoff.json"
+        }
       }
+    },
+    "providerConsumerHandoff": {
+      "$ref": "provider-consumer-handoff.schema.json"
     },
     "valid": { "type": "boolean" },
     "component": { "type": "string", "const": "phase_packager_coordinator" },

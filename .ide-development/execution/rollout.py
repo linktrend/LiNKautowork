@@ -67,6 +67,317 @@ def _valid_digest(value: str) -> bool:
     return isinstance(value, str) and _DIGEST.fullmatch(value) is not None
 
 
+_HANDOFF_REPOSITORY = re.compile(r"^[^/\s]+/[^/\s]+$")
+_HANDOFF_STATES = frozenset({"prepared", "accepted", "integrated", "blocked", "stale"})
+_HANDOFF_VERDICTS = frozenset({"accepted", "blocked", "rejected"})
+
+
+def _handoff_identity(value: Any) -> dict[str, str] | None:
+    """Normalize the small identity vocabulary used by provider receipts."""
+
+    if not isinstance(value, Mapping):
+        return None
+    nested = value.get("provider") or value.get("producer")
+    if isinstance(nested, Mapping):
+        value = nested
+    repository = value.get("repository")
+    commit = value.get("commit", value.get("headCommit"))
+    tree = value.get("tree", value.get("gitTree"))
+    if (
+        not isinstance(repository, str)
+        or _HANDOFF_REPOSITORY.fullmatch(repository) is None
+        or not isinstance(commit, str)
+        or not re.fullmatch(r"[0-9a-f]{40}", commit)
+        or not isinstance(tree, str)
+        or not re.fullmatch(r"[0-9a-f]{40}", tree)
+    ):
+        return None
+    return {"repository": repository, "commit": commit, "tree": tree}
+
+
+def _handoff_blocker(
+    handoff: Mapping[str, Any] | None,
+    *,
+    provider: Mapping[str, str] | None = None,
+    receipt: Mapping[str, Any] | None = None,
+    reason: str = "provider_handoff_required",
+) -> dict[str, Any]:
+    source = handoff.get("blocker") if isinstance(handoff, Mapping) else None
+    source = source if isinstance(source, Mapping) else {}
+    blocking_repository = source.get("blockingRepository")
+    if not isinstance(blocking_repository, str) or not blocking_repository:
+        blocking_repository = (provider or {}).get("repository")
+    owner = source.get("owner") or (receipt or {}).get("owner")
+    next_action = source.get("nextAction")
+    if not isinstance(next_action, str) or not next_action:
+        next_action = "obtain the accepted protected provider receipt"
+    return {
+        "blockingRepository": blocking_repository or "unknown/unknown",
+        "handoffClass": source.get("handoffClass", "provider-consumer"),
+        "owner": owner if isinstance(owner, str) and owner else "owner_missing",
+        "nextAction": next_action,
+        "reason": reason,
+    }
+
+
+def _receipt_identity(receipt: Mapping[str, Any]) -> dict[str, str] | None:
+    identity = _handoff_identity(receipt)
+    if identity is not None:
+        return identity
+    for key in ("provider", "producer", "candidateIdentity", "providerIdentity"):
+        identity = _handoff_identity(receipt.get(key))
+        if identity is not None:
+            return identity
+    provider = {
+        "repository": receipt.get("providerRepository"),
+        "commit": receipt.get("providerCommit"),
+        "tree": receipt.get("providerTree"),
+    }
+    return _handoff_identity(provider)
+
+
+def _receipt_is_accepted(receipt: Mapping[str, Any]) -> bool:
+    status = receipt.get("status")
+    accepted = receipt.get("accepted") is True or receipt.get("verdict") == "accepted"
+    return (isinstance(status, str) and status.lower() in {"accepted", "protected-integrated"}) or accepted
+
+
+def evaluate_provider_consumer_handoff(
+    handoff: Mapping[str, Any] | None,
+    *,
+    protected_provider_identity: Mapping[str, Any] | None = None,
+    accepted_receipt: Mapping[str, Any] | None = None,
+    consumer_identity: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Return the fail-closed admission decision for a typed handoff.
+
+    The protected provider identity and accepted receipt are deliberately
+    separate inputs. A receipt copied into a consumer branch is not authority.
+    """
+
+    typed = handoff if isinstance(handoff, Mapping) else None
+    provider = _handoff_identity(typed.get("provider") if typed else None)
+    producer = _handoff_identity(typed.get("producer") if typed else None)
+    if provider is not None and producer is not None and provider != producer:
+        return {
+            "admitted": False,
+            "status": "BLOCKED",
+            "reason": "handoff_provider_identity_mismatch",
+            "integrationClaimed": False,
+            "preparationAllowed": True,
+            "blocker": _handoff_blocker(typed, provider=provider),
+        }
+    if provider is None:
+        provider = producer
+    consumer = _handoff_identity(typed.get("consumer") if typed else None)
+    expected_provider = _handoff_identity(protected_provider_identity)
+    expected_consumer = _handoff_identity(consumer_identity) if consumer_identity is not None else None
+    receipt = accepted_receipt if isinstance(accepted_receipt, Mapping) else None
+    blocker = _handoff_blocker(typed, provider=expected_provider or provider, receipt=receipt)
+
+    def blocked(reason: str, *, block: Mapping[str, Any] | None = None) -> dict[str, Any]:
+        details = dict(block or blocker)
+        details.setdefault("reason", reason)
+        return {
+            "admitted": False,
+            "status": "BLOCKED",
+            "reason": reason,
+            "integrationClaimed": False,
+            "preparationAllowed": True,
+            "blocker": details,
+        }
+
+    if typed is None:
+        return blocked("handoff_missing")
+    if typed.get("schemaVersion") != 1 or typed.get("kind") != "provider-consumer-handoff":
+        return blocked("handoff_schema_invalid")
+    if provider is None or consumer is None:
+        return blocked("handoff_identity_invalid")
+    if not _valid_digest(typed.get("artifactDigest")) or not _valid_digest(typed.get("contractDigest")):
+        return blocked("handoff_digest_invalid")
+    verdict = typed.get("verdict")
+    lifecycle = typed.get("lifecycleState")
+    if verdict not in _HANDOFF_VERDICTS or lifecycle not in _HANDOFF_STATES:
+        return blocked("handoff_lifecycle_invalid")
+    if typed.get("independentPreparationAllowed") is not True:
+        return blocked("handoff_preparation_contract_invalid")
+    if expected_provider is None:
+        return blocked("protected_provider_identity_missing")
+    if provider != expected_provider:
+        return blocked("stale_provider_pin")
+    if expected_consumer is not None and consumer != expected_consumer:
+        return blocked("consumer_identity_mismatch")
+    if receipt is None:
+        return blocked("accepted_receipt_missing")
+    if not _receipt_is_accepted(receipt):
+        return blocked("accepted_receipt_required")
+    if receipt.get("protected") is not True and receipt.get("protectedIntegrated") is not True:
+        return blocked("accepted_receipt_not_protected")
+    receipt_identity = _receipt_identity(receipt)
+    if receipt_identity != expected_provider:
+        return blocked("accepted_receipt_provider_mismatch")
+    receipt_digest = receipt.get("receiptDigest")
+    embedded = typed.get("acceptedReceipt")
+    if not _valid_digest(receipt_digest):
+        return blocked("accepted_receipt_digest_invalid")
+    if not isinstance(embedded, Mapping) or embedded.get("receiptDigest") != receipt_digest:
+        return blocked("accepted_receipt_identity_mismatch")
+    if embedded.get("status") != "accepted" or embedded.get("protected") is not True:
+        return blocked("accepted_receipt_not_protected")
+    embedded_provider = _handoff_identity(embedded.get("provider"))
+    embedded_producer = _handoff_identity(embedded.get("producer"))
+    if embedded_provider is not None and embedded_producer is not None and embedded_provider != embedded_producer:
+        return blocked("accepted_receipt_provider_mismatch")
+    if (embedded_provider or embedded_producer) != expected_provider:
+        return blocked("accepted_receipt_provider_mismatch")
+    if verdict != "accepted" or lifecycle not in {"accepted", "integrated"}:
+        return blocked("provider_handoff_not_accepted")
+    if lifecycle == "integrated" and typed.get("integrationClaimed") is not True:
+        return blocked("integration_claim_invalid")
+    return {
+        "admitted": True,
+        "status": "ADMITTED",
+        "reason": "accepted_protected_provider_receipt",
+        "integrationClaimed": lifecycle == "integrated",
+        "preparationAllowed": True,
+        "blocker": None,
+        "provider": provider,
+        "consumer": consumer,
+        "receiptDigest": receipt_digest,
+    }
+
+
+def consume_provider_consumer_handoff(
+    handoff: Mapping[str, Any] | None,
+    *,
+    protected_provider_identity: Mapping[str, Any] | None = None,
+    accepted_receipt: Mapping[str, Any] | None = None,
+    consumer_identity: Mapping[str, Any] | None = None,
+) -> tuple[bool, str]:
+    """Consume a handoff only after exact protected identity and receipt checks."""
+
+    decision = evaluate_provider_consumer_handoff(
+        handoff,
+        protected_provider_identity=protected_provider_identity,
+        accepted_receipt=accepted_receipt,
+        consumer_identity=consumer_identity,
+    )
+    return bool(decision["admitted"]), str(decision["reason"])
+
+
+def admit_provider_consumer_handoff(
+    handoff: Mapping[str, Any] | None,
+    *,
+    protected_provider_identity: Mapping[str, Any] | None = None,
+    accepted_receipt: Mapping[str, Any] | None = None,
+    consumer_identity: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Return the complete admission/blocker projection for status consumers."""
+
+    return evaluate_provider_consumer_handoff(
+        handoff,
+        protected_provider_identity=protected_provider_identity,
+        accepted_receipt=accepted_receipt,
+        consumer_identity=consumer_identity,
+    )
+
+
+def build_provider_consumer_handoff(
+    *,
+    provider: Mapping[str, Any] | None = None,
+    producer: Mapping[str, Any] | None = None,
+    consumer: Mapping[str, Any] | None = None,
+    provider_repository: str | None = None,
+    provider_commit: str | None = None,
+    provider_tree: str | None = None,
+    consumer_repository: str | None = None,
+    consumer_commit: str | None = None,
+    consumer_tree: str | None = None,
+    artifact_digest: str,
+    contract_digest: str,
+    verdict: str = "blocked",
+    lifecycle_state: str = "prepared",
+    accepted_receipt: Mapping[str, Any] | None = None,
+    blocker: Mapping[str, Any] | None = None,
+    integration_claimed: bool = False,
+) -> dict[str, Any]:
+    """Create the sanitized, versioned handoff representation."""
+
+    provider_value = provider or producer or {
+        "repository": provider_repository,
+        "commit": provider_commit,
+        "tree": provider_tree,
+    }
+    consumer_value = consumer or {
+        "repository": consumer_repository,
+        "commit": consumer_commit,
+        "tree": consumer_tree,
+    }
+    provider_identity = _handoff_identity(provider_value)
+    consumer_identity_value = _handoff_identity(consumer_value)
+    if provider_identity is None or consumer_identity_value is None:
+        raise RolloutError("handoff_identity_invalid")
+    if not _valid_digest(artifact_digest) or not _valid_digest(contract_digest):
+        raise RolloutError("handoff_digest_invalid")
+    if verdict not in _HANDOFF_VERDICTS or lifecycle_state not in _HANDOFF_STATES:
+        raise RolloutError("handoff_lifecycle_invalid")
+    if verdict == "accepted" and lifecycle_state not in {"accepted", "integrated"}:
+        raise RolloutError("handoff_lifecycle_invalid")
+    if lifecycle_state == "integrated" and not integration_claimed:
+        raise RolloutError("integration_claim_invalid")
+    if verdict == "accepted" and not isinstance(accepted_receipt, Mapping):
+        raise RolloutError("accepted_receipt_missing")
+    if verdict != "accepted" and integration_claimed:
+        raise RolloutError("integration_claim_invalid")
+    if verdict != "accepted" and not isinstance(blocker, Mapping):
+        raise RolloutError("handoff_blocker_missing")
+    if isinstance(blocker, Mapping):
+        required = ("blockingRepository", "handoffClass", "owner", "nextAction")
+        if any(not isinstance(blocker.get(key), str) or not blocker.get(key) for key in required):
+            raise RolloutError("handoff_blocker_invalid")
+        if blocker.get("handoffClass") != "provider-consumer":
+            raise RolloutError("handoff_blocker_invalid")
+    sanitized_receipt = None
+    if isinstance(accepted_receipt, Mapping):
+        receipt_identity = _receipt_identity(accepted_receipt)
+        digest = accepted_receipt.get("receiptDigest")
+        if (
+            not _receipt_is_accepted(accepted_receipt)
+            or (
+                accepted_receipt.get("protected") is not True
+                and accepted_receipt.get("protectedIntegrated") is not True
+            )
+            or receipt_identity != provider_identity
+            or not _valid_digest(digest)
+        ):
+            raise RolloutError("accepted_receipt_invalid")
+        sanitized_receipt = {
+            "receiptDigest": digest,
+            "status": "accepted",
+            "protected": True,
+            "provider": provider_identity,
+        }
+    return {
+        "schemaVersion": 1,
+        "kind": "provider-consumer-handoff",
+        "producer": provider_identity,
+        "provider": provider_identity,
+        "consumer": consumer_identity_value,
+        "artifactDigest": artifact_digest,
+        "contractDigest": contract_digest,
+        "verdict": verdict,
+        "lifecycleState": lifecycle_state,
+        "acceptedReceipt": sanitized_receipt,
+        "blocker": dict(blocker) if isinstance(blocker, Mapping) else None,
+        "independentPreparationAllowed": True,
+        "integrationClaimed": bool(integration_claimed),
+    }
+
+
+# Explicit alias used by packager callers.
+create_provider_consumer_handoff = build_provider_consumer_handoff
+
+
 def _receipt_reusable(
     state: Mapping[str, Any], package_digest: str, environment_digest: str
 ) -> bool:
@@ -91,6 +402,12 @@ def plan_rollout(
     *,
     package_digest: str,
     environment_digest: str,
+    handoff: Mapping[str, Any] | None = None,
+    provider_handoff: Mapping[str, Any] | None = None,
+    protected_provider_identity: Mapping[str, Any] | None = None,
+    protected_provider: Mapping[str, Any] | None = None,
+    accepted_receipt: Mapping[str, Any] | None = None,
+    provider_receipt: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Return every action that is safe to begin in this controller turn."""
 
@@ -109,6 +426,39 @@ def plan_rollout(
         rows[name] = raw
     if set(rows) != set(config.targets):
         raise RolloutError("rollout_target_state_incomplete")
+
+    typed_handoff = handoff if handoff is not None else provider_handoff
+    if typed_handoff is not None:
+        handoff_decision = evaluate_provider_consumer_handoff(
+            typed_handoff,
+            protected_provider_identity=protected_provider_identity or protected_provider,
+            accepted_receipt=accepted_receipt or provider_receipt,
+        )
+        if not handoff_decision["admitted"]:
+            preparation_actions = [
+                _action("PREPARE", name, reason="provider_handoff_pending", mutating=False)
+                for name in config.targets
+                if rows[name]["status"] == "PENDING"
+                and (
+                    rows[name].get("independentPreparation") is True
+                    or rows[name].get("preparationOnly") is True
+                    or rows[name].get("consumerPreparation") is True
+                )
+            ]
+            return {
+                "status": "BLOCKED",
+                "halted": False,
+                "systemicFailureTargets": [],
+                "isolatedTargets": [],
+                "reusedEvidence": [],
+                "availableMutationSlots": 0,
+                "actions": preparation_actions,
+                "criticalPath": ["provider_acceptance", "consumer_integration"],
+                "integrationAdmitted": False,
+                "integrationClaimed": False,
+                "providerHandoff": handoff_decision,
+                "blocker": handoff_decision["blocker"],
+            }
 
     systemic = [
         name
@@ -193,7 +543,7 @@ def plan_rollout(
             actions.append(_action("UPDATE", name, reason=reason, mutating=True))
         critical = ["downstream_fan_out", "portfolio_verify", "closure"]
 
-    return {
+    result = {
         "status": "ACTIVE" if actions or active else "COMPLETE",
         "halted": False,
         "systemicFailureTargets": [],
@@ -203,3 +553,8 @@ def plan_rollout(
         "actions": actions,
         "criticalPath": critical,
     }
+    if typed_handoff is not None:
+        result["integrationAdmitted"] = True
+        result["integrationClaimed"] = bool(handoff_decision["integrationClaimed"])
+        result["providerHandoff"] = handoff_decision
+    return result

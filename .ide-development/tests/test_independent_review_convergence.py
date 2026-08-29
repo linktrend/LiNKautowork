@@ -44,10 +44,14 @@ from scripts.gitops.independent_review_convergence import (
     ledger_to_dict,
     open_session,
     record_compute_units,
+    record_focused_changed_path_checks,
     record_founder_authority,
     record_full_evidence,
     record_preflight,
     start_reviewer,
+    ingest_delta_review,
+    plan_delivery,
+    transition_delivery,
     timeout_reviewer,
 )
 from scripts.ide_development.constants import RC_REQUIRED_SCHEMA_RELS
@@ -112,6 +116,7 @@ def open_default(**kwargs):
         implementer_actor=kwargs.pop("implementer_actor", "grok-implementer"),
         reviewer_actor=kwargs.pop("reviewer_actor", "opus-reviewer"),
         require_full_before_review=kwargs.pop("require_full_before_review", False),
+        full_first_justification=kwargs.pop("full_first_justification", "repository policy requires pre-review Full"),
         resource_limit=kwargs.pop("resource_limit", None),
         clock=clock,
     )
@@ -441,6 +446,8 @@ class AcU0912ExactHeadInvalidationTests(unittest.TestCase):
         apply_repair(session, entries, new_head=HEAD_B, new_tree=TREE_B, touched_paths=["src/authz.py"])
         self.assertFalse(session.full_evidence["valid"])
         self.assertFalse(session.prior_review["valid"])
+        self.assertTrue(session.prior_review["reusedForUnchangedPaths"])
+        self.assertEqual(session.reusable_unchanged_evidence["invalidatedPaths"], ["src/authz.py"])
         self.assertEqual(session.full_evidence["headSha"], HEAD_B)
         review(session, entries, [])
         self.assertTrue(session.prior_review["valid"])
@@ -453,6 +460,103 @@ class AcU0912ExactHeadInvalidationTests(unittest.TestCase):
         self.assertEqual(raised.exception.code, "full_before_review")
         invalidate_evidence(session)
         self.assertFalse(session.prior_review["valid"])
+
+
+class G0R5ADeliverySequencingTests(unittest.TestCase):
+    def test_full_is_rejected_by_plan_and_transition_until_clean_review(self) -> None:
+        session, entries, _clock = open_default()
+        with self.assertRaises(ConvergenceError) as raised:
+            plan_delivery(session, profile="full")
+        self.assertEqual(raised.exception.code, "full_before_review")
+        with self.assertRaises(ConvergenceError) as raised:
+            transition_delivery(session, profile="full")
+        self.assertEqual(raised.exception.code, "full_before_review")
+        review(session, entries, [])
+        self.assertEqual(plan_delivery(session, profile="full")["profile"], "full")
+        record_full_evidence(session, head_sha=HEAD_A)
+        with self.assertRaises(ConvergenceError) as raised:
+            record_full_evidence(session, head_sha=HEAD_A, execution="hosted")
+        self.assertEqual(raised.exception.code, "duplicate_full_execution")
+
+    def test_full_first_requires_non_empty_policy_justification(self) -> None:
+        with self.assertRaises(ConvergenceError) as raised:
+            open_session(
+                repository="linktrend/IDE-Development",
+                base_sha=BASE,
+                candidate_sha=HEAD_A,
+                git_tree=TREE_A,
+                scope=["src/"],
+                reviewer_policy="default",
+                implementer_actor="implementer",
+                reviewer_actor="reviewer",
+                require_full_before_review=True,
+            )
+        self.assertEqual(raised.exception.code, "full_first_justification_missing")
+        session, _entries, _clock = open_default()
+        with self.assertRaises(ConvergenceError) as raised:
+            apply_repository_policy(session, {"requireFullBeforeReview": True})
+        self.assertEqual(raised.exception.code, "full_first_justification_missing")
+        apply_repository_policy(
+            session,
+            {
+                "requireFullBeforeReview": True,
+                "fullFirstJustification": "repository policy requires pre-review Full",
+            },
+        )
+        record_full_evidence(session, head_sha=HEAD_A)
+
+    def test_repaired_candidate_requires_focused_delta_review_and_reuses_unchanged_evidence(self) -> None:
+        session, entries, _clock = open_default()
+        review(session, entries, [finding("authz", paths=["src/authz.py"])])
+        consolidate_repair_batch(session, entries)
+        apply_repair(session, entries, new_head=HEAD_B, new_tree=TREE_B, touched_paths=["src/authz.py"])
+        with self.assertRaises(ConvergenceError) as raised:
+            plan_delivery(session, profile="full")
+        self.assertEqual(raised.exception.code, "delta_review_required")
+        with self.assertRaises(ConvergenceError) as raised:
+            ingest_delta_review(
+                session,
+                entries,
+                {"headSha": HEAD_B, "gitTree": TREE_B, "findings": []},
+                actor=session.reviewer_actor,
+                role="reviewer",
+            )
+        self.assertEqual(raised.exception.code, "focused_checks_required")
+        record_focused_changed_path_checks(
+            session,
+            head_sha=HEAD_B,
+            git_tree=TREE_B,
+            changed_paths=["src/authz.py"],
+            results=[{"command": "focused authz check", "exitCode": 0}],
+        )
+        ingest_delta_review(
+            session,
+            entries,
+            {
+                "headSha": HEAD_B,
+                "gitTree": TREE_B,
+                "changedPaths": ["src/authz.py"],
+                "findings": [],
+            },
+            actor=session.reviewer_actor,
+            role="reviewer",
+            accepted_unchanged_evidence={
+                "valid": True,
+                "sourceHeadSha": HEAD_A,
+                "paths": ["src/unchanged.py"],
+            },
+        )
+        self.assertTrue(session.delta_review["valid"])
+        self.assertTrue(session.delta_review["reusedUnchangedEvidence"])
+        record_full_evidence(session, head_sha=HEAD_B)
+
+    def test_local_cumulative_full_cannot_be_followed_by_hosted_full(self) -> None:
+        session, entries, _clock = open_default()
+        review(session, entries, [])
+        record_full_evidence(session, head_sha=HEAD_A, execution="local")
+        with self.assertRaises(ConvergenceError) as raised:
+            record_full_evidence(session, head_sha=HEAD_A, execution="hosted")
+        self.assertEqual(raised.exception.code, "duplicate_full_execution")
 
 
 class AcU0913StopCannotBypassFindingsTests(unittest.TestCase):

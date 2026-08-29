@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/routing-registry.schema.json",
+  "title": "IDE Development versioned routing registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "registryId", "status", "routes", "programs"],
+  "properties": {
+    "schemaVersion": {"type": "integer", "const": 1},
+    "registryId": {"type": "string", "const": "ide-development-routing"},
+    "status": {"type": "string", "const": "active-policy-candidate"},
+    "routes": {
+      "type": "object", "additionalProperties": false,
+      "required": ["gate-0", "ordinary-development", "luna-fallback"],
+      "properties": {
+        "gate-0": {"$ref": "#/$defs/gateRoute"},
+        "ordinary-development": {"$ref": "#/$defs/ordinaryRoute"},
+        "luna-fallback": {"$ref": "#/$defs/fallbackRoute"}
+      }
+    },
+    "programs": {"type": "array", "items": {"$ref": "#/$defs/program"}}
+  },
+  "$defs": {
+    "gateRoute": {
+      "type": "object", "additionalProperties": false,
+      "required": ["provider", "model", "effort", "fast", "execution", "principalInstructionRequired"],
+      "properties": {
+        "provider": {"const": "codex-cli"}, "model": {"const": "gpt-5.6-luna"},
+        "effort": {"const": "high"}, "fast": {"const": false},
+        "execution": {"const": "codex-cli"}, "principalInstructionRequired": {"const": false}
+      }
+    },
+    "ordinaryRoute": {
+      "type": "object", "additionalProperties": false,
+      "required": ["provider", "model", "effort", "fast", "execution", "fallbackRoute", "principalInstructionRequired"],
+      "properties": {
+        "provider": {"const": "cursor"}, "model": {"const": "grok-4.6"},
+        "effort": {"const": "medium"}, "fast": {"const": false},
+        "execution": {"const": "direct-sdk"}, "fallbackRoute": {"const": "luna-fallback"},
+        "principalInstructionRequired": {"const": false}
+      }
+    },
+    "fallbackRoute": {
+      "type": "object", "additionalProperties": false,
+      "required": ["provider", "model", "effort", "fast", "execution", "principalInstructionRequired", "concurrentDisjointPacketsAllowed"],
+      "properties": {
+        "provider": {"const": "codex-cli"}, "model": {"const": "gpt-5.6-luna"},
+        "effort": {"const": "high"}, "fast": {"const": false},
+        "execution": {"const": "codex-cli"}, "principalInstructionRequired": {"const": true},
+        "concurrentDisjointPacketsAllowed": {"const": true}
+      }
+    },
+    "program": {
+      "type": "object", "additionalProperties": false,
+      "required": ["programId", "repositories", "crossRepositoryAllowed"],
+      "properties": {
+        "programId": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"},
+        "repositories": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/repository"}},
+        "crossRepositoryAllowed": {"type": "boolean"}
+      }
+    },
+    "repository": {
+      "type": "object", "additionalProperties": false,
+      "required": ["repository", "url"],
+      "properties": {
+        "repository": {"type": "string", "pattern": "^[^/\\s]+/[^/\\s]+$"},
+        "url": {"type": "string", "pattern": "^https://github\\.com/[^/\\s]+/[^/\\s]+$"}
+      }
+    }
+  }
+}

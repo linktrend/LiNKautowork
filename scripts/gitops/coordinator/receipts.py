@@ -42,6 +42,7 @@ GATES = frozenset({"fast-gate", "full-gate", "staging-gate", "release-gate"})
 PROFILES = frozenset({"fast", "full", "release"})
 RECOGNIZED_RUNNER_LABELS = frozenset({"ubuntu-24.04-arm"})
 RECEIPT_SCHEMA_VERSION = 2
+TRANSITION_RECEIPT_SCHEMA_VERSION = 1
 REJECTION_CODES = frozenset(
     {
         "repository_mismatch",
@@ -66,6 +67,13 @@ REJECTION_CODES = frozenset(
         "unsupported_version",
         "invalid_branch",
         "invalid_gate",
+        "transition_invalid",
+        "transition_digest_mismatch",
+        "transition_identity_mismatch",
+        "transition_tree_mismatch",
+        "transition_target_mismatch",
+        "transition_run_mismatch",
+        "receipt_store_invalid",
     }
 )
 
@@ -476,12 +484,246 @@ class FullSuiteReceipt:
         return cls(RECEIPT_SCHEMA_VERSION, identity, run_id, attempt, runner, data["startedAt"], data["completedAt"], conclusion, data["commandDigest"], evidence, digest)
 
 
+TRANSITION_TYPES = frozenset({"protected-merge", "receipt-maintenance"})
+
+
+@dataclass(frozen=True)
+class TransitionReceipt:
+    """Digest-bound bridge from an audited candidate to a protected ref.
+
+    The FullSuiteReceipt remains bound to the exact workflow head.  This
+    separate, externally retainable object is the only authority that permits
+    a protected merge to change the commit identity while retaining the exact
+    audited tree and execution identity.
+    """
+
+    schema_version: int
+    kind: str
+    transition_type: str
+    repository: str
+    source_identity: CandidateIdentity
+    source_receipt_digest: str
+    source_workflow_run_id: int
+    source_workflow_run_attempt: int
+    target_branch: str
+    target_commit: str
+    target_tree: str
+    authenticated_by: str
+    maintenance_paths: tuple[str, ...] = ()
+    failure_contract_digest: str | None = None
+    protected_base_commit: str | None = None
+    receipt_digest: str = ""
+
+    def to_dict(self, *, include_digest: bool = True) -> dict[str, Any]:
+        result: dict[str, Any] = {
+            "schemaVersion": self.schema_version,
+            "kind": self.kind,
+            "transitionType": self.transition_type,
+            "repository": self.repository,
+            "sourceIdentity": self.source_identity.to_dict(),
+            "sourceReceiptDigest": self.source_receipt_digest,
+            "sourceWorkflowRunId": self.source_workflow_run_id,
+            "sourceWorkflowRunAttempt": self.source_workflow_run_attempt,
+            "targetBranch": self.target_branch,
+            "targetCommit": self.target_commit,
+            "targetTree": self.target_tree,
+            "authenticatedBy": self.authenticated_by,
+            "maintenancePaths": list(self.maintenance_paths),
+            "failureContractDigest": self.failure_contract_digest,
+            "protectedBaseCommit": self.protected_base_commit,
+        }
+        if include_digest:
+            result["receiptDigest"] = self.receipt_digest
+        return result
+
+    @classmethod
+    def from_dict(cls, value: Any, *, allow_missing_digest: bool = False) -> "TransitionReceipt":
+        data = _mapping(value)
+        expected = {
+            "schemaVersion", "kind", "transitionType", "repository", "sourceIdentity",
+            "sourceReceiptDigest", "sourceWorkflowRunId", "sourceWorkflowRunAttempt",
+            "targetBranch", "targetCommit", "targetTree", "authenticatedBy",
+            "maintenancePaths", "failureContractDigest", "protectedBaseCommit", "receiptDigest",
+        }
+        allowed = expected - {"receiptDigest"} if allow_missing_digest else expected
+        if set(data) != allowed and set(data) != expected:
+            raise ReceiptError("transition_invalid", "transition receipt fields are incomplete or unknown")
+        if data.get("schemaVersion") != TRANSITION_RECEIPT_SCHEMA_VERSION:
+            raise ReceiptError("transition_invalid", "unsupported transition receipt schemaVersion")
+        if data.get("kind") != "transition-receipt":
+            raise ReceiptError("transition_invalid", "transition receipt kind is invalid")
+        transition_type = data.get("transitionType")
+        if transition_type not in TRANSITION_TYPES:
+            raise ReceiptError("transition_invalid", "transitionType is invalid")
+        source_identity = CandidateIdentity.from_dict(data.get("sourceIdentity"))
+        repository = data.get("repository")
+        if repository != source_identity.repository:
+            raise ReceiptError("transition_identity_mismatch", "transition repository differs from source identity")
+        source_digest = data.get("sourceReceiptDigest")
+        if not _is_digest(source_digest):
+            raise ReceiptError("transition_invalid", "sourceReceiptDigest is invalid")
+        for name in ("sourceWorkflowRunId", "sourceWorkflowRunAttempt"):
+            raw = data.get(name)
+            if not isinstance(raw, int) or isinstance(raw, bool) or raw < 1:
+                raise ReceiptError("transition_run_mismatch", f"{name} must be a positive integer")
+        target_branch = data.get("targetBranch")
+        if not isinstance(target_branch, str) or not target_branch or not BRANCH_RE.fullmatch(target_branch) or ".." in target_branch:
+            raise ReceiptError("invalid_branch", "targetBranch is invalid")
+        target_commit = data.get("targetCommit")
+        target_tree = data.get("targetTree")
+        if not _is_sha(target_commit) or not _is_sha(target_tree):
+            raise ReceiptError("invalid_sha", "transition target commit/tree is invalid")
+        if data.get("authenticatedBy") != "delivery-controller":
+            raise ReceiptError("transition_invalid", "authenticatedBy must be delivery-controller")
+        paths = data.get("maintenancePaths")
+        if not isinstance(paths, list) or any(not isinstance(path, str) for path in paths):
+            raise ReceiptError("transition_invalid", "maintenancePaths must be an array of paths")
+        normalized_paths = tuple(_normal_relative_path(path) for path in paths)
+        if len(set(normalized_paths)) != len(normalized_paths):
+            raise ReceiptError("transition_invalid", "maintenancePaths must be unique")
+        failure_digest = data.get("failureContractDigest")
+        if failure_digest is not None and not _is_digest(failure_digest):
+            raise ReceiptError("transition_invalid", "failureContractDigest is invalid")
+        base_commit = data.get("protectedBaseCommit")
+        if base_commit is not None and not _is_sha(base_commit):
+            raise ReceiptError("invalid_sha", "protectedBaseCommit is invalid")
+        digest = data.get("receiptDigest", "")
+        if digest and not _is_digest(digest):
+            raise ReceiptError("transition_digest_mismatch", "transition receiptDigest is invalid")
+        return cls(
+            TRANSITION_RECEIPT_SCHEMA_VERSION,
+            "transition-receipt",
+            transition_type,
+            repository,
+            source_identity,
+            source_digest,
+            data["sourceWorkflowRunId"],
+            data["sourceWorkflowRunAttempt"],
+            target_branch,
+            target_commit,
+            target_tree,
+            data["authenticatedBy"],
+            normalized_paths,
+            failure_digest,
+            base_commit,
+            digest,
+        )
+
+
 GateReceipt = FullSuiteReceipt
 
 
 def compute_receipt_digest(receipt: FullSuiteReceipt | Mapping[str, Any]) -> str:
     parsed = receipt if isinstance(receipt, FullSuiteReceipt) else FullSuiteReceipt.from_dict(receipt, allow_missing_digest=True)
     return canonical_digest(parsed.to_dict(include_digest=False))
+
+
+def compute_transition_digest(receipt: TransitionReceipt | Mapping[str, Any]) -> str:
+    parsed = receipt if isinstance(receipt, TransitionReceipt) else TransitionReceipt.from_dict(receipt, allow_missing_digest=True)
+    return canonical_digest(parsed.to_dict(include_digest=False))
+
+
+def create_transition_receipt(
+    source_receipt: FullSuiteReceipt | Mapping[str, Any],
+    *,
+    target_branch: str,
+    target_commit: str,
+    target_tree: str,
+    transition_type: str = "protected-merge",
+    authenticated_by: str = "delivery-controller",
+    maintenance_paths: Sequence[str] = (),
+    failure_contract_digest: str | None = None,
+    protected_base_commit: str | None = None,
+) -> TransitionReceipt:
+    """Create the sole commit-changing bridge for an accepted Full receipt."""
+
+    parsed = source_receipt if isinstance(source_receipt, FullSuiteReceipt) else FullSuiteReceipt.from_dict(source_receipt)
+    _validate_receipt_digest(parsed)
+    if transition_type not in TRANSITION_TYPES:
+        raise ReceiptError("transition_invalid", "transitionType is invalid")
+    if not isinstance(target_branch, str) or not target_branch or not BRANCH_RE.fullmatch(target_branch) or ".." in target_branch:
+        raise ReceiptError("invalid_branch", "targetBranch is invalid")
+    if not _is_sha(target_commit) or not _is_sha(target_tree):
+        raise ReceiptError("invalid_sha", "transition target commit/tree is invalid")
+    if target_tree != parsed.candidate_identity.git_tree:
+        raise ReceiptError("transition_tree_mismatch", "protected target tree differs from audited tree")
+    if authenticated_by != "delivery-controller":
+        raise ReceiptError("transition_invalid", "authenticatedBy must be delivery-controller")
+    paths = tuple(_normal_relative_path(path) for path in maintenance_paths)
+    if len(set(paths)) != len(paths):
+        raise ReceiptError("transition_invalid", "maintenancePaths must be unique")
+    if failure_contract_digest is not None and not _is_digest(failure_contract_digest):
+        raise ReceiptError("transition_invalid", "failureContractDigest is invalid")
+    if protected_base_commit is not None and not _is_sha(protected_base_commit):
+        raise ReceiptError("invalid_sha", "protectedBaseCommit is invalid")
+    unsigned = TransitionReceipt(
+        TRANSITION_RECEIPT_SCHEMA_VERSION,
+        "transition-receipt",
+        transition_type,
+        parsed.candidate_identity.repository,
+        parsed.candidate_identity,
+        parsed.receipt_digest,
+        parsed.workflow_run_id,
+        parsed.workflow_run_attempt,
+        target_branch,
+        target_commit,
+        target_tree,
+        authenticated_by,
+        tuple(sorted(paths)),
+        failure_contract_digest,
+        protected_base_commit,
+        "",
+    )
+    return TransitionReceipt(**{**unsigned.__dict__, "receipt_digest": compute_transition_digest(unsigned)})
+
+
+def verify_transition_receipt(
+    transition_receipt: TransitionReceipt | Mapping[str, Any],
+    source_receipt: FullSuiteReceipt | Mapping[str, Any],
+    target_identity: CandidateIdentity | Mapping[str, Any],
+    *,
+    expected_workflow_run_id: int | None = None,
+    expected_workflow_run_attempt: int | None = None,
+    expected_base_commit: str | None = None,
+) -> ReceiptVerdict:
+    """Verify an authenticated same-tree transition and its current run."""
+
+    try:
+        transition = transition_receipt if isinstance(transition_receipt, TransitionReceipt) else TransitionReceipt.from_dict(transition_receipt)
+        source = source_receipt if isinstance(source_receipt, FullSuiteReceipt) else FullSuiteReceipt.from_dict(source_receipt)
+        target = target_identity if isinstance(target_identity, CandidateIdentity) else CandidateIdentity.from_dict(target_identity)
+        _validate_receipt_digest(source)
+        if transition.receipt_digest != compute_transition_digest(transition):
+            raise ReceiptError("transition_digest_mismatch", "transition receiptDigest does not match canonical bytes")
+        if transition.source_receipt_digest != source.receipt_digest:
+            raise ReceiptError("transition_identity_mismatch", "transition does not reference the supplied Full receipt")
+        if transition.source_workflow_run_id != source.workflow_run_id or transition.source_workflow_run_attempt != source.workflow_run_attempt:
+            raise ReceiptError("transition_run_mismatch", "transition workflow run differs from the Full receipt")
+        if expected_workflow_run_id is not None and source.workflow_run_id != expected_workflow_run_id:
+            raise ReceiptError("run_mismatch", "transition workflow run does not match expected run")
+        if expected_workflow_run_attempt is not None and source.workflow_run_attempt != expected_workflow_run_attempt:
+            raise ReceiptError("attempt_mismatch", "transition workflow run attempt does not match expected attempt")
+        if transition.repository != target.repository or transition.repository != source.candidate_identity.repository:
+            raise ReceiptError("transition_identity_mismatch", "transition repository identity differs")
+        if transition.source_identity.to_dict() != source.candidate_identity.to_dict():
+            raise ReceiptError("transition_identity_mismatch", "transition source identity differs from Full receipt")
+        if target.source_branch != transition.target_branch:
+            raise ReceiptError("transition_target_mismatch", "transition target branch is not current protected ref")
+        if target.head_commit != transition.target_commit or target.git_tree != transition.target_tree:
+            raise ReceiptError("transition_target_mismatch", "transition target does not match current protected identity")
+        if transition.target_tree != source.candidate_identity.git_tree:
+            raise ReceiptError("transition_tree_mismatch", "transition changes the audited Git tree")
+        if target.dependency_digest != source.candidate_identity.dependency_digest:
+            raise ReceiptError("dependency_mismatch", "transition dependency identity changed")
+        if target.profile_digest != source.candidate_identity.profile_digest:
+            raise ReceiptError("profile_mismatch", "transition profile identity changed")
+        if target.workflow_digest != source.candidate_identity.workflow_digest:
+            raise ReceiptError("workflow_mismatch", "transition workflow identity changed")
+        if expected_base_commit is not None and transition.protected_base_commit != expected_base_commit:
+            raise ReceiptError("transition_target_mismatch", "transition protected base is stale")
+        return ReceiptVerdict(True, message="authenticated same-tree transition matches", source_commit=source.candidate_identity.head_commit, promotion_commit=target.head_commit)
+    except ReceiptError as error:
+        return _reject(error)
 
 
 def _validate_receipt_digest(receipt: FullSuiteReceipt) -> None:
@@ -533,6 +775,72 @@ def write_receipt(result: Any, output_path: str | os.PathLike[str] | Path) -> Fu
     return receipt
 
 
+def _git_common_dir(repo_path: str | os.PathLike[str] | Path) -> Path:
+    repo = _repo_root(repo_path)
+    value = _git(repo, "rev-parse", "--git-common-dir")
+    common = Path(value)
+    return common.resolve() if common.is_absolute() else (repo / common).resolve()
+
+
+def validate_receipt_store_root(
+    repo_path: str | os.PathLike[str] | Path,
+    store_root: str | os.PathLike[str] | Path,
+) -> Path:
+    """Ensure evidence cannot be written into the candidate or Git metadata."""
+
+    repo = _repo_root(repo_path)
+    root = Path(store_root).expanduser().resolve()
+    common = _git_common_dir(repo)
+    if root == repo or repo in root.parents or root == common or common in root.parents:
+        raise ReceiptError("receipt_store_invalid", "receipt store must be outside candidate and Git common directories")
+    return root
+
+
+def default_receipt_store_root(repo_path: str | os.PathLike[str] | Path) -> Path:
+    """Return the external store used when a caller does not provide one."""
+
+    configured = os.environ.get("LINKTREND_RECEIPT_STORE", "").strip()
+    root = Path(configured).expanduser() if configured else Path.home() / ".linktrend" / "ide-coordinator" / "receipts"
+    return validate_receipt_store_root(repo_path, root)
+
+
+def store_receipt(
+    receipt: FullSuiteReceipt | Mapping[str, Any],
+    *,
+    repo_path: str | os.PathLike[str] | Path,
+    store_root: str | os.PathLike[str] | Path | None = None,
+) -> Path:
+    """Persist a Full receipt by immutable digest in an external store."""
+
+    parsed = receipt if isinstance(receipt, FullSuiteReceipt) else FullSuiteReceipt.from_dict(receipt)
+    _validate_receipt_digest(parsed)
+    if parsed.candidate_identity.repository != _repository_name(_repo_root(repo_path)):
+        raise ReceiptError("repository_mismatch", "receipt repository does not match evidence store repository")
+    root = validate_receipt_store_root(repo_path, store_root or default_receipt_store_root(repo_path))
+    destination = root / "full-suite" / f"{parsed.receipt_digest.removeprefix('sha256:')}.json"
+    _atomic_write(destination, canonical_json_bytes(parsed.to_dict()))
+    return destination
+
+
+def store_transition_receipt(
+    transition_receipt: TransitionReceipt | Mapping[str, Any],
+    *,
+    repo_path: str | os.PathLike[str] | Path,
+    store_root: str | os.PathLike[str] | Path | None = None,
+) -> Path:
+    """Persist a transition receipt by immutable digest in an external store."""
+
+    parsed = transition_receipt if isinstance(transition_receipt, TransitionReceipt) else TransitionReceipt.from_dict(transition_receipt)
+    if parsed.receipt_digest != compute_transition_digest(parsed):
+        raise ReceiptError("transition_digest_mismatch", "transition receiptDigest does not match canonical bytes")
+    if parsed.repository != _repository_name(_repo_root(repo_path)):
+        raise ReceiptError("repository_mismatch", "transition repository does not match evidence store repository")
+    root = validate_receipt_store_root(repo_path, store_root or default_receipt_store_root(repo_path))
+    destination = root / "transitions" / f"{parsed.receipt_digest.removeprefix('sha256:')}.json"
+    _atomic_write(destination, canonical_json_bytes(parsed.to_dict()))
+    return destination
+
+
 @dataclass(frozen=True)
 class ReceiptVerdict:
     accepted: bool
@@ -569,6 +877,7 @@ def verify_receipt(
     expected_command_digest: str | None = None,
     expected_workflow_digest: str | None = None,
     expected_evidence_digests: Mapping[str, str] | None = None,
+    transition_receipt: TransitionReceipt | Mapping[str, Any] | None = None,
 ) -> ReceiptVerdict:
     """Verify reusable identity without privileged credentials or network calls."""
 
@@ -589,7 +898,18 @@ def verify_receipt(
             raise ReceiptError("profile_mismatch", "receipt profile identity does not match candidate")
         if receipt_identity.workflow_digest != candidate.workflow_digest:
             raise ReceiptError("workflow_mismatch", "receipt workflow identity does not match candidate")
-        if receipt_identity.head_commit != candidate.head_commit:
+        if transition_receipt is not None:
+            transition_verdict = verify_transition_receipt(
+                transition_receipt,
+                parsed,
+                candidate,
+                expected_workflow_run_id=workflow_run_id,
+                expected_workflow_run_attempt=workflow_run_attempt,
+            )
+            if not transition_verdict.accepted:
+                rejection = transition_verdict.rejection_code or "transition_invalid"
+                raise ReceiptError(rejection, transition_verdict.message or rejection)
+        elif receipt_identity.head_commit != candidate.head_commit:
             raise ReceiptError("head_mismatch", "receipt commit does not match candidate")
         if workflow_run_id is not None and parsed.workflow_run_id != workflow_run_id:
             raise ReceiptError("run_mismatch", "receipt workflow run does not match expected run")
@@ -640,16 +960,25 @@ __all__ = [
     "CandidateIdentity",
     "FullSuiteReceipt",
     "GateReceipt",
+    "TransitionReceipt",
     "RECOGNIZED_RUNNER_LABELS",
+    "TRANSITION_RECEIPT_SCHEMA_VERSION",
     "ReceiptError",
     "ReceiptVerdict",
     "canonical_digest",
     "canonical_json_bytes",
     "compute_candidate_identity",
     "compute_receipt_digest",
+    "compute_transition_digest",
     "create_full_suite_receipt",
+    "create_transition_receipt",
+    "default_receipt_store_root",
     "load_json",
     "receipt_lookup_key",
+    "store_receipt",
+    "store_transition_receipt",
+    "validate_receipt_store_root",
     "verify_receipt",
+    "verify_transition_receipt",
     "write_receipt",
 ]

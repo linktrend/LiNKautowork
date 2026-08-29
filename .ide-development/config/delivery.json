@@ -50,7 +50,7 @@
       "exact_pushed_commit_tree",
       "scoped_diff",
       "focused_tests",
-      "independent_terra_verification",
+      "independent_narrow_review",
       "manifest_evidence"
     ]
   },

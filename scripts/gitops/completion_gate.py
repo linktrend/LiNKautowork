@@ -4,9 +4,10 @@
 Modes: checkpoint | review-ready | blocked | status | write-evidence
 
 v2.5 (V25_BOOTSTRAP_LEAN): Issue checkpoints are accepted from exact pushed
-commit/tree + scoped diff + focused tests + independent Terra verification +
-manifest evidence. Review Ready publication, AUTOMATION_TOKEN, Issue PRs,
-hosted completion status, and legacy publisher status are nonrequirements.
+commit/tree + scoped diff + focused tests + one exact-candidate independent
+narrow review + manifest evidence. Review Ready publication, AUTOMATION_TOKEN,
+Issue PRs, hosted completion status, and legacy publisher status are
+nonrequirements.
 
 review-ready never publishes. Legacy publisher/status outcomes are
 WAIVED_LEGACY_GATE, never PASS, and never bypass substantive proof.
@@ -162,6 +163,25 @@ def head_tree(workdir: Path) -> str:
 def branch_name(workdir: Path) -> str:
     p = run(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=workdir)
     return (p.stdout or "").strip() if p.returncode == 0 else ""
+
+
+def default_evidence_path(workdir: Path, sha: str) -> Path:
+    """Return an exact-head evidence path outside the tracked worktree."""
+
+    common = run(["git", "rev-parse", "--git-common-dir"], cwd=workdir)
+    if common.returncode != 0 or not (common.stdout or "").strip():
+        raise RuntimeError("git_common_dir_unavailable")
+    common_dir = Path((common.stdout or "").strip())
+    if not common_dir.is_absolute():
+        common_dir = (workdir / common_dir).resolve()
+    branch = re.sub(r"[^A-Za-z0-9._-]+", "-", branch_name(workdir)).strip("-")
+    branch = branch or "detached"
+    return (
+        common_dir
+        / "linktrend-execution-evidence"
+        / branch
+        / f"completion-evidence-{sha[:12]}.json"
+    )
 
 
 def origin_tip_matches(workdir: Path) -> tuple[bool, str]:
@@ -377,16 +397,14 @@ def _load_checkpoint_evidence(args: argparse.Namespace, workdir: Path, sha: str)
         except Exception as exc:  # noqa: BLE001
             return None, str(getattr(exc, "code", None) or exc)
         return payload, ""
-    ev_path = Path(
-        args.evidence_file
-        or os.environ.get("COMPLETION_EVIDENCE_FILE")
-        or ""
-    )
-    if not str(ev_path):
-        default = workdir / ".linktrend/completion-evidence.json"
-        ev_path = default if default.is_file() else ev_path
-    if not str(ev_path):
-        return None, ""
+    configured = args.evidence_file or os.environ.get("COMPLETION_EVIDENCE_FILE")
+    if configured:
+        ev_path = Path(configured)
+    else:
+        ev_path = default_evidence_path(workdir, sha)
+        legacy = workdir / ".linktrend/completion-evidence.json"
+        if not ev_path.is_file() and legacy.is_file():
+            ev_path = legacy
     if not ev_path.is_absolute():
         ev_path = workdir / ev_path
     if not ev_path.is_file():
@@ -428,7 +446,7 @@ def cmd_write_evidence(args: argparse.Namespace) -> int:
         (
             getattr(args, "scoped_diff", False),
             getattr(args, "focused_tests", False),
-            getattr(args, "terra_verified", False),
+            getattr(args, "independent_review", False),
             getattr(args, "manifest_evidence", False),
             str(getattr(args, "proof_class", "") or ""),
         )
@@ -439,15 +457,19 @@ def cmd_write_evidence(args: argparse.Namespace) -> int:
         payload["pushed"] = True
         payload["scopedDiff"] = bool(getattr(args, "scoped_diff", False))
         payload["focusedTests"] = {"passed": bool(getattr(args, "focused_tests", False))}
-        payload["independentTerraVerification"] = bool(getattr(args, "terra_verified", False))
+        if getattr(args, "independent_review", False):
+            payload["independentNarrowReview"] = {
+                "accepted": True,
+                "headSha": sha,
+                "gitTree": tree,
+                "paths": ["declared-checkpoint-scope"],
+                "reviewer": {"actor": "routed-independent-reviewer", "role": "reviewer"},
+                "implementerActor": "checkpoint-implementer",
+            }
         payload["manifestEvidence"] = bool(getattr(args, "manifest_evidence", False))
         payload["proofClass"] = str(getattr(args, "proof_class", "") or "local")
-    rel = (
-        args.evidence_file
-        or os.environ.get("COMPLETION_EVIDENCE_FILE")
-        or ".linktrend/completion-evidence.json"
-    )
-    out = Path(rel)
+    configured = args.evidence_file or os.environ.get("COMPLETION_EVIDENCE_FILE")
+    out = Path(configured) if configured else default_evidence_path(workdir, sha)
     if not out.is_absolute():
         out = workdir / out
     if out.exists() and out.is_dir():
@@ -557,11 +579,8 @@ def cmd_review_ready(args: argparse.Namespace) -> int:
     if ev_error:
         missing.append(ev_error)
     if evidence is None:
-        ev_path = Path(
-            args.evidence_file
-            or os.environ.get("COMPLETION_EVIDENCE_FILE")
-            or ".linktrend/completion-evidence.json"
-        )
+        configured = args.evidence_file or os.environ.get("COMPLETION_EVIDENCE_FILE")
+        ev_path = Path(configured) if configured else default_evidence_path(workdir, sha)
         if not ev_path.is_absolute():
             ev_path = workdir / ev_path
         try:
@@ -859,7 +878,11 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--proof-class", default="", help="local | hosted | production")
     ap.add_argument("--scoped-diff", action="store_true")
     ap.add_argument("--focused-tests", action="store_true")
-    ap.add_argument("--terra-verified", action="store_true")
+    ap.add_argument(
+        "--independent-review",
+        action="store_true",
+        help="record one exact-candidate provider-neutral narrow review",
+    )
     ap.add_argument("--manifest-evidence", action="store_true")
     args = ap.parse_args(argv)
 
