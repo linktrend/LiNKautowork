@@ -2,7 +2,10 @@ name: Linktrend Branch Source Policy
 
 on:
   pull_request:
-    branches: [main, staging, development]
+    # Direct policy checks are for issue/phase PRs entering development.
+    # Promotion workflows invoke this file through workflow_call on staging/main;
+    # keeping those targets out of this trigger prevents duplicate contexts.
+    branches: [development]
   workflow_call:
     inputs:
       source_branch:
