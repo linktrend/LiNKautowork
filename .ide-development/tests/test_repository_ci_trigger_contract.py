@@ -39,6 +39,7 @@ from scripts.gitops.repository_ci_contract import (
     innermost_diagnostic,
     installer_audit_repository_ci_triggers,
     load_contract,
+    preflight_expensive_fanout,
     run_component_preflight,
     select_profile,
     validate_affected_surface_evidence,
@@ -129,6 +130,53 @@ class RepositoryCiTriggerContractTests(unittest.TestCase):
         fast_cmds = self.contract["profiles"]["fast"]["commands"]
         self.assertTrue(fast_cmds)
         self.assertTrue(all(isinstance(cmd, list) and cmd for cmd in fast_cmds))
+
+    def test_required_contexts_are_emitted_and_stale_context_is_rejected(self) -> None:
+        self.assertEqual(self.contract["aggregateContext"], "Linktrend Full Suite")
+        self.assertEqual(
+            self.contract["profiles"]["promotion"]["requiredCheckContexts"],
+            ["Linktrend Branch Source Policy", "Linktrend Receipt Gate"],
+        )
+        self.assertEqual(
+            self.contract["profiles"]["trusted-governance"]["requiredCheckContexts"],
+            ["Verify IDE Development"],
+        )
+        stale = json.loads(CONTRACT_PATH.read_text(encoding="utf-8"))
+        stale["aggregateContext"] = "Linktrend Repository CI Gate"
+        with self.assertRaisesRegex(ContractError, "contract_aggregate_stale"):
+            validate_contract(stale)
+
+    def test_expensive_fanout_requires_capacity_and_rejects_duplicates(self) -> None:
+        head = _head(7)
+        unknown = preflight_expensive_fanout(
+            candidate_head=head,
+            active_runs=[],
+            hosted_compute_available=None,
+        )
+        self.assertEqual(unknown["code"], "hosted_compute_availability_unknown")
+
+        admitted = preflight_expensive_fanout(
+            candidate_head=head,
+            active_runs=[
+                {"id": 1, "headSha": _head(6), "status": "in_progress"},
+                {"id": 2, "headSha": head, "status": "queued"},
+            ],
+            hosted_compute_available=True,
+        )
+        self.assertTrue(admitted["ok"])
+        self.assertEqual(admitted["cancelRunIds"], [1])
+        self.assertEqual(admitted["duplicateRunIds"], [2])
+
+        duplicate = preflight_expensive_fanout(
+            candidate_head=head,
+            active_runs=[
+                {"id": 2, "headSha": head, "status": "in_progress"},
+                {"id": 3, "headSha": head, "status": "queued"},
+            ],
+            hosted_compute_available=True,
+        )
+        self.assertFalse(duplicate["ok"])
+        self.assertEqual(duplicate["code"], "duplicate_expensive_candidate")
 
     def test_trusted_governance_vs_full_selection(self) -> None:
         trusted = select_profile(

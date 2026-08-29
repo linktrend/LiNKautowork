@@ -39,7 +39,7 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ github.event.repository.default_branch }}
-          fetch-depth: 0
+          fetch-depth: 1
           persist-credentials: false
 
       - name: Resolve exact retained receipt coordinates
@@ -85,7 +85,7 @@ jobs:
         run: |
           set -euo pipefail
           test -n "${HEAD_SHA}" || { echo "receipt_gate_head_missing"; exit 1; }
-          git fetch --no-tags origin "${HEAD_SHA}"
+          git fetch --no-tags --depth=1 origin "${HEAD_SHA}"
           candidate_dir="$(mktemp -d "${RUNNER_TEMP}/linktrend-receipt-candidate.XXXXXX")"
           git worktree add --detach "${candidate_dir}" "${HEAD_SHA}"
           echo "${candidate_dir}" > candidate-dir.txt

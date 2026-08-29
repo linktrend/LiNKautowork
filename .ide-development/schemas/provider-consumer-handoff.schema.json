@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/provider-consumer-handoff.schema.json",
+  "title": "Versioned provider-to-consumer handoff receipt",
+  "description": "A fail-closed, digest-bound bridge from an exact protected provider identity to an independently prepared consumer.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "producer",
+    "consumer",
+    "artifactDigest",
+    "contractDigest",
+    "verdict",
+    "lifecycleState",
+    "independentPreparationAllowed",
+    "integrationClaimed"
+  ],
+  "$defs": {
+    "sha40": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "repository": { "type": "string", "pattern": "^[^/\\s]+/[^/\\s]+$" },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "commit", "tree"],
+      "properties": {
+        "repository": { "$ref": "#/$defs/repository" },
+        "commit": { "$ref": "#/$defs/sha40" },
+        "tree": { "$ref": "#/$defs/sha40" }
+      }
+    },
+    "acceptedReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["receiptDigest", "status", "protected", "provider"],
+      "properties": {
+        "receiptDigest": { "$ref": "#/$defs/digest" },
+        "status": { "type": "string", "const": "accepted" },
+        "protected": { "type": "boolean", "const": true },
+        "provider": { "$ref": "#/$defs/identity" }
+      }
+    },
+    "blocker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["blockingRepository", "handoffClass", "owner", "nextAction"],
+      "properties": {
+        "blockingRepository": { "$ref": "#/$defs/repository" },
+        "handoffClass": { "type": "string", "const": "provider-consumer" },
+        "owner": { "type": "string", "minLength": 1 },
+        "nextAction": { "type": "string", "minLength": 1 }
+      }
+    }
+  },
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "kind": { "type": "string", "const": "provider-consumer-handoff" },
+    "producer": { "$ref": "#/$defs/identity" },
+    "provider": {
+      "description": "Compatibility spelling for producer in provider-oriented callers.",
+      "$ref": "#/$defs/identity"
+    },
+    "consumer": { "$ref": "#/$defs/identity" },
+    "artifactDigest": { "$ref": "#/$defs/digest" },
+    "contractDigest": { "$ref": "#/$defs/digest" },
+    "verdict": {
+      "type": "string",
+      "enum": ["accepted", "blocked", "rejected"]
+    },
+    "lifecycleState": {
+      "type": "string",
+      "enum": ["prepared", "accepted", "integrated", "blocked", "stale"]
+    },
+    "acceptedReceipt": {
+      "anyOf": [
+        { "$ref": "#/$defs/acceptedReceipt" },
+        { "type": "null" }
+      ]
+    },
+    "blocker": {
+      "anyOf": [
+        { "$ref": "#/$defs/blocker" },
+        { "type": "null" }
+      ]
+    },
+    "independentPreparationAllowed": { "type": "boolean", "const": true },
+    "integrationClaimed": { "type": "boolean" }
+  },
+  "allOf": [
+    {
+      "required": ["producer"]
+    },
+    {
+      "if": {
+        "properties": { "verdict": { "const": "accepted" } },
+        "required": ["verdict"]
+      },
+      "then": {
+        "required": ["acceptedReceipt"],
+        "properties": {
+          "acceptedReceipt": { "$ref": "#/$defs/acceptedReceipt" },
+          "lifecycleState": { "enum": ["accepted", "integrated"] },
+          "integrationClaimed": { "type": "boolean" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "lifecycleState": { "const": "integrated" } },
+        "required": ["lifecycleState"]
+      },
+      "then": {
+        "properties": { "verdict": { "const": "accepted" }, "integrationClaimed": { "const": true } }
+      }
+    },
+    {
+      "if": {
+        "properties": { "verdict": { "enum": ["blocked", "rejected"] } },
+        "required": ["verdict"]
+      },
+      "then": {
+        "required": ["blocker"],
+        "properties": {
+          "lifecycleState": { "enum": ["blocked", "stale", "prepared"] },
+          "integrationClaimed": { "const": false }
+        }
+      }
+    }
+  ]
+}

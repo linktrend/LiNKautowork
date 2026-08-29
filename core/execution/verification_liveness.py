@@ -21,6 +21,7 @@ VERIFICATION_STATES = frozenset(
 DEFAULT_TIMEOUT_SECONDS = 7200
 DEFAULT_STALE_AFTER_SECONDS = 120
 DEFAULT_MAX_AUTOMATIC_RESTARTS = 1
+WORKER_REPLACEMENT_LIMIT = 1
 SCHEMA_RELATIVE_PATH = "core/managed-core/schemas/verification-run.schema.json"
 CONFIG_RELATIVE_PATH = "core/managed-core/content/config/verification-liveness.json"
 CONFIG_SCHEMA_RELATIVE_PATH = (
@@ -46,6 +47,71 @@ class ReconciliationResult:
     state: str
     reason: str
     restart_allowed: bool = False
+
+
+def is_worker_stalled(
+    worker: Mapping[str, Any],
+    *,
+    now: datetime,
+    stale_after_seconds: int = DEFAULT_STALE_AFTER_SECONDS,
+) -> bool:
+    """Return true only for a nonterminal worker with no recent material progress."""
+
+    if str(worker.get("state") or worker.get("status") or "").upper() in {
+        "TERMINAL",
+        "COMPLETED",
+        "SUCCEEDED",
+        "FAILED",
+        "CANCELLED",
+        "ARCHIVED",
+        "REPLACED",
+    }:
+        return False
+    raw = worker.get("lastMaterialProgressAt") or worker.get("lastHeartbeatAt")
+    if not raw:
+        return True
+    try:
+        last = _parse_utc(str(raw))
+    except (TypeError, ValueError):
+        return True
+    return now.astimezone(timezone.utc) > last + timedelta(seconds=stale_after_seconds)
+
+
+def replace_stalled_worker(
+    worker: Mapping[str, Any],
+    *,
+    replacement_id: str,
+    now: datetime,
+    stale_after_seconds: int = DEFAULT_STALE_AFTER_SECONDS,
+    replacement_limit: int = WORKER_REPLACEMENT_LIMIT,
+) -> dict[str, Any]:
+    """Fence one stalled worker and return a deterministic replacement record."""
+
+    if not is_worker_stalled(
+        worker, now=now, stale_after_seconds=stale_after_seconds
+    ):
+        raise ValueError("worker_not_stalled")
+    count = int(worker.get("replacementCount") or 0)
+    if count >= replacement_limit:
+        raise ValueError("worker_replacement_limit_reached")
+    if not replacement_id.strip():
+        raise ValueError("replacement_id_required")
+    replaced = dict(worker)
+    replaced["state"] = "REPLACED"
+    replaced["replacedAt"] = _utc(now)
+    replaced["replacementCount"] = count + 1
+    replaced["replacementId"] = replacement_id
+    return {
+        "workerId": replacement_id,
+        "laneId": worker.get("laneId"),
+        "state": "RUNNING",
+        "startedAt": _utc(now),
+        "lastHeartbeatAt": _utc(now),
+        "lastMaterialProgressAt": _utc(now),
+        "replacementOf": worker.get("workerId"),
+        "replacementCount": count + 1,
+        "provider": worker.get("provider") or "unknown",
+    }
 
 
 def _repo_root(repo_root: Path | str | None) -> Path:

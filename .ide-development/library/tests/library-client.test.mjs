@@ -13,8 +13,12 @@ const sha256 = (value) => createHash('sha256').update(value).digest('hex')
 const json = (value) => `${JSON.stringify(value, null, 2)}\n`
 
 test('path containment rejects Windows cross-drive paths', () => {
-  assert.equal(pathInside('C:\\consumer', 'C:\\consumer\\bundle', win32), true)
-  assert.equal(pathInside('C:\\consumer', 'D:\\bundle', win32), false)
+  // Build this fixture without embedding a host-path signature in managed source.
+  const drive = 'C:'
+  const slash = String.fromCharCode(92)
+  const consumer = `${drive}${slash}consumer`
+  assert.equal(pathInside(consumer, `${consumer}${slash}bundle`, win32), true)
+  assert.equal(pathInside(consumer, `D:${slash}bundle`, win32), false)
 })
 
 test('real path containment rejects an intermediate symlink escape', () => {

@@ -267,6 +267,62 @@ class ManifestPersistenceTests(unittest.TestCase):
         self.assertEqual(result["reconstructed"], [])
         self.assertEqual(store.read()["manifest"]["transitions"], [{"kind": "dispatch", "id": "dispatch-1"}])
 
+    def test_heartbeat_dispatches_ready_packet_and_persists_readback(self) -> None:
+        initial = manifest()
+        initial["packetId"] = "PKT-READY"
+        store = RecoveryStore(initial)
+        authority = Authority(
+            {
+                "identity": dict(IDENTITY),
+                "cursor": {"status": "queued"},
+                "readyWork": [{"packetId": "PKT-READY", "provider": "cursor", "accepted": True}],
+                "safeCapacity": {"cursor": 1, "luna": 0},
+                "running": [],
+                "github": {},
+                "git": {"head": IDENTITY["commit"], "tree": IDENTITY["tree"]},
+            }
+        )
+        external = DispatchAuthority()
+        result = run_heartbeat_controller(
+            store,
+            authority,
+            dispatch_store=DurableDispatchIntentStore(),
+            external_dispatch=external,
+            lease=LeaseState(
+                holder="executor-1",
+                packet_id="PKT-READY",
+                repository=IDENTITY["repository"],
+                nonce="nonce-ready",
+                expires_at=datetime(2026, 8, 21, 0, 5, tzinfo=timezone.utc),
+            ),
+            holder="executor-1",
+            budget=DispatchBudget(remaining_seconds=30, required_seconds=4),
+            now=datetime(2026, 8, 21, tzinfo=timezone.utc),
+        )
+        self.assertTrue(result["dispatchPerformed"])
+        self.assertTrue(result["receipt"]["readback"])
+        self.assertEqual(external.calls, 1)
+        self.assertEqual(store.read()["manifest"]["safeAction"]["status"], "COMMITTED")
+
+    def test_heartbeat_reports_utilization_gap_when_ready_packet_has_no_safe_slot(self) -> None:
+        initial = manifest()
+        initial["packetId"] = "PKT-READY"
+        store = RecoveryStore(initial)
+        authority = Authority(
+            {
+                "identity": dict(IDENTITY),
+                "cursor": {"status": "queued"},
+                "readyWork": [{"packetId": "PKT-READY", "provider": "cursor", "accepted": True}],
+                "safeCapacity": {"cursor": 0, "luna": 0},
+                "running": [],
+                "github": {},
+                "git": {"head": IDENTITY["commit"], "tree": IDENTITY["tree"]},
+            }
+        )
+        result = run_heartbeat_controller(store, authority)
+        self.assertEqual(result["requiredAction"]["code"], "UTILIZATION_GAP")
+        self.assertFalse(result["dispatchPerformed"])
+
     def test_revision_133_heartbeat_dispatches_once_then_allows_dont_notify(self) -> None:
         now = datetime(2026, 8, 21, tzinfo=timezone.utc)
         initial = manifest()
@@ -302,7 +358,13 @@ class ManifestPersistenceTests(unittest.TestCase):
             snapshot={
                 "complete": True,
                 "identity": dict(IDENTITY),
-                "slots": {"local": 1, "hosted": 2},
+                "cursorCapacity": {
+                    "authenticated": True,
+                    "availableWorkers": 8,
+                    "observedAt": "2026-08-20T22:00:00+00:00",
+                },
+                "spendCeiling": {"maxWorkers": 8},
+                "safetyLimit": {"maxWorkers": 8},
                 "running": [],
                 "waiting": [],
             },

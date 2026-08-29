@@ -1,5 +1,5 @@
 # Managed-core discovery index
-version: "2.5.0"
+version: "2.5.2"
 status: v2-github-hosted-phase-delivery
 contract: docs/contracts/MANAGED-CORE-V2.md
 adr: docs/adr/0004-portable-managed-core-v2.md
@@ -22,6 +22,8 @@ schemas:
   - schemas/finding-ledger.schema.json
   - schemas/secret-scan-fixtures.schema.json
   - schemas/secret-scan-result.schema.json
+  - schemas/managed-upgrade-resolution.schema.json
+  - schemas/change-scoped-secret-scan.schema.json
   - schemas/generated-output-closure.schema.json
   - schemas/manifest-persistence.schema.json
   - schemas/transactional-dispatch.schema.json
@@ -44,7 +46,7 @@ directories:
   config: versioned GitHub-hosted delivery defaults
   content: managed content payload
   platforms: Cursor and Codex adapter sources (WP3)
-  migrations: reviewed supersession catalog and redacted external cleanup plan
+  migrations: reviewed supersession catalog
   migration: discovery alias pointer only (no duplicate catalog file)
 verification_liveness:
   runtime: ../execution/verification_liveness.py

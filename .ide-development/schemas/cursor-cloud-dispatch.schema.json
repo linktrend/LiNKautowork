@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/cursor-cloud-dispatch.schema.json",
+  "title": "Cursor Cloud repository-bound dispatch control",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "controlId", "apiBaseUrl", "apiPath",
+    "apiKeyEnvironmentVariable", "preferredClient", "sdkPackage",
+    "directApiRepositoryBinding", "sdkRepositoryBinding", "routingRegistry",
+    "readbackRequired", "readbackFields", "archiveOnMismatchRequired",
+    "maxApiAttempts", "ordinaryDevelopment", "gate0", "lunaFallback",
+    "cliLoginIsCloudAuthority"
+  ],
+  "properties": {
+    "schemaVersion": {"type": "integer", "const": 2},
+    "controlId": {"type": "string", "const": "cursor-cloud-dispatch-v2"},
+    "apiBaseUrl": {"type": "string", "const": "https://api.cursor.com"},
+    "apiPath": {"type": "string", "const": "/v1/agents"},
+    "apiKeyEnvironmentVariable": {"type": "string", "const": "CURSOR_API_KEY"},
+    "preferredClient": {"type": "string", "const": "cursor-sdk"},
+    "sdkPackage": {"type": "string", "const": "cursor-sdk"},
+    "directApiRepositoryBinding": {"type": "string", "const": "repos[]"},
+    "sdkRepositoryBinding": {"type": "string", "const": "CloudAgentOptions.repos"},
+    "routingRegistry": {"type": "string", "const": "content/config/routing-registry.json"},
+    "readbackRequired": {"type": "boolean", "const": true},
+    "readbackFields": {"type": "array", "const": ["repository", "ref", "commit", "tree", "provider", "model", "effort", "fast"]},
+    "archiveOnMismatchRequired": {"type": "boolean", "const": true},
+    "maxApiAttempts": {"type": "integer", "const": 2},
+    "ordinaryDevelopment": {"$ref": "#/$defs/cursorRoute"},
+    "gate0": {"$ref": "#/$defs/gateRoute"},
+    "lunaFallback": {"$ref": "#/$defs/fallbackRoute"},
+    "cliLoginIsCloudAuthority": {"type": "boolean", "const": false}
+  },
+  "$defs": {
+    "cursorRoute": {
+      "type": "object", "additionalProperties": false,
+      "required": ["provider", "routeId", "model", "effort", "fast"],
+      "properties": {
+        "provider": {"const": "cursor"}, "routeId": {"const": "ordinary-development"},
+        "model": {"const": "grok-4.6"}, "effort": {"const": "medium"}, "fast": {"const": false}
+      }
+    },
+    "gateRoute": {
+      "type": "object", "additionalProperties": false,
+      "required": ["provider", "model", "effort", "fast"],
+      "properties": {
+        "provider": {"const": "codex-cli"}, "model": {"const": "gpt-5.6-luna"},
+        "effort": {"const": "high"}, "fast": {"const": false}
+      }
+    },
+    "fallbackRoute": {
+      "type": "object", "additionalProperties": false,
+      "required": ["provider", "model", "effort", "fast", "principalInstructionRequired"],
+      "properties": {
+        "provider": {"const": "codex-cli"}, "model": {"const": "gpt-5.6-luna"},
+        "effort": {"const": "high"}, "fast": {"const": false},
+        "principalInstructionRequired": {"const": true}
+      }
+    }
+  }
+}

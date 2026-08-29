@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/mutation-declaration.schema.json",
+  "title": "Typed repository mutation declaration",
+  "description": "A pre-execution declaration binding tool mode, real Git identity, bounded paths and size, and forbidden credential discovery.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "mode",
+    "tool",
+    "identity",
+    "authorizedPaths",
+    "maxChangedFiles",
+    "maxChangedBytes",
+    "credentialDiscovery"
+  ],
+  "$defs": {
+    "sha40": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*\\\\)(?!.*(^|/)\\.{1,2}(/|$))(?!.*\\x00).+$"
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "ref", "commit", "tree", "source"],
+      "properties": {
+        "repository": {
+          "anyOf": [
+            { "type": "string", "format": "uri", "pattern": "^(https?|ssh)://[^/]+/.+$" },
+            { "type": "string", "pattern": "^git@[^:]+:.+$" }
+          ]
+        },
+        "ref": { "type": "string", "minLength": 1, "pattern": "^(?![-/])(?!.*\\\\)(?!.*\\.\\.).+$" },
+        "commit": { "$ref": "#/$defs/sha40" },
+        "tree": { "$ref": "#/$defs/sha40" },
+        "source": { "const": "git" }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authorizedPaths", "maxChangedFiles", "maxChangedBytes"],
+      "properties": {
+        "authorizedPaths": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/path" } },
+        "maxChangedFiles": { "type": "integer", "minimum": 0 },
+        "maxChangedBytes": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "startingRef", "startingCommit", "startingTree", "resultingCheckpoint", "provider", "model", "effort", "fastMode", "authoritativeRun", "scope", "tests", "verdict", "receiptDigest"],
+      "properties": {
+        "repository": {
+          "anyOf": [
+            { "type": "string", "format": "uri", "pattern": "^(https?|ssh)://[^/]+/.+$" },
+            { "type": "string", "pattern": "^git@[^:]+:.+$" }
+          ]
+        },
+        "startingRef": { "type": "string", "minLength": 1 },
+        "startingCommit": { "$ref": "#/$defs/sha40" },
+        "startingTree": { "$ref": "#/$defs/sha40" },
+        "resultingCheckpoint": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["commit", "tree"],
+          "properties": { "commit": { "$ref": "#/$defs/sha40" }, "tree": { "$ref": "#/$defs/sha40" } }
+        },
+        "provider": { "type": "string", "minLength": 1 },
+        "model": { "type": "string", "minLength": 1 },
+        "effort": { "type": "string", "enum": ["low", "medium", "high"] },
+        "fastMode": { "type": "boolean" },
+        "authoritativeRun": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "status"],
+          "properties": {
+            "id": { "type": "string", "minLength": 1, "pattern": "^(?!mock$)(?!local$)(?!fake$)(?!test$).+" },
+            "status": { "type": "string", "enum": ["issued", "running", "finished", "not-issued"] }
+          }
+        },
+        "scope": { "$ref": "#/$defs/scope" },
+        "tests": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "verdict": { "type": "string", "enum": ["PASS", "FAIL", "HOLD"] },
+        "receiptDigest": { "$ref": "#/$defs/digest" }
+      }
+    }
+  },
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "kind": { "const": "mutation-declaration" },
+    "mode": { "type": "string", "enum": ["read-only", "mutating"] },
+    "tool": { "type": "string", "minLength": 1 },
+    "identity": { "$ref": "#/$defs/identity" },
+    "authorizedPaths": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/path" } },
+    "maxChangedFiles": { "type": "integer", "minimum": 0 },
+    "maxChangedBytes": { "type": "integer", "minimum": 0 },
+    "credentialDiscovery": { "const": false },
+    "evidence": { "$ref": "#/$defs/evidence" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "mode": { "const": "read-only" } } },
+      "then": {
+        "properties": {
+          "authorizedPaths": { "maxItems": 0 },
+          "maxChangedFiles": { "const": 0 },
+          "maxChangedBytes": { "const": 0 }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "mode": { "const": "mutating" } } },
+      "then": {
+        "properties": {
+          "authorizedPaths": { "minItems": 1 },
+          "maxChangedFiles": { "minimum": 1 },
+          "maxChangedBytes": { "minimum": 1 }
+        }
+      }
+    }
+  ]
+}

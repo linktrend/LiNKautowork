@@ -361,8 +361,14 @@ def run_profile(
     identity: Mapping[str, Any] | None = None,
     executor: Callable[[Sequence[str], Path], Any] | None = None,
     clock: Callable[[], float] = time.monotonic,
+    preflight: bool = False,
 ) -> dict[str, Any]:
-    """Execute every safe declared command and return a complete inventory."""
+    """Execute every safe declared command and return a complete inventory.
+
+    ``preflight=True`` is an explicit startup gate.  It records an omitted
+    command inventory when the manifest reports an environment block, so a
+    missing tool or service can never be mistaken for a passing profile.
+    """
     if profile not in PROFILE_BOUNDARIES:
         raise DeliveryProfileError(f"unknown_profile_boundary:{profile}")
     if commands is None:
@@ -379,6 +385,27 @@ def run_profile(
     rows: list[dict[str, Any]] = []
     failed = False
     mutated = False
+    preflight_result: Mapping[str, Any] | None = None
+    if preflight:
+        try:
+            from scripts.gitops.runtime_preflight import run_preflight
+        except ModuleNotFoundError:  # pragma: no cover - installed managed runtime import path
+            from runtime_preflight import run_preflight  # type: ignore
+        preflight_result = run_preflight(root, profile=profile)
+        if not preflight_result.get("ok"):
+            blocked_ids = preflight_result.get("environmentBlocked") or preflight_result.get("sourceFailures") or ["unknown"]
+            reason = "runtime_preflight:" + ",".join(str(item) for item in blocked_ids)
+            rows = [
+                {
+                    "id": f"{profile}-{index:03d}",
+                    "argv": list(command),
+                    "boundary": profile,
+                    "status": "omitted",
+                    "reason": reason,
+                }
+                for index, command in enumerate(normalized, start=1)
+            ]
+            failed = True
     if risk["level"] == "critical":
         rows = [
             {
@@ -392,6 +419,8 @@ def run_profile(
         ]
         failed = True
     for index, command in enumerate(normalized, start=1):
+        if preflight_result is not None and not preflight_result.get("ok"):
+            continue
         row: dict[str, Any] = {
             "id": f"{profile}-{index:03d}",
             "argv": command,
@@ -482,6 +511,7 @@ def main() -> int:
     parser.add_argument("--dependency-digest")
     parser.add_argument("--profile-digest")
     parser.add_argument("--workflow-digest")
+    parser.add_argument("--preflight", action="store_true", help="run the declared runtime preflight before profile commands")
     args = parser.parse_args()
     root = args.root.resolve()
     config_path, commands = load_profile(root, args.profile)
@@ -514,6 +544,7 @@ def main() -> int:
         commands=commands,
         changed_paths=args.changed,
         identity=identity,
+        preflight=args.preflight,
     )
     if args.reuse_evidence:
         inventory["reuse"] = can_reuse_evidence(

@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -204,7 +205,7 @@ class DeliveryControllerTests(unittest.TestCase):
 
     def test_failed_missing_or_skipped_gates_are_rejected(self) -> None:
         missing = dict(_named_checks(self.head))
-        del missing["Linktrend Review Gate"]
+        del missing["Linktrend Full Suite"]
         with self.assertRaisesRegex(controller.ControllerError, "required_gate_missing"):
             controller.verify_development_eligibility(
                 handoff=self.handoff,
@@ -281,6 +282,10 @@ class DeliveryControllerTests(unittest.TestCase):
         self.assertEqual(result["stage"], "staging")
         self.assertTrue(result["receiptReused"])
         self.assertFalse(result["fullSuiteRerun"])
+        marker = json.loads(
+            re.search(r"<!-- linktrend-promote:\s*(\{.*?\})\s*-->", self.github.prs[1]["body"]).group(1)
+        )
+        self.assertEqual(marker["fullRunId"], self.receipt["workflowRunId"])
         with self.assertRaisesRegex(controller.ControllerError, "full_suite_reentered"):
             controller.promote_to_staging(
                 github=self.github,
@@ -358,6 +363,10 @@ class DeliveryControllerTests(unittest.TestCase):
         )
         self.assertEqual(prepared["status"], "waiting_founder_approval")
         self.assertFalse(prepared["founderApprovalInferred"])
+        marker = json.loads(
+            re.search(r"<!-- linktrend-promote:\s*(\{.*?\})\s*-->", self.github.prs[1]["body"]).group(1)
+        )
+        self.assertEqual(marker["fullRunId"], self.receipt["workflowRunId"])
         with self.assertRaisesRegex(controller.ControllerError, "founder_approval_missing"):
             controller.complete_main_promotion(
                 github=self.github,
@@ -370,6 +379,18 @@ class DeliveryControllerTests(unittest.TestCase):
                 receipt=self.receipt,
                 role="operator",
             )
+
+    def test_promotion_rejects_missing_or_invalid_full_run_id(self) -> None:
+        for invalid in (None, 0, True, "not-a-run"):
+            bad_receipt = dict(self.receipt)
+            if invalid is None:
+                bad_receipt.pop("workflowRunId", None)
+            else:
+                bad_receipt["workflowRunId"] = invalid
+            with self.subTest(invalid=invalid), self.assertRaisesRegex(
+                controller.ControllerError, "receipt_workflow_run_invalid"
+            ):
+                controller._receipt_workflow_run_id(bad_receipt)
 
     def test_ambiguous_or_stale_main_approval_is_rejected(self) -> None:
         prepared = controller.prepare_main_promotion(

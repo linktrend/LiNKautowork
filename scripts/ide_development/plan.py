@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from .hashing import modes_match, normalize_mode, sha256_bytes, sha256_file
+from .managed_write_guard import is_read_only_mode, read_only_mode
 from .manifest import Manifest, ManifestEntry, MigrationCatalog
 from .markers import extract_marker_block, render_marker_file
 from .errors import ConflictError
@@ -35,6 +36,9 @@ class DriftKind(str, Enum):
     UNKNOWN_COLLISION = "unknown_collision"
     MATCHES_SOURCE = "matches_source"
     MARKER_DRIFT = "marker_drift"
+    REPOSITORY_OWNED_EXTENSION = "repository_owned_extension"
+    CANDIDATE_CENTRAL_IDE_IMPROVEMENT = "candidate_central_ide_improvement"
+    OBSOLETE_RESIDUE = "obsolete_residue"
 
 
 class ConflictKind(str, Enum):
@@ -209,7 +213,10 @@ def _classify_marker(
 
     actual_hash = sha256_bytes(existing.encode("utf-8"))
     if rendered == existing:
-        return OpKind.NOOP, None, None, "marker block already matches", "match"
+        if not modes_match(_file_mode(dest), read_only_mode(entry.mode)):
+            return OpKind.MARKER_UPSERT, None, None, "repair managed marker mode", "managed_upgrade"
+        classification = "repository_owned_extension" if parts.before or parts.after else "match"
+        return OpKind.NOOP, None, None, "marker block already matches", classification
 
     prior_file = prior.files.get(entry.destination) if prior else None
     if prior_file is None and not parts.had_markers:
@@ -247,6 +254,7 @@ def _classify_existing(
     dest: Path,
     entry: ManifestEntry,
     prior: InstalledState | None,
+    authorized_replacements: frozenset[str] = frozenset(),
 ) -> tuple[OpKind | None, ConflictItem | None, DriftItem | None, str, str]:
     rel = entry.destination
 
@@ -284,7 +292,8 @@ def _classify_existing(
     actual_hash = sha256_file(dest)
     actual_mode = _file_mode(dest)
 
-    if actual_hash == entry.source_hash and modes_match(actual_mode, entry.mode):
+    desired_mode = read_only_mode(entry.mode)
+    if actual_hash == entry.source_hash and modes_match(actual_mode, desired_mode):
         return OpKind.NOOP, None, None, "already matches package", "match"
 
     if entry.merge_strategy == "create-only":
@@ -332,7 +341,7 @@ def _classify_existing(
     if prior_file is None:
         if actual_hash == entry.source_hash:
             if not modes_match(actual_mode, entry.mode):
-                return OpKind.REPLACE, None, None, "adopt matching content; fix mode", "managed_upgrade"
+                return OpKind.REPLACE, None, None, "adopt matching content; fix read-only mode", "managed_upgrade"
             return OpKind.NOOP, None, None, "matching unmanaged content", "match"
         return (
             None,
@@ -353,6 +362,8 @@ def _classify_existing(
         )
 
     if prior_file.content_hash != actual_hash:
+        if rel in authorized_replacements:
+            return OpKind.REPLACE, None, None, "explicit digest-bound provider supersedes", "managed_upgrade"
         if actual_hash == entry.source_hash:
             return OpKind.REPLACE, None, None, "repair state to matching package bytes", "managed_upgrade"
         return (
@@ -401,6 +412,7 @@ def build_plan(
     migration: MigrationCatalog,
     prior: InstalledState | None,
     dry_run: bool,
+    authorized_replacements: frozenset[str] = frozenset(),
 ) -> Plan:
     plan = Plan(
         command=command,
@@ -483,6 +495,7 @@ def build_plan(
             dest=dest,
             entry=entry,
             prior=prior,
+            authorized_replacements=authorized_replacements,
         )
         if conflict is not None:
             plan.conflicts.append(conflict)
@@ -710,6 +723,7 @@ def build_drift_report(
     target_root: Path,
     manifest: Manifest,
     prior: InstalledState | None,
+    migration: MigrationCatalog | None = None,
 ) -> list[DriftItem]:
     items: list[DriftItem] = []
     cursor_link = detect_cursor_symlink(target_root)
@@ -755,6 +769,7 @@ def build_drift_report(
             end = entry.marker_end or ""
             try:
                 existing = dest.read_text(encoding="utf-8")
+                parts = extract_marker_block(existing, begin, end)
                 rendered = render_marker_file(
                     existing,
                     join_under(package_root, entry.source).read_text(encoding="utf-8"),
@@ -771,6 +786,28 @@ def build_drift_report(
                 )
                 continue
             if rendered == existing:
+                if not modes_match(_file_mode(dest), read_only_mode(entry.mode)):
+                    items.append(
+                        DriftItem(
+                            DriftKind.MODE_CHANGED,
+                            entry.destination,
+                            "managed marker file is writable",
+                            expected_hash=entry.source_hash,
+                            actual_hash=sha256_bytes(existing.encode("utf-8")),
+                        )
+                    )
+                    continue
+                if parts.before or parts.after:
+                    items.append(
+                        DriftItem(
+                            DriftKind.REPOSITORY_OWNED_EXTENSION,
+                            entry.destination,
+                            "consumer text outside managed markers is preserved",
+                            expected_hash=entry.source_hash,
+                            actual_hash=sha256_bytes(existing.encode("utf-8")),
+                        )
+                    )
+                    continue
                 items.append(
                     DriftItem(
                         DriftKind.MATCHES_SOURCE,
@@ -824,7 +861,7 @@ def build_drift_report(
                         actual_hash=actual,
                     )
                 )
-        elif not modes_match(actual_mode, entry.mode):
+        elif not modes_match(actual_mode, read_only_mode(entry.mode)):
             items.append(
                 DriftItem(
                     DriftKind.MODE_CHANGED,
@@ -844,9 +881,64 @@ def build_drift_report(
                     actual_hash=actual,
                 )
             )
+    manifest_dest = join_under_nofollow(target_root, ".ide-development/MANIFEST.json")
+    if path_is_symlink(manifest_dest):
+        items.append(DriftItem(DriftKind.UNEXPECTED_SYMLINK, ".ide-development/MANIFEST.json", "installed manifest is a symlink"))
+    elif not manifest_dest.is_file():
+        items.append(DriftItem(DriftKind.MISSING, ".ide-development/MANIFEST.json", "installed manifest missing"))
+    elif sha256_file(manifest_dest) != sha256_file(manifest.path):
+        expected_manifest_hash = sha256_file(manifest.path)
+        items.append(DriftItem(DriftKind.MODIFIED, ".ide-development/MANIFEST.json", "installed manifest differs from package", expected_hash=expected_manifest_hash, actual_hash=sha256_file(manifest_dest)))
+    elif not is_read_only_mode(manifest_dest.stat().st_mode & 0o7777):
+        items.append(DriftItem(DriftKind.MODE_CHANGED, ".ide-development/MANIFEST.json", "installed manifest is writable"))
+
+    state_dest = join_under_nofollow(target_root, ".ide-development/installed-state.json")
+    if state_dest.is_file() and not path_is_symlink(state_dest) and not is_read_only_mode(state_dest.stat().st_mode & 0o7777):
+        items.append(DriftItem(DriftKind.MODE_CHANGED, ".ide-development/installed-state.json", "installed state is writable"))
+
+    if migration is not None:
+        active_paths = {entry.destination for entry in manifest.active_entries()}
+        for obsolete in migration.entries:
+            if obsolete.path in active_paths:
+                continue
+            dest = join_under_nofollow(target_root, obsolete.path)
+            if path_is_symlink(dest):
+                items.append(
+                    DriftItem(
+                        DriftKind.UNKNOWN_COLLISION,
+                        obsolete.path,
+                        "obsolete residue is a symlink",
+                    )
+                )
+            elif dest.is_file():
+                actual = sha256_file(dest)
+                if actual == obsolete.content_hash:
+                    items.append(
+                        DriftItem(
+                            DriftKind.OBSOLETE_RESIDUE,
+                            obsolete.path,
+                            "exact obsolete managed residue is removable in a transaction",
+                            expected_hash=obsolete.content_hash,
+                            actual_hash=actual,
+                        )
+                    )
+                else:
+                    items.append(
+                        DriftItem(
+                            DriftKind.MODIFIED,
+                            obsolete.path,
+                            "obsolete residue differs from its reviewed identity",
+                            expected_hash=obsolete.content_hash,
+                            actual_hash=actual,
+                        )
+                    )
     items.sort(key=lambda d: (d.path, d.kind.value))
     return items
 
 
 def meaningful_drift(items: list[DriftItem]) -> list[DriftItem]:
-    return [i for i in items if i.kind != DriftKind.MATCHES_SOURCE]
+    return [
+        i
+        for i in items
+        if i.kind not in {DriftKind.MATCHES_SOURCE, DriftKind.REPOSITORY_OWNED_EXTENSION}
+    ]

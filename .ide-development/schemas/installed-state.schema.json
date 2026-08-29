@@ -74,9 +74,33 @@
           "pattern": "^sha256:[0-9a-f]{64}$",
           "description": "SHA-256 of the full installed destination file bytes after apply (including preserved consumer text outside managed markers)."
         },
+        "sourceDigest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "installedDigest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
         "mode": {
           "type": "string",
           "pattern": "^0[0-7]{3}$"
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "packageVersion": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+([.-][0-9A-Za-z.-]+)?$"
+        },
+        "mutabilityPolicy": {
+          "type": "string",
+          "const": "read-only"
+        },
+        "removalPolicy": {
+          "type": "string",
+          "enum": ["preserve", "exact-match", "transaction-only"]
         },
         "ownershipClass": {
           "type": "string"
