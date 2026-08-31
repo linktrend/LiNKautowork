@@ -1,11 +1,11 @@
 # LiNKautowork consumer handoff — LiNKskills PKT-03 / XPKT-03 (planning-only HOLD)
 
-**Packet class:** planning-only consumer specification  
-**Decision:** **HOLD**  
-**Acceptance claimed:** no  
-**Implementation claimed:** no  
-**Activation claimed:** no  
-**Principal planning authorization:** granted by the controlling PLAN-AUTOWORK-SKILLS-HANDOFF task (no repeated magic word). This authorizes **planning records only**. It does not accept a provider release, dual-app proof, polling implementation, or live operation.
+- **Packet class:** planning-only consumer specification
+- **Decision:** **HOLD**
+- **Acceptance claimed:** no
+- **Implementation claimed:** no
+- **Activation claimed:** no
+- **Principal planning authorization:** granted by the controlling PLAN-AUTOWORK-SKILLS-HANDOFF task (no repeated magic word). This authorizes **planning records only**. It does not accept a provider release, dual-app proof, polling implementation, or live operation.
 
 IDE Development managed-core **v2.5.2** files remain **read-only**. This packet does not install, repair, activate, or rewrite `.ide-development/`, installer sources, or managed `skills-lock.json` copies.
 

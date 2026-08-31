@@ -1,9 +1,9 @@
 # PLAN-AUTOWORK-SKILLS-HANDOFF — PKT-03 / XPKT-03 consumer HOLD
 
-**Date:** 2026-08-31 (UTC)  
-**Worker:** PLAN-AUTOWORK-SKILLS-HANDOFF (`bc-809f2cfe-c4aa-4171-90ff-8d5db09e70f3`)  
-**Class:** planning-only  
-**Decision:** HOLD
+- **Date:** 2026-08-31 (UTC)
+- **Worker:** PLAN-AUTOWORK-SKILLS-HANDOFF (`bc-809f2cfe-c4aa-4171-90ff-8d5db09e70f3`)
+- **Class:** planning-only
+- **Decision:** HOLD
 
 ## Exact identities
 
@@ -20,6 +20,8 @@
 - `docs/planning/pkt-03-xpkt-03/validate_hold.py`
 
 No provider activation, no XPKT-03 poller, no pin/lock rewrite, no `.ide-development/` mutation (packageVersion remains 2.5.2). Dual-app proofs remain HOLD/HOLD.
+
+Issue **#116** (MAX-AUTOWORK-NEXT) replaced Markdown hard-break trailing spaces in this file and `CONSUMER-HANDOFF-SPEC.md` so `git diff --check` is clean, then refreshed `artifactDigest` on the unchanged blocked handoff JSON. Handoff remains `verdict=blocked` / `acceptedReceipt=null`. This is not Phase integration.
 
 ## Not done
 
