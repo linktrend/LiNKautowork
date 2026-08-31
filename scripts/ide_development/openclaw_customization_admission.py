@@ -149,6 +149,15 @@ def _boundary(path: Path) -> dict[str, Any]:
             {"receiptPath": receipt, "paths": [_require_relpath(item, "boundary-invalid") for item in paths]}
         )
 
+    baseline_raw = payload.get("preExistingFindings", [])
+    if not isinstance(baseline_raw, list):
+        raise OpenClawAdmissionError("boundary-invalid")
+    baseline_findings = [_finding(item) for item in baseline_raw]
+    declared_missing = ide.get("declaredMissingLocally") or []
+    if not isinstance(declared_missing, list):
+        raise OpenClawAdmissionError("boundary-invalid")
+    declared_missing = [_require_relpath(item, "boundary-invalid") for item in declared_missing]
+
     # Validate declarations before invoking the scanner. A forged forbidden
     # path must never expand the scan scope.
     declared = owned_prefixes + owned_exact_paths + ide_prefixes + overlays + transaction_paths
@@ -167,9 +176,10 @@ def _boundary(path: Path) -> dict[str, Any]:
             "destinationCount": ide.get("destinationCount"),
             "prefixes": ide_prefixes,
             "overlayOnUpstreamExactPaths": overlays,
-            "declaredMissingLocally": ide.get("declaredMissingLocally") or [],
+            "declaredMissingLocally": declared_missing,
         },
         "transaction": {"records": records, "paths": transaction_paths},
+        "preExistingFindings": baseline_findings,
     }
 
 
@@ -270,6 +280,8 @@ def _declared_ide_paths(root: Path, boundary: Mapping[str, Any]) -> set[str]:
     raw = _load_json(inventory, "ide-inventory-invalid")
     if not isinstance(raw, Mapping) or not isinstance(raw.get("files"), Mapping):
         raise OpenClawAdmissionError("ide-inventory-invalid")
+    if raw.get("packageVersion") != INSTALLER_VERSION:
+        raise OpenClawAdmissionError("ide-package-version-mismatch")
     paths: set[str] = set()
     for value in raw["files"]:
         path = _require_relpath(value, "ide-inventory-invalid")
@@ -277,8 +289,29 @@ def _declared_ide_paths(root: Path, boundary: Mapping[str, Any]) -> set[str]:
             raise OpenClawAdmissionError("ide-inventory-out-of-boundary")
         if _path_is_forbidden(path, boundary["forbiddenWholeTrees"]):
             raise OpenClawAdmissionError("forbidden-path")
-        paths.add(path)
+        candidate = root / Path(path)
+        if candidate.is_symlink():
+            raise OpenClawAdmissionError("symlink-path")
+        # A prior package can declare paths that are intentionally absent in
+        # the current consumer (for example the legacy core/ prefix). Those
+        # paths are identity evidence, not scanner inputs.
+        if candidate.is_file():
+            paths.add(path)
     return paths
+
+
+def _present_paths(root: Path, paths: list[str]) -> tuple[set[str], list[str]]:
+    present: set[str] = set()
+    missing: list[str] = []
+    for rel in paths:
+        candidate = root / Path(rel)
+        if candidate.is_symlink():
+            raise OpenClawAdmissionError("symlink-path")
+        if candidate.is_file():
+            present.add(rel)
+        else:
+            missing.append(rel)
+    return present, missing
 
 
 def _run_scanner(scanner: Scanner, paths: list[str]) -> Mapping[str, Any]:
@@ -297,7 +330,39 @@ def _run_scanner(scanner: Scanner, paths: list[str]) -> Mapping[str, Any]:
         raise OpenClawAdmissionError("scanner-timeout")
     if error_type:
         raise OpenClawAdmissionError("scanner-error")
+    if not isinstance(result.get("ok"), bool):
+        raise OpenClawAdmissionError("scanner-error")
     return result
+
+
+def _finding_key(row: Mapping[str, Any]) -> str:
+    # Findings are compared after strict shape validation and without secret
+    # values. The digest/line/field binding keeps an old finding from masking
+    # a changed customization.
+    return json.dumps(dict(sorted(row.items())), sort_keys=True, separators=(",", ":"))
+
+
+def _baseline_findings(
+    *,
+    boundary: Mapping[str, Any],
+    observed_upstream: Mapping[str, Any] | None,
+    scan: Mapping[str, Any],
+) -> dict[str, dict[str, Any]]:
+    rows: list[Any] = list(boundary.get("preExistingFindings") or [])
+    if isinstance(observed_upstream, Mapping):
+        observed = observed_upstream.get("findings") or observed_upstream.get("preExistingFindings") or []
+        if not isinstance(observed, list):
+            raise OpenClawAdmissionError("scanner-error")
+        rows.extend(observed)
+    supplied = scan.get("baselineFindings") or scan.get("preExistingFindings") or []
+    if not isinstance(supplied, list):
+        raise OpenClawAdmissionError("scanner-error")
+    rows.extend(supplied)
+    normalized: dict[str, dict[str, Any]] = {}
+    for raw in rows:
+        row = _finding(raw)
+        normalized[_finding_key(row)] = row
+    return normalized
 
 
 def admit_openclaw_customization(
@@ -311,7 +376,7 @@ def admit_openclaw_customization(
     timeout_seconds: int | None = None,
 ) -> dict[str, Any]:
     """Admit the live boundary's owned and explicitly declared IDE paths."""
-    del package_root, observed_upstream, timeout_seconds
+    del package_root, timeout_seconds
     consumer_root = consumer_root.resolve()
     path = Path(boundary_path or manifest_path or consumer_root / BOUNDARY_REL)
     if not path.is_absolute():
@@ -320,13 +385,20 @@ def admit_openclaw_customization(
 
     checked_set = _owned_paths(consumer_root, boundary)
     checked_set.update(_declared_ide_paths(consumer_root, boundary))
-    checked_set.update(boundary["transaction"]["paths"])
+    overlay_present, omitted_overlay = _present_paths(
+        consumer_root, boundary["ide"]["overlayOnUpstreamExactPaths"]
+    )
+    checked_set.update(overlay_present)
+    transaction_present, omitted_transaction = _present_paths(
+        consumer_root, boundary["transaction"]["paths"]
+    )
+    checked_set.update(transaction_present)
     checked = sorted(checked_set)
     if any(_path_is_forbidden(item, boundary["forbiddenWholeTrees"]) for item in checked):
         raise OpenClawAdmissionError("forbidden-path")
 
     scan = _run_scanner(scanner, checked)
-    raw_findings = scan.get("findings") or []
+    raw_findings = scan.get("findings")
     if not isinstance(raw_findings, list):
         raise OpenClawAdmissionError("scanner-error")
     scoped: list[dict[str, Any]] = []
@@ -336,10 +408,19 @@ def admit_openclaw_customization(
             raise OpenClawAdmissionError("forbidden-path")
         if row["path"] in checked_set:
             scoped.append(row)
-    for row in scoped:
+    baseline = _baseline_findings(
+        boundary=boundary, observed_upstream=observed_upstream, scan=scan
+    )
+    new_findings = [row for row in scoped if _finding_key(row) not in baseline]
+    for row in new_findings:
         if row["kind"] == SKIPPED_KIND:
             raise OpenClawAdmissionError("new-skipped-input")
         raise OpenClawAdmissionError("new-or-changed-finding")
+    # A scanner that failed without producing a finding is still a scanner
+    # failure. A false ``ok`` is allowed only when every scoped finding is an
+    # exact pre-existing finding from the completed rollout evidence.
+    if scan.get("ok") is not True and not scoped:
+        raise OpenClawAdmissionError("scanner-error")
 
     return {
         "schemaVersion": 1,
@@ -360,6 +441,12 @@ def admit_openclaw_customization(
         },
         "checkedPaths": checked,
         "findings": scoped,
+        "preExistingFindings": sorted(baseline.values(), key=_finding_key),
+        "omittedMissingPaths": sorted(
+            set(omitted_overlay)
+            | set(omitted_transaction)
+            | set(boundary["ide"]["declaredMissingLocally"])
+        ),
         "verdict": "admitted",
         "noUpstreamScanOrMutation": True,
     }

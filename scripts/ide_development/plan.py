@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
@@ -15,6 +16,16 @@ from .errors import ConflictError
 from .paths import join_under, join_under_nofollow, path_is_symlink
 from .state import InstalledState
 from .symlink_migrate import detect_cursor_symlink, is_under_any, path_crosses_symlink_ancestor
+
+# GitHub Actions reads workflow_dispatch inputs from the protected-default
+# copy at this path. The packaged template under .ide-development/workflows/
+# is not a live Actions definition.
+FULL_ROOT_WORKFLOW_REL = ".github/workflows/linktrend-integrator-merge.yml"
+REQUIRED_FULL_DISPATCH_INPUTS = (
+    "dependency_digest",
+    "target_baseline_sha",
+    "target_baseline_ref",
+)
 
 
 class OpKind(str, Enum):
@@ -39,6 +50,30 @@ class DriftKind(str, Enum):
     REPOSITORY_OWNED_EXTENSION = "repository_owned_extension"
     CANDIDATE_CENTRAL_IDE_IMPROVEMENT = "candidate_central_ide_improvement"
     OBSOLETE_RESIDUE = "obsolete_residue"
+
+
+def required_full_dispatch_inputs_present(text: str) -> bool:
+    """True when the Full workflow_dispatch contract names all recovery inputs."""
+    return all(
+        re.search(rf"(?m)^      {re.escape(name)}:\s*$", text)
+        for name in REQUIRED_FULL_DISPATCH_INPUTS
+    )
+
+
+def is_full_suite_workflow_document(text: str) -> bool:
+    """True when *text* is the managed Full Suite workflow, not a namesake file."""
+    return (
+        "name: Linktrend Full Suite" in text
+        and "workflow_dispatch:" in text
+        and "linktrend-full-suite" in text
+    )
+
+
+def is_stale_full_root_workflow(text: str) -> bool:
+    """True when a Full Suite document is missing the v2.5.2 dispatch inputs."""
+    return is_full_suite_workflow_document(text) and not required_full_dispatch_inputs_present(
+        text
+    )
 
 
 class ConflictKind(str, Enum):
@@ -343,6 +378,16 @@ def _classify_existing(
             if not modes_match(actual_mode, entry.mode):
                 return OpKind.REPLACE, None, None, "adopt matching content; fix read-only mode", "managed_upgrade"
             return OpKind.NOOP, None, None, "matching unmanaged content", "match"
+        if _should_adopt_stale_full_root_workflow(
+            package_root=package_root, dest=dest, entry=entry
+        ):
+            return (
+                OpKind.REPLACE,
+                None,
+                None,
+                "adopt stale Full trigger root workflow",
+                "obsolete_residue",
+            )
         return (
             None,
             ConflictItem(
@@ -385,6 +430,27 @@ def _classify_existing(
         )
 
     return OpKind.REPLACE, None, None, "update managed content", "managed_upgrade"
+
+
+def _should_adopt_stale_full_root_workflow(
+    *,
+    package_root: Path,
+    dest: Path,
+    entry: ManifestEntry,
+) -> bool:
+    """Replace an unmanaged stale Full trigger without weakening unknown-content."""
+    if entry.destination != FULL_ROOT_WORKFLOW_REL:
+        return False
+    if entry.merge_strategy != "replace":
+        return False
+    try:
+        current = dest.read_text(encoding="utf-8")
+        desired = (package_root / entry.source).read_text(encoding="utf-8")
+    except (OSError, UnicodeError):
+        return False
+    if not is_stale_full_root_workflow(current):
+        return False
+    return required_full_dispatch_inputs_present(desired)
 
 
 def _plan_as_missing_under_migrate(

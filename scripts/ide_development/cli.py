@@ -22,6 +22,7 @@ from .engine import (
     run_install_or_update,
     run_plan,
     run_rollback,
+    run_same_version_repair,
     run_verify,
     run_version,
 )
@@ -116,6 +117,17 @@ def build_parser() -> argparse.ArgumentParser:
         "update",
         parents=[common],
         help="Update an existing managed-core installation",
+    )
+    repair = sub.add_parser(
+        "repair",
+        parents=[common],
+        help="Apply an explicit exact-source same-version managed-file repair",
+    )
+    repair.add_argument(
+        "--repair-manifest",
+        type=Path,
+        required=True,
+        help="Digest-bound v2.5.2 same-version repair receipt",
     )
     sub.add_parser(
         "drift",
@@ -253,6 +265,13 @@ def main(argv: Sequence[str] | None = None) -> int:
                 command="update",
                 dry_run=dry_run,
                 resolution_manifest=resolution_manifest,
+            )
+        elif args.command == "repair":
+            result = run_same_version_repair(
+                target=target,
+                package=package,
+                repair_manifest=args.repair_manifest,
+                dry_run=dry_run,
             )
         elif args.command == "drift":
             result = run_drift(target=target, package=package)

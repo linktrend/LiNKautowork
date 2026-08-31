@@ -12,17 +12,18 @@ from pathlib import Path
 from typing import Any
 
 from . import __version__ as installer_version
-from .constants import EXIT_CONFLICT, EXIT_DRIFT, EXIT_OK, MANAGED_CORE_DIR
+from .constants import EXIT_CONFLICT, EXIT_DRIFT, EXIT_OK, MANAGED_CORE_DIR, PACKAGE_VERSION_TARGET
 from .errors import InstallerError, InvalidPackageError, RollbackError
 from .manifest import Manifest, load_manifest, load_migration_catalog
 from .paths import require_git_repo, resolve_dir, same_path
-from .plan import Plan, build_drift_report, build_plan, meaningful_drift
+from .plan import OpKind, Plan, PlanAction, build_drift_report, build_plan, meaningful_drift
 from .state import load_installed_state
 from .transaction import apply_plan, current_tx_dir, read_journal, recover_interrupted, rollback_last
 from .io_atomic import atomic_write_bytes
 from .hashing import sha256_file
 from .managed_write_guard import export_candidate
 from .resolution import UpgradeResolution, load_and_validate_resolution
+from .same_version_repair import load_and_validate_same_version_repair
 from .openclaw_customization_admission import (
     BOUNDARY_REL,
     admit_openclaw_customization,
@@ -581,6 +582,101 @@ def run_install_or_update(
     payload["applied"] = True
     payload["transaction"] = result
     payload["postInstallVerification"] = result.get("postInstallVerification")
+    return EngineResult(exit_code=EXIT_OK, payload=payload)
+
+
+def run_same_version_repair(
+    *,
+    target: Path,
+    package: Path | None = None,
+    repair_manifest: Path | None = None,
+    dry_run: bool = False,
+) -> EngineResult:
+    """Apply only an explicit v2.5.2 source-identity repair.
+
+    This path intentionally does not fall through to install/update planning:
+    a same-version manifest collision is repaired only for the exact managed
+    files named by the signed-by-content receipt.  ``apply_plan`` supplies the
+    ordinary transaction lock, backup journal, rollback, and managed write
+    lease.
+    """
+    if repair_manifest is None:
+        raise InvalidPackageError("same-version repair requires --repair-manifest")
+    package_root, target_root = _prepare(target=target, package=package)
+    manifest = load_manifest(package_root)
+    prior = load_installed_state(target_root)
+    repair = load_and_validate_same_version_repair(
+        repair_manifest,
+        target_root=target_root,
+        package_root=package_root,
+        manifest=manifest,
+        prior=prior,
+    )
+    openclaw_admission = _openclaw_admission(package_root, target_root)
+
+    actions = [
+        PlanAction(
+            op=OpKind.REPLACE,
+            path=item.path,
+            entry_id=next(
+                entry.id for entry in manifest.active_entries() if entry.destination == item.path
+            ),
+            reason="explicit same-version exact-source repair",
+            source_hash=item.source_digest,
+            classification="same_version_source_repair",
+        )
+        for item in repair.paths
+    ]
+    # The manifest is itself a managed destination and must move with the
+    # source identity; installed-state is maintained by the transaction.
+    actions.append(
+        PlanAction(
+            op=OpKind.REPLACE,
+            path=f"{MANAGED_CORE_DIR}/MANIFEST.json",
+            entry_id="package-manifest",
+            reason="record repaired package manifest identity",
+            source_hash=repair.manifest_digest,
+            classification="same_version_source_repair",
+        )
+    )
+    plan = Plan(
+        command="repair",
+        package_version=PACKAGE_VERSION_TARGET,
+        target=str(target_root),
+        dry_run=dry_run,
+        actions=actions,
+    )
+    payload = plan.to_dict()
+    payload.update(
+        {
+            "command": "repair",
+            "installerVersion": installer_version,
+            "sourceIdentity": {
+                "repository": repair.source_repository,
+                "ref": repair.source_ref,
+                "commit": repair.source_commit,
+                "tree": repair.source_tree,
+                "manifestDigest": repair.manifest_digest,
+            },
+            "installedManifestDigest": repair.installed_manifest_digest,
+            "repairManifest": str(repair.receipt_path),
+            "repairManifestDigest": repair.receipt_digest,
+            "openclawAdmission": openclaw_admission,
+        }
+    )
+    if dry_run:
+        payload["applied"] = False
+        return EngineResult(exit_code=EXIT_OK, payload=payload)
+
+    result = apply_plan(
+        target_root=target_root,
+        package_root=package_root,
+        manifest=manifest,
+        plan=plan,
+        prior=prior,
+    )
+    payload["applied"] = True
+    payload["transaction"] = result
     return EngineResult(exit_code=EXIT_OK, payload=payload)
 
 
