@@ -23,7 +23,7 @@
     "relPath": {
       "type": "string",
       "minLength": 1,
-      "pattern": "^(?!/|\\)(?!.*\\.\\.(?:/|\\\\|$))(?!.*:).+"
+      "pattern": "^(?!/|\\\\)(?!.*\\.\\.(?:/|\\\\|$))(?!.*:).+"
     },
     "identity": {
       "type": "object",
@@ -185,6 +185,15 @@
     "findings": {
       "type": "array",
       "items": { "$ref": "#/$defs/finding" }
+    },
+    "preExistingFindings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/finding" }
+    },
+    "omittedMissingPaths": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/relPath" },
+      "uniqueItems": true
     },
     "verdict": { "type": "string", "enum": ["admitted", "rejected"] },
     "noUpstreamScanOrMutation": { "type": "boolean", "const": true }

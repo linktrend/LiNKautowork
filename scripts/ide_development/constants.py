@@ -48,6 +48,7 @@ RC_REQUIRED_SCHEMA_RELS = (
     "core/managed-core/schemas/ci-evidence.schema.json",
     "core/managed-core/schemas/linktrend-review-gate.schema.json",
     "core/managed-core/schemas/managed-core-release.schema.json",
+    "core/managed-core/schemas/same-version-repair.schema.json",
 )
 RC_REQUIRED_TEST_RELS = (
     "scripts/ide_development_tests/test_release_candidate.py",
