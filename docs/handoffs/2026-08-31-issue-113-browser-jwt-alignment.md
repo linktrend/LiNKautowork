@@ -30,4 +30,12 @@ Harness now reads `PGRST_JWT_SECRET` from the disposable compose file for both t
 
 ## Focused checks
 
-See the issue-113 commit proof. Full `npm run ci` was not run.
+| Command | Result |
+|---|---|
+| `bash -n apps/web/e2e/run-durable-browser-e2e.sh` | pass |
+| `npm --prefix apps/web run test -- tests/durable-browser-jwt-alignment.test.ts` | pass (1 file / 1 test) |
+| `npm run ci` / `npm run test:browser` | not run — Docker unavailable; not Full suite |
+| GitHub `validate-and-test` | deferred to issue-branch CI after push |
+| Fast fixture ledger | not mutated this packet; unused disposable-db rows remain packager/follow-up |
+
+`.ide-development/` packageVersion remains 2.5.2.
