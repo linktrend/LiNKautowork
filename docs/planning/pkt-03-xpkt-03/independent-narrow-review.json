@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "kind": "planning-hold-narrow-review",
+  "reviewVerdict": "pass",
+  "planningPacketAcceptedAsHold": true,
+  "providerConsumerHandoffAccepted": false,
+  "planningDecision": "HOLD",
+  "handoffVerdict": "blocked",
+  "lifecycleState": "blocked",
+  "integrationClaimed": false,
+  "acceptanceClaimed": false,
+  "implementationClaimed": false,
+  "activationClaimed": false,
+  "principalPlanningAuthorization": "existing-portfolio-execution",
+  "repeatedApprovalWordRequired": false,
+  "fullSuiteRun": false,
+  "repairApplied": false,
+  "reviewed": {
+    "repository": "linktrend/LiNKautowork",
+    "branch": "dev/cloudcursor/plan-autowork-skills-handoff-acc3",
+    "commit": "7009b62040d05a8c2f64bd9168b37db1820d3f4e",
+    "tree": "90cffb1c84ddedb4bf2623e87ee208c08d5fa78d"
+  },
+  "consumerBaseline": {
+    "repository": "linktrend/LiNKautowork",
+    "ref": "development",
+    "commit": "f75656930eb4d82827e480f00a435069c501503e",
+    "tree": "013f609cc432e7194388b6ffd09e32f71ac6e672"
+  },
+  "producerObservedNotAccepted": {
+    "repository": "linktrend/LiNKskills",
+    "ref": "development",
+    "commit": "4324d41fe6a7a6883075e9baa9a5a7f71dd13b3d",
+    "tree": "7c5a36f8773ebe9bac417d42a8a48a286fe5968d"
+  },
+  "reviewer": {
+    "actor": "REVIEW-LINKAUTOWORK-HANDOFF",
+    "role": "reviewer",
+    "runId": "bc-5f8cd4a6-c882-47d6-af27-e881eeac6354"
+  },
+  "implementerActor": "PLAN-AUTOWORK-SKILLS-HANDOFF",
+  "paths": [
+    "docs/handoffs/2026-08-31-pkt03-xpkt03-consumer-handoff-hold.md",
+    "docs/planning/pkt-03-xpkt-03/CONSUMER-HANDOFF-SPEC.md",
+    "docs/planning/pkt-03-xpkt-03/provider-consumer-handoff.hold.json",
+    "docs/planning/pkt-03-xpkt-03/validate_hold.py"
+  ],
+  "focusedChecks": {
+    "valid": true,
+    "sourceHeadSha": "7009b62040d05a8c2f64bd9168b37db1820d3f4e",
+    "reusedUnchangedEvidence": true,
+    "results": [
+      {
+        "command": "python3 docs/planning/pkt-03-xpkt-03/validate_hold.py",
+        "exitCode": 0,
+        "result": "HOLD-VALIDATION PASS"
+      },
+      {
+        "command": "git fetch origin development && gh api repos/linktrend/LiNKautowork/commits/development",
+        "exitCode": 0,
+        "result": "consumer development sha/tree match recorded baseline"
+      },
+      {
+        "command": "gh api repos/linktrend/LiNKskills/commits/development",
+        "exitCode": 0,
+        "result": "producer observed sha/tree match recorded inventory; not a PKT-03 release"
+      },
+      {
+        "command": "node planPhysicalSkillRemoval(.cursor/skills-lock.json)",
+        "exitCode": 0,
+        "result": "authorized=false reason=dual_app_proof_hold"
+      }
+    ]
+  },
+  "findings": [],
+  "requiredRework": [],
+  "holdBoundariesPreserved": true
+}
