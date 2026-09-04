@@ -39,11 +39,11 @@ DEFAULT_RELEASE_GATE = ["Verify IDE Development"]
 # Active workflow job display name (WP-U05). Obsolete step title must not remain required.
 SOURCE_POLICY_CHECK = "Linktrend Branch Source Policy"
 REVIEW_GATE_CHECK = "Linktrend Review Gate"
-BUGBOT_CHECK = REVIEW_GATE_CHECK  # migrated managed context (WP-U01)
-OBSOLETE_MANAGED_CHECKS = {
-    "Enforce allowed PR source branches": SOURCE_POLICY_CHECK,
-    "Cursor Bugbot": REVIEW_GATE_CHECK,
-}
+BUGBOT_CHECK = REVIEW_GATE_CHECK  # compatibility name; never a required v2.5.1 gate
+OBSOLETE_MANAGED_CHECKS = frozenset(
+    {"Cursor Bugbot", "Linktrend Review Gate", "Linktrend Review Ready"}
+)
+RENAMED_MANAGED_CHECKS = {"Enforce allowed PR source branches": SOURCE_POLICY_CHECK}
 
 GOVERNED = ("development", "staging", "main")
 
@@ -79,7 +79,7 @@ def managed_baseline(
 ) -> list[str]:
     if branch == "development":
         fast = integrator_checks if integrator_checks else list(DEFAULT_FAST_GATE)
-        return _unique_ordered([BUGBOT_CHECK, *fast, SOURCE_POLICY_CHECK])
+        return _unique_ordered([*fast, SOURCE_POLICY_CHECK])
     if branch == "staging":
         gate = staging_checks if staging_checks else list(DEFAULT_STAGING_GATE)
         return _unique_ordered([*gate, SOURCE_POLICY_CHECK])
@@ -91,9 +91,9 @@ def managed_baseline(
 
 def union_checks(managed: list[str], existing: list[str], extra: list[str] | None = None) -> dict[str, list[str]]:
     managed_u = _unique_ordered(managed)
-    # Obsolete managed contexts are replaced by their active names, never preserved.
+    # Obsolete managed contexts are removed; renamed active checks are reconciled.
     mapped_existing = _unique_ordered(
-        [OBSOLETE_MANAGED_CHECKS.get(c, c) for c in existing]
+        [RENAMED_MANAGED_CHECKS.get(c, c) for c in existing if c not in OBSOLETE_MANAGED_CHECKS]
     )
     extras = _unique_ordered(
         [*(extra or []), *[c for c in mapped_existing if c not in managed_u]]
@@ -783,10 +783,10 @@ def build_plan(
     for branch in branches:
         name = RULESET_NAMES[branch]
         if development_checks_override is not None and branch == "development":
-            # Compatibility path: caller supplied full check list (Bugbot ensured by wrapper).
-            managed = _unique_ordered(list(development_checks_override))
-            if BUGBOT_CHECK not in managed:
-                managed = _unique_ordered([BUGBOT_CHECK, *managed])
+            # Compatibility path: caller supplied the full active check list.
+            managed = _unique_ordered(
+                [item for item in development_checks_override if item not in OBSOLETE_MANAGED_CHECKS]
+            )
         else:
             managed = managed_baseline(
                 branch,
@@ -1162,7 +1162,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--development-checks",
         nargs="*",
         default=None,
-        help="Compatibility: full development check list (Bugbot auto-prepended if missing)",
+        help="Compatibility: full active development check list; obsolete managed gates are removed",
     )
     parser.add_argument(
         "--apply",

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "protocol": "portfolio-control-loop",
+  "protocolVersion": "1.0",
+  "cadenceSeconds": 3600,
+  "supportedCadencesSeconds": [3600, 7200],
+  "leaseSeconds": 180,
+  "stalledAfterSeconds": 120,
+  "replacementLimit": 1,
+  "stagedCapacityPolicy": {
+    "stages": [
+      {"stage": 1, "cursor": 5, "luna": 2, "underfillLuna": 1, "afterVerification": "baseline"},
+      {"stage": 2, "cursor": 10, "luna": 4, "underfillLuna": 1, "afterVerification": "routing-integration"},
+      {"stage": 3, "cursor": 20, "luna": 4, "underfillLuna": 2, "afterVerification": "stage-2"}
+    ],
+    "constraints": ["macMemory", "realCursorCapacity"]
+  },
+  "maxAutomationRetries": 1,
+  "triggers": ["hourly", "PULSE"],
+  "terminalStates": ["COMPLETED", "SUCCEEDED", "FAILED", "CANCELLED", "ARCHIVED"],
+  "reportStatuses": ["DONE", "RUNNING", "HOLD"],
+  "reportLanguages": ["ISSUED", "RUNNING", "FINISHED", "NOT ISSUED"]
+}

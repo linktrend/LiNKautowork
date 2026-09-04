@@ -223,6 +223,13 @@ class ReviewSession:
         default_factory=lambda: {"valid": False, "headSha": None}
     )
     require_full_before_review: bool = False
+    full_first_justification: str = ""
+    focused_checks: dict[str, Any] = field(default_factory=lambda: {"valid": False, "headSha": None})
+    delta_review: dict[str, Any] = field(default_factory=lambda: {"valid": False, "headSha": None})
+    reusable_unchanged_evidence: dict[str, Any] = field(
+        default_factory=lambda: {"valid": False, "sourceHeadSha": None, "paths": []}
+    )
+    full_runs: list[dict[str, Any]] = field(default_factory=list)
     splits: list[dict[str, Any]] = field(default_factory=list)
     recovery_generation: int = 0
     no_progress_streak: int = 0
@@ -266,6 +273,11 @@ class ReviewSession:
             "fullEvidence": dict(self.full_evidence),
             "priorReview": dict(self.prior_review),
             "requireFullBeforeReview": self.require_full_before_review,
+            "fullFirstJustification": self.full_first_justification,
+            "focusedChecks": dict(self.focused_checks),
+            "deltaReview": dict(self.delta_review),
+            "reusableUnchangedEvidence": dict(self.reusable_unchanged_evidence),
+            "fullRuns": list(self.full_runs),
             "splits": list(self.splits),
             "recoveryGeneration": self.recovery_generation,
             "noProgressStreak": self.no_progress_streak,
@@ -432,6 +444,7 @@ def open_session(
     implementer_actor: str,
     reviewer_actor: str,
     require_full_before_review: bool = False,
+    full_first_justification: str | None = None,
     resource_limit: Mapping[str, Any] | None = None,
     clock: Clock | None = None,
 ) -> tuple[ReviewSession, list[LedgerEntry]]:
@@ -441,6 +454,12 @@ def open_session(
         raise ConvergenceError("role_separation", "implementer and reviewer actors are required")
     if implementer_actor.strip() == reviewer_actor.strip():
         raise ConvergenceError("role_separation", "reviewer actor must be independent of the implementer")
+    justification = (full_first_justification or "").strip()
+    if require_full_before_review and not justification:
+        raise ConvergenceError(
+            "full_first_justification_missing",
+            "Full-first requires an explicit non-empty repository-policy justification",
+        )
     clock = clock or SystemClock()
     identity = "|".join(
         [
@@ -450,6 +469,8 @@ def open_session(
             require_sha(git_tree, "gitTree"),
             ",".join(normalize_paths(scope)),
             (reviewer_policy or "").strip(),
+            str(bool(require_full_before_review)),
+            justification,
         ]
     )
     session_id = hashlib.sha256(identity.encode("utf-8")).hexdigest()
@@ -465,6 +486,7 @@ def open_session(
         implementer_actor=implementer_actor.strip(),
         reviewer_actor=reviewer_actor.strip(),
         require_full_before_review=bool(require_full_before_review),
+        full_first_justification=justification,
         resource_limit=dict(resource_limit) if resource_limit else None,
         started_at=clock.now(),
     )
@@ -478,7 +500,19 @@ def apply_repository_policy(session: ReviewSession, policy: Mapping[str, Any]) -
             "repository policy may not replace progress-based continuation with a terminal cycle count",
         )
     if "requireFullBeforeReview" in policy:
-        session.require_full_before_review = bool(policy["requireFullBeforeReview"])
+        require_full = bool(policy["requireFullBeforeReview"])
+        justification = str(
+            policy.get("fullFirstJustification")
+            or policy.get("fullBeforeReviewJustification")
+            or ""
+        ).strip()
+        if require_full and not justification:
+            raise ConvergenceError(
+                "full_first_justification_missing",
+                "Full-first requires an explicit non-empty repository-policy justification",
+            )
+        session.require_full_before_review = require_full
+        session.full_first_justification = justification if require_full else ""
     if policy.get("resourceLimit"):
         session.resource_limit = dict(policy["resourceLimit"])
 
@@ -698,7 +732,11 @@ def ingest_review(
     session.reviewer_outputs.append(
         {"at": clock.now(), "headSha": session.candidate_sha, "findingCount": len(findings)}
     )
-    session.prior_review = {"valid": True, "headSha": session.candidate_sha}
+    session.prior_review = {
+        "valid": True,
+        "headSha": session.candidate_sha,
+        "gitTree": session.git_tree,
+    }
     _classify_into_ledger(session, entries, findings)
     if session.status in {STATUS_HOLD, STATUS_REVIEW_STALLED}:
         return findings
@@ -841,6 +879,8 @@ def apply_repair(
     new_tree = require_sha(new_tree, "new_tree")
     if new_head == session.candidate_sha:
         raise ConvergenceError("unchanged_head", "a repair cycle requires a new reviewed head")
+    previous_head = session.candidate_sha
+    had_prior_review = session.status == STATUS_REVIEW_CLEAN and bool(session.prior_review.get("valid"))
     cancel_live_reviewer(session, reviewer_adapter)
     session.candidate_sha = new_head
     session.git_tree = new_tree
@@ -851,30 +891,245 @@ def apply_repair(
     for entry in entries:
         if entry.finding.fingerprint in set(session.pending_batch.fingerprints):
             entry.repair_attempts += 1
-    invalidate_evidence(session)
+    invalidate_evidence(session, previous_head=previous_head, prior_review_accepted=had_prior_review)
     session.status = STATUS_IN_PROGRESS
 
 
-def invalidate_evidence(session: ReviewSession) -> None:
-    session.full_evidence = {"valid": False, "headSha": session.candidate_sha}
-    session.prior_review = {"valid": False, "headSha": session.candidate_sha}
+def invalidate_evidence(
+    session: ReviewSession,
+    *,
+    previous_head: str | None = None,
+    prior_review_accepted: bool = False,
+) -> None:
+    prior_review = dict(session.prior_review)
+    prior_full = dict(session.full_evidence)
+    # A narrow repair changes only its declared surface. Keep the previous
+    # exact evidence as historical/reusable evidence for untouched paths; the
+    # new candidate still needs focused checks and one narrow delta review.
+    session.full_evidence = {
+        "valid": False,
+        "headSha": session.candidate_sha,
+        "replacedByNarrowRepair": bool(prior_full.get("valid")),
+    }
+    if prior_full.get("headSha"):
+        session.full_evidence["priorHeadSha"] = prior_full["headSha"]
+    session.prior_review = {
+        **prior_review,
+        "valid": False,
+        "reusedForUnchangedPaths": bool(prior_review.get("valid")),
+    }
+    session.focused_checks = {"valid": False, "headSha": session.candidate_sha}
+    session.delta_review = {"valid": False, "headSha": session.candidate_sha}
+    session.reusable_unchanged_evidence = {
+        "valid": bool(previous_head and prior_review_accepted),
+        "sourceHeadSha": require_sha(previous_head, "previousHead") if previous_head else None,
+        "paths": [],
+        "invalidatedPaths": list(session.last_touched_paths),
+    }
 
 
-def record_full_evidence(session: ReviewSession, *, head_sha: str) -> None:
-    head_sha = require_sha(head_sha, "headSha")
-    if head_sha != session.candidate_sha:
-        raise ConvergenceError("stale_full", "Full evidence is not bound to the current exact head")
+def record_focused_changed_path_checks(
+    session: ReviewSession,
+    *,
+    head_sha: str,
+    git_tree: str,
+    changed_paths: Sequence[str],
+    results: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Record the required narrow checks for the current repaired candidate.
+
+    A repair may be reviewed again only after every changed path has been
+    covered by a non-empty, successful focused result.  This is intentionally
+    separate from the cumulative Full profile.
+    """
+
+    head = require_sha(head_sha, "headSha")
+    tree = require_sha(git_tree, "gitTree")
+    if head != session.candidate_sha or tree != session.git_tree:
+        raise ConvergenceError("stale_focused_checks", "focused checks must bind the current exact candidate")
+    paths = require_touched_paths(changed_paths)
+    if session.repair_cycle_count and set(paths) != set(session.last_touched_paths):
+        raise ConvergenceError(
+            "focused_paths_mismatch",
+            "focused checks must cover exactly the paths changed by the repair",
+        )
+    rows = [dict(item) for item in results]
+    if not rows:
+        raise ConvergenceError("focused_checks_missing", "at least one focused changed-path result is required")
+
+    def passed(item: Mapping[str, Any]) -> bool:
+        if "exitCode" in item or "exit_code" in item:
+            return item.get("exitCode", item.get("exit_code")) == 0
+        return str(item.get("status") or "").strip().lower() in {"passed", "pass", "success", "successful"}
+
+    if any(not passed(item) for item in rows):
+        raise ConvergenceError("focused_checks_failed", "all focused changed-path results must pass")
+    session.focused_checks = {
+        "valid": True,
+        "headSha": head,
+        "gitTree": tree,
+        "paths": paths,
+        "results": rows,
+    }
+    session.tests.extend(rows)
+    return dict(session.focused_checks)
+
+
+def ingest_delta_review(
+    session: ReviewSession,
+    entries: list[LedgerEntry],
+    payload: Mapping[str, Any],
+    *,
+    actor: str,
+    role: str,
+    changed_paths: Sequence[str] | None = None,
+    accepted_unchanged_evidence: Mapping[str, Any] | None = None,
+    clock: Clock | None = None,
+) -> list[Finding]:
+    """Ingest a post-repair review limited to the repaired paths.
+
+    The prior accepted review is reused for paths outside the repair.  A new
+    cumulative review is not accepted through this entrypoint.
+    """
+
+    if session.repair_cycle_count < 1:
+        raise ConvergenceError("delta_review_not_required", "delta review requires a repaired candidate")
+    focused = session.focused_checks
+    if not focused.get("valid") or focused.get("headSha") != session.candidate_sha:
+        raise ConvergenceError("focused_checks_required", "focused changed-path checks must pass before delta review")
+    paths = require_touched_paths(changed_paths or focused.get("paths"))
+    if set(paths) != set(session.last_touched_paths):
+        raise ConvergenceError("delta_paths_mismatch", "delta review must cover exactly the repaired paths")
+    payload_paths = payload.get("changedPaths") or payload.get("changed_paths")
+    if payload_paths is not None and set(require_touched_paths(payload_paths)) != set(paths):
+        raise ConvergenceError("delta_paths_mismatch", "review output changed paths do not match the repaired paths")
+    raw_findings = payload.get("findings")
+    if not isinstance(raw_findings, list):
+        raise ConvergenceError(HOLD_MALFORMED_OUTPUT, "delta review findings must be a list")
+    for raw in raw_findings:
+        parsed = parse_finding(raw) if isinstance(raw, Mapping) else None
+        if parsed is None or not set(parsed.paths).issubset(set(paths)):
+            raise ConvergenceError(
+                "delta_scope_violation",
+                "delta review findings must be limited to the repaired paths",
+            )
+    evidence = accepted_unchanged_evidence or session.reusable_unchanged_evidence
+    if not isinstance(evidence, Mapping) or not evidence:
+        raise ConvergenceError("unchanged_evidence_missing", "accepted unchanged-area evidence is required for delta review")
+    if evidence.get("valid") is not True:
+        raise ConvergenceError("unchanged_evidence_invalid", "unchanged-area evidence is not accepted")
+    source_head = require_sha(str(evidence.get("sourceHeadSha") or ""), "sourceHeadSha")
+    expected_source = str(session.reusable_unchanged_evidence.get("sourceHeadSha") or "")
+    if expected_source and source_head != expected_source:
+        raise ConvergenceError("unchanged_evidence_invalid", "unchanged-area evidence is not bound to the repaired-from head")
+    reused_paths = normalize_paths(evidence.get("paths") or [])
+    if not reused_paths or set(reused_paths) & set(paths):
+        raise ConvergenceError("unchanged_evidence_invalid", "unchanged-area evidence must identify its source and scope")
+    findings = ingest_review(session, entries, payload, actor=actor, role=role, clock=clock)
+    session.reusable_unchanged_evidence = {
+        "valid": True,
+        "sourceHeadSha": source_head,
+        "paths": reused_paths,
+    }
+    session.delta_review = {
+        "valid": True,
+        "headSha": session.candidate_sha,
+        "gitTree": session.git_tree,
+        "paths": paths,
+        "reusedUnchangedEvidence": True,
+        "sourceHeadSha": session.reusable_unchanged_evidence["sourceHeadSha"],
+    }
+    return findings
+
+
+def _require_full_sequence(session: ReviewSession) -> None:
     if session.status in {STATUS_HOLD, STATUS_REVIEW_STALLED}:
         raise ConvergenceError(
             session.status,
             "Full cannot run while independent review is held or stalled",
         )
-    if session.status != STATUS_REVIEW_CLEAN and not session.require_full_before_review:
+    if session.repair_cycle_count and (
+        not session.focused_checks.get("valid")
+        or session.focused_checks.get("headSha") != session.candidate_sha
+        or session.focused_checks.get("gitTree") != session.git_tree
+        or not session.delta_review.get("valid")
+        or session.delta_review.get("headSha") != session.candidate_sha
+        or session.delta_review.get("gitTree") != session.git_tree
+        or not session.reusable_unchanged_evidence.get("valid")
+    ):
+        raise ConvergenceError(
+            "delta_review_required",
+            "a repaired candidate requires focused changed-path checks and an accepted narrow delta review before Full",
+        )
+    exact_clean_review = (
+        session.status == STATUS_REVIEW_CLEAN
+        and session.prior_review.get("valid") is True
+        and session.prior_review.get("headSha") == session.candidate_sha
+        and session.prior_review.get("gitTree") == session.git_tree
+    )
+    if not exact_clean_review and not (
+        session.require_full_before_review and session.full_first_justification
+    ):
         raise ConvergenceError(
             "full_before_review",
-            "Full must not run until required independent review is clean unless policy requires Full first",
+            "Full must not run until required independent review is clean unless repository policy requires Full first with justification",
         )
-    session.full_evidence = {"valid": True, "headSha": head_sha}
+
+
+def plan_delivery(session: ReviewSession, *, profile: str) -> dict[str, Any]:
+    """Validate a normal delivery plan without executing a profile."""
+
+    if profile.strip().lower() == "full":
+        _require_full_sequence(session)
+    return {"planned": True, "profile": profile, "headSha": session.candidate_sha}
+
+
+def transition_delivery(session: ReviewSession, *, profile: str) -> dict[str, Any]:
+    """Validate a delivery transition using the same fail-closed sequence."""
+
+    if profile.strip().lower() == "full":
+        _require_full_sequence(session)
+    return {"transitioned": True, "profile": profile, "headSha": session.candidate_sha}
+
+
+def record_full_evidence(
+    session: ReviewSession,
+    *,
+    head_sha: str,
+    execution: str = "hosted",
+    coverage: str = "cumulative",
+    final_candidate: bool = True,
+) -> None:
+
+
+    head_sha = require_sha(head_sha, "headSha")
+    if head_sha != session.candidate_sha:
+        raise ConvergenceError("stale_full", "Full evidence is not bound to the current exact head")
+    mode = (execution or "").strip().lower()
+    kind = (coverage or "").strip().lower()
+    if mode not in {"local", "hosted"}:
+        raise ConvergenceError("invalid_full_execution", "Full execution must be local or hosted")
+    if kind != "cumulative":
+        raise ConvergenceError("invalid_full_coverage", "only cumulative Full is a delivery evidence run")
+    if mode == "hosted" and not final_candidate:
+        raise ConvergenceError("hosted_full_not_final", "hosted cumulative Full is reserved for the final candidate")
+    _require_full_sequence(session)
+    if any(
+        run.get("headSha") == head_sha and run.get("coverage") == "cumulative"
+        for run in session.full_runs
+    ):
+        raise ConvergenceError(
+            "duplicate_full_execution",
+            "one cumulative Full is permitted for an exact candidate; do not run local Full before hosted Full",
+        )
+    run = {
+        "headSha": head_sha,
+        "execution": mode,
+        "coverage": kind,
+        "finalCandidate": bool(final_candidate),
+    }
+    session.full_runs.append(run)
+    session.full_evidence = {"valid": True, "headSha": head_sha, **run}
 
 
 def _has_continue_until_clean(session: ReviewSession) -> bool:

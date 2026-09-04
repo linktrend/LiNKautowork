@@ -635,8 +635,8 @@ class LinktrendReviewGateTests(unittest.TestCase):
 
         self.assertEqual(rp.BUGBOT_CHECK, REVIEW_GATE_CONTEXT)
         self.assertNotIn(RAW_BUGBOT_CONTEXT, rp.managed_baseline("development"))
-        self.assertIn(REVIEW_GATE_CONTEXT, rp.managed_baseline("development"))
-        self.assertIn(REVIEW_GATE_CONTEXT, plan.CONTEXTS["development"])
+        self.assertNotIn(REVIEW_GATE_CONTEXT, rp.managed_baseline("development"))
+        self.assertNotIn(REVIEW_GATE_CONTEXT, plan.CONTEXTS["development"])
         self.assertNotIn(RAW_BUGBOT_CONTEXT, plan.CONTEXTS["development"])
         consumer = json.loads((ROOT / ".github/linktrend-gitops-consumer.json").read_text())
         self.assertEqual(consumer["bugbotCheckName"], REVIEW_GATE_CONTEXT)

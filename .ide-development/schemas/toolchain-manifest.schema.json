@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/toolchain-manifest.schema.json",
+  "title": "Versioned IDE Development toolchain manifest",
+  "description": "Declarative runtime requirements. Preflight may inspect availability and versions but never discovers credentials or contacts a provider.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "manifestVersion", "checks"],
+  "$defs": {
+    "version": { "type": "string", "pattern": "^(?:>=|<=|==|>|<|~=)?\\s*\\d+(?:\\.\\d+){0,2}$" },
+    "executable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "executable", "version"],
+      "properties": {
+        "required": { "type": "boolean" },
+        "executable": { "type": "string", "minLength": 1 },
+        "version": { "anyOf": [{ "$ref": "#/$defs/version" }, { "type": "null" }] },
+        "versionCommand": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "service": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "required", "probe"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "required": { "type": "boolean" },
+        "probe": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "systemTool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "required", "executable", "version"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "required": { "type": "boolean" },
+        "executable": { "type": "string", "minLength": 1 },
+        "version": { "anyOf": [{ "$ref": "#/$defs/version" }, { "type": "null" }] },
+        "versionCommand": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  },
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "kind": { "type": "string", "const": "toolchain-manifest" },
+    "manifestVersion": { "type": "string", "pattern": "^toolchain-manifest/[A-Za-z0-9._-]+$" },
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id", "profiles", "supported", "runnerClass", "python", "node",
+          "packageManager", "systemTools", "services", "requiredConfig",
+          "networkPolicy", "resources"
+        ],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "profiles": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+          "supported": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["os", "architectures"],
+            "properties": {
+              "os": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+              "architectures": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+            }
+          },
+          "runnerClass": { "type": "string", "minLength": 1 },
+          "python": { "$ref": "#/$defs/executable" },
+          "node": { "$ref": "#/$defs/executable" },
+          "packageManager": { "$ref": "#/$defs/executable" },
+          "systemTools": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/systemTool" }
+          },
+          "services": { "type": "array", "items": { "$ref": "#/$defs/service" } },
+          "requiredConfig": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\\\x00]+$" }
+          },
+          "networkPolicy": { "type": "string", "enum": ["offline", "allow-listed", "online"] },
+          "allowedHosts": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+          "resources": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["minimumMemoryMb", "minimumCpuCount", "maximumMemoryMb", "maximumProcesses"],
+            "properties": {
+              "minimumMemoryMb": { "type": "integer", "minimum": 0 },
+              "minimumCpuCount": { "type": "integer", "minimum": 1 },
+              "maximumMemoryMb": { "type": "integer", "minimum": 1 },
+              "maximumProcesses": { "type": "integer", "minimum": 1 }
+            }
+          }
+        }
+      }
+    }
+  }
+}

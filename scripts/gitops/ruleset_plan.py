@@ -18,7 +18,6 @@ CONTEXTS = {
     "development": [
         "Linktrend Phase Ready",
         "Linktrend Fast Gate",
-        "Linktrend Review Gate",
         "Linktrend Full Suite",
     ],
     "staging": ["Linktrend Staging Gate"],

@@ -2,7 +2,8 @@
 """v2.5 token-independent lean Issue checkpoint acceptance.
 
 V25_BOOTSTRAP_LEAN: exact pushed commit/tree + scoped diff + focused tests +
-independent Terra verification + manifest evidence accept an Issue checkpoint.
+one exact-candidate independent narrow review + manifest evidence accept an
+Issue checkpoint.
 Review Ready, AUTOMATION_TOKEN, Issue PRs, hosted completion status, and
 legacy publisher status are nonrequirements. Legacy publisher/status outcomes
 are WAIVED_LEGACY_GATE, never PASS, and never bypass substantive proof.
@@ -11,9 +12,47 @@ are WAIVED_LEGACY_GATE, never PASS, and never bypass substantive proof.
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import re
+import sys
+import types
+from pathlib import Path
 from typing import Any, Mapping
+
+
+def _load_managed_protocol() -> Any:
+    """Load the installed protocol without requiring a source ``core/`` tree."""
+    managed_protocol = (
+        Path(__file__).resolve().parents[2]
+        / ".ide-development"
+        / "execution"
+        / "protocol.py"
+    )
+    if not managed_protocol.is_file():
+        raise ModuleNotFoundError(".ide-development/execution/protocol.py")
+
+    module_name = "execution.protocol"
+    existing = sys.modules.get(module_name)
+    if existing is not None:
+        return existing
+
+    package = sys.modules.get("execution")
+    if package is None:
+        package = types.ModuleType("execution")
+        package.__path__ = [str(managed_protocol.parent)]
+        package.__package__ = "execution"
+        sys.modules["execution"] = package
+
+    spec = importlib.util.spec_from_file_location(module_name, managed_protocol)
+    if spec is None or spec.loader is None:
+        raise ModuleNotFoundError(f"unable to load {managed_protocol}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    setattr(package, "protocol", module)
+    return module
+
 
 try:
     from core.execution.protocol import (
@@ -24,13 +63,12 @@ try:
         evaluate_issue_checkpoint,
     )
 except ModuleNotFoundError:  # pragma: no cover - script-style execution
-    from execution.protocol import (  # type: ignore
-        AMENDMENT_ID,
-        ISSUE_CHECKPOINT_EVIDENCE,
-        WAIVED_LEGACY_GATE,
-        classify_legacy_publisher_gate,
-        evaluate_issue_checkpoint,
-    )
+    _protocol = _load_managed_protocol()
+    AMENDMENT_ID = _protocol.AMENDMENT_ID
+    ISSUE_CHECKPOINT_EVIDENCE = _protocol.ISSUE_CHECKPOINT_EVIDENCE
+    WAIVED_LEGACY_GATE = _protocol.WAIVED_LEGACY_GATE
+    classify_legacy_publisher_gate = _protocol.classify_legacy_publisher_gate
+    evaluate_issue_checkpoint = _protocol.evaluate_issue_checkpoint
 
 try:
     from scripts.gitops.github_auth import (
@@ -173,10 +211,8 @@ def _lean_fields(payload: Mapping[str, Any]) -> dict[str, Any]:
         "tree": str(payload.get("gitTree") or payload.get("tree") or "").strip(),
         "scoped_diff": _truthy(payload.get("scopedDiff") or payload.get("scoped_diff")),
         "focused_tests_passed": focused_passed,
-        "independent_terra_verified": _truthy(
-            payload.get("independentTerraVerification")
-            or payload.get("independent_terra_verified")
-        ),
+        "independent_narrow_review": payload.get("independentNarrowReview")
+        or payload.get("independent_narrow_review"),
         "manifest_evidence": _truthy(payload.get("manifestEvidence") or payload.get("manifest_evidence")),
     }
 
@@ -229,7 +265,7 @@ def evaluate_lean_payload(
         tree=tree or expected_tree,
         scoped_diff=bool(fields["scoped_diff"]),
         focused_tests_passed=bool(fields["focused_tests_passed"]),
-        independent_terra_verified=bool(fields["independent_terra_verified"]),
+        independent_narrow_review=fields["independent_narrow_review"],
         manifest_evidence=bool(fields["manifest_evidence"]),
         review_ready=review_ready,
         automation_token_present=automation_token_present,
@@ -281,7 +317,7 @@ def bind_issue_completion(
     meta["payloadDigest"] = evidence_digest(evidence)
 
     kind = str(evidence.get("kind") or "").strip()
-    lean_keys = ("scopedDiff", "independentTerraVerification", "manifestEvidence")
+    lean_keys = ("scopedDiff", "independentNarrowReview", "manifestEvidence")
     if kind == CHECKPOINT_KIND or any(key in evidence for key in lean_keys):
         result = evaluate_lean_payload(
             evidence,

@@ -19,13 +19,15 @@ pull requests, branch protection, and promotion records.
    Fast executes fixture-aware secret scanning of every tracked regular blob.
    Fast runs are scoped to repository, workflow, and PR number; a newer run
    cancels only an older run for that same PR.
-4. Terra seals one exact candidate head. Required independent review must be
-   clean on that exact head before `Linktrend Full Suite`, unless repository
-   policy explicitly requires Full first. A later repair invalidates prior
-   review and Full evidence. Only the final sealed candidate may run Full and
-   the existing Bugbot final-candidate check. Full always binds the canonical
-   PR head (never merge-ref identity). Ordinary Phase merge requires the exact
-   retained Full receipt for that head/tree.
+4. The coordinator seals one exact candidate head. One provider-independent
+ narrow review is bound to that exact head and tree; the routed independent
+ reviewer may use the ordinary Cursor SDK route or Principal-authorized Luna,
+ with no vendor/model requirement and no self-review. A narrow repair
+ invalidates only its changed repair surface; the prior review remains reusable
+ for untouched paths. One final combined candidate runs Full and the existing
+ Bugbot final-candidate check. Full always binds the canonical PR head (never
+ merge-ref identity). Ordinary Phase merge requires the exact retained Full
+ receipt for that head/tree, which staging and main reuse without rerunning.
 5. A successful full-suite receipt is reusable only when repository, Git tree,
    dependency, profile, and workflow identities match exactly. A changed tree
    or dependency invalidates reuse. Exceptional recovery may mint the same

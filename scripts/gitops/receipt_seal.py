@@ -28,10 +28,15 @@ from coordinator.receipts import (  # noqa: E402
     CandidateIdentity,
     FullSuiteReceipt,
     ReceiptError,
+    create_transition_receipt,
     compute_receipt_digest,
+    store_receipt,
+    store_transition_receipt,
     verify_receipt,
+    verify_transition_receipt,
 )
 from phase_integrator import MergeEligibility, phase_merge_eligibility  # noqa: E402
+from receipt_loop_detector import admit_receipt_maintenance_transition, write_loop_diagnosis  # noqa: E402
 
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
 DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
@@ -51,6 +56,94 @@ class RecoveryError(Exception):
         self.code = code
         self.detail = detail or code
         super().__init__(self.code if not detail else f"{self.code}:{self.detail}")
+
+
+def issue_transition_receipt(
+    source_receipt: Mapping[str, Any] | FullSuiteReceipt,
+    *,
+    target_branch: str,
+    target_commit: str,
+    target_tree: str,
+    transition_type: str = "protected-merge",
+    maintenance_paths: Sequence[str] = (),
+    failure_contract_digest: str | None = None,
+    protected_base_commit: str | None = None,
+    store_repo: str | Path | None = None,
+    store_root: str | Path | None = None,
+    maintenance_history: Sequence[Mapping[str, Any]] = (),
+    authorized_paths: Sequence[str] = (),
+    changed_paths: Sequence[str] | None = None,
+    current_protected_base: str | None = None,
+    expected_protected_base: str | None = None,
+    predecessor_failure_contract_digest: str | None = None,
+    diagnosis_path: str | Path | None = None,
+) -> dict[str, Any]:
+    """Issue and optionally retain a digest-bound protected transition."""
+
+    transition = create_transition_receipt(
+        source_receipt,
+        target_branch=target_branch,
+        target_commit=target_commit,
+        target_tree=target_tree,
+        transition_type=transition_type,
+        maintenance_paths=maintenance_paths,
+        failure_contract_digest=failure_contract_digest,
+        protected_base_commit=protected_base_commit,
+    )
+    if transition_type == "receipt-maintenance":
+        maintenance = admit_receipt_maintenance_transition(
+            source_receipt.to_dict() if isinstance(source_receipt, FullSuiteReceipt) else source_receipt,
+            transition.to_dict(),
+            history=maintenance_history,
+            changed_paths=changed_paths,
+            authorized_paths=authorized_paths,
+            current_protected_base=current_protected_base,
+            expected_protected_base=expected_protected_base,
+            failure_contract_digest=failure_contract_digest,
+            predecessor_failure_contract_digest=predecessor_failure_contract_digest,
+        )
+        if not maintenance.allowed:
+            if diagnosis_path is not None:
+                write_loop_diagnosis(diagnosis_path, maintenance, predecessor=source_receipt.to_dict() if isinstance(source_receipt, FullSuiteReceipt) else source_receipt, successor=transition.to_dict())
+            raise SealError(maintenance.code, maintenance.detail)
+    payload = transition.to_dict()
+    if store_repo is not None:
+        if isinstance(source_receipt, FullSuiteReceipt):
+            store_receipt(source_receipt, repo_path=store_repo, store_root=store_root)
+        else:
+            from coordinator.receipts import FullSuiteReceipt as _FullSuiteReceipt
+
+            store_receipt(_FullSuiteReceipt.from_dict(source_receipt), repo_path=store_repo, store_root=store_root)
+        payload["storePath"] = str(store_transition_receipt(transition, repo_path=store_repo, store_root=store_root))
+    return payload
+
+
+def verify_transition_for_promotion(
+    source_receipt: Mapping[str, Any],
+    transition_receipt: Mapping[str, Any],
+    target_identity: Mapping[str, Any],
+    *,
+    expected_workflow_run_id: int | None = None,
+    expected_workflow_run_attempt: int | None = None,
+    expected_base_commit: str | None = None,
+) -> dict[str, Any]:
+    """Return a promotion-safe decision for a commit-changing same-tree merge."""
+
+    verdict = verify_transition_receipt(
+        transition_receipt,
+        source_receipt,
+        target_identity,
+        expected_workflow_run_id=expected_workflow_run_id,
+        expected_workflow_run_attempt=expected_workflow_run_attempt,
+        expected_base_commit=expected_base_commit,
+    )
+    return {
+        "accepted": bool(verdict),
+        "code": verdict.code,
+        "detail": verdict.message or verdict.code,
+        "sourceCommit": verdict.source_commit,
+        "promotionCommit": verdict.promotion_commit,
+    }
 
 
 def _sha(value: Any) -> str:
@@ -611,11 +704,17 @@ def evaluate_recovered_receipt_for_promotion(
     candidate_identity: Mapping[str, Any] | CandidateIdentity,
     *,
     required_gate: str = "full-gate",
+    transition_receipt: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Accept recovered receipts for unchanged trees; reject content changes."""
 
     try:
-        verdict = verify_receipt(receipt, candidate_identity, required_gate)
+        verdict = verify_receipt(
+            receipt,
+            candidate_identity,
+            required_gate,
+            transition_receipt=transition_receipt,
+        )
     except ReceiptError as exc:
         return {"accepted": False, "code": exc.code, "detail": str(exc)}
     if verdict.accepted:

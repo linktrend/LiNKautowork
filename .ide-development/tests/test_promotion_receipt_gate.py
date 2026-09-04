@@ -137,14 +137,14 @@ class PromotionReceiptGateTests(unittest.TestCase):
         head = "a" * 40
         good = {"status": "passed", "sha": head}
         decision = evaluate_development_gates(
-            {"sealed": good, "fastGate": good, "bugbot": good, "fullSuite": {"status": "not-required"}},
+            {"sealed": good, "fastGate": good, "fullSuite": {"status": "not-required"}},
             head,
         )
         self.assertTrue(decision.accepted)
         self.assertEqual(decision.to_dict()["status"], "PASS")
         stale = dict(good, sha="b" * 40)
         self.assertEqual(
-            evaluate_development_gates({"sealed": good, "fastGate": stale, "bugbot": good, "fullSuite": good}, head).code,
+            evaluate_development_gates({"sealed": good, "fastGate": stale, "fullSuite": good}, head).code,
             "fast_stale",
         )
         self.assertEqual(

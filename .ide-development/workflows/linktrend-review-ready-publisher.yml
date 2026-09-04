@@ -5,8 +5,8 @@
 # for v2.5 Issue checkpoints. Outcomes are classified WAIVED_LEGACY_GATE, never
 # PASS, and must never bypass substantive proof, security, exact identity,
 # scope, review, or rollback. Issue checkpoint acceptance is token-independent
-# (exact commit/tree + scoped diff + focused tests + independent Terra
-# verification + manifest evidence). Do not treat AUTOMATION_TOKEN or this
+# (exact commit/tree + scoped diff + focused tests + one provider-independent
+# narrow review + manifest evidence). Do not treat AUTOMATION_TOKEN or this
 # status as Issue-checkpoint or Phase-delivery proof.
 #
 # Privileged status publication for context "Linktrend Review Ready".
@@ -122,6 +122,7 @@ jobs:
         with:
           ref: ${{ steps.inputs.outputs.sha }}
           path: untrusted-branch-data
+          fetch-depth: 1
           persist-credentials: false
 
       - name: Verify remote tip equals immutable SHA; publish or withdraw

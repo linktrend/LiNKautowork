@@ -37,7 +37,14 @@
       "required": ["valid", "headSha"],
       "properties": {
         "valid": { "type": "boolean" },
-        "headSha": { "anyOf": [{ "$ref": "#/$defs/sha40" }, { "type": "null" }] }
+        "headSha": { "anyOf": [{ "$ref": "#/$defs/sha40" }, { "type": "null" }] },
+        "gitTree": { "$ref": "#/$defs/sha40" },
+        "execution": { "type": "string", "enum": ["local", "hosted"] },
+        "coverage": { "type": "string", "const": "cumulative" },
+        "finalCandidate": { "type": "boolean" },
+        "replacedByNarrowRepair": { "type": "boolean" },
+        "priorHeadSha": { "$ref": "#/$defs/sha40" },
+        "reusedForUnchangedPaths": { "type": "boolean" }
       }
     }
   },
@@ -97,6 +104,57 @@
     "fullEvidence": { "$ref": "#/$defs/evidenceBinding" },
     "priorReview": { "$ref": "#/$defs/evidenceBinding" },
     "requireFullBeforeReview": { "type": "boolean" },
+    "fullFirstJustification": { "type": "string" },
+    "focusedChecks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["valid", "headSha"],
+      "properties": {
+        "valid": { "type": "boolean" },
+        "headSha": { "anyOf": [{ "$ref": "#/$defs/sha40" }, { "type": "null" }] },
+        "gitTree": { "$ref": "#/$defs/sha40" },
+        "paths": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "results": { "type": "array", "items": { "type": "object" } }
+      }
+    },
+    "deltaReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["valid", "headSha"],
+      "properties": {
+        "valid": { "type": "boolean" },
+        "headSha": { "anyOf": [{ "$ref": "#/$defs/sha40" }, { "type": "null" }] },
+        "gitTree": { "$ref": "#/$defs/sha40" },
+        "paths": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "reusedUnchangedEvidence": { "type": "boolean" },
+        "sourceHeadSha": { "$ref": "#/$defs/sha40" }
+      }
+    },
+    "reusableUnchangedEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["valid", "sourceHeadSha", "paths"],
+      "properties": {
+        "valid": { "type": "boolean" },
+        "sourceHeadSha": { "anyOf": [{ "$ref": "#/$defs/sha40" }, { "type": "null" }] },
+        "paths": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "invalidatedPaths": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "fullRuns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["headSha", "execution", "coverage", "finalCandidate"],
+        "properties": {
+          "headSha": { "$ref": "#/$defs/sha40" },
+          "execution": { "type": "string", "enum": ["local", "hosted"] },
+          "coverage": { "type": "string", "const": "cumulative" },
+          "finalCandidate": { "type": "boolean" }
+        }
+      }
+    },
     "splits": { "type": "array" },
     "recoveryGeneration": { "type": "integer", "minimum": 0 },
     "noProgressStreak": { "type": "integer", "minimum": 0 },

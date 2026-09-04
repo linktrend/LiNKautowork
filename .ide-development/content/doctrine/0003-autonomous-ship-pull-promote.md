@@ -172,7 +172,7 @@ Factual correction for Update 9:
 
 Founder-approved Coding Execution Protocol 1.0.1 amendment `V25_BOOTSTRAP_LEAN`:
 
-1. A v2.5 Issue checkpoint is accepted from exact pushed commit/tree, scoped diff, focused tests, independent Terra verification, and manifest evidence. Review Ready and publisher tokens are not required.
+1. A v2.5 Issue checkpoint is accepted from exact pushed commit/tree, scoped diff, focused tests, one provider-independent narrow review bound to that exact identity, and manifest evidence. The review may use the ordinary routed reviewer or Principal-authorized Luna; no vendor/model is mandated. Review Ready and publisher tokens are not required.
 2. No singular legacy publisher is canonical for v2.5, including `linktrend-review-ready-publisher`.
 3. A failed or missing legacy publisher is `WAIVED_LEGACY_GATE`, never PASS and never an implementation failure.
 4. A later exact-head administrator recovery is only a named exception after substantive replacement proof, limited to protection snapshot, restore, and readback.
@@ -191,7 +191,7 @@ Founder-authorized PKT-01 follow-on to Coding Execution Protocol 1.0.1:
 Founder-authorized continuation of PKT-01:
 
 1. Continuous utilization is a packaged contract: doctrine, config, schema, example, and MANIFEST surfaces plus the deterministic scheduler runtime.
-2. Hosted concurrency authority is `execution-protocol`. Canonical maxima are local 1 and hosted 2. Unknown probes and the 10-minute backstop recompute instead of guessing.
+2. Hosted concurrency authority is `execution-protocol`. Staged admission is up to `5 Cursor + 2 Luna`, then `10 Cursor + 4 Luna` after routing/integration verification, then `20 Cursor + 4 Luna` after another verification. Underfill is `1 Luna` in Stages 1-2 and `2 Luna` in Stage 3. Mac memory and real Cursor capacity remain binding; hourly and two-hour trigger support remains unchanged. Capacity evidence remains bound to the exact provider/runtime identity.
 3. `UTILIZATION_GAP` is an event that must be repaired by recomputation, not by paid or Fast fallback.
 4. Invalidation delays only the changed identity. Completion unlocks the next eligible job.
 

@@ -19,7 +19,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      PGRST_DB_URI: postgres://postgres@postgres:5432/automation_contracts
+      PGRST_DB_URI: postgres:${PGRST_URI_SEP:-/}/postgres@postgres:5432/automation_contracts
       PGRST_DB_SCHEMAS: public
       PGRST_DB_EXTRA_SEARCH_PATH: platform,lautowork,extensions
       PGRST_DB_ANON_ROLE: service_role

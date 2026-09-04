@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/transition-receipt.schema.json",
+  "title": "LiNKtrend authenticated same-tree transition receipt",
+  "description": "An external, digest-bound bridge from an accepted Full Suite receipt to a protected commit.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "transitionType",
+    "repository",
+    "sourceIdentity",
+    "sourceReceiptDigest",
+    "sourceWorkflowRunId",
+    "sourceWorkflowRunAttempt",
+    "targetBranch",
+    "targetCommit",
+    "targetTree",
+    "authenticatedBy",
+    "maintenancePaths",
+    "failureContractDigest",
+    "protectedBaseCommit",
+    "receiptDigest"
+  ],
+  "properties": {
+    "schemaVersion": {"type": "integer", "const": 1},
+    "kind": {"type": "string", "const": "transition-receipt"},
+    "transitionType": {"type": "string", "enum": ["protected-merge", "receipt-maintenance"]},
+    "repository": {"type": "string", "pattern": "^[^/\\s]+/[^/\\s]+$"},
+    "sourceIdentity": {"$ref": "#/$defs/candidateIdentity"},
+    "sourceReceiptDigest": {"$ref": "#/$defs/digest"},
+    "sourceWorkflowRunId": {"type": "integer", "minimum": 1},
+    "sourceWorkflowRunAttempt": {"type": "integer", "minimum": 1},
+    "targetBranch": {"type": "string", "pattern": "^(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"},
+    "targetCommit": {"$ref": "#/$defs/sha"},
+    "targetTree": {"$ref": "#/$defs/sha"},
+    "authenticatedBy": {"type": "string", "const": "delivery-controller"},
+    "maintenancePaths": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/repoRelativePath"}
+    },
+    "failureContractDigest": {"anyOf": [{"$ref": "#/$defs/digest"}, {"type": "null"}]},
+    "protectedBaseCommit": {"anyOf": [{"$ref": "#/$defs/sha"}, {"type": "null"}]},
+    "receiptDigest": {"$ref": "#/$defs/digest"}
+  },
+  "$defs": {
+    "sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "candidateIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "sourceBranch", "headCommit", "gitTree", "dependencyDigest", "profileDigest", "workflowDigest"],
+      "properties": {
+        "repository": {"type": "string", "pattern": "^[^/\\s]+/[^/\\s]+$"},
+        "sourceBranch": {"type": "string", "pattern": "^(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"},
+        "headCommit": {"$ref": "#/$defs/sha"},
+        "gitTree": {"$ref": "#/$defs/sha"},
+        "dependencyDigest": {"$ref": "#/$defs/digest"},
+        "profileDigest": {"$ref": "#/$defs/digest"},
+        "workflowDigest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "repoRelativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/|\\\\)(?!.*\\.\\.(?:/|\\\\|$))(?!.*:)[A-Za-z0-9._@+, -]+(?:/[A-Za-z0-9._@+, -]+)*$"
+    }
+  }
+}

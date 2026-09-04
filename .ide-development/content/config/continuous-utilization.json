@@ -2,8 +2,15 @@
   "schemaVersion": 1,
   "hostedConcurrencyAuthority": "execution-protocol",
   "maxAdmittedSlots": {
-    "local": 1,
-    "hosted": 2
+    "local": 1
+  },
+  "adaptiveConcurrency": {
+    "mode": "minimum_of_live_evidence",
+    "capacityEvidence": "authenticated_cursor_account",
+    "identityFields": ["accountId", "apiKeyName", "teamId", "programRunId"],
+    "spendCeilingEvidence": "required",
+    "safetyConstraintEvidence": "required",
+    "evidenceMaxAgeSeconds": 600
   },
   "unknownProbeSeconds": 600,
   "backstopSeconds": 600,
