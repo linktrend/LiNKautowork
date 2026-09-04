@@ -71,9 +71,19 @@ except ModuleNotFoundError:  # pragma: no cover - script-style execution
 try:
     from scripts.gitops.github_auth import GitHubAuthError, resolve_phase_api_token
     from scripts.gitops.issue_checkpoint import bind_issue_completion, parse_immutable_evidence_payload
+    from core.execution.rollout import (
+        build_provider_consumer_handoff,
+        consume_provider_consumer_handoff,
+        evaluate_provider_consumer_handoff,
+    )
 except ModuleNotFoundError:  # pragma: no cover - script-style execution
     from github_auth import GitHubAuthError, resolve_phase_api_token  # type: ignore
     from issue_checkpoint import bind_issue_completion, parse_immutable_evidence_payload  # type: ignore
+    from core.execution.rollout import (  # type: ignore
+        build_provider_consumer_handoff,
+        consume_provider_consumer_handoff,
+        evaluate_provider_consumer_handoff,
+    )
 
 COMPONENT_KIND = "phase_packager_coordinator"
 IS_PHASE_PACKAGER = True
@@ -499,7 +509,7 @@ def parse_fast_trigger_contract(text: str) -> dict[str, Any]:
     phase_only = "startsWith(github.event.pull_request.head.ref, 'phase/')" in text
     full_profile = "run_delivery_profile.py full" in text
     full_label = "linktrend-full-suite" in text
-    return {
+    result = {
         "namedFast": named,
         "checkpointPush": push,
         "phasePullRequest": pull,
@@ -508,6 +518,7 @@ def parse_fast_trigger_contract(text: str) -> dict[str, Any]:
         "cancelObsolete": "cancel-in-progress: true" in text,
         "checksExactHead": "github.event.pull_request.head.sha" in text,
     }
+    return result
 
 
 def full_may_start(
@@ -545,11 +556,21 @@ def consume_handoff(
     live_head: str,
     live_tree: str | None = None,
     repository: str | None = None,
+    protected_provider_identity: Mapping[str, Any] | None = None,
+    accepted_receipt: Mapping[str, Any] | None = None,
+    consumer_identity: Mapping[str, Any] | None = None,
 ) -> tuple[bool, str]:
     """Update 2 consumes this exact identity; a later head invalidates it."""
 
     if not isinstance(handoff, Mapping):
         return False, "handoff_missing"
+    if handoff.get("kind") == "provider-consumer-handoff":
+        return consume_provider_consumer_handoff(
+            handoff,
+            protected_provider_identity=protected_provider_identity,
+            accepted_receipt=accepted_receipt,
+            consumer_identity=consumer_identity,
+        )
     if handoff.get("schemaVersion") != 1 or handoff.get("kind") != "phase-handoff":
         return False, "handoff_schema_invalid"
     if repository and str(handoff.get("repository") or "") != repository:
@@ -802,7 +823,13 @@ def _assemble_in_worktree(
     return head
 
 
-def _write_isolated_state(repo: Path, phase_branch: str, record: Mapping[str, Any], handoff: Mapping[str, Any]) -> Path:
+def _write_isolated_state(
+    repo: Path,
+    phase_branch: str,
+    record: Mapping[str, Any],
+    handoff: Mapping[str, Any],
+    provider_consumer_handoff: Mapping[str, Any] | None = None,
+) -> Path:
     state_dir = _coordinator_state_dir(repo, phase_branch)
     state_dir.mkdir(parents=True, exist_ok=True)
     (state_dir / "phase-delivery-record.json").write_text(
@@ -813,6 +840,11 @@ def _write_isolated_state(repo: Path, phase_branch: str, record: Mapping[str, An
         json.dumps(handoff, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
+    if provider_consumer_handoff is not None:
+        (state_dir / "provider-consumer-handoff.json").write_text(
+            json.dumps(provider_consumer_handoff, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
     return state_dir
 
 
@@ -896,9 +928,14 @@ def _phase_record(
     return record
 
 
-def _handoff_from(record: Mapping[str, Any], *, valid: bool = True) -> dict[str, Any]:
+def _handoff_from(
+    record: Mapping[str, Any],
+    *,
+    valid: bool = True,
+    provider_consumer_handoff: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
     pr = record.get("phasePr") if isinstance(record.get("phasePr"), Mapping) else {}
-    return {
+    result = {
         "schemaVersion": 1,
         "kind": "phase-handoff",
         "repository": record.get("repository"),
@@ -920,6 +957,12 @@ def _handoff_from(record: Mapping[str, Any], *, valid: bool = True) -> dict[str,
         "valid": bool(valid),
         "component": COMPONENT_KIND,
     }
+    if provider_consumer_handoff is not None:
+        result["providerConsumerHandoff"] = dict(provider_consumer_handoff)
+        result["evidenceLocations"]["providerConsumerHandoff"] = (
+            ".linktrend/provider-consumer-handoff.json"
+        )
+    return result
 
 
 def assemble_phase(
@@ -936,6 +979,7 @@ def assemble_phase(
     pusher: PushPort | None = None,
     require_live_pr: bool = False,
     evidence_payloads: Mapping[str, Any] | None = None,
+    provider_consumer_handoff: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Create or update exactly one Phase branch and draft PR representation."""
 
@@ -1093,9 +1137,19 @@ def assemble_phase(
         pr_number=int(pr["number"]),
     )
     record["fullMayStart"] = {"allowed": allowed, "detail": detail}
-    handoff = _handoff_from(record, valid=True)
-    written = _write_isolated_state(repo, phase_branch, record, handoff)
-    return {
+    handoff = _handoff_from(
+        record,
+        valid=True,
+        provider_consumer_handoff=provider_consumer_handoff,
+    )
+    written = _write_isolated_state(
+        repo,
+        phase_branch,
+        record,
+        handoff,
+        provider_consumer_handoff=provider_consumer_handoff,
+    )
+    result = {
         "component": COMPONENT_KIND,
         "action": "reused" if identical else ("updated" if existing_phase else "created"),
         "repository": repository,
@@ -1119,6 +1173,9 @@ def assemble_phase(
         "stateDir": str(written),
         "agentEnvIgnored": [key for key in AGENT_ENV_KEYS if os.environ.get(key)],
     }
+    if provider_consumer_handoff is not None:
+        result["providerConsumerHandoff"] = dict(provider_consumer_handoff)
+    return result
 
 
 def invalidate_handoff_if_head_changed(handoff: Mapping[str, Any], *, live_head: str) -> dict[str, Any]:

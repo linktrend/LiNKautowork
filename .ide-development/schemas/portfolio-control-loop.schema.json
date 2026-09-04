@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/portfolio-control-loop.schema.json",
+  "title": "Portfolio control loop configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "protocol",
+    "protocolVersion",
+    "cadenceSeconds",
+    "supportedCadencesSeconds",
+    "leaseSeconds",
+    "stalledAfterSeconds",
+    "replacementLimit",
+    "stagedCapacityPolicy",
+    "maxAutomationRetries",
+    "triggers",
+    "terminalStates",
+    "reportStatuses",
+    "reportLanguages"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "protocol": { "type": "string", "const": "portfolio-control-loop" },
+    "protocolVersion": { "type": "string", "const": "1.0" },
+    "cadenceSeconds": { "type": "integer", "enum": [3600, 7200] },
+    "supportedCadencesSeconds": {
+      "type": "array",
+      "const": [3600, 7200]
+    },
+    "leaseSeconds": { "type": "integer", "minimum": 30, "maximum": 3600 },
+    "stalledAfterSeconds": { "type": "integer", "minimum": 30, "maximum": 3600 },
+    "replacementLimit": { "type": "integer", "const": 1 },
+    "stagedCapacityPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stages", "constraints"],
+      "properties": {
+        "stages": {
+          "type": "array",
+          "const": [
+            {"stage": 1, "cursor": 5, "luna": 2, "underfillLuna": 1, "afterVerification": "baseline"},
+            {"stage": 2, "cursor": 10, "luna": 4, "underfillLuna": 1, "afterVerification": "routing-integration"},
+            {"stage": 3, "cursor": 20, "luna": 4, "underfillLuna": 2, "afterVerification": "stage-2"}
+          ]
+        },
+        "constraints": {
+          "type": "array",
+          "const": ["macMemory", "realCursorCapacity"]
+        }
+      }
+    },
+    "maxAutomationRetries": { "type": "integer", "const": 1 },
+    "triggers": {
+      "type": "array",
+      "const": ["hourly", "PULSE"]
+    },
+    "terminalStates": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "reportStatuses": {
+      "type": "array",
+      "const": ["DONE", "RUNNING", "HOLD"]
+    },
+    "reportLanguages": {
+      "type": "array",
+      "const": ["ISSUED", "RUNNING", "FINISHED", "NOT ISSUED"]
+    }
+  }
+}

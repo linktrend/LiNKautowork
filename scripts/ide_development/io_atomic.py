@@ -45,7 +45,19 @@ def atomic_write_bytes(dest: Path, data: bytes, *, mode: str | int) -> None:
         # Policy refuses overwriting symlink paths (even though replace would not follow).
         if path_is_symlink(dest):
             raise OSError(f"Refusing to overwrite symlink: {dest}")
-        os.replace(tmp_path, dest)
+        # Windows refuses replacing a destination carrying its read-only
+        # attribute. Clear that attribute only for the replace operation; the
+        # replacement temp file already has the requested final mode.
+        original_dest_mode: int | None = None
+        if os.name == "nt" and dest.is_file():
+            original_dest_mode = dest.stat().st_mode & 0o7777
+            os.chmod(dest, original_dest_mode | 0o200)
+        try:
+            os.replace(tmp_path, dest)
+        except Exception:
+            if original_dest_mode is not None and dest.is_file():
+                os.chmod(dest, original_dest_mode)
+            raise
     except Exception:
         try:
             if tmp_path.exists() or path_is_symlink(tmp_path):
@@ -94,7 +106,16 @@ def remove_file(path: Path) -> None:
         path.unlink()
         return
     if path.is_file():
-        path.unlink()
+        original_mode: int | None = None
+        if os.name == "nt":
+            original_mode = path.stat().st_mode & 0o7777
+            os.chmod(path, original_mode | 0o200)
+        try:
+            path.unlink()
+        except Exception:
+            if original_mode is not None and path.is_file():
+                os.chmod(path, original_mode)
+            raise
         return
     if path.exists():
         raise OSError(f"Refusing to remove non-file path: {path}")

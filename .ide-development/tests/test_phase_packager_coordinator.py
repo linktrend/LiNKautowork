@@ -12,6 +12,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from jsonschema import Draft202012Validator, RefResolver
+
 from scripts.gitops import packager_coordinator as coordinator
 from scripts.gitops import packager_discover as discover
 from scripts.ide_development.constants import RC_REQUIRED_SCHEMA_RELS
@@ -94,6 +96,7 @@ class Fixture:
             expected_repository=kwargs.get("expected_repository", "owner/name"),
             require_live_pr=kwargs.get("require_live_pr", False),
             evidence_payloads=kwargs.get("evidence_payloads"),
+            provider_consumer_handoff=kwargs.get("provider_consumer_handoff"),
         )
 
 
@@ -225,7 +228,14 @@ class PhasePackagerCoordinatorTests(unittest.TestCase):
             "pushed": True,
             "scopedDiff": True,
             "focusedTests": {"passed": True},
-            "independentTerraVerification": True,
+            "independentNarrowReview": {
+                "accepted": True,
+                "headSha": source.sha,
+                "gitTree": tree,
+                "paths": ["declared-checkpoint-scope"],
+                "reviewer": {"actor": "independent-reviewer", "role": "reviewer"},
+                "implementerActor": "implementer",
+            },
             "manifestEvidence": True,
             "classification": "tests",
             "acceptance": "PKT-05 lean checkpoint",
@@ -366,6 +376,44 @@ class PhasePackagerCoordinatorTests(unittest.TestCase):
         record_schema = json.loads((ROOT / "core/managed-core/schemas/phase-record.schema.json").read_text(encoding="utf-8"))
         for key in record_schema["required"]:
             self.assertIn(key, cursor["record"])
+
+    def test_typed_provider_consumer_handoff_is_carried_and_written_separately(self) -> None:
+        one = self.fx.accept_issue(171, "typed.txt", "typed\n")
+        provider = {"repository": "owner/provider", "commit": "a" * 40, "tree": "b" * 40}
+        consumer = {"repository": "owner/consumer", "commit": "c" * 40, "tree": "d" * 40}
+        receipt = {
+            "status": "accepted",
+            "protected": True,
+            "receiptDigest": "sha256:" + "e" * 64,
+            "provider": provider,
+        }
+        typed = coordinator.build_provider_consumer_handoff(
+            provider=provider,
+            consumer=consumer,
+            artifact_digest="sha256:" + "f" * 64,
+            contract_digest="sha256:" + "1" * 64,
+            verdict="accepted",
+            lifecycle_state="accepted",
+            accepted_receipt=receipt,
+        )
+        result = self.fx.assemble([one], provider_consumer_handoff=typed)
+        self.assertEqual(result["providerConsumerHandoff"], typed)
+        state_dir = Path(result["stateDir"])
+        self.assertEqual(
+            json.loads((state_dir / "provider-consumer-handoff.json").read_text(encoding="utf-8")),
+            typed,
+        )
+        phase_schema_path = ROOT / "core/managed-core/schemas/phase-handoff.schema.json"
+        phase_schema = json.loads(phase_schema_path.read_text(encoding="utf-8"))
+        typed_schema_path = ROOT / "core/managed-core/schemas/provider-consumer-handoff.schema.json"
+        typed_schema = json.loads(typed_schema_path.read_text(encoding="utf-8"))
+        resolver = RefResolver(
+            phase_schema_path.as_uri(),
+            phase_schema,
+            store={typed_schema_path.as_uri(): typed_schema, typed_schema["$id"]: typed_schema},
+        )
+        errors = list(Draft202012Validator(phase_schema, resolver=resolver).iter_errors(result["handoff"]))
+        self.assertEqual(errors, [])
 
     def test_does_not_push_protected_branches(self) -> None:
         one = self.fx.accept_issue(18, "protect.txt", "protect\n")

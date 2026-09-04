@@ -25,7 +25,8 @@ digests match. Main promotion requires Carlos's explicit approval.
 ## v2.5 Issue checkpoint (`V25_BOOTSTRAP_LEAN`)
 
 Issue checkpoints are accepted from exact pushed commit/tree, scoped diff,
-focused tests, independent Terra verification, and manifest evidence. Review
+focused tests, one provider-independent narrow review bound to that exact
+identity, and manifest evidence. Review
 Ready publication, `AUTOMATION_TOKEN`, Issue PRs, hosted completion status,
 and legacy publisher status are nonrequirements. Legacy publisher/status
 outcomes are `WAIVED_LEGACY_GATE`, never PASS, and never bypass substantive
@@ -75,10 +76,11 @@ clean or in-progress. `ingest_review` fails closed on HOLD /
 corrected or fabricate clean after a stop. Implementers never review their
 own work. Reviewer silence or timeout is never clean and cannot authorize
 Full or repair until a valid exact-bound review transition explicitly clears
-the stop. A later source change invalidates prior review and Full evidence.
-Full does not run until required independent review is clean unless
-repository policy explicitly requires Full first, and never while HOLD or
-`review_stalled`.
+the stop. A narrow repair invalidates only focused and delta evidence for its
+touched paths; prior exact review and Full records remain historical, with
+unchanged path evidence reusable. The final combined Full is run once for the
+sealed candidate and its exact receipt is reused for staging and main.
+Full never runs while HOLD or `review_stalled`.
 
 ## External boundary
 

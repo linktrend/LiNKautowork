@@ -404,6 +404,18 @@ def build_entries() -> list[dict[str, Any]]:
         ("content/README.md", ".ide-development/content/README.md"),
         ("config/delivery.json", ".ide-development/config/delivery.json"),
         (
+            "content/config/portfolio-control-loop.json",
+            ".ide-development/content/config/portfolio-control-loop.json",
+        ),
+        (
+            "content/config/routing-registry.json",
+            ".ide-development/content/config/routing-registry.json",
+        ),
+        (
+            "content/config/toolchain-manifest.json",
+            ".ide-development/content/config/toolchain-manifest.json",
+        ),
+        (
             "content/config/generated-output-closure.consumer.json",
             ".ide-development/config/generated-output-closure.json",
         ),
@@ -420,6 +432,10 @@ def build_entries() -> list[dict[str, Any]]:
         ("migrations/README.md", ".ide-development/migrations/README.md"),
         ("schemas/manifest.schema.json", ".ide-development/schemas/manifest.schema.json"),
         ("schemas/installed-state.schema.json", ".ide-development/schemas/installed-state.schema.json"),
+        (
+            "schemas/managed-ownership.schema.json",
+            ".ide-development/schemas/managed-ownership.schema.json",
+        ),
         ("schemas/transaction.schema.json", ".ide-development/schemas/transaction.schema.json"),
         (
             "schemas/release-candidate.schema.json",
@@ -494,8 +510,44 @@ def build_entries() -> list[dict[str, Any]]:
             ".ide-development/schemas/transactional-dispatch.schema.json",
         ),
         (
+            "schemas/mutation-declaration.schema.json",
+            ".ide-development/schemas/mutation-declaration.schema.json",
+        ),
+        (
+            "schemas/portfolio-control-loop.schema.json",
+            ".ide-development/schemas/portfolio-control-loop.schema.json",
+        ),
+        (
+            "schemas/provider-consumer-handoff.schema.json",
+            ".ide-development/schemas/provider-consumer-handoff.schema.json",
+        ),
+        (
+            "schemas/routing-registry.schema.json",
+            ".ide-development/schemas/routing-registry.schema.json",
+        ),
+        (
+            "schemas/toolchain-manifest.schema.json",
+            ".ide-development/schemas/toolchain-manifest.schema.json",
+        ),
+        (
+            "schemas/transition-receipt.schema.json",
+            ".ide-development/schemas/transition-receipt.schema.json",
+        ),
+        (
             "schemas/secret-scan-result.schema.json",
             ".ide-development/schemas/secret-scan-result.schema.json",
+        ),
+        (
+            "schemas/managed-upgrade-resolution.schema.json",
+            ".ide-development/schemas/managed-upgrade-resolution.schema.json",
+        ),
+        (
+            "schemas/change-scoped-secret-scan.schema.json",
+            ".ide-development/schemas/change-scoped-secret-scan.schema.json",
+        ),
+        (
+            "schemas/openclaw-customization-admission.schema.json",
+            ".ide-development/schemas/openclaw-customization-admission.schema.json",
         ),
         (
             "schemas/repository-ci-contract.schema.json",
@@ -593,6 +645,10 @@ def build_entries() -> list[dict[str, Any]]:
             "core/execution/transactional_dispatch.py",
             ".ide-development/execution/transactional_dispatch.py",
         ),
+        (
+            "core/execution/cursor_cloud_dispatch.py",
+            ".ide-development/execution/cursor_cloud_dispatch.py",
+        ),
         ("core/execution/rollout.py", ".ide-development/execution/rollout.py"),
         (
             "core/execution/examples/verification-run.example.json",
@@ -638,6 +694,22 @@ def build_entries() -> list[dict[str, Any]]:
         (
             "core/managed-core/content/doctrine/PKT08-REVISION-60-FINAL-CONTROLS.md",
             ".ide-development/content/doctrine/PKT08-REVISION-60-FINAL-CONTROLS.md",
+        ),
+        (
+            "core/contracts/CURSOR-CLOUD-DISPATCH-CONTRACT.md",
+            ".ide-development/contracts/CURSOR-CLOUD-DISPATCH-CONTRACT.md",
+        ),
+        (
+            "core/managed-core/content/config/cursor-cloud-dispatch.json",
+            ".ide-development/content/config/cursor-cloud-dispatch.json",
+        ),
+        (
+            "core/managed-core/content/doctrine/CURSOR-CLOUD-DISPATCH-CONTRACT.md",
+            ".ide-development/content/doctrine/CURSOR-CLOUD-DISPATCH-CONTRACT.md",
+        ),
+        (
+            "core/managed-core/schemas/cursor-cloud-dispatch.schema.json",
+            ".ide-development/schemas/cursor-cloud-dispatch.schema.json",
         ),
     )
     for source, destination in transactional_dispatch_files:

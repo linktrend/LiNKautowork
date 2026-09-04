@@ -75,6 +75,70 @@ _SECRET_PATTERNS = (
     re.compile(r"(?i)xox[baprs]-[A-Za-z0-9-]{10,}"),
 )
 
+
+def _is_code_call_assignment(text: str, match: re.Match[str]) -> bool:
+    """Recognize a multiline variable assignment to a function call.
+
+    The package guard scans source bytes independently of the AST-based
+    scanner. A line such as ``api_key = require_cursor_cloud_api_key(`` names
+    a resolver and contains no secret literal. Only an open-call form whose
+    balanced arguments contain no credential-looking literal is exempted.
+    Literal values and completed calls remain covered.
+    """
+    line_start = text.rfind("\n", 0, match.start()) + 1
+    line_end = text.find("\n", match.end())
+    if line_end < 0:
+        line_end = len(text)
+    line = text[line_start:line_end].strip().strip("`").strip()
+    call = re.search(
+        r"(?:api[_-]?key|secret[_-]?key|access[_-]?token|private[_-]?key)"
+        r"\s*[:=]\s*[A-Za-z_][A-Za-z0-9_.]*\(\s*",
+        line,
+        flags=re.IGNORECASE,
+    )
+    if call is None:
+        return False
+    opening = text.find("(", line_start + call.start())
+    if opening < 0:
+        return False
+
+    # Find the matching close while respecting quoted strings. This keeps a
+    # multiline resolver call exempt while allowing the guard to inspect its
+    # arguments for a literal credential.
+    depth = 0
+    quote = ""
+    escaped = False
+    closing = -1
+    for index in range(opening, len(text)):
+        char = text[index]
+        if quote:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == quote:
+                quote = ""
+            continue
+        if char in "'\"`":
+            quote = char
+        elif char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+            if depth == 0:
+                closing = index
+                break
+    if closing < 0:
+        return False
+
+    arguments = text[opening + 1 : closing]
+    if re.search(r"['\"][A-Za-z0-9_\-/+=]{20,}['\"]", arguments):
+        return False
+    for token_pattern in _SECRET_PATTERNS[2:]:
+        if token_pattern.search(arguments):
+            return False
+    return True
+
 _INSTALL_INSTRUCTIONS = f"""\
 # Install from release candidate (extracted archive)
 
@@ -323,10 +387,13 @@ def _scan_bytes_for_secrets(rel: str, data: bytes) -> None:
         return
     for pattern in _SECRET_PATTERNS:
         if pattern.search(text):
-            raise ReleaseCandidateError(
-                f"Refusing to package credential-like content: {rel}",
-                details={"path": rel, "pattern": pattern.pattern},
-            )
+            for match in pattern.finditer(text):
+                if pattern is _SECRET_PATTERNS[1] and _is_code_call_assignment(text, match):
+                    continue
+                raise ReleaseCandidateError(
+                    f"Refusing to package credential-like content: {rel}",
+                    details={"path": rel, "pattern": pattern.pattern},
+                )
 
 
 def _scan_bytes_for_host_paths(rel: str, data: bytes, *, repo_root: Path) -> None:

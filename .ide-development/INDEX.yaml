@@ -1,5 +1,5 @@
 # Managed-core discovery index
-version: "2.5.1"
+version: "2.5.2"
 status: v2-github-hosted-phase-delivery
 contract: docs/contracts/MANAGED-CORE-V2.md
 adr: docs/adr/0004-portable-managed-core-v2.md
@@ -22,6 +22,8 @@ schemas:
   - schemas/finding-ledger.schema.json
   - schemas/secret-scan-fixtures.schema.json
   - schemas/secret-scan-result.schema.json
+  - schemas/managed-upgrade-resolution.schema.json
+  - schemas/change-scoped-secret-scan.schema.json
   - schemas/generated-output-closure.schema.json
   - schemas/manifest-persistence.schema.json
   - schemas/transactional-dispatch.schema.json

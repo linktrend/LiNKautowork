@@ -13,6 +13,20 @@ from jsonschema import Draft202012Validator
 PROTOCOL_ID = "coding-execution-protocol"
 PROTOCOL_VERSION = "1.0.1"
 AMENDMENT_ID = "V25_BOOTSTRAP_LEAN"
+PORTFOLIO_CONTROL_LOOP_PROTOCOL = "portfolio-control-loop"
+PORTFOLIO_CONTROL_LOOP_VERSION = "1.0"
+PORTFOLIO_LANE_STATES = frozenset(
+    {
+        "PREPARED",
+        "RUNNING",
+        "WAITING_DEPENDENCY",
+        "TERMINAL_ACCEPT",
+        "TERMINAL_REJECT",
+        "INTEGRATING",
+        "COMPLETE",
+        "BLOCKED",
+    }
+)
 CANONICAL_PUBLISHER = None
 WAIVED_LEGACY_GATE = "WAIVED_LEGACY_GATE"
 LEGACY_PUBLISHERS = frozenset(
@@ -27,7 +41,7 @@ ISSUE_CHECKPOINT_EVIDENCE = (
     "exact_pushed_commit_tree",
     "scoped_diff",
     "focused_tests",
-    "independent_terra_verification",
+    "independent_narrow_review",
     "manifest_evidence",
 )
 ADMIN_RECOVERY_OPERATIONS = frozenset(
@@ -300,6 +314,47 @@ class SchedulerVerdict:
     reason: str
     diagnosis: str
     uncertain: bool = False
+
+
+def control_loop_invocation_key(
+    *,
+    coordinator_task_id: str,
+    trigger: str,
+    invocation_id: str | None = None,
+) -> str:
+    """Return the stable key shared by hourly and exact ``PULSE`` wakes."""
+
+    task = str(coordinator_task_id or "").strip()
+    event = str(invocation_id or trigger or "").strip()
+    if not task or not event:
+        raise ValueError("control_loop_invocation_identity_required")
+    return f"{task}:{event}"
+
+
+def validate_control_loop_lease(
+    lease: Mapping[str, Any],
+    *,
+    holder: str,
+    coordinator_task_id: str,
+    now: datetime | None = None,
+) -> bool:
+    """Validate a durable portfolio-controller lease without ambient state."""
+
+    clock = now or datetime.now(timezone.utc)
+    if not isinstance(lease, Mapping):
+        return False
+    try:
+        expires = datetime.fromisoformat(str(lease["expiresAt"]).replace("Z", "+00:00"))
+    except (KeyError, TypeError, ValueError):
+        return False
+    if expires.tzinfo is None or expires <= clock.astimezone(timezone.utc):
+        return False
+    return (
+        lease.get("holder") == holder
+        and lease.get("coordinatorTaskId") == coordinator_task_id
+        and isinstance(lease.get("nonce"), str)
+        and bool(lease.get("nonce"))
+    )
 
 
 class DurableHeartbeatStore:
@@ -596,6 +651,41 @@ def _is_sha40(value: str) -> bool:
     return len(value) == 40 and all(char in _SHA40 for char in value)
 
 
+def valid_independent_narrow_review(
+    review: Mapping[str, Any] | None,
+    *,
+    commit: str,
+    tree: str,
+) -> bool:
+    """Validate one provider-neutral, exact-candidate narrow review.
+
+    The route may be the ordinary Cursor reviewer or a Principal-authorized
+    Luna reviewer.  The protocol therefore validates identity and role
+    separation, not a vendor or model name.
+    """
+
+    if not isinstance(review, Mapping) or review.get("accepted") is not True:
+        return False
+    if review.get("headSha") != commit or review.get("gitTree") != tree:
+        return False
+    paths = review.get("paths") or review.get("scope")
+    if not isinstance(paths, list) or not paths or any(
+        not isinstance(path, str) or not path.strip() for path in paths
+    ):
+        return False
+    reviewer = review.get("reviewer")
+    if not isinstance(reviewer, Mapping):
+        return False
+    actor = str(reviewer.get("actor") or reviewer.get("id") or "").strip()
+    role = str(reviewer.get("role") or "").strip().lower()
+    implementer = str(
+        review.get("implementerActor") or review.get("implementer") or ""
+    ).strip()
+    if not actor or role != "reviewer" or not implementer or actor == implementer:
+        return False
+    return True
+
+
 def publisher_is_canonical(name: str | None) -> bool:
     del name
     return False
@@ -642,7 +732,7 @@ def evaluate_issue_checkpoint(
     tree: str,
     scoped_diff: bool,
     focused_tests_passed: bool,
-    independent_terra_verified: bool,
+    independent_narrow_review: Mapping[str, Any] | None,
     manifest_evidence: bool,
     review_ready: bool = False,
     automation_token_present: bool = False,
@@ -656,9 +746,11 @@ def evaluate_issue_checkpoint(
         return IssueCheckpointDecision(False, False, False, "scoped_diff_required")
     if not focused_tests_passed:
         return IssueCheckpointDecision(False, False, False, "focused_tests_required")
-    if not independent_terra_verified:
+    if not valid_independent_narrow_review(
+        independent_narrow_review, commit=commit, tree=tree
+    ):
         return IssueCheckpointDecision(
-            False, False, False, "independent_terra_verification_required"
+            False, False, False, "independent_narrow_review_required"
         )
     if not manifest_evidence:
         return IssueCheckpointDecision(
