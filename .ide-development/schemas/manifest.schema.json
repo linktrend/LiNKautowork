@@ -38,6 +38,13 @@
       "items": {
         "$ref": "#/$defs/manifestEntry"
       }
+    },
+    "capabilities": {
+      "type": "array",
+      "description": "Optional capability dependency graph. Every dependency must be present in this manifest.",
+      "items": {
+        "$ref": "#/$defs/capability"
+      }
     }
   },
   "$defs": {
@@ -147,6 +154,32 @@
         },
         "notes": {
           "type": "string"
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Stable authority owning this installed path. Defaults to the package name."
+        },
+        "mutabilityPolicy": {
+          "type": "string",
+          "const": "read-only"
+        },
+        "removalPolicy": {
+          "type": "string",
+          "enum": ["preserve", "exact-match", "transaction-only"]
+        },
+        "capabilityId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "capabilityVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "requires": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
         }
       },
       "allOf": [
@@ -179,6 +212,25 @@
           }
         }
       ]
+    },
+    "capability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 },
+        "entryIds": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "requires": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      }
     }
   }
 }

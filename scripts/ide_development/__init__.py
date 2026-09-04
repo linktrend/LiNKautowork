@@ -5,5 +5,5 @@ Stdlib-only. Physical file materialization. Fail-closed conflicts.
 
 from __future__ import annotations
 
-__version__ = "2.5.1"
+__version__ = "2.5.2"
 SCHEMA_VERSION = 1

@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/managed-upgrade-resolution.schema.json",
+  "title": "IDE managed upgrade resolution v2",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schemaVersion", "kind", "repository", "targetWorktree", "consumer", "provider", "allowedConflictPaths", "conflicts", "verification", "backupAndRollback", "resolution"],
+  "properties": {
+    "schemaVersion": {"const": 2},
+    "kind": {"const": "ide-managed-upgrade-resolution"},
+    "repository": {"type": "string", "minLength": 1},
+    "targetWorktree": {"type": "string", "minLength": 1},
+    "consumer": {"$ref": "#/$defs/identity"},
+    "provider": {"type": "object", "required": ["repository", "authoritativeRef", "commit", "tree", "installerVersion", "independentVerificationReceipt", "managedPackageManifest"]},
+    "allowedConflictPaths": {"const": [".ide-development/schemas/managed-upgrade-resolution.schema.json", ".ide-development/schemas/phase-handoff.schema.json", ".ide-development/schemas/phase-record.schema.json", ".ide-development/schemas/secret-scan-result.schema.json", ".ide-development/tests/test_fixture_aware_secret_scan.py", ".ide-development/tests/test_phase_packager_coordinator.py", "scripts/gitops/packager_coordinator.py", "scripts/gitops/phase_integrator.py", "scripts/gitops/secret_scan.py"]},
+    "conflicts": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/conflict"}},
+    "verification": {"type": "object", "required": ["providerReceipt", "providerTreeRequired", "consumerTreeRequired", "noUpstreamScanOrMutation"], "properties": {"changeScopedSecretScan": {"$ref": "#/$defs/changeScopedSecretScan"}}},
+    "backupAndRollback": {"type": "object", "required": ["backupRequiredBeforeApply", "transactionRequired", "manualOverwriteForbidden"]},
+    "resolution": {"type": "object", "required": ["deferredPaths", "noExtraPaths"]}
+  },
+  "$defs": {
+    "oid": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "identity": {"type": "object", "required": ["commit", "tree"], "properties": {"commit": {"$ref": "#/$defs/oid"}, "tree": {"$ref": "#/$defs/oid"}}},
+    "conflict": {
+      "type": "object",
+      "required": ["path", "installedBaseline", "currentConsumer", "provider"],
+      "properties": {
+        "path": {"enum": [".ide-development/schemas/managed-upgrade-resolution.schema.json", ".ide-development/schemas/phase-handoff.schema.json", ".ide-development/schemas/phase-record.schema.json", ".ide-development/schemas/secret-scan-result.schema.json", ".ide-development/tests/test_fixture_aware_secret_scan.py", ".ide-development/tests/test_phase_packager_coordinator.py", "scripts/gitops/packager_coordinator.py", "scripts/gitops/phase_integrator.py", "scripts/gitops/secret_scan.py"]},
+        "installedBaseline": {"$ref": "#/$defs/file"},
+        "currentConsumer": {"$ref": "#/$defs/file"},
+        "provider": {"$ref": "#/$defs/file"},
+        "decision": {"const": "provider-supersedes"}
+      }
+    },
+    "file": {"type": "object", "required": ["sha256"], "properties": {"sha256": {"$ref": "#/$defs/digest"}}},
+    "changeScopedSecretScan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence", "evidenceDigest"],
+      "properties": {
+        "evidenceDigest": {"$ref": "#/$defs/digest"},
+        "evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["schemaVersion", "kind", "repository", "authoritativeRemoteRef", "baselineCommit", "baselineTree", "candidateCommit", "candidateGitTree", "scannerPolicyVersion", "managedPaths", "configDigest", "findings"],
+          "properties": {
+            "schemaVersion": {"const": 1},
+            "kind": {"const": "change-scoped-secret-scan-evidence"},
+            "repository": {"type": "string", "minLength": 1},
+            "authoritativeRemoteRef": {"type": "string", "minLength": 1},
+            "baselineCommit": {"$ref": "#/$defs/oid"},
+            "baselineTree": {"$ref": "#/$defs/oid"},
+            "candidateCommit": {"$ref": "#/$defs/oid"},
+            "candidateGitTree": {"$ref": "#/$defs/oid"},
+            "scannerPolicyVersion": {"type": "string", "minLength": 1},
+            "managedPaths": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+            "configDigest": {"$ref": "#/$defs/digest"},
+            "findings": {"type": "array", "items": {"type": "object"}}
+          }
+        }
+      }
+    }
+  }
+}

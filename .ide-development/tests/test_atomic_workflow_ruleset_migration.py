@@ -20,13 +20,19 @@ class CheckContractTests(unittest.TestCase):
             "Enforce allowed PR source branches",
             contract["checks"].values(),
         )
+        self.assertNotIn("reviewGate", contract["checks"])
+        self.assertIn("Linktrend Review Gate", contract["removedManaged"])
+        self.assertEqual(contract["aggregateContext"], "Linktrend Full Suite")
+        self.assertEqual(
+            contract["obsoleteManaged"]["Linktrend Repository CI Gate"],
+            "Linktrend Full Suite",
+        )
 
     def test_protection_baseline_uses_active_source_policy(self) -> None:
         dev = rp.managed_baseline("development")
         self.assertEqual(
             dev,
             [
-                "Linktrend Review Gate",
                 "Verify IDE Development",
                 "Linktrend Branch Source Policy",
             ],
@@ -95,6 +101,7 @@ class ThreeBranchRenameTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertEqual(result["code"], mig.MIGRATION_INCOMPLETE)
         self.assertFalse(result["falseSuccess"])
+        self.assertEqual(result["receipt"]["status"], "incomplete")
         self.assertEqual(
             store,
             {
@@ -121,7 +128,28 @@ class PreserveRepoOwnedTests(unittest.TestCase):
         self.assertIn("Extra Gate", union["preserved"])
         self.assertIn("Linktrend Branch Source Policy", union["desired"])
         self.assertNotIn("Enforce allowed PR source branches", union["desired"])
-        self.assertEqual(union["desired"].index("Linktrend Review Gate"), 0)
+        self.assertNotIn("Linktrend Review Gate", union["desired"])
+
+    def test_before_after_receipt_is_digest_bound_and_readback_checked(self) -> None:
+        before = {"development": ["Linktrend Repository CI Gate"]}
+        after = {"development": ["Linktrend Full Suite"]}
+        receipt = mig.build_migration_receipt(
+            before_state=before,
+            after_state=after,
+            status="applied",
+        )
+        verified = mig.verify_migration_receipt(
+            receipt,
+            before_state=before,
+            after_state=after,
+        )
+        self.assertTrue(verified["ok"])
+        tampered = dict(receipt)
+        tampered["after"] = {"development": ["forged"]}
+        self.assertEqual(
+            mig.verify_migration_receipt(tampered)["code"],
+            "migration_receipt_after_mismatch",
+        )
 
 
 class ContextDefectTests(unittest.TestCase):
@@ -183,7 +211,7 @@ class EvaluatorMigrationTests(unittest.TestCase):
         )
         self.assertEqual(
             after["packagerRequiredChecks"],
-            ["Linktrend Review Gate", "Verify IDE Development"],
+            ["Verify IDE Development"],
         )
         self.assertEqual(
             after["promoterRequiredChecks"],

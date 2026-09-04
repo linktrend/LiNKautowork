@@ -187,6 +187,20 @@ Every mutating operation (`install`, `update`, `rollback`) must:
 
 ## Conflict matrix (fail closed)
 
+### Canonical scanner conflict resolution
+
+The installer accepts a prepared `ide-managed-upgrade-resolution` v2 receipt
+only for the exact three scanner paths listed by
+`managed-upgrade-resolution.schema.json`. The receipt binds consumer commit
+and tree, provider commit and tree, the installed-state preimage, each
+installed/current/provider digest, and an explicit `provider-supersedes`
+decision. It also requires an independent verification receipt and a
+transaction backup/rollback proof. Stale identity or digest, an extra or
+traversal/wildcard path, dirty consumer state, downgrade, ambiguous merge, or
+missing post-install verification fails closed before apply. The normal
+transaction journal remains the only write path; manual overwrite and broad
+auto-merge are forbidden.
+
 | Situation | Classification | Installer action |
 |---|---|---|
 | Destination absent | `missing` | Create from package (mutating ops) |

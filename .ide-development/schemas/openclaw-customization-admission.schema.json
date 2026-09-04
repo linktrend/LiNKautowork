@@ -1,0 +1,192 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/openclaw-customization-admission.schema.json",
+  "title": "OpenClaw Prime customization-scoped admission",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "installerVersion",
+    "repository",
+    "prime",
+    "upstream",
+    "boundary",
+    "scope",
+    "checkedPaths",
+    "findings",
+    "verdict",
+    "noUpstreamScanOrMutation"
+  ],
+  "$defs": {
+    "sha40": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "relPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/|\\)(?!.*\\.\\.(?:/|\\\\|$))(?!.*:).+"
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commit", "tree"],
+      "properties": {
+        "commit": { "$ref": "#/$defs/sha40" },
+        "tree": { "$ref": "#/$defs/sha40" }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "path", "rule"],
+      "properties": {
+        "kind": { "type": "string", "minLength": 1 },
+        "path": { "$ref": "#/$defs/relPath" },
+        "line": { "type": "integer", "minimum": 1 },
+        "field": { "type": "string", "minLength": 1 },
+        "rule": { "type": "string", "minLength": 1 },
+        "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "detail": { "type": "string", "minLength": 1 }
+      }
+    }
+  },
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "kind": { "type": "string", "const": "openclaw-customization-admission" },
+    "installerVersion": { "type": "string", "const": "2.5.2" },
+    "repository": { "type": "string", "const": "linktrend/openclaw_prime" },
+    "prime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "commit", "tree"],
+      "properties": {
+        "repository": { "type": "string", "const": "linktrend/openclaw_prime" },
+        "commit": { "$ref": "#/$defs/sha40" },
+        "tree": { "$ref": "#/$defs/sha40" }
+      }
+    },
+    "upstream": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "classificationPin"],
+      "properties": {
+        "repository": { "type": "string", "const": "openclaw/openclaw" },
+        "classificationPin": { "$ref": "#/$defs/identity" }
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "kind"],
+      "properties": {
+        "path": { "$ref": "#/$defs/relPath" },
+        "kind": {
+          "type": "string",
+          "const": "openclaw-prime-customization-boundary"
+        }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["linktrendOwned", "ideManaged", "ideTransactionChanged", "forbiddenWholeTrees"],
+      "properties": {
+        "linktrendOwned": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["prefixes", "exactPaths"],
+          "properties": {
+            "prefixes": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/relPath" },
+              "uniqueItems": true
+            },
+            "exactPaths": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/relPath" },
+              "uniqueItems": true
+            }
+          }
+        },
+        "ideManaged": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "inventoryPath",
+            "packageName",
+            "packageVersion",
+            "destinationCount",
+            "prefixes",
+            "overlayOnUpstreamExactPaths",
+            "declaredMissingLocally"
+          ],
+          "properties": {
+            "inventoryPath": { "$ref": "#/$defs/relPath" },
+            "packageName": { "type": ["string", "null"] },
+            "packageVersion": { "type": ["string", "null"] },
+            "destinationCount": { "type": ["integer", "null"] },
+            "prefixes": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/relPath" },
+              "uniqueItems": true
+            },
+            "overlayOnUpstreamExactPaths": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/relPath" },
+              "uniqueItems": true
+            },
+            "declaredMissingLocally": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/relPath" },
+              "uniqueItems": true
+            }
+          }
+        },
+        "ideTransactionChanged": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["records", "paths"],
+          "properties": {
+            "records": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["receiptPath", "paths"],
+                "properties": {
+                  "receiptPath": { "$ref": "#/$defs/relPath" },
+                  "paths": {
+                    "type": "array",
+                    "items": { "$ref": "#/$defs/relPath" },
+                    "uniqueItems": true
+                  }
+                }
+              }
+            },
+            "paths": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/relPath" },
+              "uniqueItems": true
+            }
+          }
+        },
+        "forbiddenWholeTrees": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/relPath" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "checkedPaths": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/relPath" },
+      "uniqueItems": true
+    },
+    "findings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/finding" }
+    },
+    "verdict": { "type": "string", "enum": ["admitted", "rejected"] },
+    "noUpstreamScanOrMutation": { "type": "boolean", "const": true }
+  }
+}

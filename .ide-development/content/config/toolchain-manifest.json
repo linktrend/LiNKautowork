@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "kind": "toolchain-manifest",
+  "manifestVersion": "toolchain-manifest/v1",
+  "checks": [
+    {
+      "id": "generated-output-closure",
+      "profiles": ["focused", "fast", "full"],
+      "supported": {
+        "os": ["macos", "linux"],
+        "architectures": ["arm64", "x86_64"]
+      },
+      "runnerClass": "local-or-disposable",
+      "python": {
+        "required": true,
+        "executable": "python3",
+        "version": ">=3.9"
+      },
+      "node": {
+        "required": false,
+        "executable": "node",
+        "version": null
+      },
+      "packageManager": {
+        "required": false,
+        "executable": "npm",
+        "version": null
+      },
+      "systemTools": [
+        {
+          "name": "git",
+          "required": true,
+          "executable": "git",
+          "version": null
+        }
+      ],
+      "services": [],
+      "requiredConfig": [
+        "core/managed-core/config/generated-output-closure.json"
+      ],
+      "networkPolicy": "offline",
+      "resources": {
+        "minimumMemoryMb": 256,
+        "minimumCpuCount": 1,
+        "maximumMemoryMb": 4096,
+        "maximumProcesses": 8
+      }
+    },
+    {
+      "id": "delivery-profile",
+      "profiles": ["focused", "fast", "full"],
+      "supported": {
+        "os": ["macos", "linux"],
+        "architectures": ["arm64", "x86_64"]
+      },
+      "runnerClass": "github-hosted-or-disposable",
+      "python": {
+        "required": true,
+        "executable": "python3",
+        "version": ">=3.9"
+      },
+      "node": {
+        "required": false,
+        "executable": "node",
+        "version": null
+      },
+      "packageManager": {
+        "required": false,
+        "executable": "npm",
+        "version": null
+      },
+      "systemTools": [
+        {
+          "name": "git",
+          "required": true,
+          "executable": "git",
+          "version": null
+        }
+      ],
+      "services": [],
+      "requiredConfig": [
+        ".github/linktrend-delivery-mode.json"
+      ],
+      "networkPolicy": "offline",
+      "resources": {
+        "minimumMemoryMb": 256,
+        "minimumCpuCount": 1,
+        "maximumMemoryMb": 4096,
+        "maximumProcesses": 8
+      }
+    }
+  ]
+}

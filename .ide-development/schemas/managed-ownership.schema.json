@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.local/managed-core/managed-ownership.schema.json",
+  "title": "IDE Development managed-core ownership record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "packageName",
+    "packageVersion",
+    "manifestDigest",
+    "files"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "kind": { "type": "string", "const": "ide-managed-ownership" },
+    "packageName": { "type": "string", "const": "ide-development-managed-core" },
+    "packageVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+([.-][0-9A-Za-z.-]+)?$"
+    },
+    "manifestDigest": { "$ref": "#/$defs/digest" },
+    "files": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "$ref": "#/$defs/file" }
+    }
+  },
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "owner",
+        "packageVersion",
+        "sourceDigest",
+        "installedDigest",
+        "mutabilityPolicy",
+        "removalPolicy"
+      ],
+      "properties": {
+        "owner": { "type": "string", "minLength": 1 },
+        "packageVersion": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+([.-][0-9A-Za-z.-]+)?$"
+        },
+        "sourceDigest": { "$ref": "#/$defs/digest" },
+        "installedDigest": { "$ref": "#/$defs/digest" },
+        "mutabilityPolicy": { "type": "string", "const": "read-only" },
+        "removalPolicy": {
+          "type": "string",
+          "enum": ["preserve", "exact-match", "transaction-only"]
+        },
+        "ownershipClass": { "type": "string", "minLength": 1 },
+        "mode": { "type": "string", "pattern": "^0[0-7]{3}$" }
+      }
+    }
+  }
+}

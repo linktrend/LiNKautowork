@@ -222,6 +222,16 @@ class JsonOutboxDispatchPort:
         return row
 
 
+def run_portfolio_control_loop(loop: Any, **kwargs: Any) -> dict[str, Any]:
+    """Use the same durable loop for hourly and exact ``PULSE`` invocations."""
+
+    from scripts.gitops.portfolio_control_loop import (
+        run_portfolio_control_loop as _run_portfolio_control_loop,
+    )
+
+    return _run_portfolio_control_loop(loop, **kwargs)
+
+
 def run_file_heartbeat(
     *,
     manifest_path: Path | str,
@@ -287,6 +297,8 @@ def main(argv: list[str] | None = None) -> int:
         remaining_seconds=args.remaining_seconds,
     )
     print(json.dumps(result, sort_keys=True))
+    if result.get("requiredAction", {}).get("code") == "UTILIZATION_GAP":
+        return 20
     if result.get("dispatchPerformed") or result.get("requiredAction", {}).get("kind") == "DONT_NOTIFY":
         return 0
     return 20

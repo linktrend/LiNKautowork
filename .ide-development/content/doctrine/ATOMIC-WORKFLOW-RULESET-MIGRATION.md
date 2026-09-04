@@ -18,7 +18,7 @@ a managed workflow depends on a missing coordination label.
 
 | Context | Active name |
 |---|---|
-| Review gate | `Linktrend Review Gate` |
+| Review gate | Removed from required checks; retained provider/review signals are advisory only |
 | Source policy | `Linktrend Branch Source Policy` |
 | Fast | `Linktrend Fast Checks` |
 | Full | `Linktrend Full Suite` |
@@ -27,7 +27,7 @@ a managed workflow depends on a missing coordination label.
 Obsolete managed names (must be replaced, never preserved as repo-owned):
 
 - `Enforce allowed PR source branches` → `Linktrend Branch Source Policy`
-- `Cursor Bugbot` → `Linktrend Review Gate`
+- `Cursor Bugbot`, `Linktrend Review Gate`, and `Linktrend Review Ready` → removed from required checks
 
 ## Capability preflight
 

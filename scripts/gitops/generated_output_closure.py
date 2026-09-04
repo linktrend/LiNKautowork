@@ -24,6 +24,7 @@ DEFAULT_MAX_PASSES = 3
 BASELINE_SHA_ENV = "LINKTREND_TARGET_BASELINE_SHA"
 BASELINE_REF_ENV = "LINKTREND_TARGET_BASELINE_REF"
 SHA40 = r"[0-9a-f]{40}"
+PUSH_BRANCH = r"[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*"
 
 
 class ClosureError(ValueError):
@@ -133,12 +134,14 @@ def load_graph(repo_root: Path | str, graph_path: str = GRAPH_RELATIVE_PATH) -> 
         sources = raw.get("invalidatingSources")
         if not isinstance(sources, list) or not sources or any(not isinstance(item, str) or not item for item in sources):
             raise ClosureError("ambiguous_dependency", f"invalidating source set missing for {output_rel}")
+        safe_sources = tuple(_safe_relative(item, f"outputs[{index}].invalidatingSources") for item in sources)
         depends = raw.get("dependsOn", [])
         if not isinstance(depends, list) or any(not isinstance(item, str) or not item for item in depends):
             raise ClosureError("ambiguous_dependency", f"dependsOn must be an array for {output_rel}")
         additional = raw.get("additionalOutputs", [])
         if not isinstance(additional, list) or any(not isinstance(item, str) or not item for item in additional):
             raise ClosureError("ambiguous_dependency", f"additionalOutputs must be an array for {output_rel}")
+        safe_additional = tuple(_safe_relative(item, f"outputs[{index}].additionalOutputs") for item in additional)
         ids.add(output_id)
         paths.add(output_rel)
         outputs.append(
@@ -146,9 +149,9 @@ def load_graph(repo_root: Path | str, graph_path: str = GRAPH_RELATIVE_PATH) -> 
                 id=output_id,
                 output=output_rel,
                 generator=tuple(command),
-                invalidating_sources=tuple(sources),
+                invalidating_sources=safe_sources,
                 depends_on=tuple(depends),
-                additional_outputs=tuple(additional),
+                additional_outputs=safe_additional,
             )
         )
     unknown = sorted({dep for item in outputs for dep in item.depends_on if dep not in ids})
@@ -737,6 +740,87 @@ def _ensure_remote_target_ref(root: Path, remote_ref: str) -> None:
         )
 
 
+def bind_push_event_baseline(
+    repo_root: Path | str,
+    *,
+    branch: str,
+    before_sha: str,
+    after_sha: str | None = None,
+) -> str:
+    """Bind a push predecessor to an exact event-scoped remote target."""
+    root = Path(repo_root).resolve()
+    if (
+        not isinstance(branch, str)
+        or not re.fullmatch(PUSH_BRANCH, branch)
+        or branch.startswith("refs/")
+        or ".." in branch
+    ):
+        raise ClosureError(
+            "candidate_baseline_ref_invalid",
+            "push branch must be a safe named branch",
+            branch=branch,
+        )
+    if not isinstance(before_sha, str) or not re.fullmatch(SHA40, before_sha) or set(before_sha) == {"0"}:
+        raise ClosureError(
+            "candidate_baseline_invalid",
+            "push predecessor SHA must be a non-zero 40-character lowercase hexadecimal identity",
+        )
+    head = _resolve_commit(root, "HEAD")
+    before = _resolve_commit(root, before_sha)
+    if head is None or before is None:
+        raise ClosureError(
+            "candidate_baseline_invalid",
+            "push predecessor or candidate HEAD does not resolve to a commit",
+            before=before_sha,
+            head=head,
+        )
+    if after_sha is not None:
+        if not isinstance(after_sha, str) or not re.fullmatch(SHA40, after_sha):
+            raise ClosureError("candidate_baseline_invalid", "push after SHA is invalid")
+        if after_sha != head:
+            raise ClosureError(
+                "candidate_baseline_stale",
+                "push after SHA does not match the checked-out candidate HEAD",
+                after=after_sha,
+                head=head,
+            )
+    if before == head:
+        raise ClosureError(
+            "candidate_baseline_equal_head",
+            "push predecessor must be distinct from the candidate HEAD",
+            baseline=before,
+            head=head,
+        )
+    ancestor = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", before, head],
+        cwd=root,
+        check=False,
+    )
+    if ancestor.returncode:
+        raise ClosureError(
+            "candidate_baseline_stale",
+            "push predecessor is not an ancestor of the checked-out candidate",
+            baseline=before,
+            head=head,
+        )
+    target = f"refs/remotes/origin/{branch}-before"
+    updated = subprocess.run(
+        ["git", "update-ref", target, before],
+        cwd=root,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if updated.returncode or _resolve_commit(root, target) != before:
+        raise ClosureError(
+            "candidate_baseline_invalid",
+            "event-bound remote target could not be materialized",
+            ref=target.removeprefix("refs/remotes/"),
+            diagnostics=(updated.stderr or updated.stdout or "").strip()[-1000:],
+        )
+    return target.removeprefix("refs/remotes/")
+
+
 def resolve_candidate_baseline(
     repo_root: Path | str,
     *,
@@ -744,19 +828,26 @@ def resolve_candidate_baseline(
     baseline_ref: str | None = None,
     environ: Mapping[str, str] | None = None,
 ) -> str:
-    """Resolve a distinct candidate baseline from a named remote target ref."""
+    """Resolve a distinct candidate baseline from the runtime remote target tip.
+
+    A directly supplied baseline SHA is an exact assertion and remains strict.
+    An environment SHA is a refreshable runtime hint: a fast-forwarded remote
+    target may supersede it, but unrelated, non-ancestor, or already-at-HEAD
+    moves remain fail-closed.
+    """
     root = Path(repo_root).resolve()
     runtime = os.environ if environ is None else environ
-    sha = baseline_sha or runtime.get(BASELINE_SHA_ENV)
+    explicit_sha = baseline_sha is not None
+    sha = baseline_sha if explicit_sha else runtime.get(BASELINE_SHA_ENV)
     ref = baseline_ref or runtime.get(BASELINE_REF_ENV)
-    if not sha or not ref:
+    if not ref:
         raise ClosureError(
             "candidate_baseline_missing",
             "exact baseline SHA and authoritative remote ref are required at runtime",
             shaProvided=bool(sha),
             refProvided=bool(ref),
         )
-    if not isinstance(sha, str) or not re.fullmatch(SHA40, sha):
+    if sha is not None and (not isinstance(sha, str) or not re.fullmatch(SHA40, sha)):
         raise ClosureError(
             "candidate_baseline_invalid",
             "baseline SHA must be exactly 40 lowercase hexadecimal characters",
@@ -793,17 +884,41 @@ def resolve_candidate_baseline(
             "authoritative remote target ref does not resolve to a commit",
             ref=ref,
         )
-    if resolved_ref != sha:
-        raise ClosureError(
-            "candidate_baseline_stale",
-            "runtime baseline SHA does not match the authoritative remote target tip",
-            ref=ref,
-            expected=resolved_ref,
-            supplied=sha,
-        )
     head = _resolve_commit(root, "HEAD")
     if head is None:
         raise ClosureError("candidate_baseline_invalid", "candidate HEAD does not resolve to a commit")
+    if sha is not None:
+        resolved_sha = _resolve_commit(root, sha)
+        if resolved_sha != sha:
+            raise ClosureError(
+                "candidate_baseline_invalid",
+                "baseline SHA does not resolve to an available commit",
+            )
+        if resolved_ref != sha:
+            if explicit_sha:
+                raise ClosureError(
+                    "candidate_baseline_stale",
+                    "runtime baseline SHA does not match the authoritative remote target tip",
+                    ref=ref,
+                    expected=resolved_ref,
+                    supplied=sha,
+                )
+            refreshed = subprocess.run(
+                ["git", "merge-base", "--is-ancestor", sha, resolved_ref],
+                cwd=root,
+                check=False,
+            )
+            if refreshed.returncode or resolved_ref == head:
+                raise ClosureError(
+                    "candidate_baseline_stale",
+                    "runtime baseline SHA cannot be reconciled to the authoritative remote target tip",
+                    ref=ref,
+                    expected=resolved_ref,
+                    supplied=sha,
+                )
+            sha = resolved_ref
+    else:
+        sha = resolved_ref
     if head == sha:
         raise ClosureError(
             "candidate_baseline_equal_head",
@@ -874,11 +989,10 @@ def finalize_candidate(
         baseline_ref=baseline_ref,
         environ=environ,
     )
-    closure = close_generated_outputs(
-        repo_root,
-        graph_path=graph_path,
-        _require_clean_outputs=False,
-    )
+    # Finalization is a read-only admission gate. Repair is an explicit
+    # separate operation (`--close`) so stale output cannot be regenerated and
+    # then accepted by the same invocation (GEN-05).
+    closure = verify_generated_outputs(repo_root, graph_path=graph_path)
     whitespace = candidate_diff_check(
         repo_root,
         baseline_sha=baseline,
@@ -920,21 +1034,22 @@ def verify_generated_outputs(
             _require_clean_outputs=False,
         )
         expected = _output_digests(clone, graph)
-    mismatches = [
-        spec
-        for spec in graph.outputs
-        if observed.get(spec.output) != expected.get(spec.output)
-    ]
-    if mismatches:
-        spec = mismatches[0]
+    mismatched_paths = sorted(
+        path
+        for path in set(observed) | set(expected)
+        if observed.get(path) != expected.get(path)
+    )
+    if mismatched_paths:
+        path = mismatched_paths[0]
+        spec = next((item for item in graph.outputs if item.output == path), graph.outputs[0])
         raise _diagnostic(
             "stale_output",
             spec,
-            expected_digest=expected.get(spec.output),
-            observed_digest=observed.get(spec.output),
+            expected_digest=expected.get(path),
+            observed_digest=observed.get(path),
             expected_tree=str(expected_result.get("sourceTree") or ""),
             observed_tree=candidate_source_tree(root, graph_path),
-            detail="working-tree output does not match deterministic generator result",
+            detail=f"working-tree generated output does not match deterministic generator result: {path}",
         )
     return {
         "ok": True,
@@ -953,6 +1068,8 @@ def _generate_secret_scan_fixtures(repo_root: Path) -> int:
 
     declaration = repo_root / ".github" / "linktrend-secret-scan-fixtures.json"
     payload = json.loads(declaration.read_text(encoding="utf-8"))
+    if not isinstance(payload, Mapping) or payload.get("kind") != "secret-scan-fixtures":
+        raise ClosureError("fixture_input_invalid", "secret-scan fixture declaration identity is invalid")
     candidates = identify_synthetic_candidates(repo_root)
     by_identity: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
     for row in candidates:
@@ -996,6 +1113,10 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--baseline-sha", help="runtime-supplied exact baseline SHA")
     parser.add_argument("--baseline-ref", help="runtime-supplied authoritative remote ref")
+    parser.add_argument("--bind-push-baseline", action="store_true", help="bind a push predecessor to a named remote target")
+    parser.add_argument("--push-branch", help="push event branch name")
+    parser.add_argument("--push-before", help="push event predecessor SHA")
+    parser.add_argument("--push-after", help="push event candidate SHA")
     parser.add_argument("--verify", action="store_true")
     parser.add_argument("--generate-fixtures", action="store_true")
     args = parser.parse_args(argv)
@@ -1003,6 +1124,15 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.generate_fixtures:
             return _generate_secret_scan_fixtures(root)
+        if args.bind_push_baseline:
+            result = bind_push_event_baseline(
+                root,
+                branch=args.push_branch or "",
+                before_sha=args.push_before or "",
+                after_sha=args.push_after,
+            )
+            print(json.dumps({"ok": True, "baselineRef": result}, sort_keys=True))
+            return 0
         if args.finalize:
             result = finalize_candidate(
                 root,

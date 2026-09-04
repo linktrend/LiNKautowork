@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 2,
+  "controlId": "cursor-cloud-dispatch-v2",
+  "apiBaseUrl": "https://api.cursor.com",
+  "apiPath": "/v1/agents",
+  "apiKeyEnvironmentVariable": "CURSOR_API_KEY",
+  "preferredClient": "cursor-sdk",
+  "sdkPackage": "cursor-sdk",
+  "directApiRepositoryBinding": "repos[]",
+  "sdkRepositoryBinding": "CloudAgentOptions.repos",
+  "routingRegistry": "content/config/routing-registry.json",
+  "readbackRequired": true,
+  "readbackFields": ["repository", "ref", "commit", "tree", "provider", "model", "effort", "fast"],
+  "archiveOnMismatchRequired": true,
+  "maxApiAttempts": 2,
+  "ordinaryDevelopment": {
+    "provider": "cursor",
+    "routeId": "ordinary-development",
+    "model": "grok-4.6",
+    "effort": "medium",
+    "fast": false
+  },
+  "gate0": {
+    "provider": "codex-cli",
+    "model": "gpt-5.6-luna",
+    "effort": "high",
+    "fast": false
+  },
+  "lunaFallback": {
+    "provider": "codex-cli",
+    "model": "gpt-5.6-luna",
+    "effort": "high",
+    "fast": false,
+    "principalInstructionRequired": true
+  },
+  "cliLoginIsCloudAuthority": false
+}

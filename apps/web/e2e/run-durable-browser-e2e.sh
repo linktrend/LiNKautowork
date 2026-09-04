@@ -71,7 +71,12 @@ curl -fsS --connect-timeout 2 --max-time 5 "http://127.0.0.1:${REST_PORT}/" >/de
   echo 'PostgREST did not become ready after schema reload' >&2
   exit 1
 }
-TOKEN="$(node -e "const c=require('node:crypto');const h=Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url');const p=Buffer.from(JSON.stringify({role:'service_role',org_id:'00000000-0000-0000-0000-000000000002',exp:Math.floor(Date.now()/1000)+600})).toString('base64url');console.log(h+'.'+p+'.'+c.createHmac('sha256','linkautowork-disposable-postgrest-secret-2026').update(h+'.'+p).digest('base64url'))")"
+DISPOSABLE_POSTGREST_JWT_SECRET="$(sed -n 's/^[[:space:]]*PGRST_JWT_SECRET:[[:space:]]*//p' "$COMPOSE_FILE" | head -n1)"
+if [[ -z "$DISPOSABLE_POSTGREST_JWT_SECRET" ]]; then
+  echo 'Disposable PostgREST JWT secret missing from docker-compose.yml' >&2
+  exit 1
+fi
+TOKEN="$(JWT_SECRET="$DISPOSABLE_POSTGREST_JWT_SECRET" node -e "const c=require('node:crypto');const secret=process.env.JWT_SECRET;if(!secret){process.exit(1)}const h=Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url');const p=Buffer.from(JSON.stringify({role:'service_role',org_id:'00000000-0000-0000-0000-000000000002',exp:Math.floor(Date.now()/1000)+600})).toString('base64url');console.log(h+'.'+p+'.'+c.createHmac('sha256',secret).update(h+'.'+p).digest('base64url'))")"
 REST_URL="http://127.0.0.1:${REST_PORT}"
 export REST_URL
 AUDIT_TOKEN="$TOKEN" node --input-type=module <<'NODE'
@@ -100,4 +105,4 @@ const call = async (name, body, withAudit = false) => {
 await call('linkautowork_product_reserve_audit', { p_actor: audit.actor, p_resource: audit.resource, p_action: audit.action, p_reason: audit.reason, p_correlation_id: audit.correlation });
 await call('linkautowork_product_finalize_audit', { p_actor: audit.actor, p_resource: audit.resource, p_action: audit.action, p_reason: audit.reason, p_correlation_id: audit.correlation, p_outcome: 'allowed' }, true);
 NODE
-LINKAUTOWORK_DISPOSABLE_BROWSER=true DURABLE_POSTGREST_URL="$REST_URL" DURABLE_POSTGREST_JWT_SECRET="ltfx.ph.24c6deb948.v1" npx tsx "$ROOT_DIR/apps/web/e2e/browser-e2e.ts"
+LINKAUTOWORK_DISPOSABLE_BROWSER=true DURABLE_POSTGREST_URL="$REST_URL" DURABLE_POSTGREST_JWT_SECRET="$DISPOSABLE_POSTGREST_JWT_SECRET" npx tsx "$ROOT_DIR/apps/web/e2e/browser-e2e.ts"

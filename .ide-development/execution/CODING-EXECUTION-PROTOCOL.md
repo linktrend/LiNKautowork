@@ -49,6 +49,12 @@ A valid manifest declares:
 - one or more packets with owned paths and verification commands
 - the control object defined in the control contract
 
+The `controls.packetRouting` and `controls.cursorCloudExecution` objects are
+approved, digest-bound control surfaces used by newer planners. They are
+validated when present with closed schemas; legacy manifests that omit these
+optional surfaces remain valid, while unknown control names or fields remain
+invalid.
+
 Unknown trust-boundary fields are rejected. Narrative “done” claims are not a substitute for schema-valid records.
 
 ## 4. Control semantics (normative summary)
@@ -64,12 +70,12 @@ The control contract is authoritative. Summary that tests and runtimes must enfo
 | Durable heartbeat write/readback | Packet mutation requires a persisted heartbeat that is read back and bound to the checkout identity. A write without matching readback is not durable and does not admit work. |
 | Checkout-bound verification receipts | Verification receipts bind to the exact checkout `repository + commit + tree`. Merge-ref identity (`refs/pull/<n>/merge`) is never promotable. |
 | Retry-exhaustion diagnosis/recovery | Exhaustion must be diagnosed before recovery. Silent retry on the same identity is forbidden. Ordinary and code-failure exhaustion recover on a new identity; infrastructure exhaustion holds unless a named exception exists. |
-| Hosted-capacity scheduler | Deterministic admission runtime (`core/execution/scheduler.py`) using packaged continuous-utilization config. Authority is `execution-protocol`. Local max 1, hosted max 2. Unknown probes use a 600s backstop. Free slots plus waiting work emit `UTILIZATION_GAP` and recompute; paid/Fast fallback is forbidden. |
+| Hosted-capacity scheduler | Deterministic staged admission uses up to 5 Cursor + 2 Luna in Stage 1, 10 + 4 after routing/integration verification in Stage 2, and 20 + 4 after another verification in Stage 3. Underfill is 1 Luna in Stages 1-2 and 2 Luna in Stage 3, always bounded by Mac memory and real Cursor capacity. Unknown or stale evidence blocks admission; free slots plus waiting work emit `UTILIZATION_GAP` and recompute; paid/Fast fallback is forbidden. |
 | Executable heartbeat | Scheduled chat text is not an execution mechanism. Each wake invokes the packaged `scripts/gitops/heartbeat_controller.py` boundary against durable manifest, authority-snapshot, dispatch-intent, and outbox stores. A persisted safe action must be dispatched and read back or the turn fails actionable; it cannot end quietly. |
 | Consumer rollout | `core/execution/rollout.py` plans manifest-configured canary and downstream cohorts. No product code contains repository names or cohort sizes. Downstream mutation waits for receipt-bound canary success; safe slots fill in the same turn; repository failures isolate; systemic failures stop and roll back; unchanged package/environment/tree receipts suppress equivalent reruns. |
 | Automatic approval | Checkpoints are automatic. Staging promotion may be automatic when receipt identity holds. Main, publish, deploy, protection changes, and live provider mutation require recorded founder approval. Self-review, self-merge, and prefer-incoming are forbidden. |
 | Repository/Git authority | Implementers work on `issue/<n>-<slug>` and must not push protected refs, open or merge their own delivery PRs, or install a nested `.ide-development` copy of this system repository. Packager opens PRs. Delivery controller merges. |
-| v2.5 Issue checkpoint (`V25_BOOTSTRAP_LEAN`) | Exact pushed commit/tree + scoped diff + focused tests + independent Terra verification + manifest evidence accepts the Issue checkpoint. Review Ready and publisher tokens are not required. |
+| v2.5 Issue checkpoint (`V25_BOOTSTRAP_LEAN`) | Exact pushed commit/tree + scoped diff + focused tests + one provider-independent narrow review bound to that exact identity + manifest evidence accepts the Issue checkpoint. The review is supplied by the routed independent reviewer; no vendor or model is required. Review Ready and publisher tokens are not required. |
 | Legacy publisher | No singular legacy publisher is canonical for v2.5, including `linktrend-review-ready-publisher`. Failed or missing legacy publisher is `WAIVED_LEGACY_GATE`, never PASS and never an implementation failure. |
 | Administrator recovery | A later exact-head recovery is only a named exception after substantive replacement proof, limited to protection snapshot, restore, and readback. |
 | Semantic lifecycle | JSON Schema is not sufficient. Plan/runtime states are rejected (never repaired) when packet, attempt, evidence, execution-state, lease, lock, heartbeat, receipt, retry-exhaustion, or archive records are inconsistent. Diagnostics name `packet=` and `attempt=`. COMPLETE/ARCHIVE_CONFIRMED bind accepted commit/tree, packet-level completion evidence, and a checkout-bound verification receipt; ARCHIVE_CONFIRMED also requires archive API readback. Completed-packet attempts are terminal. RUNNING has exactly one authoritative nonterminal attempt, its active write lock, a current orchestration lease, and a durable heartbeat readback. Completed packets must not retain an active lock. |

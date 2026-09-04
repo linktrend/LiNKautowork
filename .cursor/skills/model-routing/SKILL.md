@@ -1,122 +1,46 @@
 ---
 name: model-routing
 description: >-
-  Select and spawn the correct IDE Development model-routing subagent for a
-  task. Ports LiNKdeveloper packages/model-routing router.ts route criteria and
-  escalation pairing so the two systems cannot drift.
-version: 1.0.0
+  Select the governed IDE Development execution route. Gate 0 uses Luna High
+  through Codex CLI; ordinary post-Gate-0 work uses Grok 4.6 Medium through the
+  direct Cursor SDK with explicit repository binding.
+version: 2.5.2
 status: active
-tags: [routing, models, subagents, escalation]
-source_of_truth: LiNKdeveloper/packages/model-routing/src/router.ts
 ---
 
-# Model routing (Cursor Desktop)
+# Model routing
 
-IDE Development has no persistent Ledger process. Model routing is enforced by
-**pinned custom subagents** under `.cursor/agents/route-*.md` plus this skill's
-agent-followed doctrine.
+Independent narrow review is provider-neutral: use the ordinary routed
+reviewer by default, or Principal-authorized Luna when explicitly selected.
+Checkpoint acceptance binds the reviewer result to the exact commit/tree and
+forbids self-review; it does not require a particular vendor or model.
 
-## Subagents (one per route)
+The versioned route policy is in
+`core/managed-core/content/config/routing-registry.json`.
 
-| Route ID | Subagent file | Model slug |
+| Route | Provider and model | Execution |
 |---|---|---|
-| `default` | `.cursor/agents/route-default.md` | `claude-sonnet-5-thinking-medium` |
-| `escalation` | `.cursor/agents/route-escalation.md` | `gpt-5.6-sol-medium` |
-| `independent_review` | `.cursor/agents/route-independent-review.md` | `claude-opus-4-8-thinking-medium` |
-| `economical` | `.cursor/agents/route-economical.md` | `composer-2.5` |
-| `bulk_documents` | `.cursor/agents/route-bulk-documents.md` | `gemini-2.5-flash` |
-| `evaluation` | `.cursor/agents/route-evaluation.md` | `grok-4.5-medium` |
+| `gate-0` | Codex CLI, GPT-5.6 Luna High, Fast off | Gate 0 only |
+| `ordinary-development` | Cursor SDK, Grok 4.6 Medium, Fast off | Default after Gate 0 |
+| `luna-fallback` | Codex CLI, GPT-5.6 Luna High, Fast off | Principal-instructed fallback |
 
-Spawn the matching subagent (Task tool / `/route-*`) rather than doing the work
-on an unpinned parent model when a route clearly applies.
+Ordinary development dispatches through the direct Cursor SDK/API with an
+explicit repository URL and starting ref in `repos[]` (or the SDK's exact
+`CloudAgentOptions.repos` equivalent). A named saved Cursor environment is
+never a routing input. The provider must read back the repository, ref, exact
+40-character commit, and exact 40-character tree before the run is credited.
+Any mismatch, missing identity, unsupported model/effort/provider combination,
+or Fast mode causes a fail-closed rejection and archive attempt.
 
-## Route selection (criteria verbatim from router.ts)
+Luna is not an automatic Cursor fallback. Use it only when the Principal
+instructs a switch. Concurrent Luna execution requires explicit Principal
+authorization and disjoint independent packets. The canary for every configured
+registry repository is release acceptance work and is not performed by this
+skill or by local focused tests.
 
-### default — Sonnet 5 Medium
+## Failure handling
 
-- normal and complex coding
-- feature development
-- repository analysis
-- debugging with a reasonably clear cause
-- refactoring
-- testing
-- documentation
-- PRDs and implementation plans
-- research, writing and data analysis that are not unusually consequential
-- If no special condition below applies, use this route.
-
-### escalation — GPT-5.6 Sol Medium
-
-- new architecture or major architectural decision
-- difficult or ambiguous planning
-- requirements conflict or important behavior is undocumented
-- intermittent or difficult root-cause investigation
-- several major systems or repositories interact
-- authentication, payments, migrations, infrastructure, deployment, financial logic or trading logic requires analysis
-- the default route has failed after one structured correction
-- failure could be serious or difficult to detect
-- Should normally analyze and plan first; the default route may implement afterward once the resulting plan is clear and bounded.
-
-### independent_review — Opus 4.8 Medium
-
-- security review
-- authorization and authentication review
-- final review of consequential changes
-- migration, payment, infrastructure or trading-risk review
-- independent challenge of an architecture or large implementation
-- Run as a SEPARATE review task. The reviewer must receive the original request, approved scope, plan, complete diff, tests and known risks.
-
-### economical — Composer 2.5
-
-ALL must hold (unknown ⇒ not eligible → use default):
-
-- one repository
-- an existing implementation pattern can be followed
-- normally no more than 3-5 expected changed files
-- requirements and expected output are explicit
-- no architectural decision is required
-- no authentication, authorization, payments, database schema, migration, secrets, infrastructure, deployment, production data or live trading logic
-- failure will be obvious
-- the result can be verified by an automated test, build, type check, lint check, exact output comparison or similarly objective check
-- all changes are easy to revert
-
-### bulk_documents — Gemini 2.5 Flash
-
-- large-volume classification or extraction
-- very large document collections
-- PDF, image or multimodal classification
-- repetitive structured synthesis across many files
-- Require a representative sample review before processing the full collection. Never move, rename or delete files based solely on unreviewed classification output.
-
-### evaluation — Grok 4.5 Medium (Fast off)
-
-- Grok is being evaluated, not yet adopted as the default.
-- May be used instead of the default route for low- or medium-risk work to compare: verified completion, scope discipline, tests passed, corrections required, usage-pool consumption, unrelated changes.
-- Do not use for critical work. Keep Fast off.
-
-## Escalation-on-failure protocol (Principal-approved)
-
-When a route's model fails with a **model-quality** signal
-(`code_defect`, `quality_gate_failed`, or a **recurring** `timeout_uncertain`):
-
-1. **Log** the attempt: route id, model slug, failure class/reason, timestamp —
-   into the active Issue proof artifact or session note (no silent skip).
-2. **Retry once** with the paired different-family route:
-
-| Failed route | Retry route |
-|---|---|
-| `default` | `escalation` |
-| `economical` | `default` |
-| `evaluation` | `default` |
-| `bulk_documents` | `default` |
-| `escalation` | *(none — surface to repair)* |
-| `independent_review` | *(none — surface to repair)* |
-
-3. Cap at **one hop**. A second failure surfaces to the Principal / repair —
-   do not keep trying models until one works.
-4. Infrastructure/input failures (not model-quality) use same-model retry rules
-   instead of this pairing table.
-
-This protocol is agent-followed doctrine (IDE Development has no Ledger process
-to mechanize it). Skipping the log step or the different-family retry is a
-routing violation.
+Record a failed route and reason in the active packet evidence. Retry at most
+once with the declared policy route; a second model-quality failure is surfaced
+to the Principal. Infrastructure failures retain the same exact checkpoint and
+remain subject to the declared retry bound.

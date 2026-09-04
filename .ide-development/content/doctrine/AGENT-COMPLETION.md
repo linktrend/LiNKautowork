@@ -15,7 +15,7 @@ A v2.5 **Issue checkpoint** is accepted when all of the following are present:
 1. exact pushed commit and tree
 2. scoped diff
 3. focused tests
-4. independent Terra verification
+4. one provider-independent narrow review bound to the exact commit and tree
 5. manifest evidence
 
 Review Ready publication, `AUTOMATION_TOKEN`, an Issue PR, hosted completion status, and legacy publisher status are **nonrequirements**. They must not block checkpoint acceptance.
@@ -34,6 +34,12 @@ There is **no** `.linktrend/review-ready.json` readiness file. Do not create, di
 | `status` | Report current completion state | `0` ok |
 | `write-evidence` | Write schema-versioned completion / lean checkpoint evidence for current `HEAD` | `0` ok |
 
+Without an explicit `--evidence-file` or `COMPLETION_EVIDENCE_FILE`, evidence is
+written under the repository git-common-dir, keyed by branch and exact `HEAD`.
+It is never written into the tracked candidate tree. Explicit legacy evidence
+paths remain readable for compatibility, but new checkpoints must not create
+self-referential `.linktrend/completion-evidence.json` changes.
+
 Exit codes: `0` ok, `78` incomplete, `2` blocked, `1` failed.
 
 ## States
@@ -49,7 +55,7 @@ Exit codes: `0` ok, `78` incomplete, `2` blocked, `1` failed.
 1. `HEAD` resolves to a SHA and matching git tree.
 2. Working tree is clean; branch is not `development`, `staging`, `main`, or detached.
 3. `HEAD == origin/<branch>` after fetch (exact pushed identity).
-4. Machine-readable evidence bound to that exact SHA/tree covering scoped diff, focused tests, independent Terra verification, and manifest evidence.
+4. Machine-readable evidence bound to that exact SHA/tree covering scoped diff, focused tests, one provider-independent narrow review, and manifest evidence.
 5. No GitHub token, Review Ready status, Issue PR, or hosted completion status is required.
 
 Bare `--tests-ok`, `COMPLETION_TESTS_OK=1`, and arbitrary text in `COMPLETION_EVIDENCE` are not sufficient.

@@ -1,5 +1,7 @@
 # LiNKautowork
 
+> Production status: the pre-configuration engineering baseline is complete. See [the production-readiness index](docs/PRODUCTION-READINESS.md) for remaining configuration, staging, deployment, and operational acceptance work.
+
 LiNKautowork is LiNKtrend's self-hosted automation engine: a pinned n8n Community runtime, a policy/security gateway, canonical governance templates, persisted kill-switch/lifecycle controls, and audit/event interoperability on the shared platform database.
 
 ## Start here (source of truth)

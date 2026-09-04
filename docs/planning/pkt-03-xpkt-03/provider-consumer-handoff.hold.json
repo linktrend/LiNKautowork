@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "kind": "provider-consumer-handoff",
+  "producer": {
+    "repository": "linktrend/LiNKskills",
+    "commit": "4324d41fe6a7a6883075e9baa9a5a7f71dd13b3d",
+    "tree": "7c5a36f8773ebe9bac417d42a8a48a286fe5968d"
+  },
+  "provider": {
+    "repository": "linktrend/LiNKskills",
+    "commit": "4324d41fe6a7a6883075e9baa9a5a7f71dd13b3d",
+    "tree": "7c5a36f8773ebe9bac417d42a8a48a286fe5968d"
+  },
+  "consumer": {
+    "repository": "linktrend/LiNKautowork",
+    "commit": "f75656930eb4d82827e480f00a435069c501503e",
+    "tree": "013f609cc432e7194388b6ffd09e32f71ac6e672"
+  },
+    "artifactDigest": "sha256:31967a882a36a64e9cd38d10b7d57ce20a1794643c016c5e76b486db874811e5",
+  "contractDigest": "sha256:bc6da185bfac2a16ade6e2aaf3489464bbbeb88f64c3eac992d2ed41fa3984fa",
+  "verdict": "blocked",
+  "lifecycleState": "blocked",
+  "acceptedReceipt": null,
+  "blocker": {
+    "blockingRepository": "linktrend/LiNKskills",
+    "handoffClass": "provider-consumer",
+    "owner": "LiNKskills PKT-03 then LiNKautowork XPKT-03",
+    "nextAction": "HOLD until an exact protected LiNKskills PKT-03 signed idempotent candidate-contract release (commit+tree) exists and consumer dual-app proofs (codex and cursor) are PASS; do not implement Autowork polling, pin rewrites, skill-copy removal, or provider activation."
+  },
+  "independentPreparationAllowed": true,
+  "integrationClaimed": false
+}

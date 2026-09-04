@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "registryId": "ide-development-routing",
+  "status": "active-policy-candidate",
+  "routes": {
+    "gate-0": {
+      "provider": "codex-cli",
+      "model": "gpt-5.6-luna",
+      "effort": "high",
+      "fast": false,
+      "execution": "codex-cli",
+      "principalInstructionRequired": false
+    },
+    "ordinary-development": {
+      "provider": "cursor",
+      "model": "grok-4.6",
+      "effort": "medium",
+      "fast": false,
+      "execution": "direct-sdk",
+      "fallbackRoute": "luna-fallback",
+      "principalInstructionRequired": false
+    },
+    "luna-fallback": {
+      "provider": "codex-cli",
+      "model": "gpt-5.6-luna",
+      "effort": "high",
+      "fast": false,
+      "execution": "codex-cli",
+      "principalInstructionRequired": true,
+      "concurrentDisjointPacketsAllowed": true
+    }
+  },
+  "programs": []
+}
