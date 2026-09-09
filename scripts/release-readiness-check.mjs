@@ -206,9 +206,16 @@ function filesAt(root, relative) {
 }
 
 function commandTokens(command) {
-  if (Array.isArray(command)) return command.map(String);
+  if (Array.isArray(command)) return command.flatMap((entry) => commandTokens(entry));
   if (typeof command === 'string') return command.trim().split(/\s+/).filter(Boolean);
   return [];
+}
+
+function tokenEnablesNatsHttpMonitor(token) {
+  const value = String(token).trim();
+  if (!value) return false;
+  if (value === '-m' || value === '--http_port') return true;
+  return /^-m[=:]/.test(value) || /^--http_port[=:]/.test(value);
 }
 
 function publishesHostPorts(service) {
@@ -229,10 +236,7 @@ function portMappingMentions(ports, port) {
 
 function natsHttpMonitorEnabled(nats) {
   const tokens = commandTokens(nats?.command);
-  for (let index = 0; index < tokens.length; index += 1) {
-    const token = tokens[index];
-    if (token === '-m' || token === '--http_port' || token.startsWith('--http_port=')) return true;
-  }
+  if (tokens.some(tokenEnablesNatsHttpMonitor)) return true;
   return portMappingMentions(nats?.ports, '8222');
 }
 
@@ -249,11 +253,15 @@ export function readProductionComposeDocContract(compose) {
   };
 }
 
+function collapseWhitespace(text) {
+  return String(text).replace(/\s+/g, ' ').trim();
+}
+
 function splitProseUnits(text) {
   return String(text)
     .split(/\n+/)
     .flatMap((line) => line.split(/(?<=[.!?])\s+/))
-    .map((unit) => unit.trim())
+    .map((unit) => collapseWhitespace(unit))
     .filter(Boolean);
 }
 
@@ -264,27 +272,46 @@ function unitDeniesClaim(unit) {
     || /\bnot enable(?:s|d)?\b/i.test(unit);
 }
 
+function mentionsN8nPort(text) {
+  return /(?<!\d)5678\b/.test(text);
+}
+
+function claimsN8nTailscaleBrowseAlias(text) {
+  return /https?:\/\/N8N_TAILSCALE_IP:5678\b/i.test(text)
+    || /(?<![A-Za-z0-9_])N8N_TAILSCALE_IP:5678\b/.test(text);
+}
+
+function claimsN8nHostPublish(text) {
+  return /\bn8n\b/i.test(text)
+    && mentionsN8nPort(text)
+    && /\bhost(?:-|\s+)ports?\b/i.test(text);
+}
+
 function claimsDirectN8nHostFallback(text) {
   const units = splitProseUnits(text);
   for (const unit of units) {
-    if (!/(?<!\d)5678\b/.test(unit) || unitDeniesClaim(unit)) continue;
+    if (!mentionsN8nPort(unit) || unitDeniesClaim(unit)) continue;
+    if (claimsN8nTailscaleBrowseAlias(unit) || claimsN8nHostPublish(unit)) return true;
     const fallback = /\bfallbacks?\b/i.test(unit);
     const direct = /\bdirect\b/i.test(unit);
-    const hostPublish = /\bhost(?:-|\s+)ports?\b|\bpublish(?:es|ed|ing)?\b/i.test(unit);
-    if (fallback || (direct && (hostPublish || /\bN8N_TAILSCALE_IP\b/.test(unit)))) return true;
+    if (fallback) return true;
+    if (direct && (/\bhost(?:-|\s+)ports?\b|\bpublish(?:es|ed|ing)?\b|\bhosts?\b|\bN8N_TAILSCALE_IP\b/i.test(unit))) {
+      return true;
+    }
   }
-  const positive = splitProseUnits(text).filter((unit) => !unitDeniesClaim(unit)).join(' ');
-  return /direct[^.\n]{0,80}(?<!\d)5678\b[^.\n]{0,80}\bfallback/i.test(positive)
-    || /\bfallback[^.\n]{0,80}(?<!\d)5678\b/i.test(positive);
+  const positive = collapseWhitespace(units.filter((unit) => !unitDeniesClaim(unit)).join(' '));
+  return /direct.{0,80}(?<!\d)5678\b.{0,80}\bfallback/i.test(positive)
+    || /\bfallback.{0,80}(?<!\d)5678\b/i.test(positive)
+    || claimsN8nTailscaleBrowseAlias(positive);
 }
 
 function claimsSharedThreeServiceTopology(text) {
   const units = splitProseUnits(text).filter((unit) => !unitDeniesClaim(unit));
-  const body = units.join('\n');
-  if (/\bsame three services\b/i.test(body)) return true;
-  if (/\bshare(?:s|d)? the same three\b/i.test(body)) return true;
-  return /both environments[\s\S]{0,120}three services/i.test(body)
-    || /three services[\s\S]{0,120}both environments/i.test(body);
+  const body = collapseWhitespace(units.join(' '));
+  if (/\bsame (?:three|3) services\b/i.test(body)) return true;
+  if (/\bshare(?:s|d)? the same (?:three|3)\b/i.test(body)) return true;
+  return /both environments .{0,120}(?:three|3) services/i.test(body)
+    || /(?:three|3) services .{0,120}both environments/i.test(body);
 }
 
 function claimsProductionNatsHttpMonitor(text) {
