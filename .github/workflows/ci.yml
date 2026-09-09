@@ -54,6 +54,7 @@ jobs:
           for f in ops/security/*.sh; do
             bash -n "$f"
           done
+          sh -n ops/migration-preflight.sh
 
       - name: Repository Secret Scan
         run: ops/security/scan-secrets.sh
