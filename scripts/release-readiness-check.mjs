@@ -88,6 +88,18 @@ function parseEnvTemplate(content, violations) {
   return values;
 }
 
+function exposesNatsPort(server) {
+  if (!isRecord(server) || typeof server.url !== 'string' || !server.url || server.url.trim() !== server.url || /[\u0000-\u0020\u007f]/.test(server.url)) return true;
+  const parseableUrl = server.url.replace(/<[A-Za-z0-9_.-]+>/g, 'placeholder');
+  try {
+    const upstream = new URL(parseableUrl);
+    if (!upstream.hostname) return true;
+    return upstream.port === '4222' || upstream.port === '8222';
+  } catch {
+    return true;
+  }
+}
+
 /** Validate the provider-neutral Traefik and Tailscale ingress topology. */
 export function validatePrivateIngressTemplates(traefikContent, tailscaleContent) {
   const violations = [];
@@ -114,8 +126,8 @@ export function validatePrivateIngressTemplates(traefikContent, tailscaleContent
   const serviceNames = isRecord(services) ? Object.keys(services) : [];
   if (serviceNames.some((name) => /nats/i.test(name))) violations.push('private-ingress-exposes-nats');
   for (const service of Object.values(isRecord(services) ? services : {})) {
-    const urls = service?.loadBalancer?.servers ?? [];
-    if (urls.some((server) => /:(?:4222|8222)(?:[/'"]|$)/.test(String(server?.url ?? '')))) violations.push('private-ingress-exposes-nats');
+    const urls = service?.loadBalancer?.servers;
+    if (urls !== undefined && (!Array.isArray(urls) || urls.some(exposesNatsPort))) violations.push('private-ingress-exposes-nats');
   }
 
   const expectedInputs = {

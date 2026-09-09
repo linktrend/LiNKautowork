@@ -34,6 +34,38 @@ describe('deployment readiness source checks', () => {
     expect(validatePrivateIngressTemplates(traefik, tailscale.replace('<TAILSCALE_CIDR>', '10.0.0.0/8'))).toContain('private-ingress-input-authority:TAILSCALE_OPERATOR_CIDR');
   });
 
+  it('rejects NATS ports after structural URL parsing across suffix and host variants', () => {
+    const traefik = read('deploy/templates/traefik-dynamic.yml.example');
+    const tailscale = read('deploy/templates/tailscale-boundary.env.example');
+    const replaceN8nUpstream = (upstream) => traefik.replace(
+      'servers: [{ url: "http://<N8N_PRIVATE_ADDRESS>:5678" }]',
+      `servers: [{ url: ${upstream === null ? 'null' : JSON.stringify(upstream)} }]`,
+    );
+    for (const upstream of [
+      'http://nats:4222',
+      'http://nats:8222/path',
+      'http://nats:4222?probe=1',
+      'http://nats:8222#metrics',
+      'http://nats:4222/path?probe=1#metrics',
+      'http://127.0.0.1:4222?probe=1',
+      'http://[::1]:8222#metrics',
+    ]) {
+      expect(validatePrivateIngressTemplates(replaceN8nUpstream(upstream), tailscale)).toContain('private-ingress-exposes-nats');
+    }
+  });
+
+  it('fails closed for malformed or non-string upstream values', () => {
+    const traefik = read('deploy/templates/traefik-dynamic.yml.example');
+    const tailscale = read('deploy/templates/tailscale-boundary.env.example');
+    const replaceN8nUpstream = (upstream) => traefik.replace(
+      'servers: [{ url: "http://<N8N_PRIVATE_ADDRESS>:5678" }]',
+      `servers: [{ url: ${upstream === null ? 'null' : JSON.stringify(upstream)} }]`,
+    );
+    for (const upstream of ['not-a-url', 'http://[::1', 'http://nats:56\n78', null]) {
+      expect(validatePrivateIngressTemplates(replaceN8nUpstream(upstream), tailscale)).toContain('private-ingress-exposes-nats');
+    }
+  });
+
   it('rejects exposed or non-persistent NATS in either Compose contract', () => {
     const compose = read('deploy/dev/docker-compose.yml');
     expect(validatePrivatePersistentNats('dev', compose.replace('    volumes:\n      - nats_jetstream_dev:/data', '    ports:\n      - "4222:4222"\n    volumes:\n      - nats_jetstream_dev:/data'), 'nats_jetstream_dev')).toContain('compose-nats-public:dev');
