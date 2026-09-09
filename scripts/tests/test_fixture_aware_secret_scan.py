@@ -44,9 +44,21 @@ from scripts.ide_development.constants import RC_REQUIRED_SCHEMA_RELS
 ROOT = Path(__file__).resolve().parents[2]
 SECRET_SCAN = ROOT / "scripts" / "gitops" / "secret_scan.py"
 MIGRATE = ROOT / "scripts" / "gitops" / "secret_scan_migrate.py"
-FIXTURE_SCHEMA = ROOT / "core" / "managed-core" / "schemas" / "secret-scan-fixtures.schema.json"
-RESULT_SCHEMA = ROOT / "core" / "managed-core" / "schemas" / "secret-scan-result.schema.json"
-CHANGE_SCOPED_SCHEMA = ROOT / "core" / "managed-core" / "schemas" / "change-scoped-secret-scan.schema.json"
+CORE_ROOT = ROOT / "core" / "managed-core"
+PACKAGED_ROOT = ROOT / ".ide-development"
+
+
+def managed_file(*relative_parts: str) -> Path:
+    """Prefer managed-core source, then the installed package copy."""
+    core = CORE_ROOT.joinpath(*relative_parts)
+    if core.is_file():
+        return core
+    return PACKAGED_ROOT.joinpath(*relative_parts)
+
+
+FIXTURE_SCHEMA = managed_file("schemas", "secret-scan-fixtures.schema.json")
+RESULT_SCHEMA = managed_file("schemas", "secret-scan-result.schema.json")
+CHANGE_SCOPED_SCHEMA = managed_file("schemas", "change-scoped-secret-scan.schema.json")
 
 
 def git(root: Path, *args: str) -> str:
@@ -246,6 +258,10 @@ def by_kind(result: dict, kind: str) -> list[dict]:
 
 
 class PackagingContractTests(unittest.TestCase):
+    @unittest.skipUnless(
+        (ROOT / "core/managed-core/INDEX.yaml").is_file(),
+        "managed-core source tree is not present in this consumer checkout",
+    )
     def test_schemas_index_manifest_and_fast_cover_scanner(self) -> None:
         index = (ROOT / "core/managed-core/INDEX.yaml").read_text(encoding="utf-8")
         self.assertTrue(FIXTURE_SCHEMA.is_file())
@@ -309,6 +325,10 @@ class PackagingContractTests(unittest.TestCase):
         self.assertEqual(payload["scannerPolicyVersion"], SCANNER_POLICY_VERSION)
         self.assertEqual(payload["candidateTree"], candidate_content_tree(ROOT))
 
+    @unittest.skipUnless(
+        (ROOT / "docs/contracts/SECRET-SCAN-FIXTURES.md").is_file(),
+        "IDE Development doctrine contracts are not present in this consumer checkout",
+    )
     def test_doctrine_and_installer_docs_name_fixture_contract(self) -> None:
         contract = (ROOT / "docs/contracts/SECRET-SCAN-FIXTURES.md").read_text(encoding="utf-8")
         delivery = (ROOT / "docs/contracts/DELIVERY-MODES.md").read_text(encoding="utf-8")
