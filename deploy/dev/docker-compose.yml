@@ -1,7 +1,7 @@
 services:
   nats:
     image: nats:2.10.26-alpine
-    command: ["-js"]
+    command: ["-js", "-sd", "/data"]
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -11,8 +11,9 @@ services:
       interval: 30s
       timeout: 5s
       retries: 5
-    ports:
-      - "4222:4222"
+    # No host port: only stack members may reach the event bus.
+    volumes:
+      - nats_jetstream_dev:/data
 
   gateway:
     build:
@@ -83,4 +84,5 @@ services:
       - ${GOOGLE_APPLICATION_CREDENTIALS_HOST_PATH:-/etc/linktrend/gcp/linkbot-901208-e7677c682cff.json}:${GOOGLE_APPLICATION_CREDENTIALS:-/etc/linktrend/gcp/linkbot-901208-e7677c682cff.json}:ro
 
 volumes:
+  nats_jetstream_dev:
   n8n_data_dev:

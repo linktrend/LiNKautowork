@@ -33,12 +33,12 @@ Caller / ritual / ops tool
        ├─ /v1/lifecycle/transition    → validate approvals → persist → NATS
        ├─ /v1/control/killswitch/*    → activate/release → persist → (global: deactivate n8n workflows)
        └─ /v1/slack/actions           → Slack-signed lifecycle path
-  n8n (:5678)  ← webhook / schedule / editor (Tailscale-bound in prod)
-  NATS (:4222, prod also :8222 monitor)
+  n8n (container :5678; production Compose publishes no host port; Traefik/Tailscale templates are the operator ingress)
+  NATS (in-stack :4222 only; production command does not enable the HTTP monitor and Compose publishes no NATS host port)
   Supabase (linkplatform-stage | linkplatform-prod)
 ```
 
-Stage stack: `deploy/dev/docker-compose.yml`. Prod stack: `deploy/prod/docker-compose.yml` (Traefik labels + `linktrend-network`, `restart: unless-stopped`).
+Stage stack: `deploy/dev/docker-compose.yml`. Prod stack: `deploy/prod/docker-compose.yml` (`restart: unless-stopped`). NATS is private to each Compose network in both stacks; provider-neutral operator ingress is supplied only through the placeholder templates under `deploy/templates/`.
 
 ---
 
@@ -65,13 +65,21 @@ Stage stack: `deploy/dev/docker-compose.yml`. Prod stack: `deploy/prod/docker-co
 
 ### 3.1 Compose runtime
 
-Both environments share the same three services:
+Stage Compose (`deploy/dev/docker-compose.yml`) is a three-service local subset: **nats**, **gateway**, and **n8n**, with host-published `8080` and `5678` for workstation use.
 
-1. **nats** — `nats:2.10-alpine` with `-js` (JetStream).
-2. **gateway** — built from `deploy/common/gateway.Dockerfile` (repo root context); healthcheck `GET /health` on `:8080`.
-3. **n8n** — `n8nio/n8n:2.30.0`; `DB_POSTGRESDB_SCHEMA=lautowork_n8n`; `GENERIC_TIMEZONE` / `TZ=Asia/Taipei`; `N8N_PUBLIC_API_DISABLED=false` (required for template import + global kill-switch).
+Production Compose (`deploy/prod/docker-compose.yml`) defines nine services; it does not share that three-service host-publish topology:
 
-Security baseline on containers: `no-new-privileges`, `cap_drop: ALL`. Prod n8n joins external `linktrend-network` for Traefik (`Host(n8n.linktrend.internal)`).
+1. **nats** — `nats:2.10.26-alpine` with `-js -sd /data` (persistent JetStream on a named environment volume; no host port; HTTP monitor not enabled).
+2. **gateway** — built from `deploy/common/gateway.Dockerfile` (repo root context); healthcheck `GET /health` on container `:8080`; no host port.
+3. **n8n** — `n8nio/n8n:2.30.0`; `DB_POSTGRESDB_SCHEMA=lautowork_n8n`; `GENERIC_TIMEZONE` / `TZ=Asia/Taipei`; `N8N_PUBLIC_API_DISABLED=false` (required for template import + global kill-switch); no host port.
+4. **product-api** — public application API candidate; Traefik routing is attached externally after DNS/TLS authority is supplied.
+5. **client-web** — public UI candidate; external route is defined only by the approved Traefik template.
+6. **operator-console** — private operator UI; no Compose port or Traefik label is permitted in this file.
+7. **migration-preflight** — `release-jobs` profile; runs `ops/migration-preflight.sh`.
+8. **certified-package-publisher** — `release-jobs` profile; runs `ops/publish-certified-packages.sh`.
+9. **operations-scheduler** — `operations` profile; runs `ops/run-operations-scheduler.sh`.
+
+Security baseline on containers: `no-new-privileges`, `cap_drop: ALL`. Prod n8n remains on the Compose project-default network; an external Traefik route is attached only after approved provider-neutral deployment inputs are supplied. No external network or hostname is assumed here.
 
 ### 3.2 Gateway routes (authoritative)
 

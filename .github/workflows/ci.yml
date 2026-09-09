@@ -37,6 +37,9 @@ jobs:
       - name: Verify release-readiness surface
         run: npm run release:check
 
+      - name: Verify reproducible CycloneDX SBOM
+        run: npm run sbom:check
+
       - name: Verify generated automation catalogue
         run: npm run catalog:check
 
@@ -51,6 +54,7 @@ jobs:
           for f in ops/security/*.sh; do
             bash -n "$f"
           done
+          sh -n ops/migration-preflight.sh
 
       - name: Repository Secret Scan
         run: ops/security/scan-secrets.sh
