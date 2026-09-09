@@ -17,7 +17,7 @@ Last updated: 2026-04-01
 
 1. Ensure lifecycle approvals are complete (Auditor, Head of Quality, COO, and Principal for protected actions).
 2. Configure `deploy/prod/.env` with non-secret config and `*_SECRET_NAME` entries.
-3. Set `TRAEFIK_N8N_HOST=n8n.linktrend.internal` in `deploy/prod/.env` for Traefik ingress (preferred). Optional `N8N_TAILSCALE_IP` keeps direct `:5678` fallback when Traefik is unavailable.
+3. Set `TRAEFIK_N8N_HOST=<OPERATOR_N8N_DNS_NAME>` in the externally generated production environment for Traefik ingress only after the hostname is approved; this repository does not approve or supply a concrete hostname. Optional `N8N_TAILSCALE_IP` keeps direct `:5678` fallback when Traefik is unavailable.
 4. Validate GSM-backed secret references: `ops/render-env-from-gsm.sh prod`.
 5. Render runtime env outside repo codebase: `ops/render-runtime-env-from-gsm.sh prod --output /opt/linktrend/runtime/linkautowork/prod.env.runtime`.
 6. Start/refresh the approved stack and its required scheduler profile: `docker compose -f deploy/prod/docker-compose.yml --env-file /approved/runtime.env --profile operations up -d`.

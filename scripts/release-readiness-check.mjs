@@ -39,6 +39,13 @@ function exactly(value, expected) {
   return JSON.stringify(value) === JSON.stringify(expected);
 }
 
+function rejectUnexpectedKeys(value, expected, violationPrefix, violations) {
+  if (!isRecord(value)) return;
+  for (const key of Object.keys(value)) {
+    if (!expected.includes(key)) violations.push(`${violationPrefix}:${key}`);
+  }
+}
+
 function parseYamlDocument(content, label, violations) {
   try {
     const document = yaml.load(content);
@@ -56,12 +63,19 @@ function validateRoute(routers, routeName, specification, violations, privateRou
     violations.push(`private-ingress-missing-route:${routeName}`);
     return;
   }
+  rejectUnexpectedKeys(
+    route,
+    privateRoute ? ['rule', 'entryPoints', 'middlewares', 'service', 'tls'] : ['rule', 'entryPoints', 'service', 'tls'],
+    `private-ingress-route-unexpected-key:${routeName}`,
+    violations,
+  );
   if (route.rule !== `Host(\`${specification.dns}\`)`) violations.push(`private-ingress-route-authority:${routeName}`);
   if (!exactly(route.entryPoints, ['websecure'])) violations.push(`private-ingress-route-entrypoint:${routeName}`);
   if (privateRoute && !exactly(route.middlewares, ['linkautowork-tailscale-only'])) violations.push(`private-ingress-route-middleware:${routeName}`);
   if (!privateRoute && route.middlewares !== undefined) violations.push(`private-ingress-public-route-middleware:${routeName}`);
   if (route.service !== specification.service) violations.push(`private-ingress-route-service:${routeName}`);
   if (!isRecord(route.tls) || route.tls.certResolver !== '<APPROVED_TLS_RESOLVER>') violations.push(`private-ingress-route-tls:${routeName}`);
+  rejectUnexpectedKeys(route.tls, ['certResolver'], `private-ingress-route-tls-unexpected-key:${routeName}`, violations);
 }
 
 function validateService(services, serviceName, expectedUrl, violations) {
@@ -71,6 +85,9 @@ function validateService(services, serviceName, expectedUrl, violations) {
     violations.push(`private-ingress-service-shape:${serviceName}`);
     return;
   }
+  rejectUnexpectedKeys(service, ['loadBalancer'], `private-ingress-service-unexpected-key:${serviceName}`, violations);
+  rejectUnexpectedKeys(service.loadBalancer, ['servers'], `private-ingress-load-balancer-unexpected-key:${serviceName}`, violations);
+  rejectUnexpectedKeys(servers[0], ['url'], `private-ingress-upstream-unexpected-key:${serviceName}`, violations);
   if (!isRecord(servers[0]) || servers[0].url !== expectedUrl) violations.push(`private-ingress-service-upstream:${serviceName}`);
 }
 
@@ -107,12 +124,26 @@ export function validatePrivateIngressTemplates(traefikContent, tailscaleContent
   const tailscale = parseEnvTemplate(tailscaleContent, violations);
   if (!traefik) return violations;
 
+  for (const protocol of ['tcp', 'udp']) {
+    if (Object.prototype.hasOwnProperty.call(traefik, protocol)) violations.push(`private-ingress-unexpected-protocol:${protocol}`);
+  }
+  const http = traefik.http;
+  rejectUnexpectedKeys(http, ['routers', 'middlewares', 'services'], 'private-ingress-unexpected-http-section', violations);
   const routers = traefik.http?.routers;
   const services = traefik.http?.services;
+  const middlewares = traefik.http?.middlewares;
   const middleware = traefik.http?.middlewares?.['linkautowork-tailscale-only'];
   if (!isRecord(routers)) violations.push('private-ingress-routers-not-a-mapping');
   if (!isRecord(services)) violations.push('private-ingress-services-not-a-mapping');
   if (!isRecord(middleware) || !isRecord(middleware.ipAllowList) || !exactly(middleware.ipAllowList.sourceRange, ['<TAILSCALE_CIDR>'])) violations.push('private-ingress-tailscale-policy');
+  rejectUnexpectedKeys(middlewares, ['linkautowork-tailscale-only'], 'private-ingress-unexpected-middleware', violations);
+  rejectUnexpectedKeys(middleware, ['ipAllowList'], 'private-ingress-middleware-unexpected-key', violations);
+  rejectUnexpectedKeys(middleware?.ipAllowList, ['sourceRange'], 'private-ingress-ip-allow-list-unexpected-key', violations);
+
+  const expectedRouterNames = [...Object.keys(privateRoutes), ...Object.keys(publicRoutes)];
+  const expectedServiceNames = [...Object.values(privateRoutes), ...Object.values(publicRoutes)].map(({ service }) => service);
+  rejectUnexpectedKeys(routers, expectedRouterNames, 'private-ingress-unexpected-router', violations);
+  rejectUnexpectedKeys(services, expectedServiceNames, 'private-ingress-unexpected-service', violations);
 
   for (const [routeName, specification] of Object.entries(privateRoutes)) {
     validateRoute(routers, routeName, specification, violations, true);
@@ -152,6 +183,12 @@ export function validatePrivatePersistentNats(relative, content, volume) {
   if (!isRecord(nats)) {
     violations.push(`compose-missing-service:${relative}:nats`);
     return violations;
+  }
+  if (nats.network_mode !== undefined) violations.push(`compose-nats-host-network:${relative}`);
+  if ((Array.isArray(nats.networks) && nats.networks.includes('host'))
+    || (isRecord(nats.networks) && Object.prototype.hasOwnProperty.call(nats.networks, 'host'))
+    || nats.networks === 'host') {
+    violations.push(`compose-nats-host-network:${relative}`);
   }
   if (nats.ports !== undefined) violations.push(`compose-nats-public:${relative}`);
   if (!exactly(nats.command, ['-js', '-sd', '/data'])) violations.push(`compose-nats-not-persistent:${relative}`);

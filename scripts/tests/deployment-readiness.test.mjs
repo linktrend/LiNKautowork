@@ -34,6 +34,45 @@ describe('deployment readiness source checks', () => {
     expect(validatePrivateIngressTemplates(traefik, tailscale.replace('<TAILSCALE_CIDR>', '10.0.0.0/8'))).toContain('private-ingress-input-authority:TAILSCALE_OPERATOR_CIDR');
   });
 
+  it('accepts only the provider-neutral HTTP allowlist and rejects extra private routes or aliases', () => {
+    const traefik = read('deploy/templates/traefik-dynamic.yml.example');
+    const tailscale = read('deploy/templates/tailscale-boundary.env.example');
+    expect(validatePrivateIngressTemplates(traefik, tailscale)).toEqual([]);
+
+    const extraN8nRouter = traefik.replace(
+      '  middlewares:\n',
+      '    extra-n8n:\n      rule: "Host(`<UNAPPROVED_N8N_DNS_NAME>`)"\n      entryPoints: [websecure]\n      service: linkautowork-n8n\n      tls:\n        certResolver: <APPROVED_TLS_RESOLVER>\n  middlewares:\n',
+    );
+    expect(validatePrivateIngressTemplates(extraN8nRouter, tailscale)).toContain('private-ingress-unexpected-router:extra-n8n');
+
+    const extraOperatorConsoleRouter = traefik.replace(
+      '  middlewares:\n',
+      '    extra-operator-console:\n      rule: "Host(`<UNAPPROVED_OPERATOR_CONSOLE_DNS_NAME>`)"\n      entryPoints: [websecure]\n      middlewares: [linkautowork-tailscale-only]\n      service: linkautowork-operator-console\n      tls:\n        certResolver: <APPROVED_TLS_RESOLVER>\n  middlewares:\n',
+    );
+    expect(validatePrivateIngressTemplates(extraOperatorConsoleRouter, tailscale)).toContain('private-ingress-unexpected-router:extra-operator-console');
+
+    const aliasedPrivateService = traefik
+      .replace('service: linkautowork-n8n', 'service: linkautowork-n8n-alias')
+      .replace('    linkautowork-n8n:\n', '    linkautowork-n8n-alias:\n');
+    expect(validatePrivateIngressTemplates(aliasedPrivateService, tailscale)).toContain('private-ingress-route-service:linkautowork-operator-n8n');
+    expect(validatePrivateIngressTemplates(aliasedPrivateService, tailscale)).toContain('private-ingress-unexpected-service:linkautowork-n8n-alias');
+
+    const aliasedPrivateUpstream = traefik.replace(
+      'http://<N8N_PRIVATE_ADDRESS>:5678',
+      'http://n8n:5678',
+    );
+    expect(validatePrivateIngressTemplates(aliasedPrivateUpstream, tailscale)).toContain('private-ingress-service-upstream:linkautowork-n8n');
+  });
+
+  it('rejects unexpected TCP and UDP routing sections, including NATS forwarding', () => {
+    const traefik = read('deploy/templates/traefik-dynamic.yml.example');
+    const tailscale = read('deploy/templates/tailscale-boundary.env.example');
+    for (const protocol of ['tcp', 'udp']) {
+      const protocolConfig = `${traefik}\n${protocol}:\n  routers:\n    nats:\n      rule: HostSNI(\`<UNAPPROVED_NATS_DNS_NAME>\`)\n      service: nats\n`;
+      expect(validatePrivateIngressTemplates(protocolConfig, tailscale)).toContain(`private-ingress-unexpected-protocol:${protocol}`);
+    }
+  });
+
   it('rejects NATS ports after structural URL parsing across suffix and host variants', () => {
     const traefik = read('deploy/templates/traefik-dynamic.yml.example');
     const tailscale = read('deploy/templates/tailscale-boundary.env.example');
@@ -71,6 +110,14 @@ describe('deployment readiness source checks', () => {
     expect(validatePrivatePersistentNats('dev', compose.replace('    volumes:\n      - nats_jetstream_dev:/data', '    ports:\n      - "4222:4222"\n    volumes:\n      - nats_jetstream_dev:/data'), 'nats_jetstream_dev')).toContain('compose-nats-public:dev');
     expect(validatePrivatePersistentNats('dev', compose.replace('command: ["-js", "-sd", "/data"]', 'command: ["-js"]'), 'nats_jetstream_dev')).toContain('compose-nats-not-persistent:dev');
     expect(validatePrivatePersistentNats('prod', read('deploy/prod/docker-compose.yml').replace('nats_jetstream_prod:/data', 'other_volume:/data'), 'nats_jetstream_prod')).toContain('compose-nats-missing-volume:prod');
+    expect(validatePrivatePersistentNats('prod', read('deploy/prod/docker-compose.yml').replace(
+      '    volumes:\n      - nats_jetstream_prod:/data\n    restart: unless-stopped',
+      '    volumes:\n      - nats_jetstream_prod:/data\n    network_mode: host\n    restart: unless-stopped',
+    ), 'nats_jetstream_prod')).toContain('compose-nats-host-network:prod');
+    expect(validatePrivatePersistentNats('prod', read('deploy/prod/docker-compose.yml').replace(
+      '    volumes:\n      - nats_jetstream_prod:/data\n    restart: unless-stopped',
+      '    volumes:\n      - nats_jetstream_prod:/data\n    networks: [host]\n    restart: unless-stopped',
+    ), 'nats_jetstream_prod')).toContain('compose-nats-host-network:prod');
   });
 });
 

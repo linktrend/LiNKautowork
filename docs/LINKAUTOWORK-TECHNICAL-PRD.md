@@ -71,7 +71,7 @@ Both environments share the same three services:
 2. **gateway** — built from `deploy/common/gateway.Dockerfile` (repo root context); healthcheck `GET /health` on `:8080`.
 3. **n8n** — `n8nio/n8n:2.30.0`; `DB_POSTGRESDB_SCHEMA=lautowork_n8n`; `GENERIC_TIMEZONE` / `TZ=Asia/Taipei`; `N8N_PUBLIC_API_DISABLED=false` (required for template import + global kill-switch).
 
-Security baseline on containers: `no-new-privileges`, `cap_drop: ALL`. Prod n8n joins external `linktrend-network` for Traefik (`Host(n8n.linktrend.internal)`).
+Security baseline on containers: `no-new-privileges`, `cap_drop: ALL`. Prod n8n remains on the Compose project-default network; an external Traefik route is attached only after approved provider-neutral deployment inputs are supplied. No external network or hostname is assumed here.
 
 ### 3.2 Gateway routes (authoritative)
 
