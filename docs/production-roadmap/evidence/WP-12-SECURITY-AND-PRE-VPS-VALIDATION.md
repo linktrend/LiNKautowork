@@ -17,6 +17,7 @@
 ```bash
 npm ci
 npm run release:check
+npm run sbom:check
 npm run validate:templates
 npm run validate:automations
 ops/validate-env-contract.sh

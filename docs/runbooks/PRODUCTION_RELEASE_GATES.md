@@ -3,12 +3,13 @@
 The following gates are mandatory before production promotion.
 
 ## 1. Security gate
-- Fresh clean-checkout evidence is green (`npm run release:check`, `npm run ci`, env contract, secret scan, dependency scan).
+- Fresh clean-checkout evidence is green (`npm run release:check`, `npm run sbom:check`, `npm run ci`, env contract, secret scan, dependency scan).
 - No raw secrets in committed env files.
 - GSM secret references validated (`ops/render-env-from-gsm.sh prod`).
 - Runtime env rendered from GSM to runtime path outside repo (`ops/render-runtime-env-from-gsm.sh prod --output /opt/linktrend/runtime/linkautowork/prod.env.runtime`).
 - Stack started via `ops/deploy-stack.sh prod --build`.
 - Tailscale-only firewall policy installed for protected ports (`5678`, `8080`, `4222`, `8222`).
+- `deploy/templates/traefik-dynamic.yml.example` and `deploy/templates/tailscale-boundary.env.example` pass source validation for private operator routes and remain placeholders until deployment authority supplies their values.
 
 ## 2. Lifecycle gate
 - Template lifecycle approvals completed (`qa_approved` and `ops_approved`).

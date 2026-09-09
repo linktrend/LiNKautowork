@@ -38,7 +38,7 @@ Caller / ritual / ops tool
   Supabase (linkplatform-stage | linkplatform-prod)
 ```
 
-Stage stack: `deploy/dev/docker-compose.yml`. Prod stack: `deploy/prod/docker-compose.yml` (Traefik labels + `linktrend-network`, `restart: unless-stopped`).
+Stage stack: `deploy/dev/docker-compose.yml`. Prod stack: `deploy/prod/docker-compose.yml` (`restart: unless-stopped`). NATS is private to each Compose network in both stacks; provider-neutral operator ingress is supplied only through the placeholder templates under `deploy/templates/`.
 
 ---
 
@@ -67,7 +67,7 @@ Stage stack: `deploy/dev/docker-compose.yml`. Prod stack: `deploy/prod/docker-co
 
 Both environments share the same three services:
 
-1. **nats** — `nats:2.10-alpine` with `-js` (JetStream).
+1. **nats** — `nats:2.10.26-alpine` with `-js -sd /data` (persistent JetStream on a named environment volume; no host port).
 2. **gateway** — built from `deploy/common/gateway.Dockerfile` (repo root context); healthcheck `GET /health` on `:8080`.
 3. **n8n** — `n8nio/n8n:2.30.0`; `DB_POSTGRESDB_SCHEMA=lautowork_n8n`; `GENERIC_TIMEZONE` / `TZ=Asia/Taipei`; `N8N_PUBLIC_API_DISABLED=false` (required for template import + global kill-switch).
 
