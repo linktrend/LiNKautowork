@@ -205,6 +205,150 @@ function filesAt(root, relative) {
     .map((entry) => path.relative(root, path.join(entry.parentPath, entry.name)));
 }
 
+function commandTokens(command) {
+  if (Array.isArray(command)) return command.map(String);
+  if (typeof command === 'string') return command.trim().split(/\s+/).filter(Boolean);
+  return [];
+}
+
+function publishesHostPorts(service) {
+  if (!isRecord(service) || service.ports === undefined) return false;
+  if (Array.isArray(service.ports)) return service.ports.length > 0;
+  return true;
+}
+
+function portMappingMentions(ports, port) {
+  const needle = String(port);
+  if (!Array.isArray(ports)) return false;
+  return ports.some((entry) => {
+    if (typeof entry === 'string' || typeof entry === 'number') return String(entry).includes(needle);
+    if (!isRecord(entry)) return false;
+    return [entry.published, entry.target, entry.host_port].some((value) => String(value ?? '') === needle);
+  });
+}
+
+function natsHttpMonitorEnabled(nats) {
+  const tokens = commandTokens(nats?.command);
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index];
+    if (token === '-m' || token === '--http_port' || token.startsWith('--http_port=')) return true;
+  }
+  return portMappingMentions(nats?.ports, '8222');
+}
+
+/** Read the production Compose invariants the approved deployment docs must match. */
+export function readProductionComposeDocContract(compose) {
+  const services = isRecord(compose?.services) ? compose.services : {};
+  const n8n = services.n8n;
+  const nats = services.nats;
+  return {
+    serviceNames: Object.keys(services),
+    n8nPublishesHostPort: publishesHostPorts(n8n),
+    natsPublishesHostPort: publishesHostPorts(nats),
+    natsHttpMonitorEnabled: natsHttpMonitorEnabled(nats),
+  };
+}
+
+function splitProseUnits(text) {
+  return String(text)
+    .split(/\n+/)
+    .flatMap((line) => line.split(/(?<=[.!?])\s+/))
+    .map((unit) => unit.trim())
+    .filter(Boolean);
+}
+
+function unitDeniesClaim(unit) {
+  return /\b(?:is not|are not|does not|do not|did not|never|no longer|not a|not an|neither|nor)\b/i.test(unit)
+    || /\b(?:publishes|publish|enable[sd]?)\s+no\b/i.test(unit)
+    || /\bno\s+(?:host\s+port|n8n host|HTTP monitor|NATS host)\b/i.test(unit)
+    || /\bnot enable(?:s|d)?\b/i.test(unit);
+}
+
+function claimsDirectN8nHostFallback(text) {
+  const units = splitProseUnits(text);
+  for (const unit of units) {
+    if (!/(?<!\d)5678\b/.test(unit) || unitDeniesClaim(unit)) continue;
+    const fallback = /\bfallbacks?\b/i.test(unit);
+    const direct = /\bdirect\b/i.test(unit);
+    const hostPublish = /\bhost(?:-|\s+)ports?\b|\bpublish(?:es|ed|ing)?\b/i.test(unit);
+    if (fallback || (direct && (hostPublish || /\bN8N_TAILSCALE_IP\b/.test(unit)))) return true;
+  }
+  const positive = splitProseUnits(text).filter((unit) => !unitDeniesClaim(unit)).join(' ');
+  return /direct[^.\n]{0,80}(?<!\d)5678\b[^.\n]{0,80}\bfallback/i.test(positive)
+    || /\bfallback[^.\n]{0,80}(?<!\d)5678\b/i.test(positive);
+}
+
+function claimsSharedThreeServiceTopology(text) {
+  const units = splitProseUnits(text).filter((unit) => !unitDeniesClaim(unit));
+  const body = units.join('\n');
+  if (/\bsame three services\b/i.test(body)) return true;
+  if (/\bshare(?:s|d)? the same three\b/i.test(body)) return true;
+  return /both environments[\s\S]{0,120}three services/i.test(body)
+    || /three services[\s\S]{0,120}both environments/i.test(body);
+}
+
+function claimsProductionNatsHttpMonitor(text) {
+  for (const unit of splitProseUnits(text)) {
+    if (!/(?<!\d)8222\b/.test(unit) || unitDeniesClaim(unit)) continue;
+    if (/\bmonitor\b|\bhttp_port\b|\bNATS\b/i.test(unit)) return true;
+  }
+  return false;
+}
+
+/**
+ * Fail closed when approved deployment prose contradicts production Compose
+ * on n8n host publish, service topology, or NATS HTTP monitor.
+ */
+export function validateProductionComposeDocContract(root = process.cwd()) {
+  const violations = [];
+  const composePath = path.join(root, 'deploy/prod/docker-compose.yml');
+  const approvedDocs = {
+    'docs/runbooks/TAILSCALE_HARDENING.md': path.join(root, 'docs/runbooks/TAILSCALE_HARDENING.md'),
+    'docs/runbooks/OPERATIONS.md': path.join(root, 'docs/runbooks/OPERATIONS.md'),
+    'docs/LINKAUTOWORK-TECHNICAL-PRD.md': path.join(root, 'docs/LINKAUTOWORK-TECHNICAL-PRD.md'),
+  };
+  for (const [relative, absolute] of Object.entries(approvedDocs)) {
+    if (!fs.existsSync(absolute)) violations.push(`missing:${relative}`);
+  }
+  if (!fs.existsSync(composePath)) {
+    violations.push('missing:deploy/prod/docker-compose.yml');
+    return violations;
+  }
+
+  const compose = parseYamlDocument(fs.readFileSync(composePath, 'utf8'), 'compose:deploy/prod/docker-compose.yml', violations);
+  const contract = readProductionComposeDocContract(compose);
+  const texts = Object.fromEntries(
+    Object.entries(approvedDocs)
+      .filter(([, absolute]) => fs.existsSync(absolute))
+      .map(([relative, absolute]) => [relative, fs.readFileSync(absolute, 'utf8')]),
+  );
+  const combinedRunbooks = `${texts['docs/runbooks/TAILSCALE_HARDENING.md'] ?? ''}\n${texts['docs/runbooks/OPERATIONS.md'] ?? ''}`;
+  const prd = texts['docs/LINKAUTOWORK-TECHNICAL-PRD.md'] ?? '';
+  const approvedProse = `${combinedRunbooks}\n${prd}`;
+
+  if (contract.n8nPublishesHostPort) {
+    violations.push('compose-n8n-public-host-port');
+  } else if (claimsDirectN8nHostFallback(approvedProse)) {
+    violations.push('doc-contract-n8n-host-port-fallback: production Compose publishes no n8n host port; deploy-stack only rewrites n8n URL variables');
+  }
+
+  if (contract.serviceNames.length !== 0 && claimsSharedThreeServiceTopology(prd) && contract.serviceNames.length !== 3) {
+    violations.push(`doc-contract-shared-three-services: production Compose defines ${contract.serviceNames.length} services (${contract.serviceNames.join(', ')})`);
+  }
+  for (const service of contract.serviceNames) {
+    const mentioned = new RegExp(`\\b${service.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(prd);
+    if (!mentioned) violations.push(`doc-contract-missing-production-service:${service}`);
+  }
+
+  if (contract.natsHttpMonitorEnabled || (contract.natsPublishesHostPort && portMappingMentions(compose?.services?.nats?.ports, '8222'))) {
+    violations.push('compose-nats-http-monitor');
+  } else if (claimsProductionNatsHttpMonitor(approvedProse)) {
+    violations.push('doc-contract-nats-http-monitor: production Compose neither enables nor publishes the NATS HTTP monitor on :8222');
+  }
+
+  return violations;
+}
+
 /** Collect deterministic source-level release-readiness violations. */
 export function collectReleaseReadinessViolations(root = process.cwd()) {
   const violations = [];
@@ -244,6 +388,8 @@ export function collectReleaseReadinessViolations(root = process.cwd()) {
     if (/traefik\.http\.routers\./.test(content)) violations.push('compose-has-inline-traefik-router');
     if (/image:\s*[^\n]*:latest\b/i.test(content)) violations.push('compose-uses-latest-image');
   }
+
+  violations.push(...validateProductionComposeDocContract(root));
 
   for (const [relative, volume] of [['deploy/dev/docker-compose.yml', 'nats_jetstream_dev'], ['deploy/prod/docker-compose.yml', 'nats_jetstream_prod']]) {
     const absolute = path.join(root, relative);

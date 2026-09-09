@@ -15,6 +15,7 @@
     "build:catalog": "node scripts/build-automation-catalog.mjs",
     "catalog:check": "node scripts/build-automation-catalog.mjs --check",
     "release:check": "node scripts/release-readiness-check.mjs",
+    "test:release-doc-contract": "node scripts/tests/test-release-readiness-doc-contract.mjs",
     "sbom": "node scripts/generate-sbom.mjs",
     "sbom:check": "node scripts/generate-sbom.mjs --check",
     "test:catalog": "vitest run",
