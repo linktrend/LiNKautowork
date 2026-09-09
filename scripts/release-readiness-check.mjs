@@ -213,9 +213,10 @@ function commandTokens(command) {
 
 function tokenEnablesNatsHttpMonitor(token) {
   const value = String(token).trim();
-  if (!value) return false;
-  if (value === '-m' || value === '--http_port') return true;
-  return /^-m[=:]/.test(value) || /^--http_port[=:]/.test(value);
+  if (!value || value.length > 64) return false;
+  if (value === '-m' || value === '--http_port' || value === '--http-port') return true;
+  if (/^-m(?:[=:]\d{1,5}|\d{1,5})$/.test(value)) return true;
+  return /^--http[_-]port(?:[=:]\d{1,5})?$/.test(value);
 }
 
 function publishesHostPorts(service) {
@@ -272,26 +273,84 @@ function unitDeniesClaim(unit) {
     || /\bnot enable(?:s|d)?\b/i.test(unit);
 }
 
+const N8N_PORT = String.raw`(?<!\d)5678\b`;
+const BOUNDED_IPV4 = String.raw`(?:(?:25[0-5]|2[0-4]\d|[01]?\d{1,2})\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d{1,2})`;
+const BOUNDED_BRACKET_IPV6 = String.raw`\[[0-9A-Fa-f:]{2,45}\]`;
+const BOUNDED_PLACEHOLDER = String.raw`<[-A-Za-z0-9_.]{1,64}>`;
+const BOUNDED_HOSTNAME = String.raw`[A-Za-z][A-Za-z0-9_-]{0,62}(?:\.[A-Za-z0-9_-]{1,63}){0,8}`;
+const N8N_HOST_PORT_RE = new RegExp(
+  String.raw`(?:https?://)?(?:${BOUNDED_IPV4}|${BOUNDED_BRACKET_IPV6}|${BOUNDED_PLACEHOLDER}|${BOUNDED_HOSTNAME}):5678\b`,
+  'i',
+);
+const N8N_DOTTED_HOST_PORT_RE = new RegExp(
+  String.raw`(?:https?://)?[A-Za-z][A-Za-z0-9_-]{0,62}(?:\.[A-Za-z0-9_-]{1,63}){1,8}:5678\b`,
+  'i',
+);
+const N8N_PLACEHOLDER_PORT_RE = new RegExp(String.raw`${BOUNDED_PLACEHOLDER}:5678\b`);
+const N8N_LITERAL_BIND_RE = new RegExp(
+  String.raw`(?:${BOUNDED_IPV4}|${BOUNDED_BRACKET_IPV6}|0\.0\.0\.0|\[::\]):5678\b`,
+);
+
 function mentionsN8nPort(text) {
-  return /(?<!\d)5678\b/.test(text);
+  return new RegExp(N8N_PORT).test(text);
 }
 
 function claimsN8nTailscaleBrowseAlias(text) {
-  return /https?:\/\/N8N_TAILSCALE_IP:5678\b/i.test(text)
-    || /(?<![A-Za-z0-9_])N8N_TAILSCALE_IP:5678\b/.test(text);
+  return /(?:https?:\/\/)?(?<![A-Za-z0-9_])N8N_TAILSCALE_IP:5678\b/i.test(text);
 }
 
-function claimsN8nHostPublish(text) {
-  return /\bn8n\b/i.test(text)
-    && mentionsN8nPort(text)
-    && /\bhost(?:-|\s+)ports?\b/i.test(text);
+function claimsLiteralOrUnspecifiedN8nBind(text) {
+  return N8N_LITERAL_BIND_RE.test(text);
+}
+
+function claimsUserOperatorBrowserN8nReachability(text) {
+  if (!mentionsN8nPort(text)) return false;
+  const hasEndpoint = N8N_HOST_PORT_RE.test(text) || /(?<!\d):5678\b/.test(text);
+  if (!hasEndpoint) return false;
+  const editorInBrowser = /\beditor\b.{0,48}\bbrowser\b|\bbrowser\b.{0,48}\beditor\b|\bin a browser\b/i.test(text);
+  const reachVerb = /\b(?:open|browse|visit|navigat(?:e|ing))\b/i.test(text);
+  return editorInBrowser || reachVerb;
+}
+
+function claimsN8nHostPublication(text) {
+  if (!mentionsN8nPort(text)) return false;
+  if (/\b0\.0\.0\.0:5678\b/.test(text) || /\[::\]:5678\b/.test(text)) return true;
+  if (/\bhost\b[\s,;:/"'-]{0,16}(?:at(?:\s*\/\s*on)?|on(?:\s*\/\s*at)?)\b[\s,;:/"'-]{0,16}(?:port\b[\s,;:/"'-]{0,8})?:?5678\b/i.test(text)) {
+    return true;
+  }
+  if (/\bhost-published\b[\s,;:/"'-]{0,12}on\b[\s,;:/"'-]{0,12}(?:port\b[\s,;:/"'-]{0,8})?:?5678\b/i.test(text)) {
+    return true;
+  }
+  if (/\bhost\b[\s,;:/"'-]{0,8}published\b[\s,;:/"'-]{0,12}on\b[\s,;:/"'-]{0,12}(?:port\b[\s,;:/"'-]{0,8})?:?5678\b/i.test(text)) {
+    return true;
+  }
+  if (/\bn8n\b/i.test(text) && /\bhost(?:-|\s+)ports?\b/i.test(text)) {
+    if (/\b(?:stage|workstation|local subset)\b/i.test(text)) return false;
+    return true;
+  }
+  if (/\bhost\b.{0,32}\b(?:bind|binding|binds|listen|listens|listening)\b.{0,32}(?<!\d)5678\b/i.test(text)) return true;
+  if (/\b(?:bind|binding|binds)\b.{0,32}\bhost\b.{0,32}(?<!\d)5678\b/i.test(text)) return true;
+  return false;
+}
+
+function isOrdinaryInternalN8nUrl(text) {
+  if (!mentionsN8nPort(text)) return false;
+  if (claimsN8nHostPublication(text) || claimsUserOperatorBrowserN8nReachability(text)) return false;
+  if (claimsLiteralOrUnspecifiedN8nBind(text) || claimsN8nTailscaleBrowseAlias(text) || N8N_DOTTED_HOST_PORT_RE.test(text)) {
+    return false;
+  }
+  return /\b(?:callback|webhook|base_url|base url|N8N_BASE_URL|publisher|health|upstream|overlay|forwards?)\b/i.test(text);
 }
 
 function claimsDirectN8nHostFallback(text) {
   const units = splitProseUnits(text);
   for (const unit of units) {
     if (!mentionsN8nPort(unit) || unitDeniesClaim(unit)) continue;
-    if (claimsN8nTailscaleBrowseAlias(unit) || claimsN8nHostPublish(unit)) return true;
+    if (isOrdinaryInternalN8nUrl(unit)) continue;
+    if (claimsN8nHostPublication(unit)) return true;
+    if (claimsUserOperatorBrowserN8nReachability(unit)) return true;
+    if (claimsLiteralOrUnspecifiedN8nBind(unit) || claimsN8nTailscaleBrowseAlias(unit)) return true;
+    if (N8N_DOTTED_HOST_PORT_RE.test(unit) || N8N_PLACEHOLDER_PORT_RE.test(unit)) return true;
     const fallback = /\bfallbacks?\b/i.test(unit);
     const direct = /\bdirect\b/i.test(unit);
     if (fallback) return true;
@@ -300,9 +359,11 @@ function claimsDirectN8nHostFallback(text) {
     }
   }
   const positive = collapseWhitespace(units.filter((unit) => !unitDeniesClaim(unit)).join(' '));
+  if (isOrdinaryInternalN8nUrl(positive)) return false;
   return /direct.{0,80}(?<!\d)5678\b.{0,80}\bfallback/i.test(positive)
     || /\bfallback.{0,80}(?<!\d)5678\b/i.test(positive)
-    || claimsN8nTailscaleBrowseAlias(positive);
+    || claimsN8nTailscaleBrowseAlias(positive)
+    || claimsLiteralOrUnspecifiedN8nBind(positive);
 }
 
 function claimsSharedThreeServiceTopology(text) {
