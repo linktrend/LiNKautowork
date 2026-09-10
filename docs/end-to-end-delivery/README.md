@@ -5,7 +5,7 @@ Prepared: 2026-09-10, Asia/Taipei
 Assigned host: **LiNKserver 01** (`linkserver-01`)
 Planning issue: [#127](https://github.com/linktrend/LiNKautowork/issues/127)
 Planning manifest SHA-256:
-`40eb451c010c2916ceaa53537cf7ee0c34e36ad30035df0ad2c2e66a43b5eb51`
+`28bf51adee6866f139a2dddbf1a7c09201ca4368388931f6213ee0b4b2f5a960`
 
 This directory is the stable entry point for making LiNKautowork usable on its
 assigned existing server. It does not replace the approved product authority or
@@ -46,6 +46,13 @@ installation or founder route choice is needed. Once the Deployment Advisor
 accepts this exact package, `APPROVE` is the sole remaining founder gate to creating
 the first paid worker. Advisor acceptance releases planning only and never implies
 implementation authority.
+
+The queue remains globally suspended. After `APPROVE`, coordinator task
+`01a089cb-ef0d-75a2-b87f-4f3dd8163b24` first reconciles the existing Server01
+owner and then atomically adds only its own `linktrend/LiNKautowork` grant to the
+existing resume scope. It preserves all other owner grants and `SUSPENDED`. This
+scheduled control transition is fully specified in the route document and needs no
+second founder decision.
 
 An active source-readiness Phase PR, [#125](https://github.com/linktrend/LiNKautowork/pull/125),
 and its repair issue [#126](https://github.com/linktrend/LiNKautowork/issues/126)

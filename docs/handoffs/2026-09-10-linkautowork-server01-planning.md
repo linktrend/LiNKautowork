@@ -21,7 +21,7 @@ Status: **CANDIDATE PLAN READY / ADVISOR ACCEPTANCE PENDING**
   `docs/end-to-end-delivery/CURSOR-CLOUD-EXECUTION-ROUTE.md`
 
 Manifest SHA-256:
-`40eb451c010c2916ceaa53537cf7ee0c34e36ad30035df0ad2c2e66a43b5eb51`.
+`28bf51adee6866f139a2dddbf1a7c09201ca4368388931f6213ee0b4b2f5a960`.
 
 ## Settled scope
 
@@ -52,11 +52,19 @@ explicit later expansion and do not block the initial internal release.
 - No Server01 LiNKautowork, n8n or NATS runtime was observed. No product,
   credential, provider, database, workflow or server mutation occurred.
 - Planning/interface maturity is READY and executable-after-approval readiness is
-  READY. AW-01 is the first content packet and its inputs are ready. Direct
+  READY with one scheduled coordinator control transition. Coordinator task
+  `01a089cb-ef0d-75a2-b87f-4f3dd8163b24` owns this repository and AW-01 is the
+  first content packet. Direct
   read-only API calls through the established Keychain-backed REST dispatcher
   proved account `cursor-001@linktrend.one`, Grok 4.6 Medium/Fast-off support and
   LiNKautowork repository visibility. No new key, login, SDK install or founder
   route choice is needed; no paid worker was launched.
+- `SUSPENDED` is present and current `RESUME-SCOPE.json` does not contain this
+  coordinator. After `APPROVE`, it first requires terminal handoff from the running
+  prior `autowork-phase-admission-015`, refreshes the protected baseline, then
+  atomically adds only its own LiNKautowork grant while preserving suspension and
+  every existing owner. The route document defines validation and rollback; no
+  second founder decision is needed.
 - Later live prerequisites are the exact Platform registrations/PACI scopes,
   least-privilege database roles, migration receipts, GSM runtime references and
   private Server01 routes. They gate AW-08 live acceptance, not downstream planning.

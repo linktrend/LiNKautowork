@@ -295,9 +295,10 @@ is not routed or accepted in the initial release.
 
 1. Consumer chooses an already bound exact automation version and supplies
    Platform token, Program-owned authority/work reference, request correlation,
-   idempotency key, explicit `repos[]`, advertised ref and bounded input.
+   idempotency key and bounded schema-valid input.
 2. Gateway validates Platform claim, consumer authority reference, binding,
-   package/config digests, repository allow-list, expiry, kill switches and schema.
+   package/config digests, declared integration/node policy, expiry, kill switches
+   and schema.
 3. One transaction persists request, canonical fingerprint and `PREPARED` intent.
 4. Transactional outbox publishes the compact request reference to JetStream.
 5. A durable consumer delivers the request to the exact bound n8n workflow.
@@ -328,6 +329,21 @@ is not routed or accepted in the initial release.
 | Google Secret Manager | approved shared authority; Autowork values not inventoried here | Platform/GSM owner | inventory names without values; create/rotate/inject after approval | all credentialed services |
 | Slack/email/payment/public DNS | not required for initial release | respective Program/provider owners | JIT only for later approved workflows | no initial consumer |
 
+Read-only SSH verification succeeded through alias `linkserver-01` as user
+`linktrend`. That user has non-interactive `sudo`; Docker Engine `29.8.0` and
+Compose `5.5.1` are available through the privileged route. Direct user access to
+the Docker socket and `/srv/linktrend` write access are denied, while scoped sudo
+access can write there. AW-08 must therefore use the existing sudo/SSH route and
+must not change host ownership or add the user to a broader Docker group.
+
+The current production Compose builds application images locally from the exact
+release checkout and pinned Dockerfiles; no external artifact registry is part of
+the accepted initial path, so registry credentials are `NOT_APPLICABLE`. AW-05
+must make the handoff immutable by recording protected source commit/tree,
+Dockerfile and lockfile digests, BuildKit output image IDs/content digests, and the
+release-directory manifest before the atomic `current` switch. Adding GHCR or
+another registry is later scope, not an undeclared prerequisite.
+
 The established local coordinator uses a standard-library REST dispatcher and a
 credential retrieved from macOS Keychain into process memory. Read-only API calls
 verified account `cursor-001@linktrend.one`, Grok 4.6 Medium with Fast disabled,
@@ -342,11 +358,14 @@ explicit optional fallback.
 
 1. **Admit source baseline and route.** AW-01 is the first content packet. Refresh
    protected `development` commit/tree, reconcile only paths affected by PR
-   #125/#126, and verify the founder-selected worker route. Any design-affecting
-   source change returns for founder decision; mechanical identity refresh stays
-   within the approved scope but must be recorded before mutation.
-2. **Implement source packets.** Grok 4.6 Medium through the direct Cursor SDK/API
-   is the ordinary route. Each issue uses explicit `repos[]`, readback, frequent
+   #125/#126, and perform the exact coordinator owner-scope transition in
+   `CURSOR-CLOUD-EXECUTION-ROUTE.md` after the prior Server01 owner hands off.
+   Preserve global suspension and every other owner. Any design-affecting source
+   change returns for founder decision; mechanical identity refresh stays within
+   the approved scope but must be recorded before mutation.
+2. **Implement source packets.** Grok 4.6 Medium through the established Cursor
+   REST dispatcher is the ordinary route. Each issue uses explicit `repos[]`,
+   transport readback plus worker Git attestation, frequent
    pushed checkpoints, focused tests and one independent narrow review bound to
    exact commit/tree. Luna High is limited to Principal-selected fallback or
    necessary server/privileged operations.
@@ -354,9 +373,11 @@ explicit optional fallback.
    delivery controller merges only exact reviewed candidates to `development`.
    No implementer opens/merges its own PR. `development -> staging -> main` remains
    branch promotion, not a second installation.
-4. **Build immutable release.** Hosted CI performs heavy Full/build/security/SBOM
-   work once on the assembled exact candidate. Server01 receives immutable image
-   digests and release files only after checks and source integration.
+4. **Build immutable release.** Hosted CI performs heavy Full/security checks once
+   on the assembled exact candidate. Server01 checks out only the protected release
+   identity and builds with the pinned Dockerfiles/lockfile already used by Compose.
+   The deployer records image IDs/content digests and release files before install;
+   no unconfigured external registry is assumed.
 5. **Platform data gate.** Platform takes checkpoint/backup, proves isolated
    restore, applies the exact Autowork package first to the approved validation
    context and then production under its receipts. No second persistent staging

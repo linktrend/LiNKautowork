@@ -23,7 +23,8 @@
       "issues": ["ISS-01"],
       "ownedPaths": [
         "supabase/migrations/",
-        "docs/contracts/server01/"
+        "docs/contracts/server01/",
+        "packages/automation-contracts/tests/server01-"
       ],
       "prohibitedPaths": [
         ".ide-development/",
@@ -47,6 +48,7 @@
         "packages/automation-contracts/tests/provider-",
         "gateway/src/services/provider-",
         "gateway/tests/provider-",
+        "gateway/src/routes/provider-v2/",
         "docs/contracts/provider-"
       ],
       "prohibitedPaths": [
@@ -71,7 +73,9 @@
       "issues": ["ISS-03"],
       "ownedPaths": [
         "gateway/src/services/runtime-dispatch/",
-        "gateway/tests/runtime-dispatch"
+        "gateway/tests/runtime-dispatch",
+        "gateway/tests/app-runtime-dispatch.test.ts",
+        "gateway/src/app.ts"
       ],
       "prohibitedPaths": [
         ".ide-development/",
@@ -142,7 +146,7 @@
         ["npm", "run", "test", "--", "scripts/tests/deployment-readiness.test.mjs"],
         ["git", "diff", "--check"]
       ],
-      "dependencies": ["AW-01"],
+      "dependencies": ["AW-04"],
       "executionState": "PLAN"
     },
     {

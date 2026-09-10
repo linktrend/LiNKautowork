@@ -22,7 +22,7 @@ LiNKautowork is not currently installed on Server01 and is not operational.
 | Definition of done | READY | Delivery plan covers full behavior, identity, configuration, interfaces, data, deployment, observability, failure paths, recovery and founder acceptance. |
 | Work-packet completeness | READY | Eight dependency-ordered packets name exact scope/paths, requirements, inputs, changes, dependencies, outputs, validation, acceptance and recovery. Owners do not overlap by design. |
 | Execution-route definition | READY | The established standard-library REST dispatcher is documented in `CURSOR-CLOUD-EXECUTION-ROUTE.md`: Keychain-backed API v1, Grok 4.6 Medium, Fast off, explicit branch-bound `repos[]`, transport readback, worker source attestation, stable packet identity, polling and bounded capacity. |
-| Executable after approval | READY | Read-only API GETs proved exact account `cursor-001@linktrend.one`, supported Grok 4.6 Medium/Fast-off parameters, and visibility of `linktrend/LiNKautowork`. AW-01 can be submitted after the final manifest receives `APPROVE`; no new key, login, SDK installation or founder route decision is required. No paid worker was launched during planning. |
+| Executable after approval | READY WITH FIRST COORDINATOR ACTION | Read-only API GETs proved exact account `cursor-001@linktrend.one`, supported Grok 4.6 Medium/Fast-off parameters, and visibility of `linktrend/LiNKautowork`. Global suspension remains and the current coordinator ID is not yet allowlisted. After `APPROVE`, it must reconcile the prior owner and atomically add only its exact LiNKautowork grant before AW-01 submit. No new key, login, SDK installation or founder route decision is required. |
 | GitHub source access and handoff | READY | The authenticated `linktrend` account has ADMIN repository access; `origin/development` readback is `a13a6467fc9bc2fccdddd1de8d9e258c78e57fdd` / tree `10e6b59394bfd57703d6f3cee5d7bcda3aa7342f`. Issue checkpoints use `completion_gate.py`; Phase Packager opens the PR and the delivery controller integrates it. |
 | Manifest schema | READY | `EXECUTION-MANIFEST.json` is intended for the installed `.ide-development/contracts/EXECUTION-MANIFEST.schema.json` and remains `PLAN`; validation evidence is recorded with the planning commit. |
 | Repository truth | READY WITH DEPENDENCY | Protected `development` is pinned. Current CI passed. Active PR #125 and repair issue #126 are recorded and must finish through their current owners; this plan does not duplicate them. |
@@ -41,7 +41,7 @@ founder supplies the required `APPROVE` execution authority.
 | Layer | State | Exact meaning |
 |---|---|---|
 | Planning/interface maturity | READY | Approved product behavior, interfaces, owners, paths, packet dependencies, tests, deployment, recovery and acceptance are specified. Advisor acceptance may release downstream planning only. |
-| Executable now after `APPROVE` | READY | AW-01 is the first content packet; its repository/Platform inputs and authenticated ordinary Cursor Cloud transport are verified. The local orchestrator prepares the pushed issue branch and exact packet, then submits it. |
+| Executable now after `APPROVE` | READY WITH SCHEDULED CONTROL TRANSITION | Coordinator task `01a089cb-ef0d-75a2-b87f-4f3dd8163b24` owns `linktrend/LiNKautowork`; AW-01 is first. It first reconciles the running prior Phase-admission owner, then preserves `SUSPENDED` and atomically adds its exact single-repo grant. It prepares the pushed issue branch and packet only after that readback. This needs no second founder decision. |
 | Later live prerequisites | HOLD BY DESIGN | Server01 service install, Platform registrations/PACI scopes, least-privilege database roles, exact migration receipts, GSM runtime secrets and private routes are AW-01/AW-05/AW-08 execution dependencies. They do not block source planning, but live deployment cannot pass without them. |
 
 After Deployment Advisor acceptance of the exact package, the only founder decision
@@ -54,12 +54,24 @@ optional, explicit fallback, not a prerequisite or automatic substitution.
 | Evidence | Read-only result |
 |---|---|
 | Dispatcher source/version | Operational standard-library REST client at the local coordinator path recorded in `CURSOR-CLOUD-EXECUTION-ROUTE.md`, SHA-256 `0cf61dc9b2f6b7f6c6b34ddf94a7c751229e9838d50ed9c1b468f5327e39e2e8`. Installed IDE Development 2.5.2 remains repository governance, not the transport dependency. |
-| Model and binding | `ordinary-development` is provider `cursor`, model `grok-4.6`, effort `medium`, Fast `false`; request uses explicit repository URL and starting ref through `repos[]` or `CloudAgentOptions.repos`. |
+| Model and binding | `ordinary-development` is provider `cursor`, model `grok-4.6`, effort `medium`, Fast `false`; the operational request uses one explicit repository URL and starting ref through REST `repos[]`. |
 | Result/status and failure behavior | Submit persists a stable packet/agent identity before POST. Agent GET validates cloud host, agent ID, repository URL when returned, optional starting ref when returned, and no-auto-PR policy. Poll then reads the exact latest run. Worker Git attestation—not transport GET—proves starting/final repository/ref/commit/tree. |
 | Source repository access | `gh` account `linktrend` is authenticated with ADMIN access to `linktrend/LiNKautowork`; remote protected `development` commit/tree readback succeeded. |
 | Cloud worker authority | Direct read-only GETs proved Keychain account `cursor-001@linktrend.one`, exact model parameters and LiNKautowork repository visibility. Credential value remained in process memory and was not printed. Environment variables, Cursor CLI login and `cursor-sdk` are not dependencies of this operational REST client. |
 | Checkpoint and PR handoff | `scripts/gitops/completion_gate.py` records exact pushed Issue checkpoint evidence; the Phase Packager/Coordinator opens the draft Phase PR; `scripts/gitops/delivery_controller.py` performs protected integration after required evidence. |
 | Fallback | Registry route `luna-fallback`: Codex CLI `gpt-5.6-luna`, effort `high`, Fast `false`, only when the founder explicitly instructs it. |
+
+## Startup ownership and environment evidence
+
+| Requirement | Current evidence and execution treatment |
+|---|---|
+| Owner/repository/first packet | Coordinator `01a089cb-ef0d-75a2-b87f-4f3dd8163b24`; repository `linktrend/LiNKautowork`; first packet AW-01. The cloud packet `owner` is this exact task ID. |
+| Existing work | PR #125 remains draft; issue #124 and #126 worktrees are present and clean. Provider GETs show all recorded LiNKautowork cloud jobs terminal. Server01 queue item `autowork-phase-admission-015` was still running, so AW-01 waits for its terminal handoff and refreshes only affected paths/baseline. |
+| Baselines | Planning identity is the pushed issue-127 branch plus manifest digest below; final Git commit/tree is returned with Advisor handoff. Implementation baseline is separately pinned to protected `development` in the manifest and is refreshed after prior-owner reconciliation. |
+| Suspension/ownership | `SUSPENDED` remains. Current `RESUME-SCOPE.json` maps exact owner task IDs to repositories and does not contain this coordinator. The route document defines a post-APPROVE CAS-style atomic add of only this coordinator/LiNKautowork pair and a rollback that removes only that entry. |
+| Cloud runtime/dependencies | CI uses Ubuntu 24.04 ARM, Node 22 and `npm ci`; application images use Node 22.13.1 Alpine. No submodule or private npm dependency was found. Disposable worker install is an execution step after approval. |
+| Permissions | Keychain/API GET is non-interactive. Cloud writers have only issue-branch Git/network capability under prompt and transport controls; they cannot create issues, publish privileged checks, merge, deploy or access production secrets/data. Coordinator tooling owns those actions. |
+| Server/artifact path | SSH alias `linkserver-01`, user `linktrend`, non-interactive sudo verified; Docker 29.8.0/Compose 5.5.1; 147 GiB free `/srv`. Direct Docker/socket and `/srv` write are intentionally denied. Existing Compose builds locally from exact protected source; external registry is not required, and image IDs/digests form the immutable handoff. |
 
 ## Exact material uncertainties
 
@@ -96,7 +108,7 @@ without that execution approval. No separate route-provisioning decision is need
 Until then: **Awaiting APPROVE.**
 
 Manifest SHA-256 for approval:
-`40eb451c010c2916ceaa53537cf7ee0c34e36ad30035df0ad2c2e66a43b5eb51`.
+`28bf51adee6866f139a2dddbf1a7c09201ca4368388931f6213ee0b4b2f5a960`.
 
 ## Planning validation record
 

@@ -8,18 +8,22 @@ Server01 until the founder approves the final manifest in this task.
 Every packet starts from the exact accepted predecessor, uses an
 `issue/<n>-<slug>` branch, discovers IDE Development 2.5.2 locally, and records a
 Batch Header with scope, inputs, plan and risks. Ordinary source execution uses the
-direct Cursor SDK/API with Grok 4.6 Medium, Fast off, explicit repository URL/ref in
-`repos[]`, and repository/ref/commit/tree/model readback. Named saved Cursor
-environments are forbidden. Luna High is used only for a founder-selected fallback
-or the server/privileged operations that cannot safely run through the ordinary
-route.
+established Cursor REST dispatcher with Grok 4.6 Medium, Fast off and explicit
+repository URL/ref in `repos[]`. GitHub preflight plus worker attestation proves
+repository/ref/commit/tree; transport GET proves only the fields it actually
+returns. Named saved Cursor environments are forbidden. Luna High is used only for
+a founder-selected fallback or server/privileged operations that cannot safely run
+through the ordinary route.
 
 The operational route is the Keychain-backed standard-library REST client recorded
 in `CURSOR-CLOUD-EXECUTION-ROUTE.md`. Read-only API checks proved the exact account,
 model parameters and LiNKautowork repository access. AW-01 is the first content
 packet and its inputs are ready; it may start after founder `APPROVE`. No new
 credential, Cursor CLI login, SDK installation or route choice is an AW-01
-prerequisite. Luna is an explicit founder-selected fallback only.
+prerequisite. The coordinator must first reconcile the prior Server01 owner and add
+only its exact task-ID/LiNKautowork grant while retaining global suspension; the
+route document specifies that reversible transition. Luna is an explicit
+founder-selected fallback only.
 
 An Issue checkpoint requires exact pushed commit/tree, scoped diff, focused tests,
 manifest evidence, and one provider-independent narrow review bound to that exact
@@ -36,15 +40,14 @@ only those necessary for configuration and live acceptance.
 ```text
 Settled protected interfaces available to downstream planning
   -> AW-01 after execution rebaseline
-      -> AW-02 -> AW-03 -> AW-04
-      -> AW-05 -----------------+
-  -> AW-06 (after AW-02..AW-05) |
-  -> AW-07                       |
-  -> AW-08 live acceptance <-----+
+      -> AW-02 -> AW-03 -> AW-04 -> AW-05
+      -> AW-06 -> AW-07 -> AW-08 live acceptance
 ```
 
-AW-02 and AW-05 may proceed concurrently after AW-01 because their owned paths do
-not overlap. All other dependencies are strict.
+The work is logically separable, but the established dispatcher permits only one
+cloud writer per repository. Source packets are therefore admitted serially in
+this order. Independent read-only preparation may overlap only when it does not
+take source ownership or modify the repository.
 
 ## AW-01 — Freeze live interfaces and migration/identity package
 
@@ -52,9 +55,10 @@ not overlap. All other dependencies are strict.
 - **Owner:** LiNKautowork data/contract implementer; LiNKplatform remains sole live
   migration and identity operator.
 - **Scope/owned paths:** `supabase/migrations/**`,
-  `docs/contracts/server01/**`, and contract tests for new migration/package
-  surfaces. Do not edit `.ide-development/**`, Platform repository files, runtime
-  Compose or existing PR #125/#126 changes.
+  `docs/contracts/server01/**`, and
+  `packages/automation-contracts/tests/server01-*.test.ts` for new
+  migration/package surfaces. Do not edit `.ide-development/**`, Platform
+  repository files, runtime Compose or existing PR #125/#126 changes.
 - **Authority/inputs:** this plan; protected Autowork baseline; Platform protected
   revision pinned in the plan; `platform.auth-claims/1.1.0`, PACI envelope,
   migration manifest/receipt, health and recovery contracts; existing
@@ -87,7 +91,9 @@ not overlap. All other dependencies are strict.
 - **Owner:** gateway/runtime-contract implementer.
 - **Scope/owned paths:** `packages/automation-contracts/src/provider-*`, focused
   provider contract tests, `gateway/src/services/provider-*`, provider routes in
-  `gateway/src/app.ts`, and `docs/contracts/provider-*-v2.md`. Do not implement a
+  new `gateway/src/routes/provider-v2/**`, and
+  `docs/contracts/provider-*-v2.md`. Do not edit the application composition root,
+  which AW-03 owns. Do not implement a
   Program-specific provider client, workflow JSON, Compose, database migration or
   consumer ledger.
 - **Authority/inputs:** AW-01 schemas/RPCs; existing provider contract
@@ -119,7 +125,9 @@ not overlap. All other dependencies are strict.
 - **Issue:** ISS-03.
 - **Owner:** n8n runtime-integration implementer.
 - **Scope/owned paths:** new `gateway/src/services/runtime-dispatch/**` and focused
-  tests. A separate service/container is added only if implementation evidence
+  tests, `gateway/tests/app-runtime-dispatch.test.ts`, and the minimum composition
+  wiring in `gateway/src/app.ts`. It consumes the AW-02 route/service surface
+  without rewriting it. A separate service/container is added only if evidence
   shows the gateway-owned module cannot meet isolation or liveness requirements.
   Do not edit policy contracts, workflow packages, migrations, consumer
   repositories or IDE managed core.
@@ -189,7 +197,9 @@ not overlap. All other dependencies are strict.
   pointer; install/upgrade/rollback commands. Remove documentation or parser claims
   that contradict final machine-readable Compose. Do not expose protected ports or
   create another staging server.
-- **Dependencies:** AW-01 interfaces; may proceed concurrently with AW-02.
+- **Dependencies:** AW-04 accepted. The code could be designed independently, but
+  its cloud writer starts only after AW-04 because the dispatcher serialises
+  writers for this repository.
 - **Output:** deterministic production Compose/release manifest and Server01
   installation/rollback runbook.
 - **Minimum validation:** Compose render with names-only config; SBOM/licence/
