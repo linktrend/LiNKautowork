@@ -1,0 +1,373 @@
+{
+  "schemaVersion": 1,
+  "protocol": {
+    "id": "coding-execution-protocol",
+    "version": "1.0.1",
+    "amendment": "V25_BOOTSTRAP_LEAN"
+  },
+  "program": {
+    "id": "linkautowork-server01-end-to-end",
+    "name": "LiNKautowork operational delivery on LiNKserver 01",
+    "targetRelease": "server01-internal-v1"
+  },
+  "baseline": {
+    "repository": "linktrend/LiNKautowork",
+    "commit": "a13a6467fc9bc2fccdddd1de8d9e258c78e57fdd",
+    "tree": "10e6b59394bfd57703d6f3cee5d7bcda3aa7342f",
+    "ref": "refs/heads/development"
+  },
+  "packets": [
+    {
+      "id": "AW-01",
+      "title": "Freeze live interfaces and migration identity package",
+      "issues": ["ISS-01"],
+      "ownedPaths": [
+        "supabase/migrations/",
+        "docs/contracts/server01/",
+        "packages/automation-contracts/tests/server01-"
+      ],
+      "prohibitedPaths": [
+        ".ide-development/",
+        "deploy/",
+        "gateway/",
+        "services/"
+      ],
+      "verificationCommands": [
+        ["npm", "--prefix", "packages/automation-contracts", "run", "verify:db"],
+        ["npm", "--prefix", "packages/automation-contracts", "run", "test"],
+        ["git", "diff", "--check"]
+      ],
+      "executionState": "PLAN"
+    },
+    {
+      "id": "AW-02",
+      "title": "Automation admission lifecycle and durable event boundary",
+      "issues": ["ISS-02"],
+      "ownedPaths": [
+        "packages/automation-contracts/src/provider-",
+        "packages/automation-contracts/tests/provider-",
+        "gateway/src/services/provider-",
+        "gateway/tests/provider-",
+        "gateway/src/routes/provider-v2/",
+        "docs/contracts/provider-"
+      ],
+      "prohibitedPaths": [
+        ".ide-development/",
+        "automations/catalog/",
+        "deploy/",
+        "gateway/src/services/runtime-dispatch/",
+        "supabase/migrations/"
+      ],
+      "verificationCommands": [
+        ["npm", "run", "test", "--", "gateway/tests/provider"],
+        ["npm", "--prefix", "packages/automation-contracts", "run", "test"],
+        ["npm", "run", "typecheck"],
+        ["git", "diff", "--check"]
+      ],
+      "dependencies": ["AW-01"],
+      "executionState": "PLAN"
+    },
+    {
+      "id": "AW-03",
+      "title": "Durable n8n activation and callback bridge",
+      "issues": ["ISS-03"],
+      "ownedPaths": [
+        "gateway/src/services/runtime-dispatch/",
+        "gateway/tests/runtime-dispatch",
+        "gateway/tests/app-runtime-dispatch.test.ts",
+        "gateway/src/app.ts",
+        "package.json",
+        "package-lock.json"
+      ],
+      "prohibitedPaths": [
+        ".ide-development/",
+        "automations/catalog/",
+        "packages/automation-contracts/src/provider-",
+        "gateway/src/services/provider-",
+        "supabase/migrations/"
+      ],
+      "verificationCommands": [
+        ["npm", "run", "test", "--", "gateway/tests/runtime-dispatch"],
+        ["npm", "run", "typecheck"],
+        ["git", "diff", "--check"]
+      ],
+      "dependencies": ["AW-02"],
+      "executionState": "PLAN"
+    },
+    {
+      "id": "AW-04",
+      "title": "Server01 runtime acceptance fixture and n8n behavior",
+      "issues": ["ISS-04"],
+      "ownedPaths": [
+        "automations/evals/server01-runtime-acceptance/",
+        "deploy/test/fixtures/server01-runtime-acceptance/"
+      ],
+      "prohibitedPaths": [
+        ".ide-development/",
+        "deploy/prod/",
+        "deploy/common/",
+        "deploy/templates/",
+        "gateway/",
+        "supabase/migrations/"
+      ],
+      "verificationCommands": [
+        ["npm", "run", "validate:automations"],
+        ["npm", "run", "catalog:check"],
+        ["npm", "run", "eval:smoke"],
+        ["npm", "run", "eval:full"],
+        ["git", "diff", "--check"]
+      ],
+      "dependencies": ["AW-02", "AW-03"],
+      "executionState": "PLAN"
+    },
+    {
+      "id": "AW-05",
+      "title": "Server01 topology immutable build and secure configuration",
+      "issues": ["ISS-05"],
+      "ownedPaths": [
+        "deploy/prod/",
+        "deploy/templates/",
+        "deploy/common/gateway.Dockerfile",
+        "deploy/common/release-jobs.Dockerfile",
+        "ops/deploy-stack.sh",
+        "ops/render-env-from-gsm.sh",
+        "ops/render-runtime-env-from-gsm.sh",
+        "ops/verify-server01-acceptance.sh",
+        "scripts/tests/deployment-readiness.test.mjs",
+        "docs/runbooks/OPERATIONS.md",
+        "docs/runbooks/TAILSCALE_HARDENING.md"
+      ],
+      "prohibitedPaths": [
+        ".ide-development/",
+        "automations/catalog/",
+        "gateway/src/services/provider-",
+        "gateway/src/services/runtime-dispatch/",
+        "supabase/migrations/"
+      ],
+      "verificationCommands": [
+        ["npm", "run", "release:check"],
+        ["docker", "compose", "-f", "deploy/prod/docker-compose.yml", "--env-file", "deploy/prod/.env.example", "config"],
+        ["npm", "run", "test", "--", "scripts/tests/deployment-readiness.test.mjs"],
+        ["git", "diff", "--check"]
+      ],
+      "dependencies": ["AW-01"],
+      "executionState": "PLAN"
+    },
+    {
+      "id": "AW-06",
+      "title": "Runtime operations JetStream observability and recovery",
+      "issues": ["ISS-06"],
+      "ownedPaths": [
+        "packages/automation-operations/",
+        "gateway/src/services/monitoring/",
+        "gateway/tests/operations",
+        "ops/alerts/",
+        "ops/run-backup.sh",
+        "ops/restore-drill.sh",
+        "ops/export-live-from-n8n.sh",
+        "docs/runbooks/SERVER01-OPERATIONS.md"
+      ],
+      "prohibitedPaths": [
+        ".ide-development/",
+        "automations/catalog/",
+        "gateway/src/services/provider-",
+        "gateway/src/services/runtime-dispatch/",
+        "supabase/migrations/"
+      ],
+      "verificationCommands": [
+        ["npm", "run", "test:automation-operations"],
+        ["npm", "run", "restore:rehearse"],
+        ["npm", "run", "typecheck:automation-operations"],
+        ["git", "diff", "--check"]
+      ],
+      "dependencies": ["AW-02", "AW-03", "AW-04", "AW-05"],
+      "executionState": "PLAN"
+    },
+    {
+      "id": "AW-07",
+      "title": "Governed integration and immutable release candidate",
+      "issues": ["ISS-07"],
+      "ownedPaths": [
+        "docs/end-to-end-delivery/evidence/source-release/"
+      ],
+      "prohibitedPaths": [
+        ".ide-development/",
+        "automations/",
+        "apps/",
+        "deploy/",
+        "gateway/",
+        "packages/",
+        "services/",
+        "supabase/"
+      ],
+      "verificationCommands": [
+        ["npm", "run", "ci"],
+        ["git", "diff", "--check"],
+        ["python3", "-m", "json.tool", "docs/end-to-end-delivery/EXECUTION-MANIFEST.json"]
+      ],
+      "dependencies": ["AW-01", "AW-02", "AW-03", "AW-04", "AW-05", "AW-06"],
+      "executionState": "PLAN"
+    },
+    {
+      "id": "AW-08",
+      "title": "Install configure canary and founder acceptance on Server01",
+      "issues": ["ISS-08"],
+      "ownedPaths": [
+        "/srv/linktrend/deploy/linkautowork/",
+        "/srv/linktrend/runtime/linkautowork/",
+        "docs/end-to-end-delivery/evidence/live-acceptance/"
+      ],
+      "prohibitedPaths": [
+        "/srv/linktrend/deploy/platform/",
+        ".ide-development/"
+      ],
+      "verificationCommands": [
+        ["sudo", "docker", "compose", "-f", "/srv/linktrend/deploy/linkautowork/current/deploy/prod/docker-compose.yml", "-p", "linkautowork-prod", "ps"],
+        ["bash", "ops/restore-drill.sh", "/srv/linktrend/runtime/linkautowork/evidence/backup.sql.gz", "/srv/linktrend/runtime/linkautowork/evidence/templates.tar.gz"],
+        ["bash", "ops/verify-server01-acceptance.sh", "--environment", "prod"]
+      ],
+      "dependencies": ["AW-07"],
+      "executionState": "PLAN"
+    }
+  ],
+  "issues": [
+    {"id": "ISS-01", "packetId": "AW-01", "title": "Freeze Server01 live interfaces and migration package"},
+    {"id": "ISS-02", "packetId": "AW-02", "title": "Implement durable automation admission and lifecycle"},
+    {"id": "ISS-03", "packetId": "AW-03", "title": "Implement durable n8n activation and callback bridge"},
+    {"id": "ISS-04", "packetId": "AW-04", "title": "Build Server01 runtime acceptance fixture"},
+    {"id": "ISS-05", "packetId": "AW-05", "title": "Finalize secure Server01 deployment topology"},
+    {"id": "ISS-06", "packetId": "AW-06", "title": "Complete operations JetStream observability and recovery"},
+    {"id": "ISS-07", "packetId": "AW-07", "title": "Integrate and seal immutable release candidate"},
+    {"id": "ISS-08", "packetId": "AW-08", "title": "Deploy and accept LiNKautowork on Server01"}
+  ],
+  "controls": {
+    "exactCandidateInvalidation": {
+      "enabled": true,
+      "identityFields": ["repository", "commit", "tree", "workflowDigest", "profileDigest"]
+    },
+    "boundedRetry": {
+      "ordinarySourceRepairs": 3,
+      "infrastructureAttemptsPerCandidate": 2,
+      "codeFailureRetries": 0
+    },
+    "orchestrationLease": {
+      "required": true,
+      "scope": "packet-repository",
+      "ttlSeconds": 3600
+    },
+    "resourceUncertainty": {
+      "failClosed": true,
+      "unknownIsBlocking": true
+    },
+    "automaticApproval": {
+      "checkpoint": "automatic",
+      "stagingPromote": "automatic-on-receipt-identity",
+      "reservedActions": [
+        "main_promote",
+        "publish_release",
+        "deploy_production",
+        "github_protection_change",
+        "provider_live_mutation"
+      ],
+      "forbiddenActors": ["self_review", "self_merge", "prefer_incoming"]
+    },
+    "gitAuthority": {
+      "workBranchPattern": "issue/<n>-<slug>",
+      "protectedRefs": ["development", "staging", "main"],
+      "implementerMayOpenPr": false,
+      "implementerMayMerge": false,
+      "nestedSelfInstall": false
+    },
+    "publisherAuthority": {
+      "canonicalForV25": "none",
+      "legacyPublishers": [
+        "linktrend-review-ready-publisher",
+        "mark-review-ready.sh-as-publisher",
+        "review-ready.json",
+        "user-pat-publisher"
+      ],
+      "missingOrFailedClassification": "WAIVED_LEGACY_GATE"
+    },
+    "autoworkDiscovery": {
+      "requiredWhenCallable": true,
+      "unavailableIsHold": true
+    },
+    "issueCheckpoint": {
+      "acceptWithoutReviewReady": true,
+      "acceptWithoutToken": true,
+      "requiredEvidence": [
+        "exact_pushed_commit_tree",
+        "scoped_diff",
+        "focused_tests",
+        "independent_narrow_review",
+        "manifest_evidence"
+      ]
+    },
+    "administratorRecovery": {
+      "namedExceptionOnly": true,
+      "afterReplacementProof": true,
+      "allowedOperations": ["protection_snapshot", "restore", "readback"]
+    },
+    "durableHeartbeat": {
+      "writeReadbackRequired": true,
+      "persistBeforeMutation": true
+    },
+    "checkoutBoundVerification": {
+      "bindToCheckout": true,
+      "forbidMergeRefIdentity": true
+    },
+    "retryExhaustion": {
+      "diagnoseBeforeRecovery": true,
+      "forbidSilentRetry": true,
+      "ordinaryRecovery": "new_identity",
+      "infrastructureRecovery": "hold",
+      "codeFailureRecovery": "new_identity"
+    },
+    "hostedCapacityScheduler": {
+      "requireCompleteSnapshot": true,
+      "busyIsNotDiagnosis": true,
+      "unknownIsBlocking": true,
+      "hostedConcurrencyAuthority": "execution-protocol",
+      "maxAdmittedSlots": {"local": 1},
+      "adaptiveConcurrency": {
+        "mode": "minimum_of_live_evidence",
+        "capacityEvidence": "authenticated_cursor_account",
+        "identityFields": ["accountId", "apiKeyName", "teamId", "programRunId"],
+        "spendCeilingEvidence": "required",
+        "safetyConstraintEvidence": "required",
+        "evidenceMaxAgeSeconds": 900
+      },
+      "unknownProbeSeconds": 600,
+      "backstopSeconds": 600,
+      "prioritization": ["priority", "dependencyReady", "fifo"],
+      "utilizationGapEvent": "UTILIZATION_GAP",
+      "recomputeOnEvents": [
+        "admission",
+        "completion",
+        "invalidation",
+        "probe_timeout",
+        "api_rejection",
+        "utilization_gap_repair"
+      ]
+    },
+    "packetRouting": {
+      "digestBound": true,
+      "preferredRoutes": ["grok", "independent_review", "specialist"],
+      "thirdPartyRequiresException": true,
+      "oneHopFallback": true,
+      "exceptionEvidence": ["capability", "security", "independence", "context"]
+    },
+    "cursorCloudExecution": {
+      "preDispatchAdvertisedRefValidation": true,
+      "missingRefAction": "rebaseline_and_recreate_branch",
+      "preparedSupersession": {
+        "immutable": true,
+        "requiresNewIntent": true,
+        "neverReuseCloudAttempt": true,
+        "supersedeObsoleteFixedCapacity": true,
+        "preserveCompletedEvidence": true
+      },
+      "actualModelReadback": true
+    }
+  }
+}
