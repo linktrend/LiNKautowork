@@ -54,6 +54,12 @@ existing resume scope. It preserves all other owner grants and `SUSPENDED`. This
 scheduled control transition is fully specified in the route document and needs no
 second founder decision.
 
+The same coordinator owns the approved work through implementation, necessary
+independent review, governed integration, promotion and deployment. Deployment
+Advisor retains planning-package acceptance and downstream planning release; it is
+not a routine execution-review hop. Reviewer instructions are published in
+[`review-packets/`](./review-packets/).
+
 Maximum safe source concurrency is two workers after AW-01 in one verified window:
 AW-02 in runtime Lane B with AW-05 in deployment Lane C. The independently reviewed
 dispatcher extension is installed at the coordinator route; LiNKautowork does not

@@ -51,8 +51,9 @@ The dispatcher currently sees:
   `owners` maps exact coordinator task IDs to repository arrays;
 - previous Server01 owner `01a0843c-0df9-74e2-907a-05c5f736d6ed`
   authorised for LiNKautowork; and
-- this coordinator `01a089cb-ef0d-75a2-b87f-4f3dd8163b24` absent, so its
-  `submit` is currently rejected even though API GET access succeeds.
+- this coordinator `01a089cb-ef0d-75a2-b87f-4f3dd8163b24` granted exactly
+  `linktrend/LiNKautowork` after founder `APPROVE`, under the shared exclusive
+  lock while preserving `SUSPENDED` and every other owner entry.
 
 Provider GET readback found every recorded LiNKautowork cloud writer/reviewer
 terminal (`FINISHED` or `CANCELLED`). A bounded task read on 2026-09-10 then proved
@@ -270,6 +271,16 @@ checkpoint. A separate provider-neutral reviewer evaluates that exact identity.
 The Phase Packager/Coordinator opens the draft Phase PR; the delivery controller
 performs protected integration when all gates pass. Implementers never create or
 merge their own PRs.
+
+This coordinator owns approved execution through implementation, independent
+review, governed integration, promotion and deployment. Deployment Advisor retains
+planning-package acceptance and downstream planning release only; routine packet,
+repair, checkpoint and Phase review does not return there. Each implementation
+candidate receives exactly one necessary independent review through this verified
+dispatcher with role `independent-review`, or the already-authorised Luna route
+where appropriate. The implementer never reviews itself. Reviewer instructions are
+versioned under `docs/end-to-end-delivery/review-packets/`; the dispatch packet
+binds those instructions to the exact candidate commit/tree and base identity.
 
 ## 8. Verified maximum-safe parallel extension
 

@@ -96,10 +96,17 @@ explicit later expansion and do not block the initial internal release.
 - Later live prerequisites are the exact Platform registrations/PACI scopes,
   least-privilege database roles, migration receipts, GSM runtime references and
   private Server01 routes. They gate AW-08 live acceptance, not downstream planning.
-- The installed protocol requires exact-commit independent narrow review for a
-  later accepted implementation Issue checkpoint. This planning task forbids
-  downstream dispatch; planning readiness itself is not gated on inventing that
-  review.
+- The installed protocol requires exact-commit independent narrow review for each
+  accepted implementation Issue checkpoint. Before founder approval this planning
+  task forbade downstream dispatch; the recorded approval released only the agreed
+  execution scope and did not weaken that review gate.
+- After founder approval, coordinator task
+  `01a089cb-ef0d-75a2-b87f-4f3dd8163b24` owns implementation, necessary
+  independent review, governed integration, promotion and deployment through the
+  agreed definition of done. Deployment Advisor retains planning acceptance and
+  downstream planning release only. Routine execution does not wait for or return
+  to Advisor; exact-candidate reviewer instructions are published under
+  `docs/end-to-end-delivery/review-packets/`.
 
 ## Validation
 
