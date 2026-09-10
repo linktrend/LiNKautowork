@@ -328,13 +328,15 @@ is not routed or accepted in the initial release.
 | Google Secret Manager | approved shared authority; Autowork values not inventoried here | Platform/GSM owner | inventory names without values; create/rotate/inject after approval | all credentialed services |
 | Slack/email/payment/public DNS | not required for initial release | respective Program/provider owners | JIT only for later approved workflows | no initial consumer |
 
-Account/API-key provisioning is execution work only when the founder authorises it.
-Current read-only evidence shows that the ordinary Cursor Cloud execution route
-cannot start: `CURSOR_API_KEY` is absent, no matching GSM secret reference was
-found, `cursor-sdk` is not installed, and Cursor CLI is logged out. CLI login is
-not Cloud API authority under `cursor-cloud-dispatch-v2`. The founder must therefore
-pair `APPROVE` with either authorisation to provision and read-only verify that
-settled route, or an explicit selection of the registered Luna High fallback.
+The established local coordinator uses a standard-library REST dispatcher and a
+credential retrieved from macOS Keychain into process memory. Read-only API calls
+verified account `cursor-001@linktrend.one`, Grok 4.6 Medium with Fast disabled,
+and visibility of `linktrend/LiNKautowork`. It does not depend on `CURSOR_API_KEY`,
+Cursor CLI login or the `cursor-sdk` package. Sanitised commands, packet fields,
+transport/readback limits and GitHub-hosted worker inputs are defined in
+`CURSOR-CLOUD-EXECUTION-ROUTE.md`. The key is never copied or printed. `APPROVE` is
+the only remaining founder decision required to submit AW-01; Luna High remains an
+explicit optional fallback.
 
 ## 8. Deployment, validation and recovery sequence
 
@@ -408,10 +410,9 @@ successful CI run or provider `201` cannot satisfy another row.
 ## 10. Approval and hard stops
 
 The founder's future `APPROVE` in this task must identify the final manifest digest
-and authorise source implementation plus deployment to `linkserver-01`. Because
-the ordinary Cursor Cloud route is currently unavailable, execution also needs
-founder authorisation to provision/verify it or an explicit Luna fallback choice.
-Downstream
+and authorise source implementation plus deployment to `linkserver-01`. The
+ordinary Cursor Cloud route is verified and needs no additional founder access
+decision. Downstream
 owners may consume the settled planning interfaces before that approval for their
 own planning; they may not treat PLAN_READY as deployment or mutation authority. Main
 promotion, live provider mutation, production migration and workflow activation

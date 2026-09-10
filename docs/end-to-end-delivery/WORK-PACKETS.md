@@ -14,13 +14,12 @@ environments are forbidden. Luna High is used only for a founder-selected fallba
 or the server/privileged operations that cannot safely run through the ordinary
 route.
 
-Current execution admission is `HOLD`: the installed route implementation and
-configuration are present, but `CURSOR_API_KEY`, a matching GSM secret reference,
-the `cursor-sdk` package, and authenticated Cursor Cloud readback are not available
-in this planning environment. AW-01 is the first content packet and its declared
-inputs are ready; it may start only after founder `APPROVE` plus either verified
-Cursor Cloud provisioning or an explicit `luna-fallback` selection. This route
-dependency is not work for AW-01 and must not be hidden inside its implementation.
+The operational route is the Keychain-backed standard-library REST client recorded
+in `CURSOR-CLOUD-EXECUTION-ROUTE.md`. Read-only API checks proved the exact account,
+model parameters and LiNKautowork repository access. AW-01 is the first content
+packet and its inputs are ready; it may start after founder `APPROVE`. No new
+credential, Cursor CLI login, SDK installation or route choice is an AW-01
+prerequisite. Luna is an explicit founder-selected fallback only.
 
 An Issue checkpoint requires exact pushed commit/tree, scoped diff, focused tests,
 manifest evidence, and one provider-independent narrow review bound to that exact

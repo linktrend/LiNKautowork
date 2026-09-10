@@ -3,7 +3,7 @@
 Date: 2026-09-10, Asia/Taipei
 Issue: #127
 Branch: `issue/127-plan-linkautowork-end-to-end-deployment-on-links`
-Status: **PLAN READY / EXECUTABLE-NOW HOLD / AWAITING APPROVE**
+Status: **CANDIDATE PLAN READY / ADVISOR ACCEPTANCE PENDING**
 
 ## Delivered
 
@@ -17,6 +17,8 @@ Status: **PLAN READY / EXECUTABLE-NOW HOLD / AWAITING APPROVE**
   `docs/end-to-end-delivery/EXECUTION-MANIFEST.json`
 - Evidence-based readiness and uncertainties:
   `docs/end-to-end-delivery/READINESS-REPORT.md`
+- Sanitised verified worker route and GitHub-hosted packet inputs:
+  `docs/end-to-end-delivery/CURSOR-CLOUD-EXECUTION-ROUTE.md`
 
 Manifest SHA-256:
 `40eb451c010c2916ceaa53537cf7ee0c34e36ad30035df0ad2c2e66a43b5eb51`.
@@ -49,13 +51,12 @@ explicit later expansion and do not block the initial internal release.
   as a blanket blocker.
 - No Server01 LiNKautowork, n8n or NATS runtime was observed. No product,
   credential, provider, database, workflow or server mutation occurred.
-- Planning/interface maturity is READY, but executable-now readiness is HOLD.
-  AW-01 is the first content packet and its product inputs are ready. The installed
-  `cursor-cloud-dispatch-v2` route is source-verifiable, while `CURSOR_API_KEY`, a
-  matching GSM reference, `cursor-sdk`, and authenticated Cursor Cloud readback are
-  unavailable. `cursor-agent status` reports `Not logged in`; CLI login is not API
-  authority. Founder must authorise route provisioning/verification or explicitly
-  select the Luna High fallback in addition to `APPROVE`.
+- Planning/interface maturity is READY and executable-after-approval readiness is
+  READY. AW-01 is the first content packet and its inputs are ready. Direct
+  read-only API calls through the established Keychain-backed REST dispatcher
+  proved account `cursor-001@linktrend.one`, Grok 4.6 Medium/Fast-off support and
+  LiNKautowork repository visibility. No new key, login, SDK install or founder
+  route choice is needed; no paid worker was launched.
 - Later live prerequisites are the exact Platform registrations/PACI scopes,
   least-privilege database roles, migration receipts, GSM runtime references and
   private Server01 routes. They gate AW-08 live acceptance, not downstream planning.

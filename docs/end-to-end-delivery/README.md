@@ -1,6 +1,6 @@
 # LiNKautowork end-to-end delivery package
 
-Status: **PLAN READY / EXECUTABLE-NOW HOLD / IMPLEMENTATION NOT AUTHORISED**
+Status: **CANDIDATE PLAN READY / ADVISOR ACCEPTANCE PENDING / IMPLEMENTATION NOT AUTHORISED**
 Prepared: 2026-09-10, Asia/Taipei
 Assigned host: **LiNKserver 01** (`linkserver-01`)
 Planning issue: [#127](https://github.com/linktrend/LiNKautowork/issues/127)
@@ -16,7 +16,8 @@ the completed pre-VPS engineering record.
 1. [Server01 delivery plan and deployment PRD](./LINKAUTOWORK-SERVER01-DELIVERY-PLAN.md)
 2. [Atomic work packets](./WORK-PACKETS.md)
 3. [Execution manifest](./EXECUTION-MANIFEST.json)
-4. [Planning readiness report](./READINESS-REPORT.md)
+4. [Verified Cursor Cloud execution route](./CURSOR-CLOUD-EXECUTION-ROUTE.md)
+5. [Planning readiness report](./READINESS-REPORT.md)
 
 ## Existing authorities reused, not copied
 
@@ -37,14 +38,14 @@ until the founder records `APPROVE` in this task. The approval must bind to the
 manifest digest above and the named Server01 deployment action.
 
 The first content packet is AW-01 and its product/interface inputs are ready. The
-mandated ordinary worker route is not currently executable: `CURSOR_API_KEY` is
-absent, no matching Google Secret Manager reference was found, `cursor-sdk` is not
-installed, and `cursor-agent status` reports `Not logged in`. CLI login would not
-be Cursor Cloud API authority in any event. Therefore `APPROVE` alone does not
-start a paid worker today. Before execution can start, the founder must either
-authorise provisioning and read-only verification of the established Cursor Cloud
-route or explicitly select the governed Luna High fallback. This is an execution
-admission dependency, not a LiNKautowork runtime feature.
+established Keychain-backed REST dispatcher has verified read-only access to the
+exact Cursor account, Grok 4.6 Medium/Fast-off selection and
+`linktrend/LiNKautowork`. Its sanitised packet, retrieval and checkpoint rules are
+committed in the execution-route document above. No new credential, login, SDK
+installation or founder route choice is needed. Once the Deployment Advisor
+accepts this exact package, `APPROVE` is the sole remaining founder gate to creating
+the first paid worker. Advisor acceptance releases planning only and never implies
+implementation authority.
 
 An active source-readiness Phase PR, [#125](https://github.com/linktrend/LiNKautowork/pull/125),
 and its repair issue [#126](https://github.com/linktrend/LiNKautowork/issues/126)

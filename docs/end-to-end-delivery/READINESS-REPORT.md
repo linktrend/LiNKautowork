@@ -1,7 +1,7 @@
 # LiNKautowork Server01 planning readiness report
 
 Prepared: 2026-09-10, Asia/Taipei
-Verdict: **PLAN READY / EXECUTABLE-NOW HOLD**
+Verdict: **CANDIDATE PLAN READY / ADVISOR ACCEPTANCE PENDING**
 
 ## Founder-readable outcome
 
@@ -21,8 +21,8 @@ LiNKautowork is not currently installed on Server01 and is not operational.
 | Product authority | READY | Approved production roadmap and current PRD are reused. Initial Server01 scope is gateway + n8n + JetStream + persistence + private operator surfaces + exact package/binding/invocation/receipt behavior. Program-specific and commercial/public automations are separated. |
 | Definition of done | READY | Delivery plan covers full behavior, identity, configuration, interfaces, data, deployment, observability, failure paths, recovery and founder acceptance. |
 | Work-packet completeness | READY | Eight dependency-ordered packets name exact scope/paths, requirements, inputs, changes, dependencies, outputs, validation, acceptance and recovery. Owners do not overlap by design. |
-| Execution-route definition | READY | Installed IDE Development 2.5.2 defines `cursor-cloud-dispatch-v2`: `core/execution/cursor_cloud_dispatch.py`, config `core/managed-core/content/config/cursor-cloud-dispatch.json`, API `https://api.cursor.com/v1/agents`, preferred `cursor-sdk`, Grok 4.6 Medium, Fast off, explicit `repos[]`/`CloudAgentOptions.repos`, status readback, archive-on-mismatch and at most two API attempts. |
-| Executable-now worker route | HOLD | Safe read-only checks found no `CURSOR_API_KEY`, no matching GSM secret reference, no installed `cursor-sdk`, and `cursor-agent status` returned `Not logged in`. CLI login is explicitly not Cloud API authority. No paid worker was launched. Founder must authorise Cursor Cloud provisioning/verification or explicitly select Luna High fallback before AW-01 can start. |
+| Execution-route definition | READY | The established standard-library REST dispatcher is documented in `CURSOR-CLOUD-EXECUTION-ROUTE.md`: Keychain-backed API v1, Grok 4.6 Medium, Fast off, explicit branch-bound `repos[]`, transport readback, worker source attestation, stable packet identity, polling and bounded capacity. |
+| Executable after approval | READY | Read-only API GETs proved exact account `cursor-001@linktrend.one`, supported Grok 4.6 Medium/Fast-off parameters, and visibility of `linktrend/LiNKautowork`. AW-01 can be submitted after the final manifest receives `APPROVE`; no new key, login, SDK installation or founder route decision is required. No paid worker was launched during planning. |
 | GitHub source access and handoff | READY | The authenticated `linktrend` account has ADMIN repository access; `origin/development` readback is `a13a6467fc9bc2fccdddd1de8d9e258c78e57fdd` / tree `10e6b59394bfd57703d6f3cee5d7bcda3aa7342f`. Issue checkpoints use `completion_gate.py`; Phase Packager opens the PR and the delivery controller integrates it. |
 | Manifest schema | READY | `EXECUTION-MANIFEST.json` is intended for the installed `.ide-development/contracts/EXECUTION-MANIFEST.schema.json` and remains `PLAN`; validation evidence is recorded with the planning commit. |
 | Repository truth | READY WITH DEPENDENCY | Protected `development` is pinned. Current CI passed. Active PR #125 and repair issue #126 are recorded and must finish through their current owners; this plan does not duplicate them. |
@@ -32,33 +32,32 @@ LiNKautowork is not currently installed on Server01 and is not operational.
 | Factual reliability | READY | Source, installed configuration and live behavior are classified separately. No historical PASS, healthy unrelated container, source test or active branch is credited as deployment. |
 | Installed checkpoint rule | RECORDED / NOT A PLANNING GATE | An accepted implementation Issue checkpoint later requires an exact-commit independent narrow review. This task forbids downstream dispatch, and planning readiness does not depend on manufacturing that review. No self-review is represented as independent. |
 
-No synthetic planning percentage is reported. The package is complete as a plan.
-It is not implementation-ready today because the ordinary worker route lacks
-verified Cloud API authority and client capacity.
+No synthetic planning percentage is reported. The package is complete as a plan,
+and the first source packet is executable through the verified route after the
+founder supplies the required `APPROVE` execution authority.
 
 ## Readiness split and first packet
 
 | Layer | State | Exact meaning |
 |---|---|---|
 | Planning/interface maturity | READY | Approved product behavior, interfaces, owners, paths, packet dependencies, tests, deployment, recovery and acceptance are specified. Advisor acceptance may release downstream planning only. |
-| Executable now after `APPROVE` | HOLD | AW-01 is the first content packet and has ready repository/Platform inputs, but the required ordinary Cursor Cloud worker cannot be authenticated or invoked from this environment. |
+| Executable now after `APPROVE` | READY | AW-01 is the first content packet; its repository/Platform inputs and authenticated ordinary Cursor Cloud transport are verified. The local orchestrator prepares the pushed issue branch and exact packet, then submits it. |
 | Later live prerequisites | HOLD BY DESIGN | Server01 service install, Platform registrations/PACI scopes, least-privilege database roles, exact migration receipts, GSM runtime secrets and private routes are AW-01/AW-05/AW-08 execution dependencies. They do not block source planning, but live deployment cannot pass without them. |
 
-The founder-only decision needed before execution is one of: (a) `APPROVE` plus
-authorisation to provision and verify the existing Cursor Cloud route without
-printing the secret, or (b) `APPROVE` plus an explicit instruction to use the
-registered `luna-fallback` route (Codex CLI GPT-5.6 Luna High, Fast off). Luna is
-not an automatic fallback and the plan does not silently substitute it.
+After Deployment Advisor acceptance of the exact package, the only founder decision
+needed to start AW-01 is `APPROVE` for the final manifest digest and named Server01
+scope. Advisor acceptance releases downstream planning only. Luna remains an
+optional, explicit fallback, not a prerequisite or automatic substitution.
 
 ## Verified execution-route evidence
 
 | Evidence | Read-only result |
 |---|---|
-| Dispatcher source/version | Installed managed core `2.5.2`; control `cursor-cloud-dispatch-v2`; implementation `core/execution/cursor_cloud_dispatch.py`; config `core/managed-core/content/config/cursor-cloud-dispatch.json`; both present at protected baseline commit `a13a6467fc9bc2fccdddd1de8d9e258c78e57fdd`. |
+| Dispatcher source/version | Operational standard-library REST client at the local coordinator path recorded in `CURSOR-CLOUD-EXECUTION-ROUTE.md`, SHA-256 `0cf61dc9b2f6b7f6c6b34ddf94a7c751229e9838d50ed9c1b468f5327e39e2e8`. Installed IDE Development 2.5.2 remains repository governance, not the transport dependency. |
 | Model and binding | `ordinary-development` is provider `cursor`, model `grok-4.6`, effort `medium`, Fast `false`; request uses explicit repository URL and starting ref through `repos[]` or `CloudAgentOptions.repos`. |
-| Result/status and failure behavior | `POST /v1/agents` must return `201`; `GET /v1/agents/{agentId}` must read back repository/ref/commit/tree/provider/model/effort/Fast; mismatch triggers archive and rejection; prepared/committed intent makes logical replay idempotent. |
+| Result/status and failure behavior | Submit persists a stable packet/agent identity before POST. Agent GET validates cloud host, agent ID, repository URL when returned, optional starting ref when returned, and no-auto-PR policy. Poll then reads the exact latest run. Worker Git attestation—not transport GET—proves starting/final repository/ref/commit/tree. |
 | Source repository access | `gh` account `linktrend` is authenticated with ADMIN access to `linktrend/LiNKautowork`; remote protected `development` commit/tree readback succeeded. |
-| Cloud worker authority | `CURSOR_API_KEY` reference absent from the environment and accessible GSM inventory; `cursor-sdk` not installed; `cursor-agent` `2026.08.11-e8db854` reports `Not logged in`. No account/repository readback from Cursor Cloud is therefore claimed. |
+| Cloud worker authority | Direct read-only GETs proved Keychain account `cursor-001@linktrend.one`, exact model parameters and LiNKautowork repository visibility. Credential value remained in process memory and was not printed. Environment variables, Cursor CLI login and `cursor-sdk` are not dependencies of this operational REST client. |
 | Checkpoint and PR handoff | `scripts/gitops/completion_gate.py` records exact pushed Issue checkpoint evidence; the Phase Packager/Coordinator opens the draft Phase PR; `scripts/gitops/delivery_controller.py` performs protected integration after required evidence. |
 | Fallback | Registry route `luna-fallback`: Codex CLI `gpt-5.6-luna`, effort `high`, Fast `false`, only when the founder explicitly instructs it. |
 
@@ -74,10 +73,10 @@ not an automatic fallback and the plan does not silently substitute it.
    active. No Autowork-specific live registration, PACI consumer conformance,
    database role or migration receipt was observed. These are AW-01/AW-08 inputs,
    not a reason to redesign Platform here.
-3. **Implementation-route capacity:** the route is source-verifiable but current
-   account/client access is not. `CURSOR_API_KEY` and a matching GSM reference are
-   absent, `cursor-sdk` is absent, and Cursor CLI is logged out. This blocks the
-   first worker dispatch, while remaining separate from LiNKautowork product scope.
+3. **Implementation-route capacity:** account, exact model parameters and repository
+   visibility are verified read-only. Live submit/poll behavior remains unexercised
+   in this planning task because it would create a paid worker; the established
+   transport and prior operational receipts are reused without claiming a new run.
 4. **Private route names:** Server01 Tailscale is live, but final n8n/operator/API
    Serve names are configuration choices. Default to private Tailscale-only routes;
    no public DNS or second staging host is required.
@@ -92,9 +91,7 @@ task authorises the documented implementation and named Server01 deployment scop
 it does not authorise the proposed Cursor/IDE workflow, later commercial/public
 workflows, paid provider expansion, client data, payment activity, or a central
 portfolio scheduler. Downstream owners may use this PLAN_READY package for planning
-without that execution approval. Because current Cursor Cloud access is unverified,
-execution still requires the route decision stated above; the package does not
-mislabel that prerequisite as ready.
+without that execution approval. No separate route-provisioning decision is needed.
 
 Until then: **Awaiting APPROVE.**
 
