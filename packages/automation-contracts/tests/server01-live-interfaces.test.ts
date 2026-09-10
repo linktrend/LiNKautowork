@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -79,6 +79,34 @@ class DisposablePostgres {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  }
+
+  sqlAsync(script: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const child = spawn('docker', [
+        'exec', '-i', this.name,
+        'psql', '-v', 'ON_ERROR_STOP=1', '-U', 'postgres', '-d', 'automation_contracts', '-q', '-t', '-A',
+      ]);
+      let stdout = '';
+      let stderr = '';
+      child.stdout.setEncoding('utf8');
+      child.stderr.setEncoding('utf8');
+      child.stdout.on('data', (chunk: string) => {
+        stdout += chunk;
+      });
+      child.stderr.on('data', (chunk: string) => {
+        stderr += chunk;
+      });
+      child.on('error', reject);
+      child.on('close', (code) => {
+        if (code === 0) {
+          resolve(stdout);
+          return;
+        }
+        reject(new Error(stderr || `psql exited ${code}`));
+      });
+      child.stdin.end(script);
+    });
   }
 
   stop(): void {
@@ -180,6 +208,226 @@ describe('server01 live-interface disposable postgres', () => {
         if not (second->>'replay')::boolean then raise exception 'identical second accept was not replayed'; end if;
         select count(*) into n from lautowork.server01_invocation_requests where idempotency_key = 'idempotency-key-02';
         if n <> 1 then raise exception 'expected one invocation row, got %', n; end if;
+      end $$;
+    `);
+  });
+
+  it('serializes identical concurrent accepts across two sessions into one fresh and one replay', async () => {
+    const digest = `sha256:${'33'.repeat(32)}`;
+    const acceptSql = `
+      select set_config('request.jwt.claim.org_id', '00000000-0000-0000-0000-0000000000a1', false);
+      select lautowork.server01_accept_invocation(
+        jsonb_build_object(
+          'request_id', '00000000-0000-0000-0000-0000000000c5',
+          'org_id', '00000000-0000-0000-0000-0000000000a1',
+          'work_ref', 'program://issues/opaque-work-5',
+          'authority_ref', 'platform://authority/opaque-5',
+          'actor_id', 'svc-gateway',
+          'audience', 'autowork',
+          'capability', 'automation.invoke',
+          'credential_id', 'credential-1',
+          'credential_binding_ref', 'gsm://bindings/gateway-binding-1',
+          'binding_id', 'gateway-binding-1',
+          'automation_id', 'repo-precheck',
+          'automation_version', '1.0.0',
+          'definition_digest', '${digest}',
+          'configuration_digest', '${digest}',
+          'configuration_ref', 'autowork://config/5',
+          'allowed_operation', 'precheck',
+          'operation_kind', 'precheck',
+          'input_ref', 'autowork://input/5',
+          'input_digest', '${digest}',
+          'idempotency_key', 'idempotency-key-05',
+          'callback_binding_ref', 'autowork://callback/5',
+          'budget_ceiling_ref', 'autowork://budget/5',
+          'expires_at', '2030-01-01T00:00:00Z'
+        ),
+        '${digest}'
+      );
+    `;
+    const [first, second] = await Promise.all([db.sqlAsync(acceptSql), db.sqlAsync(acceptSql)]);
+    const replays = [first, second]
+      .map((output) => JSON.parse(output.trim().split('\n').at(-1) ?? '{}') as { replay: boolean })
+      .map((row) => row.replay)
+      .sort();
+    expect(replays).toEqual([false, true]);
+    expect(db.sql(`
+      select count(*) from lautowork.server01_invocation_requests where idempotency_key = 'idempotency-key-05';
+    `).trim()).toBe('1');
+  }, 60_000);
+
+  it('keeps concurrent different-fingerprint accepts as an explicit idempotency conflict', async () => {
+    const digestA = `sha256:${'44'.repeat(32)}`;
+    const digestB = `sha256:${'45'.repeat(32)}`;
+    const accept = (requestId: string, digest: string) => `
+      select set_config('request.jwt.claim.org_id', '00000000-0000-0000-0000-0000000000a1', false);
+      select lautowork.server01_accept_invocation(
+        jsonb_build_object(
+          'request_id', '${requestId}',
+          'org_id', '00000000-0000-0000-0000-0000000000a1',
+          'work_ref', 'program://issues/opaque-work-6',
+          'authority_ref', 'platform://authority/opaque-6',
+          'actor_id', 'svc-gateway',
+          'audience', 'autowork',
+          'capability', 'automation.invoke',
+          'credential_id', 'credential-1',
+          'credential_binding_ref', 'gsm://bindings/gateway-binding-1',
+          'binding_id', 'gateway-binding-1',
+          'automation_id', 'repo-precheck',
+          'automation_version', '1.0.0',
+          'definition_digest', '${digest}',
+          'configuration_digest', '${digest}',
+          'configuration_ref', 'autowork://config/6',
+          'allowed_operation', 'precheck',
+          'operation_kind', 'precheck',
+          'input_ref', 'autowork://input/6',
+          'input_digest', '${digest}',
+          'idempotency_key', 'idempotency-key-06',
+          'callback_binding_ref', 'autowork://callback/6',
+          'budget_ceiling_ref', 'autowork://budget/6',
+          'expires_at', '2030-01-01T00:00:00Z'
+        ),
+        '${digest}'
+      );
+    `;
+    const results = await Promise.allSettled([
+      db.sqlAsync(accept('00000000-0000-0000-0000-0000000000c6', digestA)),
+      db.sqlAsync(accept('00000000-0000-0000-0000-0000000000c7', digestB)),
+    ]);
+    const fulfilled = results.filter((row) => row.status === 'fulfilled');
+    const rejected = results.filter((row) => row.status === 'rejected');
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+    const err = rejected[0] as PromiseRejectedResult;
+    expect(String(err.reason)).toMatch(/server01 idempotency conflict|23505/);
+    expect(db.sql(`
+      select count(*) from lautowork.server01_invocation_requests where idempotency_key = 'idempotency-key-06';
+    `).trim()).toBe('1');
+  }, 60_000);
+
+  it('rejects mismatched callback request ids before any receipt, callback, or outbox write', () => {
+    db.sql(`
+      do $$
+      declare
+        digest text := 'sha256:' || repeat('55', 32);
+        request_a jsonb;
+        request_b jsonb;
+        receipts_before integer;
+        callbacks_before integer;
+        outbox_before integer;
+        receipts_after integer;
+        callbacks_after integer;
+        outbox_after integer;
+        admitted jsonb;
+      begin
+        perform set_config('request.jwt.claim.org_id', '00000000-0000-0000-0000-0000000000a1', false);
+        request_a := jsonb_build_object(
+          'request_id', '00000000-0000-0000-0000-0000000000c3',
+          'org_id', '00000000-0000-0000-0000-0000000000a1',
+          'work_ref', 'program://issues/opaque-work-3',
+          'authority_ref', 'platform://authority/opaque-3',
+          'actor_id', 'svc-gateway',
+          'audience', 'autowork',
+          'capability', 'automation.invoke',
+          'credential_id', 'credential-1',
+          'credential_binding_ref', 'gsm://bindings/gateway-binding-1',
+          'binding_id', 'gateway-binding-1',
+          'automation_id', 'repo-precheck',
+          'automation_version', '1.0.0',
+          'definition_digest', digest,
+          'configuration_digest', digest,
+          'configuration_ref', 'autowork://config/3',
+          'allowed_operation', 'precheck',
+          'operation_kind', 'precheck',
+          'input_ref', 'autowork://input/3',
+          'input_digest', digest,
+          'idempotency_key', 'idempotency-key-03',
+          'callback_binding_ref', 'autowork://callback/3',
+          'budget_ceiling_ref', 'autowork://budget/3',
+          'expires_at', '2030-01-01T00:00:00Z'
+        );
+        request_b := request_a || jsonb_build_object(
+          'request_id', '00000000-0000-0000-0000-0000000000c4',
+          'work_ref', 'program://issues/opaque-work-4',
+          'idempotency_key', 'idempotency-key-04',
+          'input_ref', 'autowork://input/4',
+          'callback_binding_ref', 'autowork://callback/4'
+        );
+        perform lautowork.server01_accept_invocation(request_a, digest);
+        perform lautowork.server01_accept_invocation(request_b, digest);
+        select count(*) into receipts_before from lautowork.server01_receipts
+          where request_id in ('00000000-0000-0000-0000-0000000000c3', '00000000-0000-0000-0000-0000000000c4');
+        select count(*) into callbacks_before from lautowork.server01_callbacks
+          where request_id in ('00000000-0000-0000-0000-0000000000c3', '00000000-0000-0000-0000-0000000000c4');
+        select count(*) into outbox_before from lautowork.server01_intent_outbox
+          where request_id in ('00000000-0000-0000-0000-0000000000c3', '00000000-0000-0000-0000-0000000000c4')
+            and kind in ('callback_ack', 'receipt_committed');
+        begin
+          perform lautowork.server01_admit_callback(jsonb_build_object(
+            'request_id', '00000000-0000-0000-0000-0000000000c3',
+            'org_id', '00000000-0000-0000-0000-0000000000a1',
+            'callback_binding_ref', 'autowork://callback/3',
+            'callback_fingerprint', digest,
+            'source_timestamp', '2030-01-01T00:00:01Z',
+            'receipt', jsonb_build_object(
+              'receipt_id', '00000000-0000-0000-0000-0000000000d3',
+              'request_id', '00000000-0000-0000-0000-0000000000c4',
+              'state', 'succeeded',
+              'request_fingerprint', digest,
+              'evidence_ref', 'autowork://evidence/3',
+              'result_ref', 'autowork://result/3'
+            )
+          ));
+          raise exception 'mismatched callback request ids unexpectedly admitted';
+        exception when others then
+          if sqlerrm not like '%callback request mismatch%' then raise; end if;
+        end;
+        select count(*) into receipts_after from lautowork.server01_receipts
+          where request_id in ('00000000-0000-0000-0000-0000000000c3', '00000000-0000-0000-0000-0000000000c4');
+        select count(*) into callbacks_after from lautowork.server01_callbacks
+          where request_id in ('00000000-0000-0000-0000-0000000000c3', '00000000-0000-0000-0000-0000000000c4');
+        select count(*) into outbox_after from lautowork.server01_intent_outbox
+          where request_id in ('00000000-0000-0000-0000-0000000000c3', '00000000-0000-0000-0000-0000000000c4')
+            and kind in ('callback_ack', 'receipt_committed');
+        if receipts_before <> 0 or callbacks_before <> 0 or outbox_before <> 0 then
+          raise exception 'expected empty callback side effects before mismatch';
+        end if;
+        if receipts_after <> receipts_before or callbacks_after <> callbacks_before or outbox_after <> outbox_before then
+          raise exception 'mismatched callback persisted partial writes';
+        end if;
+        admitted := lautowork.server01_admit_callback(jsonb_build_object(
+          'request_id', '00000000-0000-0000-0000-0000000000c3',
+          'org_id', '00000000-0000-0000-0000-0000000000a1',
+          'callback_binding_ref', 'autowork://callback/3',
+          'callback_fingerprint', digest,
+          'source_timestamp', '2030-01-01T00:00:01Z',
+          'receipt', jsonb_build_object(
+            'receipt_id', '00000000-0000-0000-0000-0000000000d3',
+            'request_id', '00000000-0000-0000-0000-0000000000c3',
+            'state', 'succeeded',
+            'request_fingerprint', digest,
+            'evidence_ref', 'autowork://evidence/3',
+            'result_ref', 'autowork://result/3'
+          )
+        ));
+        if (admitted->>'replay')::boolean then raise exception 'valid callback unexpectedly replayed'; end if;
+        if not (lautowork.server01_admit_callback(jsonb_build_object(
+            'request_id', '00000000-0000-0000-0000-0000000000c3',
+            'org_id', '00000000-0000-0000-0000-0000000000a1',
+            'callback_binding_ref', 'autowork://callback/3',
+            'callback_fingerprint', digest,
+            'source_timestamp', '2030-01-01T00:00:01Z',
+            'receipt', jsonb_build_object(
+              'receipt_id', '00000000-0000-0000-0000-0000000000d3',
+              'request_id', '00000000-0000-0000-0000-0000000000c3',
+              'state', 'succeeded',
+              'request_fingerprint', digest,
+              'evidence_ref', 'autowork://evidence/3',
+              'result_ref', 'autowork://result/3'
+            )
+          ))->>'replay')::boolean then
+          raise exception 'valid callback replay was not detected';
+        end if;
       end $$;
     `);
   });

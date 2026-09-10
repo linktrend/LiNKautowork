@@ -247,6 +247,11 @@ begin
     raise exception 'server01 request fingerprint invalid' using errcode = '22023';
   end if;
 
+  perform pg_advisory_xact_lock(
+    hashtext(v_org::text),
+    hashtext(coalesce(p_request->>'idempotency_key', ''))
+  );
+
   select * into v_existing
     from lautowork.server01_invocation_requests
     where org_id = v_org and idempotency_key = p_request->>'idempotency_key'
@@ -259,39 +264,55 @@ begin
     return jsonb_build_object('record', to_jsonb(v_existing), 'intent', to_jsonb(v_intent), 'replay', true);
   end if;
 
-  insert into lautowork.server01_invocation_requests (
-    id, org_id, work_ref, authority_ref, actor_id, audience, capability, credential_id,
-    credential_binding_ref, binding_id, automation_id, automation_version, definition_digest,
-    configuration_digest, configuration_ref, allowed_operation, operation_kind, input_ref,
-    input_digest, idempotency_key, request_fingerprint, callback_binding_ref, budget_ceiling_ref,
-    expires_at, state
-  ) values (
-    (p_request->>'request_id')::uuid,
-    v_org,
-    p_request->>'work_ref',
-    p_request->>'authority_ref',
-    p_request->>'actor_id',
-    p_request->>'audience',
-    p_request->>'capability',
-    p_request->>'credential_id',
-    p_request->>'credential_binding_ref',
-    p_request->>'binding_id',
-    p_request->>'automation_id',
-    p_request->>'automation_version',
-    p_request->>'definition_digest',
-    p_request->>'configuration_digest',
-    p_request->>'configuration_ref',
-    p_request->>'allowed_operation',
-    p_request->>'operation_kind',
-    p_request->>'input_ref',
-    p_request->>'input_digest',
-    p_request->>'idempotency_key',
-    p_request_fingerprint,
-    p_request->>'callback_binding_ref',
-    p_request->>'budget_ceiling_ref',
-    (p_request->>'expires_at')::timestamptz,
-    'prepared'
-  ) returning * into v_request;
+  begin
+    insert into lautowork.server01_invocation_requests (
+      id, org_id, work_ref, authority_ref, actor_id, audience, capability, credential_id,
+      credential_binding_ref, binding_id, automation_id, automation_version, definition_digest,
+      configuration_digest, configuration_ref, allowed_operation, operation_kind, input_ref,
+      input_digest, idempotency_key, request_fingerprint, callback_binding_ref, budget_ceiling_ref,
+      expires_at, state
+    ) values (
+      (p_request->>'request_id')::uuid,
+      v_org,
+      p_request->>'work_ref',
+      p_request->>'authority_ref',
+      p_request->>'actor_id',
+      p_request->>'audience',
+      p_request->>'capability',
+      p_request->>'credential_id',
+      p_request->>'credential_binding_ref',
+      p_request->>'binding_id',
+      p_request->>'automation_id',
+      p_request->>'automation_version',
+      p_request->>'definition_digest',
+      p_request->>'configuration_digest',
+      p_request->>'configuration_ref',
+      p_request->>'allowed_operation',
+      p_request->>'operation_kind',
+      p_request->>'input_ref',
+      p_request->>'input_digest',
+      p_request->>'idempotency_key',
+      p_request_fingerprint,
+      p_request->>'callback_binding_ref',
+      p_request->>'budget_ceiling_ref',
+      (p_request->>'expires_at')::timestamptz,
+      'prepared'
+    ) returning * into v_request;
+  exception
+    when unique_violation then
+      select * into v_existing
+        from lautowork.server01_invocation_requests
+        where org_id = v_org and idempotency_key = p_request->>'idempotency_key'
+        for update;
+      if not found then
+        raise exception 'server01 accept race unresolved' using errcode = 'P0001';
+      end if;
+      if v_existing.request_fingerprint is distinct from p_request_fingerprint then
+        raise exception 'server01 idempotency conflict' using errcode = '23505';
+      end if;
+      select * into v_intent from lautowork.server01_prepared_intents where request_id = v_existing.id;
+      return jsonb_build_object('record', to_jsonb(v_existing), 'intent', to_jsonb(v_intent), 'replay', true);
+  end;
 
   insert into lautowork.server01_prepared_intents (request_id, org_id, intent_fingerprint, state)
   values (v_request.id, v_org, p_request_fingerprint, 'PREPARED')
@@ -376,6 +397,9 @@ begin
   if (p_callback->>'org_id') is distinct from current_setting('request.jwt.claim.org_id', true) then
     raise exception 'server01 callback organisation mismatch' using errcode = '42501';
   end if;
+  if (p_callback->>'request_id') is distinct from (p_callback#>>'{receipt,request_id}') then
+    raise exception 'server01 callback request mismatch' using errcode = '22023';
+  end if;
   select * into v_request
     from lautowork.server01_invocation_requests
     where id = (p_callback->>'request_id')::uuid
@@ -430,10 +454,20 @@ begin
        and a.attnum > 0
        and not a.attisdropped
     union all
-    select format('grant:%s:%s:%s', g.grantee, g.table_name, g.privilege_type)
-      from information_schema.role_table_grants g
-     where g.table_schema = 'lautowork'
-       and g.table_name like 'server01_%'
+    select format(
+             'grant:%s:%s:%s',
+             case when ae.grantee = 0 then 'PUBLIC' else pg_get_userbyid(ae.grantee) end,
+             c.relname,
+             ae.privilege_type
+           )
+      from pg_class c
+      join pg_namespace n on n.oid = c.relnamespace
+      cross join lateral aclexplode(
+        coalesce(c.relacl, acldefault('r'::"char", c.relowner))
+      ) as ae
+     where n.nspname = 'lautowork'
+       and c.relkind = 'r'
+       and c.relname like 'server01_%'
     union all
     select format('role:%s', r.rolname)
       from pg_roles r

@@ -23,3 +23,46 @@ select public.assert_true(not has_table_privilege('svc_lautowork_migration_backu
 select public.assert_true(has_table_privilege('svc_lautowork_migration_backup','lautowork.server01_invocation_requests','select'), 'backup role can select invocations');
 select public.assert_true(has_function_privilege('svc_lautowork_gateway','lautowork.server01_accept_invocation(jsonb,text)','execute'), 'gateway can accept invocations');
 select public.assert_true(has_function_privilege('svc_lautowork_runtime_dispatch','lautowork.server01_admit_callback(jsonb)','execute'), 'dispatch can admit callbacks');
+select public.assert_true(
+  not exists (
+    select 1
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'lautowork'
+       and p.proname = 'server01_live_fingerprint'
+       and pg_get_functiondef(p.oid) ilike '%information_schema.role_table_grants%'
+  ),
+  'fingerprint does not use role_table_grants'
+);
+
+do $$
+declare
+  v_fp text := lautowork.server01_live_fingerprint();
+  v_status text := lautowork.server01_package_status();
+  r name;
+begin
+  if v_status is distinct from 'complete' then
+    raise exception 'owner package status is %, expected complete', v_status;
+  end if;
+  for r in
+    select distinct pg_get_userbyid(ae.grantee) as rolname
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+      cross join lateral aclexplode(coalesce(p.proacl, acldefault('f'::"char", p.proowner))) as ae
+     where n.nspname = 'lautowork'
+       and p.proname in ('server01_live_fingerprint', 'server01_package_status')
+       and ae.privilege_type = 'EXECUTE'
+       and ae.grantee <> 0
+     order by 1
+  loop
+    execute format('set local role %I', r);
+    if lautowork.server01_live_fingerprint() is distinct from v_fp then
+      raise exception 'fingerprint drifted for role %', r;
+    end if;
+    if has_table_privilege(r, 'lautowork.server01_package_control', 'select')
+       and lautowork.server01_package_status() is distinct from v_status then
+      raise exception 'package status drifted for role %', r;
+    end if;
+    execute 'reset role';
+  end loop;
+end $$;
