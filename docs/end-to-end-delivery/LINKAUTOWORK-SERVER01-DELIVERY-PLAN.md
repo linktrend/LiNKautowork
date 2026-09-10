@@ -351,8 +351,9 @@ and visibility of `linktrend/LiNKautowork`. It does not depend on `CURSOR_API_KE
 Cursor CLI login or the `cursor-sdk` package. Sanitised commands, packet fields,
 transport/readback limits and GitHub-hosted worker inputs are defined in
 `CURSOR-CLOUD-EXECUTION-ROUTE.md`. The key is never copied or printed. `APPROVE` is
-the only remaining founder decision required to submit AW-01; Luna High remains an
-explicit optional fallback.
+the only remaining founder decision required to submit AW-01. Necessary Luna High
+fallback within the same approved scope is already permitted and requires no
+repeat approval.
 
 ## 8. Deployment, validation and recovery sequence
 
@@ -367,8 +368,9 @@ explicit optional fallback.
    REST dispatcher is the ordinary route. Each issue uses explicit `repos[]`,
    transport readback plus worker Git attestation, frequent
    pushed checkpoints, focused tests and one independent narrow review bound to
-   exact commit/tree. Luna High is limited to Principal-selected fallback or
-   necessary server/privileged operations.
+   exact commit/tree. Luna High may handle a recorded ordinary-route failure or
+   necessary server/privileged operation within the approved scope while
+   preserving single-writer ownership.
 3. **Integrate in dependency order.** Phase Packager opens logical Phase PRs;
    delivery controller merges only exact reviewed candidates to `development`.
    No implementer opens/merges its own PR. `development -> staging -> main` remains

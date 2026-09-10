@@ -41,13 +41,14 @@ founder supplies the required `APPROVE` execution authority.
 | Layer | State | Exact meaning |
 |---|---|---|
 | Planning/interface maturity | READY | Approved product behavior, interfaces, owners, paths, packet dependencies, tests, deployment, recovery and acceptance are specified. Advisor acceptance may release downstream planning only. |
-| Executable now after `APPROVE` | READY WITH SCHEDULED CONTROL TRANSITION | Coordinator task `01a089cb-ef0d-75a2-b87f-4f3dd8163b24` owns `linktrend/LiNKautowork`; AW-01 is first. It first reconciles the running prior Phase-admission owner, then preserves `SUSPENDED` and atomically adds its exact single-repo grant. It prepares the pushed issue branch and packet only after that readback. This needs no second founder decision. |
+| Executable now after `APPROVE` | READY AFTER TERMINAL OWNER HANDOFF | Coordinator task `01a089cb-ef0d-75a2-b87f-4f3dd8163b24` owns `linktrend/LiNKautowork`; AW-01 is first. Prior Phase-admission task is terminal HOLD, but its queue row remains stale `running`; prior owner `01a0843c-0df9-74e2-907a-05c5f736d6ed` must record the handoff. The new coordinator then preserves `SUSPENDED` and adds its exact single-repo grant under the shared lock. No second founder decision is required. |
 | Later live prerequisites | HOLD BY DESIGN | Server01 service install, Platform registrations/PACI scopes, least-privilege database roles, exact migration receipts, GSM runtime secrets and private routes are AW-01/AW-05/AW-08 execution dependencies. They do not block source planning, but live deployment cannot pass without them. |
 
 After Deployment Advisor acceptance of the exact package, the only founder decision
 needed to start AW-01 is `APPROVE` for the final manifest digest and named Server01
-scope. Advisor acceptance releases downstream planning only. Luna remains an
-optional, explicit fallback, not a prerequisite or automatic substitution.
+scope. Advisor acceptance releases downstream planning only. Necessary Luna use
+within that approved scope is already allowed; a switch records the concrete
+ordinary-route failure rather than requesting approval again.
 
 ## Verified execution-route evidence
 
@@ -59,18 +60,19 @@ optional, explicit fallback, not a prerequisite or automatic substitution.
 | Source repository access | `gh` account `linktrend` is authenticated with ADMIN access to `linktrend/LiNKautowork`; remote protected `development` commit/tree readback succeeded. |
 | Cloud worker authority | Direct read-only GETs proved Keychain account `cursor-001@linktrend.one`, exact model parameters and LiNKautowork repository visibility. Credential value remained in process memory and was not printed. Environment variables, Cursor CLI login and `cursor-sdk` are not dependencies of this operational REST client. |
 | Checkpoint and PR handoff | `scripts/gitops/completion_gate.py` records exact pushed Issue checkpoint evidence; the Phase Packager/Coordinator opens the draft Phase PR; `scripts/gitops/delivery_controller.py` performs protected integration after required evidence. |
-| Fallback | Registry route `luna-fallback`: Codex CLI `gpt-5.6-luna`, effort `high`, Fast `false`, only when the founder explicitly instructs it. |
+| Fallback | Registry route `luna-fallback`: Codex CLI `gpt-5.6-luna`, effort `high`, Fast `false`. Necessary use is already allowed within this execution model; after `APPROVE`, a recorded ordinary-route failure may switch without a new decision. |
 
 ## Startup ownership and environment evidence
 
 | Requirement | Current evidence and execution treatment |
 |---|---|
 | Owner/repository/first packet | Coordinator `01a089cb-ef0d-75a2-b87f-4f3dd8163b24`; repository `linktrend/LiNKautowork`; first packet AW-01. The cloud packet `owner` is this exact task ID. |
-| Existing work | PR #125 remains draft; issue #124 and #126 worktrees are present and clean. Provider GETs show all recorded LiNKautowork cloud jobs terminal. Server01 queue item `autowork-phase-admission-015` was still running, so AW-01 waits for its terminal handoff and refreshes only affected paths/baseline. |
+| Existing work | PR #125 remains draft; issue #124 and #126 worktrees are present and clean. Provider GETs show all recorded LiNKautowork cloud jobs terminal. A bounded task read proved `autowork-phase-admission-015` terminal HOLD before Phase creation on missing supported GitHub credentials; its old-owner queue row is stale `running`, so AW-01 waits only for owner `01a0843c-0df9-74e2-907a-05c5f736d6ed` to record that handoff. |
 | Baselines | Planning identity is the pushed issue-127 branch plus manifest digest below; final Git commit/tree is returned with Advisor handoff. Implementation baseline is separately pinned to protected `development` in the manifest and is refreshed after prior-owner reconciliation. |
-| Suspension/ownership | `SUSPENDED` remains. Current `RESUME-SCOPE.json` maps exact owner task IDs to repositories and does not contain this coordinator. The route document defines a post-APPROVE CAS-style atomic add of only this coordinator/LiNKautowork pair and a rollback that removes only that entry. |
+| Suspension/ownership | `SUSPENDED` remains. Current `RESUME-SCOPE.json` maps exact owner task IDs to repositories and does not contain this coordinator. The route document defines post-APPROVE exclusive shared-lock serialization across read/check/write, atomic replacement adding only this coordinator/LiNKautowork pair, and entry-only rollback preserving other grants. |
 | Cloud runtime/dependencies | CI uses Ubuntu 24.04 ARM, Node 22 and `npm ci`; application images use Node 22.13.1 Alpine. No submodule or private npm dependency was found. Disposable worker install is an execution step after approval. |
 | Permissions | Keychain/API GET is non-interactive. Cloud writers have only issue-branch Git/network capability under prompt and transport controls; they cannot create issues, publish privileged checks, merge, deploy or access production secrets/data. Coordinator tooling owns those actions. |
+| Parallelism | Maximum safe planned source concurrency is two: runtime Lane B plus deployment Lane C after AW-01. Current executable capacity is one because the shared dispatcher guard is repository-wide. Deployment Advisor owns the one-time post-APPROVE lane-aware extension; until verified, ready lanes run sequentially. The manifest dependency graph permits both lanes while its installed local slot control truthfully remains `1`. |
 | Server/artifact path | SSH alias `linkserver-01`, user `linktrend`, non-interactive sudo verified; Docker 29.8.0/Compose 5.5.1; 147 GiB free `/srv`. Direct Docker/socket and `/srv` write are intentionally denied. Existing Compose builds locally from exact protected source; external registry is not required, and image IDs/digests form the immutable handoff. |
 
 ## Exact material uncertainties
@@ -108,7 +110,7 @@ without that execution approval. No separate route-provisioning decision is need
 Until then: **Awaiting APPROVE.**
 
 Manifest SHA-256 for approval:
-`28bf51adee6866f139a2dddbf1a7c09201ca4368388931f6213ee0b4b2f5a960`.
+`8a19a79b1461abad4abef25970a7ff3ad7c4363c042fc9c26b276d4551da34c5`.
 
 ## Planning validation record
 

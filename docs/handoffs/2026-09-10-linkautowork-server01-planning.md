@@ -21,7 +21,7 @@ Status: **CANDIDATE PLAN READY / ADVISOR ACCEPTANCE PENDING**
   `docs/end-to-end-delivery/CURSOR-CLOUD-EXECUTION-ROUTE.md`
 
 Manifest SHA-256:
-`28bf51adee6866f139a2dddbf1a7c09201ca4368388931f6213ee0b4b2f5a960`.
+`8a19a79b1461abad4abef25970a7ff3ad7c4363c042fc9c26b276d4551da34c5`.
 
 ## Settled scope
 
@@ -60,11 +60,23 @@ explicit later expansion and do not block the initial internal release.
   LiNKautowork repository visibility. No new key, login, SDK install or founder
   route choice is needed; no paid worker was launched.
 - `SUSPENDED` is present and current `RESUME-SCOPE.json` does not contain this
-  coordinator. After `APPROVE`, it first requires terminal handoff from the running
-  prior `autowork-phase-admission-015`, refreshes the protected baseline, then
-  atomically adds only its own LiNKautowork grant while preserving suspension and
-  every existing owner. The route document defines validation and rollback; no
-  second founder decision is needed.
+  coordinator. A bounded task read proved prior `autowork-phase-admission-015`
+  terminal HOLD before Phase creation on missing supported GitHub credentials,
+  while its old-owner queue row remains stale `running`. After `APPROVE`, owner
+  `01a0843c-0df9-74e2-907a-05c5f736d6ed` records that handoff; the new coordinator
+  refreshes protected baseline, then adds only its own LiNKautowork grant under a
+  shared exclusive lock while preserving suspension and every existing owner. The
+  route document defines entry-only rollback; no second founder decision is needed.
+- Manifest/work-packet validation commands now all have owners. AW-05 owns the
+  focused deployment-readiness test and one Server01 acceptance script with exact
+  behavior; AW-08 uses that script plus existing Docker Compose and restore-drill
+  commands. The nonexistent `ops/verify-deployment.sh` reference was removed.
+- Maximum safe planned source concurrency is two after AW-01: one runtime Lane B
+  writer and disjoint AW-05 deployment Lane C writer. Current executable capacity
+  is one under the repository-wide dispatcher guard. Deployment Advisor owns the
+  one-time lane-aware extension after `APPROVE`; until verified, lanes run
+  sequentially. The GitHub lane table records exact paths, dependencies, owners,
+  worker models, completion and integration destinations.
 - Later live prerequisites are the exact Platform registrations/PACI scopes,
   least-privilege database roles, migration receipts, GSM runtime references and
   private Server01 routes. They gate AW-08 live acceptance, not downstream planning.

@@ -50,15 +50,22 @@ The dispatcher currently sees:
   `submit` is currently rejected even though API GET access succeeds.
 
 Provider GET readback found every recorded LiNKautowork cloud writer/reviewer
-terminal (`FINISHED` or `CANCELLED`). The Server01 queue still recorded non-cloud
-`autowork-phase-admission-015` as running, and PR #125 plus issue #126 worktrees
-remain present and clean. Do not take over, delete or rewrite that work.
+terminal (`FINISHED` or `CANCELLED`). A bounded task read on 2026-09-10 then proved
+non-cloud `autowork-phase-admission-015` terminal `HOLD`: exact candidate
+`fe953eccb903cc572d3a3d6c40c67bd184e5a614` / tree
+`537c83b321e85da5d5e0875ed0127767adb02c78`, accepted checkpoint and Fast PASS,
+but fresh Phase packaging stopped before mutation on missing supported GitHub
+credentials. No `phase/s01-autowork-015` or fresh PR exists and protected
+`development` is unchanged. Its Server01 queue row is stale `running`; handoff and
+queue reconciliation remain owned by `01a0843c-0df9-74e2-907a-05c5f736d6ed`.
+PR #125 plus issue #126 worktrees remain present and clean. Do not take over,
+delete or rewrite that work.
 
 The first coordinator action after founder `APPROVE` is:
 
-1. GET-readback all prior LiNKautowork cloud receipts again and read the Server01
-   queue; require no active cloud writer and a terminal/handoff state for
-   `autowork-phase-admission-015`.
+1. GET-readback all prior LiNKautowork cloud receipts again. Require the previous
+   owner to reconcile `autowork-phase-admission-015` from stale `running` to its
+   terminal HOLD/handoff; do not alter its candidate or Phase admission.
 2. Refresh protected `development` commit/tree and reconcile only AW-01 paths or
    interfaces changed by the prior lane.
 3. Preserve `SUSPENDED` and every existing owner grant. Atomically add exactly
@@ -69,10 +76,14 @@ The first coordinator action after founder `APPROVE` is:
    before preparing AW-01.
 
 The coordinator performs this narrow local transition; it is not product code or
-cloud-worker work. Use a same-directory temporary file, preserve mode, and
-`os.replace` only after verifying the unchanged preimage digest. Rollback removes
-only this coordinator's entry after a current-file digest comparison. If the file
-changed, stop and reconcile with the current owner instead of overwriting it. No
+cloud-worker work. Every approved writer of `RESUME-SCOPE.json` must acquire the
+shared `queue-control/.resume-scope.lock` with an exclusive `flock` before reading
+the preimage and hold it through validation, same-directory temporary-file write,
+mode preservation, `os.replace` and postimage readback. Rollback takes the same
+lock and removes only this coordinator's entry from the current valid document;
+it never restores a whole stale preimage over another owner's changes. If the file
+or expected entry changes while waiting for the lock, stop and reconcile. This is
+true shared serialization rather than a claimed lock-free compare-and-swap. No
 policy conflict was found: the existing schema supports exact per-owner,
 per-repository grants while preserving global suspension.
 
@@ -243,10 +254,38 @@ The Phase Packager/Coordinator opens the draft Phase PR; the delivery controller
 performs protected integration when all gates pass. Implementers never create or
 merge their own PRs.
 
-## 8. Fallback and live work
+## 8. Planned maximum-safe parallel extension
 
-The registered fallback is Codex CLI `gpt-5.6-luna`, effort high, Fast off. It is
-used only after an explicit founder instruction; it is not an automatic response
-to a Cursor failure. Privileged Server01 work in AW-08 follows the governed Luna/
-server route. Neither route changes the product scope or authorises implementation
-before `APPROVE`.
+LiNKautowork's dependency/path analysis permits at most two simultaneous source
+writers after AW-01: one current packet in runtime Lane B and AW-05 in deployment
+Lane C. The installed manifest's `hostedCapacityScheduler.maxAdmittedSlots.local`
+and the operational dispatcher currently enforce executable capacity of one writer
+for this repository. The two-lane target is therefore planned, not yet enabled.
+
+Deployment Advisor owns one shared coordinator deliverable after `APPROVE`, before
+same-repository parallel dispatch. LiNKautowork must not copy or modify the
+dispatcher. The compatible extension must bind repository + lane + branch +
+baseline commit/tree + allowed paths to each stable packet ID, permit one active
+writer per admitted lane, reject overlapping/shared scopes, serialise admission
+updates, preserve suspension/owner/global 20-job/16-writer controls, and reconcile
+active or ambiguous submissions before releasing reservations. Broad or unknown
+scope remains repository-exclusive.
+
+Focused offline extension cases are: two disjoint lanes admitted; overlapping or
+shared-file lanes rejected; duplicate/ambiguous packet preserved and reconciled;
+existing suspension, owner grant and global limits retained. This is one shared
+coordinator change, not IDE Development or product work, and requires no paid
+probe. Until its exact verification is available, the coordinator schedules L-B
+and L-C sequentially without discarding their planned parallel structure. After it
+is available, it fills both ready lanes up to actual authenticated account capacity
+and assigns released capacity immediately on terminal events.
+
+## 9. Fallback and live work
+
+The registered fallback is Codex CLI `gpt-5.6-luna`, effort high, Fast off. The
+founder has already permitted necessary Luna use in this agreed execution model.
+After `APPROVE`, the coordinator may use it for an ordinary Cursor route failure
+within the same packet scope after recording the concrete failure and preserving
+single-writer ownership; no additional founder decision is required. Privileged
+Server01 work in AW-08 follows the governed Luna/server route. Neither route changes
+product scope or authorises implementation before `APPROVE`.

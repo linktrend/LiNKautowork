@@ -11,9 +11,10 @@ Batch Header with scope, inputs, plan and risks. Ordinary source execution uses 
 established Cursor REST dispatcher with Grok 4.6 Medium, Fast off and explicit
 repository URL/ref in `repos[]`. GitHub preflight plus worker attestation proves
 repository/ref/commit/tree; transport GET proves only the fields it actually
-returns. Named saved Cursor environments are forbidden. Luna High is used only for
-a founder-selected fallback or server/privileged operations that cannot safely run
-through the ordinary route.
+returns. Named saved Cursor environments are forbidden. The founder has already
+permitted necessary Luna High fallback within the approved packet scope and for
+server/privileged operations; a switch records the concrete Cursor failure and
+preserves single-writer ownership.
 
 The operational route is the Keychain-backed standard-library REST client recorded
 in `CURSOR-CLOUD-EXECUTION-ROUTE.md`. Read-only API checks proved the exact account,
@@ -22,8 +23,8 @@ packet and its inputs are ready; it may start after founder `APPROVE`. No new
 credential, Cursor CLI login, SDK installation or route choice is an AW-01
 prerequisite. The coordinator must first reconcile the prior Server01 owner and add
 only its exact task-ID/LiNKautowork grant while retaining global suspension; the
-route document specifies that reversible transition. Luna is an explicit
-founder-selected fallback only.
+route document specifies that reversible transition. Luna is a governed fallback
+already covered by the agreed execution model, not a second approval request.
 
 An Issue checkpoint requires exact pushed commit/tree, scoped diff, focused tests,
 manifest evidence, and one provider-independent narrow review bound to that exact
@@ -40,14 +41,41 @@ only those necessary for configuration and live acceptance.
 ```text
 Settled protected interfaces available to downstream planning
   -> AW-01 after execution rebaseline
-      -> AW-02 -> AW-03 -> AW-04 -> AW-05
+      -> Lane B: AW-02 -> AW-03 -> AW-04 --+
+      -> Lane C: AW-05 ---------------------+
       -> AW-06 -> AW-07 -> AW-08 live acceptance
 ```
 
-The work is logically separable, but the established dispatcher permits only one
-cloud writer per repository. Source packets are therefore admitted serially in
-this order. Independent read-only preparation may overlap only when it does not
-take source ownership or modify the repository.
+Maximum safe planned concurrency is **two implementation workers** after AW-01:
+one in Lane B and one in Lane C. Their paths are disjoint and AW-01 freezes their
+shared interfaces first. Extra workers cannot safely advance Lane B because
+AW-03 consumes AW-02 and AW-04 consumes AW-03; AW-06 consumes both lanes and owns
+cross-cutting operations. The current dispatcher still permits only one writer per
+repository, so executable capacity remains one until the Deployment Advisor's
+single shared dispatcher extension is implemented and verified. Until then, admit
+ready lanes sequentially; after that extension, fill both ready lanes immediately
+and reassign freed capacity on completion rather than waiting for a fixed batch.
+No concurrent shared migration, manifest/lockfile, composition-root or Server01
+mutation is allowed.
+
+## Implementation lane table
+
+| Lane | Outcome / packets | Exact owned paths | Prohibited or shared paths | Upstream inputs / entry | Worker and maximum | Completion / integration |
+|---|---|---|---|---|---|---|
+| L-A interface freeze | AW-01; exact migration, identity and live-interface package | `supabase/migrations/**`; `docs/contracts/server01/**`; `packages/automation-contracts/tests/server01-*` | All gateway, deploy, IDE and Platform files; sole migration owner | Final protected rebaseline and prior-owner handoff | Grok 4.6 Medium, Fast off; max 1 | Migration/contract tests and independent review PASS; checkpoint to Phase Packager for `development` |
+| L-B runtime | AW-02 -> AW-03 -> AW-04; admission, n8n bridge and technical fixture | Union of the exact AW-02/03/04 manifest paths | No migrations/deploy production/Platform/IDE; `gateway/src/app.ts`, `package.json` and `package-lock.json` are AW-03-only shared owners | AW-01 accepted; then strict AW-02 -> AW-03 -> AW-04 interface chain | Grok 4.6 Medium, Fast off; max 1 active within lane | Each focused suite/review/checkpoint passes; checkpoints integrate in dependency order to `development` |
+| L-C deployment source | AW-05; immutable Compose/release/configuration and acceptance verifier | Exact AW-05 manifest paths under `deploy/**`, named `ops/**`, deployment test and runbook files | No gateway runtime/provider source, migrations, catalogue or IDE; consumes frozen interfaces | AW-01 accepted; disjoint from active L-B packet | Grok 4.6 Medium, Fast off; max 1, concurrently with L-B only after shared dispatcher extension | Compose/source checks and review PASS; checkpoint to Phase Packager for `development` |
+| L-D operations | AW-06; JetStream, monitoring, backup and recovery | Exact AW-06 manifest paths | No migration, provider/runtime bridge, automation fixture or Platform code | L-B and L-C accepted | Grok 4.6 Medium, Fast off; max 1 | Recovery/observability acceptance and review PASS; checkpoint to `development` |
+| L-E integration | AW-07; assembled immutable source candidate | Evidence path only; shared-file conflict resolution belongs to integration owner, never implementers | No new product source; exact accepted AW-01..06 candidates only | All source checkpoints/reviews accepted | Local Phase Packager/Coordinator; max 1 integration owner | Consolidated affected validation, logical Phase PR and delivery-controller integration to `development` |
+| L-F live | AW-08; Server01 install/canary/recovery/founder acceptance | Exact Server01/evidence paths in manifest | No concurrent Platform migration, other service mutation or protected-ref change | AW-07 protected release plus live Platform receipts | Governed Luna/server operator; max 1 privileged mutation owner | Live acceptance matrix, recovery and founder acceptance; promotion destination follows protected `staging` then `main` gates |
+
+The integration owner is coordinator task
+`01a089cb-ef0d-75a2-b87f-4f3dd8163b24` using the installed Phase
+Packager/Coordinator and delivery controller. Implementers keep lane continuity
+through repairs. Replacement workers start from the pushed checkpoint and remaining
+scope; they do not restart discovery. Required narrow reviews remain independent
+and exact-identity bound. Consolidated validation is run once on AW-07 and repeated
+only for affected changes or failures.
 
 ## AW-01 — Freeze live interfaces and migration/identity package
 
@@ -126,7 +154,9 @@ take source ownership or modify the repository.
 - **Owner:** n8n runtime-integration implementer.
 - **Scope/owned paths:** new `gateway/src/services/runtime-dispatch/**` and focused
   tests, `gateway/tests/app-runtime-dispatch.test.ts`, and the minimum composition
-  wiring in `gateway/src/app.ts`. It consumes the AW-02 route/service surface
+  wiring in `gateway/src/app.ts`. AW-03 is also the sole owner of `package.json`
+  and `package-lock.json` if a justified runtime dependency is unavoidable; all
+  other packets must leave them unchanged. It consumes the AW-02 route/service surface
   without rewriting it. A separate service/container is added only if evidence
   shows the gateway-owned module cannot meet isolation or liveness requirements.
   Do not edit policy contracts, workflow packages, migrations, consumer
@@ -185,7 +215,9 @@ take source ownership or modify the repository.
 - **Owner:** deployment source/configuration implementer.
 - **Scope/owned paths:** `deploy/prod/**`, required new deploy Dockerfiles except
   any separately justified AW-03 runtime-bridge image, `deploy/templates/**`, `ops/deploy-stack.sh`,
-  environment rendering/validation scripts, and deployment sections of
+  environment rendering/validation scripts,
+  `ops/verify-server01-acceptance.sh`,
+  `scripts/tests/deployment-readiness.test.mjs`, and deployment sections of
   `docs/runbooks/OPERATIONS.md` and `TAILSCALE_HARDENING.md`. Reconcile, do not
   overwrite, active PR #125 changes.
 - **Authority/inputs:** Server01 paths/networks in the plan; existing Docker,
@@ -196,10 +228,17 @@ take source ownership or modify the repository.
   external GSM/Docker secret injection; mode-`0600` runtime files; atomic release
   pointer; install/upgrade/rollback commands. Remove documentation or parser claims
   that contradict final machine-readable Compose. Do not expose protected ports or
-  create another staging server.
-- **Dependencies:** AW-04 accepted. The code could be designed independently, but
-  its cloud writer starts only after AW-04 because the dispatcher serialises
-  writers for this repository.
+  create another staging server. Reconcile the deployment-readiness test if the
+  existing issue-126 candidate integrates it; otherwise add that exact focused test
+  to assert private ingress, persistent non-host-network NATS, migration dry-run
+  refusal and reproducible build inputs. Add the single Server01 acceptance script
+  to check current release/image identity, Compose service health, private-only
+  ports/routes, n8n/NATS persistence, receipt/kill-switch state and required backup
+  artifact presence. It must be read-only except for the separately authorised
+  canary actions supplied as explicit arguments; it is not a second test framework.
+- **Dependencies:** AW-01 accepted. This lane is path-disjoint from the active L-B
+  packet and is planned to run concurrently once the shared dispatcher extension
+  is verified. Until then, it runs in the next available serial repository slot.
 - **Output:** deterministic production Compose/release manifest and Server01
   installation/rollback runbook.
 - **Minimum validation:** Compose render with names-only config; SBOM/licence/

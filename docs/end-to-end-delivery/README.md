@@ -5,7 +5,7 @@ Prepared: 2026-09-10, Asia/Taipei
 Assigned host: **LiNKserver 01** (`linkserver-01`)
 Planning issue: [#127](https://github.com/linktrend/LiNKautowork/issues/127)
 Planning manifest SHA-256:
-`28bf51adee6866f139a2dddbf1a7c09201ca4368388931f6213ee0b4b2f5a960`
+`8a19a79b1461abad4abef25970a7ff3ad7c4363c042fc9c26b276d4551da34c5`
 
 This directory is the stable entry point for making LiNKautowork usable on its
 assigned existing server. It does not replace the approved product authority or
@@ -53,6 +53,13 @@ owner and then atomically adds only its own `linktrend/LiNKautowork` grant to th
 existing resume scope. It preserves all other owner grants and `SUSPENDED`. This
 scheduled control transition is fully specified in the route document and needs no
 second founder decision.
+
+Maximum safe planned source concurrency is two workers after AW-01: one runtime
+lane and one disjoint deployment-source lane. Current executable capacity remains
+one because the shared dispatcher guard is repository-wide. Deployment Advisor
+owns the single lane-aware dispatcher extension after `APPROVE`; LiNKautowork does
+not modify it. Until verified, the two ready lanes run sequentially; afterward the
+coordinator fills both as capacity becomes available.
 
 An active source-readiness Phase PR, [#125](https://github.com/linktrend/LiNKautowork/pull/125),
 and its repair issue [#126](https://github.com/linktrend/LiNKautowork/issues/126)

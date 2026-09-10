@@ -75,7 +75,9 @@
         "gateway/src/services/runtime-dispatch/",
         "gateway/tests/runtime-dispatch",
         "gateway/tests/app-runtime-dispatch.test.ts",
-        "gateway/src/app.ts"
+        "gateway/src/app.ts",
+        "package.json",
+        "package-lock.json"
       ],
       "prohibitedPaths": [
         ".ide-development/",
@@ -130,6 +132,8 @@
         "ops/deploy-stack.sh",
         "ops/render-env-from-gsm.sh",
         "ops/render-runtime-env-from-gsm.sh",
+        "ops/verify-server01-acceptance.sh",
+        "scripts/tests/deployment-readiness.test.mjs",
         "docs/runbooks/OPERATIONS.md",
         "docs/runbooks/TAILSCALE_HARDENING.md"
       ],
@@ -146,7 +150,7 @@
         ["npm", "run", "test", "--", "scripts/tests/deployment-readiness.test.mjs"],
         ["git", "diff", "--check"]
       ],
-      "dependencies": ["AW-04"],
+      "dependencies": ["AW-01"],
       "executionState": "PLAN"
     },
     {
@@ -218,9 +222,9 @@
         ".ide-development/"
       ],
       "verificationCommands": [
-        ["bash", "ops/verify-deployment.sh", "prod"],
-        ["bash", "ops/restore-drill.sh", "--isolated", "--environment", "prod"],
-        ["bash", "ops/verify-server01-acceptance.sh"]
+        ["sudo", "docker", "compose", "-f", "/srv/linktrend/deploy/linkautowork/current/deploy/prod/docker-compose.yml", "-p", "linkautowork-prod", "ps"],
+        ["bash", "ops/restore-drill.sh", "/srv/linktrend/runtime/linkautowork/evidence/backup.sql.gz", "/srv/linktrend/runtime/linkautowork/evidence/templates.tar.gz"],
+        ["bash", "ops/verify-server01-acceptance.sh", "--environment", "prod"]
       ],
       "dependencies": ["AW-07"],
       "executionState": "PLAN"
