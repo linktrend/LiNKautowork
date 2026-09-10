@@ -64,7 +64,7 @@ mutation is allowed.
 |---|---|---|---|---|---|---|
 | L-A interface freeze | AW-01; exact migration, identity and live-interface package | `supabase/migrations/**`; `docs/contracts/server01/**`; `packages/automation-contracts/tests/server01-*` | All gateway, deploy, IDE and Platform files; sole migration owner | Final protected rebaseline and prior-owner handoff | Grok 4.6 Medium, Fast off; max 1 | Migration/contract tests and independent review PASS; checkpoint to Phase Packager for `development` |
 | L-B runtime | AW-02 -> AW-03 -> AW-04; admission, n8n bridge and technical fixture | Union of the exact AW-02/03/04 manifest paths | No migrations/deploy production/Platform/IDE; `gateway/src/app.ts`, `package.json` and `package-lock.json` are AW-03-only shared owners | AW-01 accepted; then strict AW-02 -> AW-03 -> AW-04 interface chain | Grok 4.6 Medium, Fast off; max 1 active within lane | Each focused suite/review/checkpoint passes; checkpoints integrate in dependency order to `development` |
-| L-C deployment source | AW-05; immutable Compose/release/configuration and acceptance verifier | Exact AW-05 manifest paths under `deploy/**`, named `ops/**`, deployment test and runbook files | No gateway runtime/provider source, migrations, catalogue or IDE; consumes frozen interfaces | AW-01 accepted; disjoint from active L-B packet | Grok 4.6 Medium, Fast off; max 1, concurrently with L-B only after shared dispatcher extension | Compose/source checks and review PASS; checkpoint to Phase Packager for `development` |
+| L-C deployment source | AW-05; immutable Compose/release/configuration and acceptance verifier | Exact AW-05 manifest paths under `deploy/**`, named `ops/**`, deployment test and runbook files | No gateway runtime/provider source, migrations, catalogue or IDE; uses the existing gateway image/config contract | AW-01 accepted; prepares the generic gateway build independently of L-B. AW-07 rebuilds it from accepted AW-03 source | Grok 4.6 Medium, Fast off; max 1, concurrently with L-B only after shared dispatcher extension | Compose/source checks and review PASS; checkpoint to Phase Packager for `development` |
 | L-D operations | AW-06; JetStream, monitoring, backup and recovery | Exact AW-06 manifest paths | No migration, provider/runtime bridge, automation fixture or Platform code | L-B and L-C accepted | Grok 4.6 Medium, Fast off; max 1 | Recovery/observability acceptance and review PASS; checkpoint to `development` |
 | L-E integration | AW-07; assembled immutable source candidate | Evidence path only; shared-file conflict resolution belongs to integration owner, never implementers | No new product source; exact accepted AW-01..06 candidates only | All source checkpoints/reviews accepted | Local Phase Packager/Coordinator; max 1 integration owner | Consolidated affected validation, logical Phase PR and delivery-controller integration to `development` |
 | L-F live | AW-08; Server01 install/canary/recovery/founder acceptance | Exact Server01/evidence paths in manifest | No concurrent Platform migration, other service mutation or protected-ref change | AW-07 protected release plus live Platform receipts | Governed Luna/server operator; max 1 privileged mutation owner | Live acceptance matrix, recovery and founder acceptance; promotion destination follows protected `staging` then `main` gates |
@@ -157,12 +157,17 @@ only for affected changes or failures.
   wiring in `gateway/src/app.ts`. AW-03 is also the sole owner of `package.json`
   and `package-lock.json` if a justified runtime dependency is unavoidable; all
   other packets must leave them unchanged. It consumes the AW-02 route/service surface
-  without rewriting it. A separate service/container is added only if evidence
-  shows the gateway-owned module cannot meet isolation or liveness requirements.
-  Do not edit policy contracts, workflow packages, migrations, consumer
-  repositories or IDE managed core.
+  without rewriting it. The initial-release dispatcher is an in-process gateway
+  module compiled into the existing gateway image. AW-03 must not add a separate
+  service, container, image, network or configuration namespace; any future split
+  requires a separate architecture decision. Do not edit policy contracts,
+  workflow packages, migrations, consumer repositories or IDE managed core.
 - **Authority/inputs:** AW-02 request/callback schemas; existing `N8nClient`,
   provider store/outbox boundaries, Golden Package runtime contract and n8n 2.30.0.
+  Compose it through `gateway/src/app.ts` and the existing configuration contract:
+  `N8N_BASE_URL`, `N8N_API_BASE_PATH`, `N8N_WEBHOOK_PATH_PREFIX`, GSM-resolved
+  `N8N_API_KEY_SECRET_NAME`/`N8N_API_KEY`, and `NATS_URL`. No new configuration
+  name is part of the initial-release handoff.
 - **Required work:** durably deliver the exact instance/binding/package/workflow/
   configuration identity to n8n; acknowledge only after accepted execution state;
   authenticate callback/result; reconcile duplicate wakes, cancellation, timeout,
@@ -170,8 +175,11 @@ only for affected changes or failures.
   policy; emit sanitised evidence. It never chooses an automation, owns a Program
   Issue, or provides arbitrary shell execution.
 - **Dependencies:** AW-02 frozen runtime contract.
-- **Output:** bounded runtime bridge with health/readiness and exact n8n execution/
-  receipt mapping.
+- **Output:** an internal typed runtime-dispatch interface under
+  `gateway/src/services/runtime-dispatch/**`, composed into the gateway, with
+  health/readiness and exact n8n execution/receipt mapping. Its accepted source
+  checkpoint and the frozen existing configuration contract are the complete
+  handoff to final image assembly; AW-05 does not consume an AW-03 image.
 - **Minimum validation:** disposable n8n contract matrix; wrong/missing workflow or
   configuration identity, duplicate wake, cancellation races, timeout, n8n 4xx/5xx,
   restart, callback replay/late callback, redaction and arbitrary-node rejection.
@@ -213,17 +221,19 @@ only for affected changes or failures.
 
 - **Issue:** ISS-05.
 - **Owner:** deployment source/configuration implementer.
-- **Scope/owned paths:** `deploy/prod/**`, required new deploy Dockerfiles except
-  any separately justified AW-03 runtime-bridge image, `deploy/templates/**`, `ops/deploy-stack.sh`,
+- **Scope/owned paths:** `deploy/prod/**`, required deploy Dockerfiles for the
+  existing service topology, `deploy/templates/**`, `ops/deploy-stack.sh`,
   environment rendering/validation scripts,
   `ops/verify-server01-acceptance.sh`,
   `scripts/tests/deployment-readiness.test.mjs`, and deployment sections of
   `docs/runbooks/OPERATIONS.md` and `TAILSCALE_HARDENING.md`. Reconcile, do not
   overwrite, active PR #125 changes.
-- **Authority/inputs:** Server01 paths/networks in the plan; existing Docker,
-  Tailscale and shared monitoring; GSM names; exact images/SBOM; AW-01 role names.
-- **Required work:** add only the runtime services justified by AW-03 and
-  least-privilege networks; resource
+- **Authority/inputs:** Server01 paths/networks in the plan; existing gateway
+  Dockerfile and configuration names; existing Docker, Tailscale and shared
+  monitoring; GSM names; exact images/SBOM; AW-01 role names. AW-03 is fixed as an
+  in-process gateway module, not a deployable service or image.
+- **Required work:** build the generic gateway image and add only the services in
+  the settled initial-release topology; least-privilege networks; resource
   limits; immutable image/tag/digest manifest; health/readiness; private routes;
   external GSM/Docker secret injection; mode-`0600` runtime files; atomic release
   pointer; install/upgrade/rollback commands. Remove documentation or parser claims
@@ -238,7 +248,10 @@ only for affected changes or failures.
   canary actions supplied as explicit arguments; it is not a second test framework.
 - **Dependencies:** AW-01 accepted. This lane is path-disjoint from the active L-B
   packet and is planned to run concurrently once the shared dispatcher extension
-  is verified. Until then, it runs in the next available serial repository slot.
+  is verified. It can prepare the existing gateway build/config contract without
+  AW-03 source; AW-07 rebuilds that image from the accepted AW-03 checkpoint.
+  Until the dispatcher extension is verified, it runs in the next available serial
+  repository slot.
 - **Output:** deterministic production Compose/release manifest and Server01
   installation/rollback runbook.
 - **Minimum validation:** Compose render with names-only config; SBOM/licence/

@@ -62,11 +62,14 @@ explicit later expansion and do not block the initial internal release.
 - `SUSPENDED` is present and current `RESUME-SCOPE.json` does not contain this
   coordinator. A bounded task read proved prior `autowork-phase-admission-015`
   terminal HOLD before Phase creation on missing supported GitHub credentials,
-  while its old-owner queue row remains stale `running`. After `APPROVE`, owner
-  `01a0843c-0df9-74e2-907a-05c5f736d6ed` records that handoff; the new coordinator
-  refreshes protected baseline, then adds only its own LiNKautowork grant under a
-  shared exclusive lock while preserving suspension and every existing owner. The
-  route document defines entry-only rollback; no second founder decision is needed.
+  while its old-owner queue row remains stale `running`. After `APPROVE`, the new
+  coordinator immediately coordinates with owner
+  `01a0843c-0df9-74e2-907a-05c5f736d6ed` to record that handoff. A still-stale row
+  permits only path-disjoint AW-01 issue-metadata preparation, not takeover,
+  dispatch or queue mutation. After reconciliation the coordinator refreshes the
+  protected baseline, then adds only its own LiNKautowork grant under a shared
+  exclusive lock while preserving suspension and every existing owner. The route
+  document defines entry-only rollback; no second founder decision is needed.
 - Manifest/work-packet validation commands now all have owners. AW-05 owns the
   focused deployment-readiness test and one Server01 acceptance script with exact
   behavior; AW-08 uses that script plus existing Docker Compose and restore-drill
@@ -77,6 +80,11 @@ explicit later expansion and do not block the initial internal release.
   one-time lane-aware extension after `APPROVE`; until verified, lanes run
   sequentially. The GitHub lane table records exact paths, dependencies, owners,
   worker models, completion and integration destinations.
+- Initial-release runtime topology is now closed: AW-03 implements an in-process
+  gateway module using the existing n8n/NATS configuration contract, with no
+  separate service, image, network or new configuration names. AW-05 independently
+  prepares the generic gateway build and settled Compose topology; AW-07 rebuilds
+  the gateway image from accepted AW-03 source.
 - Later live prerequisites are the exact Platform registrations/PACI scopes,
   least-privilege database roles, migration receipts, GSM runtime references and
   private Server01 routes. They gate AW-08 live acceptance, not downstream planning.

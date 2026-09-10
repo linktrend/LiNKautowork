@@ -63,9 +63,12 @@ delete or rewrite that work.
 
 The first coordinator action after founder `APPROVE` is:
 
-1. GET-readback all prior LiNKautowork cloud receipts again. Require the previous
-   owner to reconcile `autowork-phase-admission-015` from stale `running` to its
-   terminal HOLD/handoff; do not alter its candidate or Phase admission.
+1. GET-readback all prior LiNKautowork cloud receipts again and immediately
+   coordinate with the previous owner to reconcile `autowork-phase-admission-015`
+   from stale `running` to its terminal HOLD/handoff. If that row remains stale,
+   record the exact pending owner and do not take it over; continue only the
+   path-disjoint preparation of AW-01 issue metadata, with no worker admission or
+   queue mutation. Do not alter its candidate or Phase admission.
 2. Refresh protected `development` commit/tree and reconcile only AW-01 paths or
    interfaces changed by the prior lane.
 3. Preserve `SUSPENDED` and every existing owner grant. Atomically add exactly

@@ -270,7 +270,7 @@ receipts.
 | NATS JetStream | Compose | Docker networks only; no host port | named volume `nats_jetstream_prod` |
 | Product API | Compose, non-root | private for initial release | finite PostgREST/RPC adapter; Platform auth |
 | operator console | Compose, non-root | private Tailscale route | read/action client of Product API |
-| runtime dispatcher | Gateway-owned bounded service/module; split into a container only if implementation evidence requires it | Docker networks only | invokes the exact bound n8n workflow; no shell gateway, Program selection or ledger authority |
+| runtime dispatcher | In-process gateway module compiled into the existing gateway image | Uses the gateway's existing private connection to n8n and NATS; no separate service, network attachment or image | invokes the exact bound n8n workflow; no shell gateway, Program selection or ledger authority |
 | operations worker | Compose profile/service | Docker networks only | event/durable-work driven monitoring and bounded actions; no portfolio scheduling |
 | Prometheus/Grafana | existing host services | existing operator boundary | add only LiNKautowork scrape/rules/dashboard assets |
 
@@ -281,7 +281,9 @@ is not routed or accepted in the initial release.
 
 - `autowork-edge`: Tailscale reverse proxy to gateway/Product API/operator
   console as approved; n8n editor gets a separate private route.
-- `autowork-runtime`: gateway, n8n and any separately justified runtime dispatcher.
+- `autowork-runtime`: gateway and n8n only. The initial-release runtime dispatcher
+  is an in-process gateway module; splitting it into another service is future
+  architecture scope and requires a separate decision.
 - `autowork-events`: gateway, NATS and operations worker only.
 - No container binds `4222`, `8222`, `5678`, or `8080` on `0.0.0.0`.
 - Immutable releases live at
@@ -320,9 +322,9 @@ is not routed or accepted in the initial release.
 | Ubuntu/Linux host | installed, healthy | Server01/Platform owner | no reinstall; preflight kernel/time/disk | all services |
 | Docker Engine/Compose | installed; Compose `v5.5.1`; existing workloads healthy | Server01 shared owner | no reinstall; create isolated project/networks/limits | LiNKautowork Compose |
 | Tailscale | installed and online | Server01 shared owner | add only approved private Serve routes/firewall policy | founder/operator browser and private API |
-| Prometheus/Grafana | installed and active | Server01 shared observability owner | add scoped scrape/rules/dashboard; no second stack | gateway, n8n exporter/metrics, NATS, runtime bridge |
+| Prometheus/Grafana | installed and active | Server01 shared observability owner | add scoped scrape/rules/dashboard; no second stack | gateway (including runtime-dispatch metrics), n8n exporter/metrics and NATS |
 | n8n Community | absent | LiNKautowork | deploy pinned `n8nio/n8n:2.30.0`; configure API/encryption/database/URL | gateway and bound workflows |
-| NATS JetStream | absent | LiNKautowork | deploy pinned `nats:2.10.26-alpine`; persistent volume/durable consumers/limits | gateway, runtime bridge and operations worker |
+| NATS JetStream | absent | LiNKautowork | deploy pinned `nats:2.10.26-alpine`; persistent volume/durable consumers/limits | gateway (including runtime dispatch) and operations worker |
 | gateway/Product API/operator console | absent | LiNKautowork | build immutable repo images; inject scoped config | Programs and founder |
 | durable n8n activation path | source has gateway-to-n8n ingress plus provider HOLD boundaries; assembled durable path is unproven | LiNKautowork | reconcile existing pieces and close only evidence-backed gaps | every later Program-selected automation |
 | PostgreSQL/Supabase | existing Platform projects under active recovery | LiNKplatform shared owner | Platform applies Autowork migrations and creates scoped roles | gateway/Product API/n8n |
