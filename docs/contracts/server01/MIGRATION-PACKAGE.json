@@ -105,8 +105,8 @@
     {
       "order": 16,
       "path": "supabase/migrations/20260910_000001_lautowork_server01_live_interfaces.sql",
-      "sha256": "8ed3ad49f01c41f95730083305d9d4a531167f3f96e1e63df82067499f17e370",
-      "bytes": 29079
+      "sha256": "7203752c6f12c5abfa9278e938e4c36d08a47c2aab34d47dc791ff18f3ad9bc2",
+      "bytes": 29577
     }
   ],
   "contracts": [
@@ -141,6 +141,6 @@
       "bytes": 4618
     }
   ],
-  "orderedSqlCanonicalSha256": "2136a745a1def6d7ea71b7dd07dcd45f63916a9cdf2477f4d1aa43c498d46457",
+  "orderedSqlCanonicalSha256": "ed7182f2a5e33f12ad5b9f2d9cbf4103bc12509ec121c5c697f218d40cf15b2d",
   "liveApply": "HOLD"
 }

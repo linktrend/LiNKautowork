@@ -607,6 +607,9 @@ select lautowork.server01_assert_package_ready();
 
 -- migrate:down
 revoke all on schema lautowork from svc_lautowork_gateway, svc_lautowork_product_api, svc_lautowork_runtime_dispatch, svc_lautowork_migration_backup;
+revoke all on all tables in schema lautowork from svc_lautowork_gateway, svc_lautowork_product_api, svc_lautowork_runtime_dispatch, svc_lautowork_migration_backup;
+revoke all on all sequences in schema lautowork from svc_lautowork_gateway, svc_lautowork_product_api, svc_lautowork_runtime_dispatch, svc_lautowork_migration_backup;
+revoke all on all functions in schema lautowork from svc_lautowork_gateway, svc_lautowork_product_api, svc_lautowork_runtime_dispatch, svc_lautowork_migration_backup;
 drop function if exists lautowork.server01_assert_package_ready();
 drop function if exists lautowork.server01_package_status();
 drop function if exists lautowork.server01_live_fingerprint();
@@ -614,7 +617,6 @@ drop function if exists lautowork.server01_admit_callback(jsonb);
 drop function if exists lautowork.server01_write_receipt(jsonb);
 drop function if exists lautowork.server01_accept_invocation(jsonb, text);
 drop function if exists lautowork.server01_require_org(uuid);
-drop function if exists lautowork.server01_reject_mutation();
 drop table if exists lautowork.server01_callbacks;
 drop table if exists lautowork.server01_receipts;
 drop table if exists lautowork.server01_intent_outbox;
@@ -622,6 +624,7 @@ drop table if exists lautowork.server01_prepared_intents;
 drop table if exists lautowork.server01_invocation_requests;
 drop table if exists lautowork.server01_credential_bindings;
 drop table if exists lautowork.server01_package_control;
+drop function if exists lautowork.server01_reject_mutation();
 drop function if exists lautowork.server01_text_is_secret_shaped(text);
 drop role if exists svc_lautowork_gateway;
 drop role if exists svc_lautowork_product_api;
