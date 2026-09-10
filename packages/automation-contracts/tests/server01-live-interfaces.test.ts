@@ -41,7 +41,7 @@ class DisposablePostgres {
     execFileSync('docker', [
       'run', '-d', '--rm',
       '--name', this.name,
-      '-e', 'POSTGRES_PASSWORD=postgres',
+      '-e', 'POSTGRES_PASSWORD=ltfx.ph.aw01.disposable-postgres.v1',
       '-e', 'POSTGRES_HOST_AUTH_METHOD=trust',
       '-e', 'POSTGRES_DB=automation_contracts',
       'postgres:16-alpine',
