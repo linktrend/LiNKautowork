@@ -1,6 +1,6 @@
 # Cursor Cloud execution route for this delivery
 
-Status: **ACCESS VERIFIED / SUBMIT REQUIRES APPROVE AND OWNER-SCOPE TRANSITION**
+Status: **FOUNDER APPROVED / VERIFIED TRANSPORT / SUBMIT REQUIRES OWNER-SCOPE TRANSITION**
 
 This is the sanitised, repository-hosted execution instruction for the local
 coordinator and every LiNKautowork cloud worker. Workers must use the GitHub-hosted
@@ -14,7 +14,12 @@ The established local coordinator transport is:
 `/Users/linktrend/Documents/Codex/2026-09-09/files-pasted-by-the-user-i/outputs/cursor-cloud/cursor_cloud.py`
 
 Observed SHA-256 on 2026-09-10:
-`0cf61dc9b2f6b7f6c6b34ddf94a7c751229e9838d50ed9c1b468f5327e39e2e8`.
+`9c5b5486842e695e47f32896728ec15568237f304ea86115cde50997e419c260`.
+
+The post-approval lane extension is independently verified by adjacent receipt
+`LANE-VERIFICATION.json`: 23 offline tests passed and the independent reviewer
+returned PASS on this exact dispatcher hash. No paid job or control mutation was
+used for that verification.
 
 It is a standard-library REST client for `https://api.cursor.com/v1`. It retrieves
 the credential from macOS Keychain service `Cursor-Codex-001`, account
@@ -119,11 +124,20 @@ Every packet JSON must provide:
 | `acceptance_commands` | Matching minimum verification commands from the manifest and work-packet document. |
 | `admitted` | `true` only after the founder approval and local owner/resource checks. |
 | `admission_evidence` | Reference to the final approved manifest digest and local ownership decision; never a secret value. |
+| `lane_id`, `lane_plan_sha256` | Omit for AW-01 and every repository-exclusive packet. For the one approved parallel window, use `L-B` for AW-02 and `L-C` for AW-05, with both packets bound to manifest SHA-256 `8a19a79b1461abad4abef25970a7ff3ad7c4363c042fc9c26b276d4551da34c5`. |
 
 The dispatcher validates the GitHub branch commit/tree before POST, sends explicit
 `repos: [{url, startingRef}]`, `grok-4.6` with medium effort and Fast disabled,
-`autoCreatePR=false`, and `workOnCurrentBranch=false`. It serialises cloud writers
-per repository and retains four of twenty global slots for review/downstream work.
+`autoCreatePR=false`, and `workOnCurrentBranch=false`. It serialises
+repository-exclusive writers and permits only validated compatible lane packets;
+four of twenty global slots remain reserved for review/downstream work.
+Lane-aware packets additionally require the same owner and plan hash, different
+issue branches/lane IDs, and literal disjoint `allowed_paths`. Directory entries
+end in `/`; glob-like conceptual prefixes such as `provider-` must be expanded to
+exact files or genuinely owned directories before validation. Root manifests,
+lockfiles, migrations, generated paths and broad/ambiguous scopes remain
+repository-exclusive. Declared admission scope is not a remote filesystem sandbox,
+so returned diffs are always checked against actual ownership.
 
 Complete non-secret AW-01 template before runtime identity substitution:
 
@@ -257,31 +271,30 @@ The Phase Packager/Coordinator opens the draft Phase PR; the delivery controller
 performs protected integration when all gates pass. Implementers never create or
 merge their own PRs.
 
-## 8. Planned maximum-safe parallel extension
+## 8. Verified maximum-safe parallel extension
 
 LiNKautowork's dependency/path analysis permits at most two simultaneous source
-writers after AW-01: one current packet in runtime Lane B and AW-05 in deployment
-Lane C. The installed manifest's `hostedCapacityScheduler.maxAdmittedSlots.local`
-and the operational dispatcher currently enforce executable capacity of one writer
-for this repository. The two-lane target is therefore planned, not yet enabled.
+writers after AW-01. The verified parallel window is specifically AW-02 in runtime
+Lane B with AW-05 in deployment Lane C. AW-03 remains repository-exclusive while
+it owns `package.json` and `package-lock.json`; it starts only after AW-02 and any
+active AW-05 writer finish. No other pairing is inferred from lane membership.
 
-Deployment Advisor owns one shared coordinator deliverable after `APPROVE`, before
-same-repository parallel dispatch. LiNKautowork must not copy or modify the
-dispatcher. The compatible extension must bind repository + lane + branch +
+Deployment Advisor completed the one shared coordinator deliverable after
+`APPROVE`. LiNKautowork does not copy or modify the dispatcher. The extension binds
+repository + lane + branch +
 baseline commit/tree + allowed paths to each stable packet ID, permit one active
 writer per admitted lane, reject overlapping/shared scopes, serialise admission
 updates, preserve suspension/owner/global 20-job/16-writer controls, and reconcile
 active or ambiguous submissions before releasing reservations. Broad or unknown
 scope remains repository-exclusive.
 
-Focused offline extension cases are: two disjoint lanes admitted; overlapping or
+Focused offline extension cases passed: two disjoint lanes admitted; overlapping or
 shared-file lanes rejected; duplicate/ambiguous packet preserved and reconciled;
 existing suspension, owner grant and global limits retained. This is one shared
 coordinator change, not IDE Development or product work, and requires no paid
-probe. Until its exact verification is available, the coordinator schedules L-B
-and L-C sequentially without discarding their planned parallel structure. After it
-is available, it fills both ready lanes up to actual authenticated account capacity
-and assigns released capacity immediately on terminal events.
+probe. The coordinator uses the verified extension only for the AW-02/AW-05 window,
+up to actual authenticated account capacity, and assigns released capacity on
+terminal events. Omission of lane metadata restores repository-exclusive behavior.
 
 ## 9. Fallback and live work
 

@@ -74,12 +74,13 @@ explicit later expansion and do not block the initial internal release.
   focused deployment-readiness test and one Server01 acceptance script with exact
   behavior; AW-08 uses that script plus existing Docker Compose and restore-drill
   commands. The nonexistent `ops/verify-deployment.sh` reference was removed.
-- Maximum safe planned source concurrency is two after AW-01: one runtime Lane B
-  writer and disjoint AW-05 deployment Lane C writer. Current executable capacity
-  is one under the repository-wide dispatcher guard. Deployment Advisor owns the
-  one-time lane-aware extension after `APPROVE`; until verified, lanes run
-  sequentially. The GitHub lane table records exact paths, dependencies, owners,
-  worker models, completion and integration destinations.
+- The post-approval dispatcher extension is independently verified at SHA-256
+  `9c5b5486842e695e47f32896728ec15568237f304ea86115cde50997e419c260`;
+  23 offline tests and independent review passed. Maximum concurrency is two only
+  for AW-02 (`L-B`) plus AW-05 (`L-C`), both bound to the approved manifest digest.
+  AW-03 remains repository-exclusive while it owns `package.json` and
+  `package-lock.json`. The GitHub lane table records exact paths, dependencies,
+  owners, worker models, completion and integration destinations.
 - Initial-release runtime topology is now closed: AW-03 implements an in-process
   gateway module using the existing n8n/NATS configuration contract, with no
   separate service, image, network or new configuration names. AW-05 independently

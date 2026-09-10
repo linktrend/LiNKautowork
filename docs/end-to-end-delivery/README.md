@@ -54,12 +54,12 @@ existing resume scope. It preserves all other owner grants and `SUSPENDED`. This
 scheduled control transition is fully specified in the route document and needs no
 second founder decision.
 
-Maximum safe planned source concurrency is two workers after AW-01: one runtime
-lane and one disjoint deployment-source lane. Current executable capacity remains
-one because the shared dispatcher guard is repository-wide. Deployment Advisor
-owns the single lane-aware dispatcher extension after `APPROVE`; LiNKautowork does
-not modify it. Until verified, the two ready lanes run sequentially; afterward the
-coordinator fills both as capacity becomes available.
+Maximum safe source concurrency is two workers after AW-01 in one verified window:
+AW-02 in runtime Lane B with AW-05 in deployment Lane C. The independently reviewed
+dispatcher extension is installed at the coordinator route; LiNKautowork does not
+copy or modify it. AW-03 remains repository-exclusive while it owns the root package
+manifest/lockfile. Every other packet follows the documented dependency and
+exclusive-ownership rules.
 
 An active source-readiness Phase PR, [#125](https://github.com/linktrend/LiNKautowork/pull/125),
 and its repair issue [#126](https://github.com/linktrend/LiNKautowork/issues/126)

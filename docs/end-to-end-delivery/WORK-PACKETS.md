@@ -46,15 +46,14 @@ Settled protected interfaces available to downstream planning
       -> AW-06 -> AW-07 -> AW-08 live acceptance
 ```
 
-Maximum safe planned concurrency is **two implementation workers** after AW-01:
-one in Lane B and one in Lane C. Their paths are disjoint and AW-01 freezes their
-shared interfaces first. Extra workers cannot safely advance Lane B because
-AW-03 consumes AW-02 and AW-04 consumes AW-03; AW-06 consumes both lanes and owns
-cross-cutting operations. The current dispatcher still permits only one writer per
-repository, so executable capacity remains one until the Deployment Advisor's
-single shared dispatcher extension is implemented and verified. Until then, admit
-ready lanes sequentially; after that extension, fill both ready lanes immediately
-and reassign freed capacity on completion rather than waiting for a fixed batch.
+Maximum safe planned concurrency is **two implementation workers** after AW-01,
+in one exact window: AW-02 in Lane B with AW-05 in Lane C. Their literal packet
+paths are disjoint and AW-01 freezes their shared interfaces first. AW-03 consumes
+AW-02 but owns the root package manifest/lockfile, so it remains repository-exclusive
+and waits for any active AW-05 writer to finish. AW-04 follows AW-03; AW-06 consumes
+both lanes and owns cross-cutting operations. The independently verified shared
+dispatcher extension enforces one writer per lane and rejects overlapping/shared
+scope. Reassign freed capacity on completion without inventing another pairing.
 No concurrent shared migration, manifest/lockfile, composition-root or Server01
 mutation is allowed.
 
@@ -63,8 +62,8 @@ mutation is allowed.
 | Lane | Outcome / packets | Exact owned paths | Prohibited or shared paths | Upstream inputs / entry | Worker and maximum | Completion / integration |
 |---|---|---|---|---|---|---|
 | L-A interface freeze | AW-01; exact migration, identity and live-interface package | `supabase/migrations/**`; `docs/contracts/server01/**`; `packages/automation-contracts/tests/server01-*` | All gateway, deploy, IDE and Platform files; sole migration owner | Final protected rebaseline and prior-owner handoff | Grok 4.6 Medium, Fast off; max 1 | Migration/contract tests and independent review PASS; checkpoint to Phase Packager for `development` |
-| L-B runtime | AW-02 -> AW-03 -> AW-04; admission, n8n bridge and technical fixture | Union of the exact AW-02/03/04 manifest paths | No migrations/deploy production/Platform/IDE; `gateway/src/app.ts`, `package.json` and `package-lock.json` are AW-03-only shared owners | AW-01 accepted; then strict AW-02 -> AW-03 -> AW-04 interface chain | Grok 4.6 Medium, Fast off; max 1 active within lane | Each focused suite/review/checkpoint passes; checkpoints integrate in dependency order to `development` |
-| L-C deployment source | AW-05; immutable Compose/release/configuration and acceptance verifier | Exact AW-05 manifest paths under `deploy/**`, named `ops/**`, deployment test and runbook files | No gateway runtime/provider source, migrations, catalogue or IDE; uses the existing gateway image/config contract | AW-01 accepted; prepares the generic gateway build independently of L-B. AW-07 rebuilds it from accepted AW-03 source | Grok 4.6 Medium, Fast off; max 1, concurrently with L-B only after shared dispatcher extension | Compose/source checks and review PASS; checkpoint to Phase Packager for `development` |
+| L-B runtime | AW-02 -> AW-03 -> AW-04; admission, n8n bridge and technical fixture | Union of the exact AW-02/03/04 manifest paths; lane packets expand conceptual prefixes to literal files/directories | No migrations/deploy production/Platform/IDE; `gateway/src/app.ts`, `package.json` and `package-lock.json` are AW-03-only shared owners | AW-01 accepted; then strict AW-02 -> AW-03 -> AW-04 interface chain. Only AW-02 may overlap AW-05; AW-03 is exclusive | Grok 4.6 Medium, Fast off; max 1 active within lane | Each focused suite/review/checkpoint passes; checkpoints integrate in dependency order to `development` |
+| L-C deployment source | AW-05; immutable Compose/release/configuration and acceptance verifier | Exact AW-05 manifest paths under `deploy/**`, named `ops/**`, deployment test and runbook files | No gateway runtime/provider source, migrations, catalogue or IDE; uses the existing gateway image/config contract | AW-01 accepted; prepares the generic gateway build independently of AW-02. AW-07 rebuilds it from accepted AW-03 source | Grok 4.6 Medium, Fast off; max 1, concurrently with AW-02 only | Compose/source checks and review PASS; checkpoint to Phase Packager for `development` |
 | L-D operations | AW-06; JetStream, monitoring, backup and recovery | Exact AW-06 manifest paths | No migration, provider/runtime bridge, automation fixture or Platform code | L-B and L-C accepted | Grok 4.6 Medium, Fast off; max 1 | Recovery/observability acceptance and review PASS; checkpoint to `development` |
 | L-E integration | AW-07; assembled immutable source candidate | Evidence path only; shared-file conflict resolution belongs to integration owner, never implementers | No new product source; exact accepted AW-01..06 candidates only | All source checkpoints/reviews accepted | Local Phase Packager/Coordinator; max 1 integration owner | Consolidated affected validation, logical Phase PR and delivery-controller integration to `development` |
 | L-F live | AW-08; Server01 install/canary/recovery/founder acceptance | Exact Server01/evidence paths in manifest | No concurrent Platform migration, other service mutation or protected-ref change | AW-07 protected release plus live Platform receipts | Governed Luna/server operator; max 1 privileged mutation owner | Live acceptance matrix, recovery and founder acceptance; promotion destination follows protected `staging` then `main` gates |
@@ -247,11 +246,10 @@ only for affected changes or failures.
   artifact presence. It must be read-only except for the separately authorised
   canary actions supplied as explicit arguments; it is not a second test framework.
 - **Dependencies:** AW-01 accepted. This lane is path-disjoint from the active L-B
-  packet and is planned to run concurrently once the shared dispatcher extension
-  is verified. It can prepare the existing gateway build/config contract without
+  packet and may run concurrently only with AW-02 through the verified shared
+  dispatcher extension. It can prepare the existing gateway build/config contract without
   AW-03 source; AW-07 rebuilds that image from the accepted AW-03 checkpoint.
-  Until the dispatcher extension is verified, it runs in the next available serial
-  repository slot.
+  It must finish or reconcile terminal before repository-exclusive AW-03 starts.
 - **Output:** deterministic production Compose/release manifest and Server01
   installation/rollback runbook.
 - **Minimum validation:** Compose render with names-only config; SBOM/licence/
