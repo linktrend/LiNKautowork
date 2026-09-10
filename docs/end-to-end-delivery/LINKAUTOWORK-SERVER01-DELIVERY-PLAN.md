@@ -218,7 +218,7 @@ unresolved candidate condition until its owner closes it.
 | `linktrend/LiNKautowork` | protected `development` | `a13a6467fc9bc2fccdddd1de8d9e258c78e57fdd` | `10e6b59394bfd57703d6f3cee5d7bcda3aa7342f` | Planning and manifest baseline. |
 | LiNKautowork Phase PR #125 | `phase/s01-autowork-011` | `6ac64b3bc8fee856e1c9c77f41e06d6358dbc32e` | `5f85d86b0c74f4d86c6332df618c1bc119aa8791` | Existing source-readiness candidate; not protected acceptance. |
 | LiNKautowork issue #126 | repair branch | `fe953eccb903cc572d3a3d6c40c67bd184e5a614` | `537c83b321e85da5d5e0875ed0127767adb02c78` | Existing focused repair; not protected acceptance. |
-| `linktrend/LiNKplatform` | protected `development` | `dde2640f35a1cfa10f9e907b2acd1791e729d40c` | `6d221b8c0807f9eb43164770ebb65fc944607fd3` | Approved Platform contracts and current recovery source. |
+| `linktrend/LiNKplatform` | protected `development` | `f6373fccc89732cbb88bb18562daa69cc031a2e3` | `83feddf7d935561cfede60df456ea616a021d726` | Execution rebaseline on 2026-09-10. Since the planned `dde2640f35a1cfa10f9e907b2acd1791e729d40c`, only migration-control restore/fingerprint source, its focused test and the fixture declaration changed; no approved Platform contract, PACI, schema or migration file changed. This is a mechanical identity refresh, not a design change. |
 
 The Platform plan reviewed is
 `docs/LINKPLATFORM-SHARED-FOUNDATION-DETAILED-IMPLEMENTATION-PLAN.md` at the

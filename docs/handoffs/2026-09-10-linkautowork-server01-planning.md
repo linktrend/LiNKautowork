@@ -85,6 +85,13 @@ explicit later expansion and do not block the initial internal release.
   separate service, image, network or new configuration names. AW-05 independently
   prepares the generic gateway build and settled Compose topology; AW-07 rebuilds
   the gateway image from accepted AW-03 source.
+- After founder `APPROVE`, the required execution rebaseline found LiNKplatform
+  protected `development` at `f6373fccc89732cbb88bb18562daa69cc031a2e3` / tree
+  `83feddf7d935561cfede60df456ea616a021d726`. GitHub compare from the planned pin
+  changes only migration-control restore/fingerprint source, its focused test and
+  the fixture declaration; no approved Platform contract, PACI, schema or migration
+  file changed. The refresh is recorded as mechanical and does not alter the
+  approved manifest digest or product design.
 - Later live prerequisites are the exact Platform registrations/PACI scopes,
   least-privilege database roles, migration receipts, GSM runtime references and
   private Server01 routes. They gate AW-08 live acceptance, not downstream planning.
