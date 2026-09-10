@@ -12,6 +12,8 @@ Last updated: 2026-07-19
 
 ## Operational docs (still live)
 
+- [Server01 end-to-end delivery package](./end-to-end-delivery/README.md) —
+  planning authority and execution HOLD for the assigned live installation.
 - [Deploy Readiness (DONE)](./DEPLOY_READINESS.md)
 - [SLO](./SLO.md)
 - [Operations Runbook](./runbooks/OPERATIONS.md)
