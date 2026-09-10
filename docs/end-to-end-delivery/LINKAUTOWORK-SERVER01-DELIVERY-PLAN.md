@@ -9,21 +9,20 @@ Docker project: `linkautowork-prod`
 ## 1. Outcome in plain English
 
 LiNKautowork is done for this release when the founder can privately open its
-operator surfaces, submit an authorised, pre-bound repository task, see that task
-run through the approved Cursor SDK/API route, receive a durable result receipt,
-inspect health and history, stop the automation with a kill switch, and recover
-the service and its data from a tested backup.
+operator surfaces, register and bind an exact validated automation package, invoke
+that binding through the gateway, see n8n execute it, receive a durable result
+receipt, inspect health and history, stop the automation with a kill switch, and
+recover the service and its data from a tested backup.
 
 The installed system is not just a healthy container. It must prove the whole
 chain:
 
 ```text
-Program-owned task and authority
-  -> Platform identity and exact automation binding
+Program-owned operation and authority
+  -> Platform identity and exact Program-selected automation binding
   -> LiNKautowork gateway admission and durable request
   -> n8n governed workflow
-  -> direct Cursor SDK/API executor (Grok 4.6 Medium, Fast off)
-  -> exact repository/ref/commit/tree readback and bounded result
+  -> declared integration nodes and bounded result
   -> immutable LiNKautowork receipt and JetStream event
   -> Program-owned acceptance decision
 ```
@@ -44,7 +43,9 @@ release:
   JetStream on Server01;
 - durable `lautowork` control/execution data and isolated `lautowork_n8n` runtime
   data on the existing Platform-owned Supabase projects;
-- one genuinely usable, governed internal executor automation;
+- a usable automation-platform path: exact package admission, organisation-scoped
+  instance and binding, authenticated invocation, n8n execution, durable receipt,
+  monitoring, pause/kill-switch and recovery;
 - private n8n and operator-console access over the existing Tailscale boundary;
 - Product API internally, because the operator console and durable finite action
   surface depend on it;
@@ -52,27 +53,41 @@ release:
   kill-switch, failure and rollback acceptance;
 - exact source, image, configuration, migration, workflow, and receipt identity.
 
-### 2.2 Initial business workflows and owners
+### 2.2 Required automation-platform functions and owners
 
-| Workflow | Required behavior | Definition/runtime owner | Calling authority and acceptance owner |
+These are platform functions, not invented Program business automations.
+
+| Function | Required behavior | Runtime owner | Business authority and acceptance owner |
 |---|---|---|---|
-| `governed-repository-executor@1.0.0` | Accept one exact pre-bound repository task, validate authority and digests, execute through the direct Cursor SDK/API with Grok 4.6 Medium and Fast disabled, collect actual model/repository/ref/commit/tree readback, return a bounded receipt, and handle duplicate, cancel, timeout and provider failure without double dispatch. | LiNKautowork | IDE Development for the first binding; every later Program owns its own task contract, approval and result acceptance. |
-| `linkautowork-runtime-operations@1.0.0` | Observe gateway, n8n, JetStream, database, workflow, executor and backup state; open/dedupe/resolve incidents; perform only pre-authorised bounded retry/pause/rollback actions; never approve business work. | LiNKautowork | LiNKautowork Operations; founder is authority for protected recovery and production rollback. |
+| Package/instance/binding lifecycle | Admit one exact validated Golden Automation Package, create an organisation-scoped instance, bind it only to the operation selected by its Program owner, and keep package/workflow/configuration digests immutable. | LiNKautowork | The supplying Program owns the automation's business requirements and approves the binding. |
+| Bound n8n invocation | Authenticate and validate one exact binding and input contract, persist before execution, run the selected workflow in n8n, and return a bounded durable receipt with duplicate, cancel, timeout and failure behavior. | LiNKautowork | The calling Program owns its task, input, permission-to-act and outcome acceptance. |
+| Runtime operations | Observe gateway, n8n, JetStream, database, workflow and backup state; open/dedupe/resolve incidents; perform only pre-authorised bounded retry/pause/rollback actions; never approve business work. | LiNKautowork | LiNKautowork Operations; founder is authority for protected recovery and production rollback. |
 
 The existing `ide-repository-status@1.0.0` package remains a draft, inactive,
 manual structural canary. Its own runbook forbids production import, so it is not
-credited as the usable executor.
+credited as an initial Program automation.
 
-The first executor acceptance uses an IDE Development-owned, non-production test
-Issue whose expected outcome is known and whose repository/ref are explicit. The
-test may create a governed issue-branch checkpoint only after approval; it cannot
-merge, promote, deploy another product, or claim the consumer Issue passed.
+Technical deployment acceptance uses a no-external-effect fixture or disposable
+workflow to prove the package/binding/invocation/receipt path without inventing
+business intent. Its exact shape is a routine implementation choice constrained by
+the Golden Package contract; it is not presented as a production business workflow.
 
-### 2.3 Explicit later expansion
+### 2.3 Proposed first Program automation — not approved scope
+
+A `governed-repository-executor` using the Cursor SDK/API and IDE Development as a
+first consumer is one possible later acceptance scenario. No reviewed founder-
+approved product source requires that particular workflow, provider, consumer or
+name. It therefore requires an explicit founder/Program-owner scope decision before
+it may be added. This plan does not authorise building it, editing IDE Development,
+or treating its absence as a LiNKautowork deployment failure.
+
+### 2.4 Explicit later expansion
 
 The following are useful but not blockers for this assigned release:
 
 - additional Program-specific executor automations and bindings;
+- the proposed Cursor/IDE `governed-repository-executor` unless separately
+  approved by its Program owner and the founder;
 - the older ritual, urgent-event, promotion-review, and restore-authorisation
   templates until their current Program owners re-specify them as Golden
   Automation Packages;
@@ -98,9 +113,10 @@ configuration evidence alone receives no operational credit.
 - A Program calls the exact bound automation ID/version/digests; `latest`, unknown
   versions, unbound operations, wrong organisation, wrong audience, expired or
   revoked credentials, and changed idempotency content fail closed.
-- One authorised executor request completes end to end through a real Cursor
-  SDK/API call. Provider response, actual model, repository URL, advertised ref,
-  exact 40-character commit and tree are read back and match the request.
+- One no-external-effect acceptance automation completes end to end through the
+  real installed n8n runtime. Package, workflow, configuration, instance, binding,
+  execution and receipt identities match exactly. This proves platform execution,
+  not a Program business outcome.
 - Identical duplicate requests return the original logical request/receipt.
   Changed content under the same idempotency key is rejected. Concurrent delivery
   cannot produce a second provider job.
@@ -117,14 +133,14 @@ configuration evidence alone receives no operational credit.
   compatibility packet changes it.
 - Platform `platform.auth-claims/1.1.0` and the PACI token envelope are consumed
   exactly. Production runtime uses distinct scoped identities for gateway,
-  Product API, n8n database access, executor adapter, deployer, backup/restore and
+  Product API, n8n database access, runtime dispatch, deployer, backup/restore and
   observer. Broad `service_role` is not a production runtime identity.
 - All secret values reside only in Google Secret Manager and are injected into
   mode-`0600` runtime material or Docker secrets outside the repository. Receipts,
   logs, commands, n8n exports and UI never contain values.
-- Executor requests use an allow-listed repository, ref, operation, tool policy,
-  time/budget ceiling and callback. Named saved Cursor environments, Fast mode,
-  implicit repository discovery, arbitrary shell payloads and unrestricted server
+- Invocations use an allow-listed automation version, binding operation, input
+  schema, external dependency/node policy, time/budget ceiling and callback.
+  Arbitrary shell payloads, implicit package selection and unrestricted server
   paths are rejected.
 - n8n editor, gateway, NATS and operator console stay on private Docker/Tailscale
   boundaries. Only an explicitly approved future client route may be public.
@@ -177,7 +193,7 @@ Observation time: 2026-09-10 13:34 Asia/Taipei (05:34 UTC).
 |---|---|---|---|---|
 | Pre-VPS product | Accepted Wave 1-3 source and evidence exist; `docs/PRD.md` says pre-configuration engineering is complete. | No Server01 runtime values. | None for this repository. | Existing, needs current integration and live proof. |
 | Gateway | Express routes, auth, kill-switch, metrics, n8n client and provider v1 surfaces exist. | No Server01 container/config. | Not running. | Source exists; configuration/deployment missing. |
-| Provider/executor | Durable provider v1 contracts and persistence source exist, but activation is `HOLD`; the route explicitly rejects Issue/gate/ledger targets. | No Cursor executor runtime binding or secret reference proven. | No real provider dispatch or consumer E2E. | Material source/config gap. |
+| Provider/runtime invocation | Durable provider v1 contracts and persistence source exist, but activation is `HOLD`; the route explicitly rejects Issue/gate/ledger targets. | No live n8n activation binding is proven. | No real bound automation execution or consumer E2E. | Reconcile the generic n8n activation path; do not infer a Cursor product requirement. |
 | Golden packages | One draft `ide-repository-status@1.0.0` canary exists. | Not imported; its runbook forbids production import. | None. | Usable executor package missing. |
 | n8n | Stock `n8nio/n8n:2.30.0` Compose source and isolated schema contract exist. | No Server01 service, volume, API key or encryption-key injection. | Not running. | Deployment/config missing. |
 | NATS JetStream | `nats:2.10.26-alpine`, `-js`, and persistent production volume are defined with no host port. | No Server01 service or volume. | Not running. | Deployment/config missing. |
@@ -186,7 +202,7 @@ Observation time: 2026-09-10 13:34 Asia/Taipei (05:34 UTC).
 | Client web | Preserved buildable source exists. | No public route, legal/pricing/payment/provider values. | Not running. | Later expansion, not initial release. |
 | Host foundation | Repository provides Compose, deployment scripts, runbooks and alerts. | Server01 has Docker Compose v5.5.1, Tailscale, Prometheus and Grafana; no LiNKautowork runtime directory. | Existing unrelated containers are healthy; LiNKautowork absent. | Shared host foundation usable; component missing. |
 | Capacity | Compose source lacks final live limits. | Server01: 12 CPUs, 251 GiB RAM (243 GiB available), 147 GiB free on `/srv`; Docker build cache is material. | Host was up 2d18h with no failed systemd units observed. | Sufficient for planned admission, subject to pre-deploy snapshot and resource limits. |
-| Source delivery | Protected `development` is `a13a6467fc9bc2fccdddd1de8d9e258c78e57fdd`, tree `10e6b59394bfd57703d6f3cee5d7bcda3aa7342f`; CI passed. | Phase PR #125 is open/blocked and issue #126 has a pushed repair. | No protected integration of that candidate. | Do not duplicate; wait for governed resolution and rebaseline. |
+| Source delivery | Protected `development` is `a13a6467fc9bc2fccdddd1de8d9e258c78e57fdd`, tree `10e6b59394bfd57703d6f3cee5d7bcda3aa7342f`; CI passed. | Phase PR #125 is open/blocked and issue #126 has a pushed repair. | No protected integration of that candidate. | Record and avoid duplication. Downstream planning may use settled interfaces now; execution rebases after governed resolution only if affected. |
 
 The development receipt gate failure on current `development` is not called a
 source failure: CI and CodeQL passed, while the legacy receipt gate is non-canonical
@@ -223,8 +239,8 @@ pinned Platform revision. Relevant settled interfaces are:
 - GSM is the sole secret authority. Runtime records contain credential IDs and
   secret references, never values.
 - Platform Handoff Envelopes carry references and opaque correlations, not task
-  bodies. The initial executor accepts a Program-owned opaque work reference and
-  a separately validated bounded input.
+  bodies. The invocation boundary accepts a Program-owned opaque work reference
+  and a separately validated bounded input.
 
 ### 5.2 Specific unresolved upstream interface
 
@@ -232,8 +248,8 @@ Planning is not blocked by general Platform recovery. Execution packet AW-01 is
 blocked only until Platform can provide and live-prove these exact consumer
 surfaces for LiNKautowork:
 
-1. a production `program_executor`/service registration and runtime binding for
-   gateway, Product API and executor adapter;
+1. production service registrations and runtime bindings for gateway, Product API
+   and n8n runtime dispatch;
 2. PACI issuer, JWKS, introspection/session endpoint and operation scopes accepted
    by LiNKautowork conformance tests;
 3. least-privilege database login/grants for `lautowork` and `lautowork_n8n`;
@@ -254,7 +270,7 @@ receipts.
 | NATS JetStream | Compose | Docker networks only; no host port | named volume `nats_jetstream_prod` |
 | Product API | Compose, non-root | private for initial release | finite PostgREST/RPC adapter; Platform auth |
 | operator console | Compose, non-root | private Tailscale route | read/action client of Product API |
-| executor adapter | Compose, non-root | Docker networks only | direct Cursor SDK/API; no saved environment, shell gateway or ledger authority |
+| runtime dispatcher | Gateway-owned bounded service/module; split into a container only if implementation evidence requires it | Docker networks only | invokes the exact bound n8n workflow; no shell gateway, Program selection or ledger authority |
 | operations worker | Compose profile/service | Docker networks only | event/durable-work driven monitoring and bounded actions; no portfolio scheduling |
 | Prometheus/Grafana | existing host services | existing operator boundary | add only LiNKautowork scrape/rules/dashboard assets |
 
@@ -265,7 +281,7 @@ is not routed or accepted in the initial release.
 
 - `autowork-edge`: Tailscale reverse proxy to gateway/Product API/operator
   console as approved; n8n editor gets a separate private route.
-- `autowork-runtime`: gateway, n8n and executor adapter.
+- `autowork-runtime`: gateway, n8n and any separately justified runtime dispatcher.
 - `autowork-events`: gateway, NATS and operations worker only.
 - No container binds `4222`, `8222`, `5678`, or `8080` on `0.0.0.0`.
 - Immutable releases live at
@@ -284,12 +300,12 @@ is not routed or accepted in the initial release.
    package/config digests, repository allow-list, expiry, kill switches and schema.
 3. One transaction persists request, canonical fingerprint and `PREPARED` intent.
 4. Transactional outbox publishes the compact request reference to JetStream.
-5. A durable consumer delivers the request to the n8n executor workflow; n8n calls
-   the internal executor adapter. Acknowledgement occurs only after durable
-   provider acceptance/readback.
-6. The adapter calls the direct Cursor SDK/API using Grok 4.6 Medium, Fast off,
-   with explicit repository URL and ref. Missing or mismatched actual model,
-   repository, ref, commit or tree fails closed and triggers archive/cancel attempt.
+5. A durable consumer delivers the request to the exact bound n8n workflow.
+   Acknowledgement occurs only after n8n accepts the exact workflow/configuration
+   identity and the durable execution state is readable.
+6. The workflow executes only its declared approved nodes/integrations and returns
+   the contract result or a classified failure. Any future Program-specific
+   provider adapter is supplied and approved with that Program automation.
 7. Callback is authenticated, fingerprinted and admitted once. Database receipt
    commits before completion events. Late or repeated callbacks return the stored
    decision and never repeat side effects.
@@ -303,27 +319,30 @@ is not routed or accepted in the initial release.
 | Ubuntu/Linux host | installed, healthy | Server01/Platform owner | no reinstall; preflight kernel/time/disk | all services |
 | Docker Engine/Compose | installed; Compose `v5.5.1`; existing workloads healthy | Server01 shared owner | no reinstall; create isolated project/networks/limits | LiNKautowork Compose |
 | Tailscale | installed and online | Server01 shared owner | add only approved private Serve routes/firewall policy | founder/operator browser and private API |
-| Prometheus/Grafana | installed and active | Server01 shared observability owner | add scoped scrape/rules/dashboard; no second stack | gateway, n8n exporter/metrics, NATS, executor |
-| n8n Community | absent | LiNKautowork | deploy pinned `n8nio/n8n:2.30.0`; configure API/encryption/database/URL | gateway and executor workflow |
-| NATS JetStream | absent | LiNKautowork | deploy pinned `nats:2.10.26-alpine`; persistent volume/durable consumers/limits | gateway, executor and operations worker |
+| Prometheus/Grafana | installed and active | Server01 shared observability owner | add scoped scrape/rules/dashboard; no second stack | gateway, n8n exporter/metrics, NATS, runtime bridge |
+| n8n Community | absent | LiNKautowork | deploy pinned `n8nio/n8n:2.30.0`; configure API/encryption/database/URL | gateway and bound workflows |
+| NATS JetStream | absent | LiNKautowork | deploy pinned `nats:2.10.26-alpine`; persistent volume/durable consumers/limits | gateway, runtime bridge and operations worker |
 | gateway/Product API/operator console | absent | LiNKautowork | build immutable repo images; inject scoped config | Programs and founder |
-| executor adapter | missing from current deploy/source | LiNKautowork | implement bounded direct Cursor SDK/API adapter | `governed-repository-executor` only |
+| durable n8n activation path | source has gateway-to-n8n ingress plus provider HOLD boundaries; assembled durable path is unproven | LiNKautowork | reconcile existing pieces and close only evidence-backed gaps | every later Program-selected automation |
 | PostgreSQL/Supabase | existing Platform projects under active recovery | LiNKplatform shared owner | Platform applies Autowork migrations and creates scoped roles | gateway/Product API/n8n |
 | Google Secret Manager | approved shared authority; Autowork values not inventoried here | Platform/GSM owner | inventory names without values; create/rotate/inject after approval | all credentialed services |
-| Cursor SDK/API | current direct route is established by IDE Development; no Server01 Autowork binding proven | IDE Development route owner; Autowork adapter consumer | discover working SDK tool and GSM reference, configure exact repos/readback/model policy | executor adapter |
 | Slack/email/payment/public DNS | not required for initial release | respective Program/provider owners | JIT only for later approved workflows | no initial consumer |
 
-Account/API-key provisioning is execution work after approval, not an automatic
-founder prerequisite. If an authenticated provider flow needs genuine account
-consent, request only that exact interaction while other independent work proceeds.
+Account/API-key provisioning is execution work only when the founder authorises it.
+Current read-only evidence shows that the ordinary Cursor Cloud execution route
+cannot start: `CURSOR_API_KEY` is absent, no matching GSM secret reference was
+found, `cursor-sdk` is not installed, and Cursor CLI is logged out. CLI login is
+not Cloud API authority under `cursor-cloud-dispatch-v2`. The founder must therefore
+pair `APPROVE` with either authorisation to provision and read-only verify that
+settled route, or an explicit selection of the registered Luna High fallback.
 
 ## 8. Deployment, validation and recovery sequence
 
-1. **Admit source baseline.** Existing PR #125/#126 owner finishes its governed
-   path. Refresh protected `development` commit/tree and regenerate the manifest
-   identity. Any design-affecting change returns for founder decision; mechanical
-   exact-identity refresh still requires the protocol's digest-bound approval
-   record before mutation.
+1. **Admit source baseline and route.** AW-01 is the first content packet. Refresh
+   protected `development` commit/tree, reconcile only paths affected by PR
+   #125/#126, and verify the founder-selected worker route. Any design-affecting
+   source change returns for founder decision; mechanical identity refresh stays
+   within the approved scope but must be recorded before mutation.
 2. **Implement source packets.** Grok 4.6 Medium through the direct Cursor SDK/API
    is the ordinary route. Each issue uses explicit `repos[]`, readback, frequent
    pushed checkpoints, focused tests and one independent narrow review bound to
@@ -346,13 +365,14 @@ consent, request only that exact interaction while other independent work procee
    Remove only labelled disposable resources after evidence.
 7. **Install inactive production release.** Create immutable release, runtime
    directory, Docker secrets/networks/volumes and private routes. Start core
-   services with the executor workflow inactive and no consumer binding.
+   services with the acceptance fixture inactive and no Program binding.
 8. **Configure and smoke.** Verify identity, database, n8n, JetStream, gateway,
    Product API, console, metrics, backup and kill-switch. Import the exact package
    inactive; compare live export digest.
-9. **Canary activation.** Bind only the approved IDE Development test operation,
-   activate the executor workflow, run negative cases, then one real bounded
-   success. Observe the declared window and prove no duplicate/late effects.
+9. **Canary activation.** Bind only the no-external-effect technical acceptance
+   fixture, activate it, run negative cases, then one real bounded n8n success.
+   Observe the declared window and prove no duplicate/late effects. A Program
+   automation is a separate owner-defined follow-on.
 10. **Recovery and acceptance.** Restart services/host-safe subset, replay
     JetStream/outbox, perform isolated restore and application rollback rehearsal,
     exercise alerts, and conduct the founder walkthrough. Record final technical
@@ -388,14 +408,19 @@ successful CI run or provider `201` cannot satisfy another row.
 ## 10. Approval and hard stops
 
 The founder's future `APPROVE` in this task must identify the final manifest digest
-and authorise source implementation plus deployment to `linkserver-01`. Main
+and authorise source implementation plus deployment to `linkserver-01`. Because
+the ordinary Cursor Cloud route is currently unavailable, execution also needs
+founder authorisation to provision/verify it or an explicit Luna fallback choice.
+Downstream
+owners may consume the settled planning interfaces before that approval for their
+own planning; they may not treat PLAN_READY as deployment or mutation authority. Main
 promotion, live provider mutation, production migration and workflow activation
 are executed only where that recorded approval and packet evidence cover the exact
 action.
 
 Stop and request direction only for:
 
-- a change to the initial workflow/business authority above;
+- adding a specific Program automation, including the proposed Cursor/IDE workflow;
 - a new paid service or cost ceiling;
 - destructive or irreversible data action;
 - public exposure, client data, legal/payment terms or genuine account consent;
@@ -405,5 +430,5 @@ Stop and request direction only for:
   section 5.2.
 
 Routine implementation, account/key creation under approved accounts, source
-repair, deployment configuration, negative testing and recovery are executor work
+repair, deployment configuration, negative testing and recovery are packet work
 after approval.

@@ -40,7 +40,7 @@
     },
     {
       "id": "AW-02",
-      "title": "Provider v2 admission lifecycle and durable event boundary",
+      "title": "Automation admission lifecycle and durable event boundary",
       "issues": ["ISS-02"],
       "ownedPaths": [
         "packages/automation-contracts/src/provider-",
@@ -53,7 +53,7 @@
         ".ide-development/",
         "automations/catalog/",
         "deploy/",
-        "services/executor-adapter/",
+        "gateway/src/services/runtime-dispatch/",
         "supabase/migrations/"
       ],
       "verificationCommands": [
@@ -67,21 +67,22 @@
     },
     {
       "id": "AW-03",
-      "title": "Direct Cursor SDK API executor adapter",
+      "title": "Durable n8n activation and callback bridge",
       "issues": ["ISS-03"],
       "ownedPaths": [
-        "services/executor-adapter/",
-        "deploy/common/executor-adapter.Dockerfile"
+        "gateway/src/services/runtime-dispatch/",
+        "gateway/tests/runtime-dispatch"
       ],
       "prohibitedPaths": [
         ".ide-development/",
         "automations/catalog/",
-        "gateway/",
+        "packages/automation-contracts/src/provider-",
+        "gateway/src/services/provider-",
         "supabase/migrations/"
       ],
       "verificationCommands": [
-        ["npm", "--prefix", "services/executor-adapter", "run", "test"],
-        ["npm", "--prefix", "services/executor-adapter", "run", "typecheck"],
+        ["npm", "run", "test", "--", "gateway/tests/runtime-dispatch"],
+        ["npm", "run", "typecheck"],
         ["git", "diff", "--check"]
       ],
       "dependencies": ["AW-02"],
@@ -89,17 +90,18 @@
     },
     {
       "id": "AW-04",
-      "title": "Golden governed repository executor automation",
+      "title": "Server01 runtime acceptance fixture and n8n behavior",
       "issues": ["ISS-04"],
       "ownedPaths": [
-        "automations/catalog/governed-repository-executor/1.0.0/",
-        "automations/catalog/index.json"
+        "automations/evals/server01-runtime-acceptance/",
+        "deploy/test/fixtures/server01-runtime-acceptance/"
       ],
       "prohibitedPaths": [
         ".ide-development/",
-        "deploy/",
+        "deploy/prod/",
+        "deploy/common/",
+        "deploy/templates/",
         "gateway/",
-        "services/",
         "supabase/migrations/"
       ],
       "verificationCommands": [
@@ -131,7 +133,7 @@
         ".ide-development/",
         "automations/catalog/",
         "gateway/src/services/provider-",
-        "services/executor-adapter/",
+        "gateway/src/services/runtime-dispatch/",
         "supabase/migrations/"
       ],
       "verificationCommands": [
@@ -161,7 +163,7 @@
         ".ide-development/",
         "automations/catalog/",
         "gateway/src/services/provider-",
-        "services/executor-adapter/",
+        "gateway/src/services/runtime-dispatch/",
         "supabase/migrations/"
       ],
       "verificationCommands": [
@@ -222,9 +224,9 @@
   ],
   "issues": [
     {"id": "ISS-01", "packetId": "AW-01", "title": "Freeze Server01 live interfaces and migration package"},
-    {"id": "ISS-02", "packetId": "AW-02", "title": "Implement provider v2 durable admission and lifecycle"},
-    {"id": "ISS-03", "packetId": "AW-03", "title": "Implement direct Cursor SDK API executor adapter"},
-    {"id": "ISS-04", "packetId": "AW-04", "title": "Build governed repository executor Golden package"},
+    {"id": "ISS-02", "packetId": "AW-02", "title": "Implement durable automation admission and lifecycle"},
+    {"id": "ISS-03", "packetId": "AW-03", "title": "Implement durable n8n activation and callback bridge"},
+    {"id": "ISS-04", "packetId": "AW-04", "title": "Build Server01 runtime acceptance fixture"},
     {"id": "ISS-05", "packetId": "AW-05", "title": "Finalize secure Server01 deployment topology"},
     {"id": "ISS-06", "packetId": "AW-06", "title": "Complete operations JetStream observability and recovery"},
     {"id": "ISS-07", "packetId": "AW-07", "title": "Integrate and seal immutable release candidate"},

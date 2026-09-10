@@ -1,11 +1,11 @@
 # LiNKautowork end-to-end delivery package
 
-Status: **PLAN READY / IMPLEMENTATION NOT AUTHORISED**
+Status: **PLAN READY / EXECUTABLE-NOW HOLD / IMPLEMENTATION NOT AUTHORISED**
 Prepared: 2026-09-10, Asia/Taipei
 Assigned host: **LiNKserver 01** (`linkserver-01`)
 Planning issue: [#127](https://github.com/linktrend/LiNKautowork/issues/127)
 Planning manifest SHA-256:
-`f63ac4165c5a23201f6b5b4b344ce3c8b2b74b2231832f935249f3f9e6a3f92a`
+`40eb451c010c2916ceaa53537cf7ee0c34e36ad30035df0ad2c2e66a43b5eb51`
 
 This directory is the stable entry point for making LiNKautowork usable on its
 assigned existing server. It does not replace the approved product authority or
@@ -36,7 +36,18 @@ activation, deployment, protected integration, and live mutation remain blocked
 until the founder records `APPROVE` in this task. The approval must bind to the
 manifest digest above and the named Server01 deployment action.
 
+The first content packet is AW-01 and its product/interface inputs are ready. The
+mandated ordinary worker route is not currently executable: `CURSOR_API_KEY` is
+absent, no matching Google Secret Manager reference was found, `cursor-sdk` is not
+installed, and `cursor-agent status` reports `Not logged in`. CLI login would not
+be Cursor Cloud API authority in any event. Therefore `APPROVE` alone does not
+start a paid worker today. Before execution can start, the founder must either
+authorise provisioning and read-only verification of the established Cursor Cloud
+route or explicitly select the governed Luna High fallback. This is an execution
+admission dependency, not a LiNKautowork runtime feature.
+
 An active source-readiness Phase PR, [#125](https://github.com/linktrend/LiNKautowork/pull/125),
 and its repair issue [#126](https://github.com/linktrend/LiNKautowork/issues/126)
-must be resolved through their existing owner. This package does not copy or
-replace their changes.
+remain owned by their existing lane. This package does not copy or replace their
+changes. They require source reconciliation before affected implementation, but do
+not block downstream planning against the settled interfaces in this package.
