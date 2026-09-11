@@ -3,14 +3,16 @@ set -euo pipefail
 
 usage() {
   cat <<USAGE
-Usage: $0 <dev|prod> [--output <path>]
+Usage: $0 <dev|prod> --output <path> [--placeholders]
 
-Resolves *_SECRET_NAME values from deploy/<env>/.env via GSM and writes a runtime env file.
-The output file is intended for deployment runtime only and must not be committed.
+Writes a mode-0600 runtime env file from names-only *_SECRET_NAME placeholders.
+Secret values are never resolved. Output must sit outside the git work tree
+(typically /srv/linktrend/runtime/linkautowork or a disposable temp dir).
+Live GSM, Server01, Tailscale, registry, and providers remain HOLD.
 USAGE
 }
 
-if [[ $# -lt 1 || $# -gt 3 ]]; then
+if [[ $# -lt 1 ]]; then
   usage
   exit 1
 fi
@@ -18,95 +20,94 @@ fi
 ENVIRONMENT="$1"
 shift
 if [[ "$ENVIRONMENT" != "dev" && "$ENVIRONMENT" != "prod" ]]; then
-  echo "Environment must be dev or prod"
+  echo "Environment must be dev or prod" >&2
+  exit 1
+fi
+
+OUTPUT_FILE=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --output)
+      OUTPUT_FILE="${2:-}"
+      shift 2
+      ;;
+    --placeholders)
+      shift
+      ;;
+    --resolve-gsm|--live)
+      echo "HOLD: live GSM resolve is forbidden in AW-05 (AW-08)." >&2
+      exit 2
+      ;;
+    *)
+      usage
+      exit 1
+      ;;
+  esac
+done
+
+if [[ -z "$OUTPUT_FILE" ]]; then
+  usage
   exit 1
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 BASE_ENV_FILE="$ROOT_DIR/deploy/${ENVIRONMENT}/.env"
-
 if [[ ! -f "$BASE_ENV_FILE" ]]; then
-  echo "Missing env file: $BASE_ENV_FILE"
+  BASE_ENV_FILE="$ROOT_DIR/deploy/${ENVIRONMENT}/.env.example"
+fi
+if [[ ! -f "$BASE_ENV_FILE" ]]; then
+  echo "Missing env contract for $ENVIRONMENT" >&2
   exit 1
 fi
 
-OUTPUT_FILE="${ROOT_DIR}/deploy/${ENVIRONMENT}/.env.runtime"
-if [[ $# -gt 0 ]]; then
-  if [[ "$1" != "--output" || $# -ne 2 ]]; then
-    usage
+abs_output="$(python3 -c 'import os,sys; print(os.path.abspath(sys.argv[1]))' "$OUTPUT_FILE")"
+git_root="$(git -C "$ROOT_DIR" rev-parse --show-toplevel)"
+case "$abs_output" in
+  "$git_root"|"$git_root"/*)
+    echo "Refusing to write runtime env inside the git work tree: $abs_output" >&2
+    echo "Use /srv/linktrend/runtime/linkautowork or a disposable directory." >&2
     exit 1
-  fi
-  OUTPUT_FILE="$2"
-fi
+    ;;
+esac
 
-if ! command -v gcloud >/dev/null 2>&1; then
-  echo "gcloud CLI is required to resolve GSM secrets"
-  exit 1
-fi
-
-declare -A kv
-while IFS= read -r line || [[ -n "$line" ]]; do
-  [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
-  [[ "$line" != *=* ]] && continue
-
-  key="${line%%=*}"
-  value="${line#*=}"
-  key="${key//[$'\t\r\n ']/}"
-  kv["$key"]="$value"
-done < "$BASE_ENV_FILE"
-
-PROJECT_ID="${GCP_PROJECT_ID:-${GOOGLE_CLOUD_PROJECT:-${kv[GCP_PROJECT_ID]:-${kv[GOOGLE_CLOUD_PROJECT]:-}}}}"
-if [[ -z "$PROJECT_ID" ]]; then
-  echo "Missing GCP project. Set GCP_PROJECT_ID/GOOGLE_CLOUD_PROJECT in env or $BASE_ENV_FILE"
-  exit 1
-fi
-
-resolve_secret() {
-  local secret_name="$1"
-  gcloud secrets versions access latest --project "$PROJECT_ID" --secret "$secret_name"
-}
-
-mkdir -p "$(dirname "$OUTPUT_FILE")"
+mkdir -p "$(dirname "$abs_output")"
+umask 077
 {
   echo "# generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
   echo "# source: $BASE_ENV_FILE"
-  echo "# project: $PROJECT_ID"
+  echo "# mode: placeholders-only (GSM resolve HOLD)"
+  echo "# packet: AW-05"
 
-  for key in "${!kv[@]}"; do
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+    [[ "$line" != *=* ]] && continue
+    key="${line%%=*}"
+    value="${line#*=}"
+    key="${key//[$'\t\r\n ']/}"
     if [[ "$key" == *_SECRET_NAME ]]; then
       continue
     fi
-    printf '%s=%s\n' "$key" "${kv[$key]}"
-  done
+    printf '%s=%s\n' "$key" "$value"
+  done < "$BASE_ENV_FILE"
 
-  for key in "${!kv[@]}"; do
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+    [[ "$line" != *=* ]] && continue
+    key="${line%%=*}"
+    value="${line#*=}"
+    key="${key//[$'\t\r\n ']/}"
     if [[ "$key" != *_SECRET_NAME ]]; then
       continue
     fi
-
-    secret_name="${kv[$key]}"
-    if [[ -z "$secret_name" ]]; then
+    if [[ -z "$value" ]]; then
       echo "Secret name is empty for key: $key" >&2
       exit 1
     fi
-
     target_key="${key%_SECRET_NAME}"
-    secret_value="$(resolve_secret "$secret_name")"
-    printf '%s=%s\n' "$target_key" "$secret_value"
-  done
-} > "$OUTPUT_FILE"
+    printf '%s=%s\n' "$target_key" "<GSM_PLACEHOLDER:${value}>"
+  done < "$BASE_ENV_FILE"
+} > "$abs_output"
 
-# Force Tailscale URL canonicalization when configured.
-if grep -q '^N8N_TAILSCALE_IP=' "$OUTPUT_FILE"; then
-  ts_ip="$(grep '^N8N_TAILSCALE_IP=' "$OUTPUT_FILE" | cut -d= -f2-)"
-  if [[ -n "$ts_ip" ]]; then
-    sed -i "s#^N8N_HOST=.*#N8N_HOST=${ts_ip}#" "$OUTPUT_FILE"
-    sed -i "s#^N8N_PROTOCOL=.*#N8N_PROTOCOL=http#" "$OUTPUT_FILE"
-    sed -i "s#^N8N_EDITOR_BASE_URL=.*#N8N_EDITOR_BASE_URL=http://${ts_ip}:5678#" "$OUTPUT_FILE"
-    sed -i "s#^WEBHOOK_URL=.*#WEBHOOK_URL=http://${ts_ip}:5678/#" "$OUTPUT_FILE"
-  fi
-fi
-
-chmod 600 "$OUTPUT_FILE"
-echo "Rendered runtime env: $OUTPUT_FILE"
+chmod 600 "$abs_output"
+echo "Rendered placeholder runtime env: $abs_output (mode 0600). Live GSM remain HOLD."

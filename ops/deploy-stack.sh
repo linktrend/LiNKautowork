@@ -3,13 +3,20 @@ set -euo pipefail
 
 usage() {
   cat <<USAGE
-Usage: $0 <dev|prod> [--build] [--runtime-dir <path>]
+Usage: $0 <dev|prod> [--dry-run] [--build] [--runtime-dir <path>] [--print-release-layout]
 
-Deploys stack with GSM-resolved runtime env (secrets written to runtime dir, not repo).
+Source-only stack helper for AW-05:
+  - validates Compose with names-only env
+  - renders a 0600 placeholder runtime file outside the git tree
+  - prints the atomic current/releases layout
+
+Does not SSH, start containers, pull a registry, resolve GSM, or mutate Server01.
+Live install/upgrade/rollback is AW-08 HOLD. --build is accepted as a no-op flag
+so existing runbook text does not imply a live build.
 USAGE
 }
 
-if [[ $# -lt 1 || $# -gt 4 ]]; then
+if [[ $# -lt 1 ]]; then
   usage
   exit 1
 fi
@@ -17,22 +24,34 @@ fi
 ENVIRONMENT="$1"
 shift
 if [[ "$ENVIRONMENT" != "dev" && "$ENVIRONMENT" != "prod" ]]; then
-  echo "Environment must be dev or prod"
+  echo "Environment must be dev or prod" >&2
   exit 1
 fi
 
-BUILD_FLAG=""
-RUNTIME_DIR="${LINKAUTOWORK_RUNTIME_DIR:-/opt/linktrend/runtime/linkautowork}"
+RUNTIME_DIR="${LINKAUTOWORK_RUNTIME_DIR:-/tmp/linkautowork-runtime-aw05}"
+PRINT_LAYOUT=0
+DRY_RUN=1
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --dry-run)
+      DRY_RUN=1
+      shift
+      ;;
     --build)
-      BUILD_FLAG="--build"
       shift
       ;;
     --runtime-dir)
       RUNTIME_DIR="$2"
       shift 2
+      ;;
+    --print-release-layout)
+      PRINT_LAYOUT=1
+      shift
+      ;;
+    --up|--live|--apply)
+      echo "HOLD: live compose up / Server01 apply is forbidden in AW-05 (AW-08)." >&2
+      exit 2
       ;;
     *)
       usage
@@ -44,79 +63,48 @@ done
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 COMPOSE_FILE="$ROOT_DIR/deploy/${ENVIRONMENT}/docker-compose.yml"
+EXAMPLE_ENV="$ROOT_DIR/deploy/${ENVIRONMENT}/.env.example"
 BASE_ENV_FILE="$ROOT_DIR/deploy/${ENVIRONMENT}/.env"
-RUNTIME_ENV_FILE="$RUNTIME_DIR/${ENVIRONMENT}.env.runtime"
+if [[ ! -f "$BASE_ENV_FILE" ]]; then
+  BASE_ENV_FILE="$EXAMPLE_ENV"
+fi
 
 if [[ ! -f "$BASE_ENV_FILE" || ! -f "$COMPOSE_FILE" ]]; then
-  echo "Missing deploy files for environment: $ENVIRONMENT"
+  echo "Missing deploy files for environment: $ENVIRONMENT" >&2
   exit 1
 fi
 
-"$SCRIPT_DIR/render-runtime-env-from-gsm.sh" "$ENVIRONMENT" --output "$RUNTIME_ENV_FILE"
+COMMIT="$(git -C "$ROOT_DIR" rev-parse HEAD)"
+TREE="$(git -C "$ROOT_DIR" rev-parse HEAD^{tree})"
+RELEASE_ROOT="/srv/linktrend/deploy/linkautowork"
+RUNTIME_ROOT="/srv/linktrend/runtime/linkautowork"
 
-if [[ "$ENVIRONMENT" == "prod" ]]; then
-  python3 - "$RUNTIME_ENV_FILE" <<'PY'
-import pathlib
-import sys
-
-runtime_env = pathlib.Path(sys.argv[1])
-lines = runtime_env.read_text().splitlines()
-values = {}
-for line in lines:
-    if not line or line.lstrip().startswith("#") or "=" not in line:
-        continue
-    key, value = line.split("=", 1)
-    values[key] = value
-
-host = values.get("SUPABASE_DB_HOST", "")
-pooler = values.get("SUPABASE_DB_SESSION_POOLER_HOST", "")
-ipv4_host = values.get("SUPABASE_DB_HOST_IPV4", "")
-
-replacement = ""
-if pooler:
-    replacement = pooler
-elif ipv4_host:
-    replacement = ipv4_host
-elif host.endswith(".supabase.com") and ".pooler." not in host:
-    replacement = host.replace(".", "-ipv4.", 1)
-
-if replacement:
-    updated = []
-    replaced = False
-    for line in lines:
-        if line.startswith("SUPABASE_DB_HOST="):
-            updated.append(f"SUPABASE_DB_HOST={replacement}")
-            replaced = True
-        else:
-            updated.append(line)
-    if not replaced:
-        updated.append(f"SUPABASE_DB_HOST={replacement}")
-    runtime_env.write_text("\n".join(updated) + "\n")
-PY
+if [[ "$PRINT_LAYOUT" -eq 1 ]]; then
+  cat <<LAYOUT
+atomic-release-layout (not applied; AW-08 HOLD)
+  checkout: ${RELEASE_ROOT}/releases/${COMMIT}
+  current:  ${RELEASE_ROOT}/current -> releases/${COMMIT}
+  previous: ${RELEASE_ROOT}/previous (retained last accepted)
+  runtime:  ${RUNTIME_ROOT}/${ENVIRONMENT}.env.runtime (mode 0600)
+  identity: deploy/prod/release-identity.json
+  commit:   ${COMMIT}
+  tree:     ${TREE}
+rollback: retarget current to previous, start that Compose definition, do not apply SQL down.
+LAYOUT
 fi
 
-if [[ "$ENVIRONMENT" == "prod" ]]; then
-  traefik_n8n_host="$(grep '^TRAEFIK_N8N_HOST=' "$BASE_ENV_FILE" 2>/dev/null | cut -d= -f2- || true)"
-  if [[ -n "$traefik_n8n_host" ]]; then
-    sed -i "s#^N8N_HOST=.*#N8N_HOST=${traefik_n8n_host}#" "$RUNTIME_ENV_FILE"
-    sed -i "s#^N8N_PORT=.*#N8N_PORT=5678#" "$RUNTIME_ENV_FILE"
-    sed -i "s#^N8N_PROTOCOL=.*#N8N_PROTOCOL=https#" "$RUNTIME_ENV_FILE"
-    sed -i "s#^N8N_SECURE_COOKIE=.*#N8N_SECURE_COOKIE=true#" "$RUNTIME_ENV_FILE"
-    sed -i "s#^N8N_EDITOR_BASE_URL=.*#N8N_EDITOR_BASE_URL=https://${traefik_n8n_host}#" "$RUNTIME_ENV_FILE"
-    sed -i "s#^WEBHOOK_URL=.*#WEBHOOK_URL=https://${traefik_n8n_host}/#" "$RUNTIME_ENV_FILE"
-  elif [[ -n "${N8N_TAILSCALE_IP:-}" ]]; then
-    sed -i "s#^N8N_HOST=.*#N8N_HOST=${N8N_TAILSCALE_IP}#" "$RUNTIME_ENV_FILE"
-    sed -i "s#^N8N_PROTOCOL=.*#N8N_PROTOCOL=http#" "$RUNTIME_ENV_FILE"
-    sed -i "s#^N8N_EDITOR_BASE_URL=.*#N8N_EDITOR_BASE_URL=http://${N8N_TAILSCALE_IP}:5678#" "$RUNTIME_ENV_FILE"
-    sed -i "s#^WEBHOOK_URL=.*#WEBHOOK_URL=http://${N8N_TAILSCALE_IP}:5678/#" "$RUNTIME_ENV_FILE"
-  fi
+"$SCRIPT_DIR/render-env-from-gsm.sh" "$ENVIRONMENT" --placeholders
+
+RUNTIME_ENV_FILE="$RUNTIME_DIR/${ENVIRONMENT}.env.runtime"
+mkdir -p "$RUNTIME_DIR"
+"$SCRIPT_DIR/render-runtime-env-from-gsm.sh" "$ENVIRONMENT" --placeholders --output "$RUNTIME_ENV_FILE"
+
+if ! command -v docker >/dev/null 2>&1; then
+  echo "HOLD: docker CLI is not installed in this disposable environment; compose render skipped after placeholder checks." >&2
+  echo "Install Docker Compose only for local 'docker compose ... config'. Do not target Server01." >&2
+  exit 0
 fi
 
-# Export vars required by compose substitutions without shell-sourcing values.
-while IFS= read -r line || [[ -n "$line" ]]; do
-  [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
-  [[ "$line" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]] || continue
-  export "$line"
-done < "$RUNTIME_ENV_FILE"
-
-docker compose --env-file "$BASE_ENV_FILE" -f "$COMPOSE_FILE" -p "$ENVIRONMENT" up -d $BUILD_FLAG
+echo "Rendering Compose config (names-only, no up)."
+docker compose --env-file "$BASE_ENV_FILE" -f "$COMPOSE_FILE" -p "linkautowork-${ENVIRONMENT}-dry" config >/dev/null
+echo "Compose config OK for $ENVIRONMENT (dry-run=${DRY_RUN}). Live deploy remains HOLD."
