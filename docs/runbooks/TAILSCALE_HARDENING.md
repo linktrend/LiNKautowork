@@ -1,57 +1,63 @@
-# Tailscale-Only Hardening Runbook
+# Tailscale-Only Hardening Runbook (source contract)
 
 ## Objective
-Restrict LiNKautowork production interfaces to tailnet-only access and prevent public exposure drift on redeploy.
 
-## Protected Ports
-- `5678` (n8n editor/webhooks)
-- `8080` (gateway)
-- `4222` (NATS client)
-- `8222` (NATS monitor)
+Keep LiNKautowork production interfaces private. This packet records the
+Compose and template contract only. **Live Tailscale, firewall, SSH, and
+Server01 mutation remain HOLD (AW-08).**
 
-## One-time setup on host
-Run from repo root on the VPS:
+## Protected Ports (must not bind 0.0.0.0 on the host)
 
-```bash
-ops/security/install-tailscale-firewall-service.sh
-```
+- `5678` (n8n editor/webhooks) — `autowork-runtime` only
+- `8080` (gateway / Product API / operator console) — `autowork-edge` only
+- `4222` (NATS client) — `autowork-events` only
+- `8222` (NATS monitor) — unpublished
 
-This installs a systemd unit that reapplies DOCKER-USER rules on boot.
+Production Compose publishes **no** host `ports:` mappings.
 
-## Required env in `deploy/prod/.env`
-- `N8N_TAILSCALE_IP=<tailnet IPv4>`
-- `N8N_HOST` can be any placeholder; runtime rendering will canonicalize to `N8N_TAILSCALE_IP`.
+## Source contract
 
-## Deploy flow (canonical)
+- Private Traefik routers: `deploy/templates/traefik-dynamic.yml.example`
+  (Tailscale CIDR allow-list). No public `client-web` router in the initial
+  release.
+- Boundary placeholders: `deploy/templates/tailscale-boundary.env.example`
+- Compose networks: `autowork-edge`, `autowork-runtime`, `autowork-events`
 
-```bash
-ops/deploy-stack.sh prod --build
-```
+Do not treat `N8N_TAILSCALE_IP` as a parser that rewrites n8n URLs to a raw
+IP. Operator URLs come from authorised DNS placeholders (`TRAEFIK_N8N_HOST`).
+Empty `N8N_TAILSCALE_IP` in `.env.example` is intentional.
 
-Behavior:
-1. Resolves `*_SECRET_NAME` values from GSM.
-2. Writes runtime env to `/opt/linktrend/runtime/linkautowork/prod.env.runtime` (outside repo).
-3. Canonicalizes n8n URL settings to Tailscale IP.
-4. Starts compose stack with runtime substitutions.
+## Host install (AW-08 HOLD)
 
-## Verification
+The following is **not** executed by AW-05:
 
 ```bash
-# DOCKER-USER policy present
-iptables -S DOCKER-USER
-
-# n8n URL vars in running container
-docker exec prod-n8n-1 /bin/sh -lc 'printenv N8N_HOST N8N_EDITOR_BASE_URL WEBHOOK_URL'
-
-# local parity checks
-docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+# HOLD — Server01 only after founder/Platform authority
+# ops/security/install-tailscale-firewall-service.sh
 ```
 
-## Secret hygiene checks
+## Deploy flow (canonical source-only)
 
 ```bash
-ops/security/scan-secrets.sh
+ops/deploy-stack.sh prod --dry-run --print-release-layout
+ops/verify-server01-acceptance.sh --environment prod
 ```
 
-- Runtime env files with resolved secrets must stay outside repo path.
-- Never commit `.env.runtime` files.
+Expected behaviour:
+
+1. Validates `*_SECRET_NAME` placeholders (no GSM read).
+2. Writes a disposable mode-`0600` placeholder runtime env **outside git**.
+3. Renders Compose config if Docker is available. Does not `up`.
+4. Prints the atomic `current` → `releases/<commit>` layout without applying it.
+
+## Verification (local / disposable)
+
+```bash
+docker compose -f deploy/prod/docker-compose.yml --env-file deploy/prod/.env.example config
+npm run test -- scripts/tests/deployment-readiness.test.mjs
+```
+
+Do not `docker exec` a production container from this packet. Do not scan a live
+tailnet. Image digests stay `HOLD` in `deploy/prod/release-identity.json` until
+an authorised host build records them. Registry credentials are not required
+(`NOT_APPLICABLE` for the initial path).

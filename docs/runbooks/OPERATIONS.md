@@ -1,50 +1,89 @@
-# Operations Runbook (MVO)
+# Operations Runbook (MVO) — source topology (AW-05)
 
 Owner: LiNKtrend Platform  
-Last updated: 2026-04-01
+Last updated: 2026-09-11
 
-## Deployment sequence (authorised environment only)
+This runbook describes the **source-only** Server01 production Compose contract.
+It does not authorise SSH, Tailscale mutation, GSM resolve, registry pull,
+provider dispatch, or a live Server01 install. Those remain **HOLD** for AW-08
+after Phase Packager integration and Platform receipts.
 
-1. Configure `deploy/dev/.env` with non-secret config and `*_SECRET_NAME` entries.
-2. Validate GSM-backed secret references: `ops/render-env-from-gsm.sh dev`.
-3. Render runtime env outside repo codebase: `ops/render-runtime-env-from-gsm.sh dev --output /opt/linktrend/runtime/linkautowork/dev.env.runtime`.
-4. Start stack with GSM-resolved runtime env: `ops/deploy-stack.sh dev --build`.
-5. Verify gateway: `curl http://localhost:8080/health`.
-6. Start the recurring operations profile with the generated runtime environment: `docker compose -f deploy/prod/docker-compose.yml --env-file /approved/runtime.env --profile operations up -d operations-scheduler`.
-7. Preflight certified packages with no network action: `ops/publish-certified-packages.sh --environment stage --dry-run`.
+## Settled initial-release topology
 
-## Promote To Prod
+Services started in the default production project:
 
-1. Ensure lifecycle approvals are complete (Auditor, Head of Quality, COO, and Principal for protected actions).
-2. Configure `deploy/prod/.env` with non-secret config and `*_SECRET_NAME` entries.
-3. Set `TRAEFIK_N8N_HOST=n8n.linktrend.internal` in `deploy/prod/.env` for Traefik ingress (preferred). Optional `N8N_TAILSCALE_IP` keeps direct `:5678` fallback when Traefik is unavailable.
-4. Validate GSM-backed secret references: `ops/render-env-from-gsm.sh prod`.
-5. Render runtime env outside repo codebase: `ops/render-runtime-env-from-gsm.sh prod --output /opt/linktrend/runtime/linkautowork/prod.env.runtime`.
-6. Start/refresh the approved stack and its required scheduler profile: `docker compose -f deploy/prod/docker-compose.yml --env-file /approved/runtime.env --profile operations up -d`.
-7. Run a no-network publisher preflight: `ops/publish-certified-packages.sh --environment prod --dry-run`.
-8. In the approved release window only, set the approved target and authorisation reference in the generated runtime environment, then run `docker compose -f deploy/prod/docker-compose.yml --env-file /approved/runtime.env --profile release-jobs run --rm certified-package-publisher ./ops/publish-certified-packages.sh --environment prod --activate`.
-9. Export runtime evidence: `ops/export-live-from-n8n.sh prod`.
+- `nats` on `autowork-events` with volume `nats_jetstream_prod` (no host port)
+- `gateway` on `autowork-edge`, `autowork-runtime`, and `autowork-events`
+- `n8n` on `autowork-runtime` only (private operator route via Traefik template)
+- `product-api` and `operator-console` on `autowork-edge` (private)
+- `operations-scheduler` behind `--profile operations` on `autowork-events`
+
+Release jobs (`migration-preflight`, `certified-package-publisher`) stay on
+`--profile release-jobs`. Migration mode is `dry-run` and refuses SQL apply.
+`client-web` is `--profile retained-images` only: it may be built and kept with
+the release; it is **not** an initial-release route.
+
+The runtime dispatcher is an **in-process gateway module** (AW-01/AW-03). It is
+not a Compose service or image.
+
+AW-01 database role names in `deploy/prod/.env.example` are placeholders.
+Platform owns live grants. Broad `service_role` is not a production runtime
+identity.
+
+## Names-only configuration (disposable / local)
+
+1. Validate GSM **names**: `ops/render-env-from-gsm.sh prod --placeholders`
+2. Render a mode-`0600` placeholder runtime file **outside git**:
+   `ops/render-runtime-env-from-gsm.sh prod --placeholders --output /tmp/linkautowork-runtime-aw05/prod.env.runtime`
+3. Render Compose without starting anything:
+   `docker compose -f deploy/prod/docker-compose.yml --env-file deploy/prod/.env.example config`
+4. Source-only stack helper: `ops/deploy-stack.sh prod --dry-run --print-release-layout`
+5. Acceptance verifier (read-only): `ops/verify-server01-acceptance.sh --environment prod`
+
+Do not pass `--up`, `--live`, `--resolve-gsm`, or a canary id. Those exit HOLD.
+
+## Atomic release pointer (not applied in this packet)
+
+Intended host layout after AW-08 authority:
+
+- `/srv/linktrend/deploy/linkautowork/releases/<commit>`
+- `/srv/linktrend/deploy/linkautowork/current` → that release
+- `/srv/linktrend/deploy/linkautowork/previous` retained until final acceptance
+- `/srv/linktrend/runtime/linkautowork/*.env.runtime` mode `0600`
+
+Rollback retargets `current` to `previous` and starts that Compose definition.
+Database recovery is Platform-owned; this packet never applies SQL down.
+
+## Promote / live start
+
+**HOLD.** Do not run `docker compose up` against Server01 from this packet.
+Do not import or activate n8n packages. Do not create public DNS/TLS routes.
+
+When AW-08 is authorised, the deployer records image IDs into
+`deploy/prod/release-identity.json`, switches `current` atomically, and starts
+only private routes from `deploy/templates/`.
 
 ## Kill Switch
 
 - Scoped: call `/v1/control/killswitch/scoped` with `action=activate`.
 - Global: call `/v1/control/killswitch/global` with `action=activate`.
-- Global activation deactivates active n8n workflows via API.
-- Release operations require governed restore flow and audit evidence.
+- Live invocation of these endpoints on Server01 is HOLD until AW-08.
 
 ## Backup and Restore Drill
 
-- Backup: `ops/run-backup.sh`
-- Drill validation: `ops/restore-drill.sh <db-backup.sql.gz> <templates-backup.tar.gz>`
-- RTO target: `<= 60 min`
-- RPO target: `<= 15 min`
+- Backup: `ops/run-backup.sh` (AW-06/AW-08)
+- Drill: `ops/restore-drill.sh <db-backup.sql.gz> <templates-backup.tar.gz>`
+- Presence of live backup artifacts on Server01 is HOLD in AW-05.
 
 ## Security Verification
 
-- Secret hygiene scan in repository: `ops/security/scan-secrets.sh`
-- Confirm runtime env files with resolved secrets are outside repo path and mode `600`.
-- Confirm n8n/browser ingress is tailscale-only for protected ports (`5678`, `8080`, `4222`, `8222`).
+- Secret hygiene scan: `ops/security/scan-secrets.sh`
+- Runtime env files with resolved secrets must stay outside git, mode `0600`.
+- Protected ports `5678`, `8080`, `4222`, `8222` are unpublished on the host.
 
 ## Ingress
 
-There is no approved VPS, hostname, Tailscale boundary, or Traefik route in this repository. Use only the placeholders in `deploy/templates/` after their values are authorised and recorded. Keep `N8N_PORT=5678`: a reverse proxy terminates TLS externally and forwards to that internal port.
+There is no approved live hostname, Tailscale Serve policy, or Traefik load in
+this packet. Use placeholders in `deploy/templates/`. Keep `N8N_PORT=5678` as
+the container listen port; TLS terminates only on an authorised reverse proxy
+later. Public client-web routing is out of initial-release scope.
