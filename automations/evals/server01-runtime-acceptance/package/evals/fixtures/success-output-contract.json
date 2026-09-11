@@ -1,0 +1,15 @@
+{
+  "input": { "case_id": "success-output-contract" },
+  "expected_output": {
+    "status": "ok",
+    "automation_id": "server01-runtime-acceptance",
+    "n8n_dispatched": false
+  },
+  "mock": {
+    "branch": "success",
+    "state": "succeeded",
+    "replay": false,
+    "n8n_dispatched": false,
+    "live_n8n_activation": "hold"
+  }
+}

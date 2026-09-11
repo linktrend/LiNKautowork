@@ -1,0 +1,12 @@
+{
+  "simulate_failure": true,
+  "failure_class": "idempotency",
+  "idempotency_key": "server01-runtime-acceptance-duplicate-key-01",
+  "mock": {
+    "branch": "duplicate",
+    "replay": true,
+    "same_execution_identity": true,
+    "n8n_dispatched": false,
+    "live_n8n_activation": "hold"
+  }
+}

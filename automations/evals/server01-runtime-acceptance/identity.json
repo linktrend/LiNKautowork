@@ -1,0 +1,12 @@
+{
+  "automation_id": "server01-runtime-acceptance",
+  "version": "0.1.0",
+  "source_git_sha": "a13a6467fc9bc2fccdddd1de8d9e258c78e57fdd",
+  "n8n_version": "2.30.0",
+  "package_digest": "sha256:d321aeff64f33605281f5f87765aca8a861b200c538f25295d0f8c9e9140e260",
+  "workflow_digest": "sha256:d2e205cd6cfd960803bd0c68c2427969e075bdca321dbf3c8c165d70e509c67c",
+  "catalogue_registered": false,
+  "active": false,
+  "n8n_dispatched": false,
+  "live_n8n_activation": "hold"
+}

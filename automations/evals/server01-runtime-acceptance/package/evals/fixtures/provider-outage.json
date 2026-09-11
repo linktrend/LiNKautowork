@@ -1,0 +1,10 @@
+{
+  "simulate_failure": true,
+  "failure_class": "upstream_failure",
+  "mock": {
+    "branch": "provider_outage",
+    "error_code": "unavailable",
+    "n8n_dispatched": false,
+    "live_n8n_activation": "hold"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "synthetic_token": "ltfx.ph.2149f427b7.v1",
+  "mock": {
+    "branch": "redaction",
+    "state": "succeeded",
+    "redacted_fields": ["synthetic_token"],
+    "n8n_dispatched": false,
+    "live_n8n_activation": "hold"
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "schema_version": "0.1",
+  "automation_id": "server01-runtime-acceptance",
+  "automation_version": "0.1.0",
+  "required_runtime": { "engine": "n8n", "n8n_version": "2.30.0" },
+  "sources": [
+    {
+      "source_id": "aw-04-server01-runtime-acceptance",
+      "kind": "internal",
+      "locator": "https://github.com/linktrend/LiNKautowork",
+      "revision": "a13a6467fc9bc2fccdddd1de8d9e258c78e57fdd",
+      "content_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "license": "LicenseRef-LiNKtrend-Internal",
+      "commercial_use": "not_applicable",
+      "adaptation_status": "reference_only"
+    }
+  ],
+  "source_to_target_map": [
+    {
+      "source_id": "aw-04-server01-runtime-acceptance",
+      "source_content_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "source_component_ref": "aw-02-aw-03-runtime-contracts",
+      "target_component_ref": "automation.json",
+      "action": "reference_only",
+      "reason": "AW-02 admission and AW-03 callback-bridge contracts are consumed as read-only inputs for this inactive technical fixture."
+    }
+  ],
+  "review": {
+    "status": "not_applicable",
+    "reviewer_role": "LiNKautowork runtime evaluation",
+    "conclusion": "This package is an internal technical fixture and does not incorporate a third-party automation source."
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "id": "server01-runtime-acceptance-eval",
+  "name": "Server01 Runtime Acceptance Fixture",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "b7c1e0da-2f46-47c6-8ec6-5d8888880001",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [260, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e51a5ec6-a1e8-4dfd-84c8-3f8888880002",
+              "name": "status",
+              "value": "ok",
+              "type": "string"
+            },
+            {
+              "id": "39c9bcdd-fd70-47bb-99b3-9d8888880003",
+              "name": "automation_id",
+              "value": "server01-runtime-acceptance",
+              "type": "string"
+            },
+            {
+              "id": "4ad0cdee-0e81-48cc-aa04-ae8888880004",
+              "name": "n8n_dispatched",
+              "value": false,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d1fb2273-67b4-54fd-bf7c-1c8888880005",
+      "name": "Return Contract Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [500, 300]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Return Contract Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": { "executionOrder": "v1" },
+  "active": false,
+  "versionId": "b3232323-1111-4111-8111-111111111111",
+  "tags": []
+}

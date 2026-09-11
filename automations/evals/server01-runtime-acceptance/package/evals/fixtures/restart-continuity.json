@@ -1,0 +1,11 @@
+{
+  "restart": true,
+  "mock": {
+    "branch": "restart",
+    "state": "queued",
+    "replay": true,
+    "second_dispatch": false,
+    "n8n_dispatched": false,
+    "live_n8n_activation": "hold"
+  }
+}

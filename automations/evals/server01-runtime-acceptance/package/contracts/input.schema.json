@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.dev/schemas/linkautowork/server01-runtime-acceptance/input-v1.json",
+  "title": "Server01 Runtime Acceptance Input v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "case_id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{2,62}$" }
+  }
+}

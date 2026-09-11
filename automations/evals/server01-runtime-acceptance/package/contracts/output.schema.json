@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.dev/schemas/linkautowork/server01-runtime-acceptance/output-v1.json",
+  "title": "Server01 Runtime Acceptance Output v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "automation_id", "n8n_dispatched"],
+  "properties": {
+    "status": { "const": "ok" },
+    "automation_id": { "const": "server01-runtime-acceptance" },
+    "n8n_dispatched": { "const": false }
+  }
+}

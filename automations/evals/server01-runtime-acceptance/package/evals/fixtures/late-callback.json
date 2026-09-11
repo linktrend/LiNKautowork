@@ -1,0 +1,11 @@
+{
+  "callback_timestamp_order": "later",
+  "mock": {
+    "branch": "late_callback",
+    "state": "succeeded",
+    "receipt_mutated": false,
+    "returns_original_receipt": true,
+    "n8n_dispatched": false,
+    "live_n8n_activation": "hold"
+  }
+}

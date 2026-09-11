@@ -1,0 +1,11 @@
+{
+  "input": {},
+  "expected_external_actions": 0,
+  "expected_active_state": false,
+  "mock": {
+    "branch": "no_side_effect",
+    "state": "queued",
+    "n8n_dispatched": false,
+    "live_n8n_activation": "hold"
+  }
+}
