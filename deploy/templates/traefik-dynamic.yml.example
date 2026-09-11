@@ -1,4 +1,6 @@
-# Deployment input template. Replace every <...> value only after authority is recorded.
+# Initial-release private ingress template. Replace <...> only after authority
+# is recorded. Public client-web is NOT routed in AW-05. Product API, gateway,
+# n8n, and operator console stay Tailscale-private. Live Traefik apply is HOLD.
 http:
   routers:
     linkautowork-operator-n8n:
@@ -15,16 +17,18 @@ http:
       service: linkautowork-operator-console
       tls:
         certResolver: <APPROVED_TLS_RESOLVER>
-    linkautowork-client-web:
-      rule: "Host(`<PUBLIC_CLIENT_DNS_NAME>`)"
+    linkautowork-product-api:
+      rule: "Host(`<PRODUCT_API_PRIVATE_DNS_NAME>`)"
       entryPoints: [websecure]
-      service: linkautowork-client-web
+      middlewares: [linkautowork-tailscale-only]
+      service: linkautowork-product-api
       tls:
         certResolver: <APPROVED_TLS_RESOLVER>
-    linkautowork-product-api:
-      rule: "Host(`<PUBLIC_PRODUCT_API_DNS_NAME>`)"
+    linkautowork-gateway:
+      rule: "Host(`<GATEWAY_PRIVATE_DNS_NAME>`)"
       entryPoints: [websecure]
-      service: linkautowork-product-api
+      middlewares: [linkautowork-tailscale-only]
+      service: linkautowork-gateway
       tls:
         certResolver: <APPROVED_TLS_RESOLVER>
   middlewares:
@@ -38,9 +42,9 @@ http:
     linkautowork-operator-console:
       loadBalancer:
         servers: [{ url: "http://<OPERATOR_CONSOLE_PRIVATE_ADDRESS>:8080" }]
-    linkautowork-client-web:
-      loadBalancer:
-        servers: [{ url: "http://<CLIENT_WEB_PRIVATE_ADDRESS>:8080" }]
     linkautowork-product-api:
       loadBalancer:
         servers: [{ url: "http://<PRODUCT_API_PRIVATE_ADDRESS>:8080" }]
+    linkautowork-gateway:
+      loadBalancer:
+        servers: [{ url: "http://<GATEWAY_PRIVATE_ADDRESS>:8080" }]

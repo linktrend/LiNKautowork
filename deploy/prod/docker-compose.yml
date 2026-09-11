@@ -1,54 +1,171 @@
+# Settled initial-release Server01 topology (AW-05). Source-only: no host
+# publish of protected ports, no registry pull requirement, no live apply.
+# Runtime dispatcher is an in-process gateway module (AW-01/AW-03), not a service.
+name: linkautowork-prod
+
+x-security: &default-security
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  read_only: true
+  tmpfs:
+    - /tmp
+
+x-restart: &default-restart
+  restart: unless-stopped
+
+networks:
+  autowork-edge:
+    name: linkautowork_autowork-edge
+    driver: bridge
+  autowork-runtime:
+    name: linkautowork_autowork-runtime
+    driver: bridge
+  autowork-events:
+    name: linkautowork_autowork-events
+    driver: bridge
+
+volumes:
+  n8n_data_prod:
+  nats_jetstream_prod:
+
+secrets:
+  # Authorised deployer creates this Docker secret from GSM-resolved material.
+  # Compose never names a host-file path. Live secret creation remains HOLD.
+  gcp-service-account:
+    external: true
+    name: ${GOOGLE_APPLICATION_CREDENTIALS_DOCKER_SECRET_NAME:-linkautowork-gcp-service-account}
+
 services:
   nats:
     image: nats:2.10.26-alpine
     command: ["-js", "-sd", "/data"]
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
+    <<: [*default-security, *default-restart]
+    # JetStream needs a writable data dir; keep the rest of the fs read-only.
+    tmpfs:
+      - /tmp
+    volumes:
+      - nats_jetstream_prod:/data
+    networks:
+      - autowork-events
+    # No host port: only autowork-events members may reach the bus.
     healthcheck:
       test: ["CMD-SHELL", "nc -z 127.0.0.1 4222 || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 5
-    # No host port: only stack members may reach the event bus.
-    volumes:
-      - nats_jetstream_prod:/data
-    restart: unless-stopped
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.10"
+          memory: 64M
 
   gateway:
     build:
       context: ../..
       dockerfile: deploy/common/gateway.Dockerfile
+    <<: [*default-security, *default-restart]
     env_file:
       - path: .env
-        # The real runtime file is generated outside Git after GSM resolution.
-        # Keeping it optional allows the checked-in names-only contract to render
-        # during pre-VPS validation without creating a fake secret file.
         required: false
+    environment:
+      PORT: 8080
+      NATS_URL: nats://nats:4222
+      # AW-01 role name (placeholder). Platform owns live grants.
+      LAUTOWORK_GATEWAY_DB_ROLE: ${LAUTOWORK_GATEWAY_DB_ROLE:-svc_lautowork_gateway}
     depends_on:
       nats:
         condition: service_healthy
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:8080/health >/dev/null 2>&1 || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
+    networks:
+      - autowork-edge
+      - autowork-runtime
+      - autowork-events
     secrets:
       - source: gcp-service-account
         target: gcp-service-account
         mode: 0400
-    restart: unless-stopped
-    # Attach an approved private gateway route before exposing this service.
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:8080/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1G
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+
+  n8n:
+    # Pinned official upstream n8n (tag 2.30.0, never the floating latest tag). Digest recorded in
+    # deploy/prod/release-identity.json after an authorised local build; tag pin
+    # is the source identity until AW-08 records the host image ID.
+    image: n8nio/n8n:2.30.0
+    <<: [*default-security, *default-restart]
+    user: node
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      GENERIC_TIMEZONE: Asia/Taipei
+      TZ: Asia/Taipei
+      N8N_HOST: ${N8N_HOST}
+      N8N_PORT: ${N8N_PORT}
+      N8N_PROTOCOL: ${N8N_PROTOCOL}
+      N8N_SECURE_COOKIE: ${N8N_SECURE_COOKIE:-true}
+      N8N_EDITOR_BASE_URL: ${N8N_EDITOR_BASE_URL}
+      WEBHOOK_URL: ${WEBHOOK_URL}
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_PERSONALIZATION_ENABLED: "false"
+      N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
+      N8N_PUBLIC_API_DISABLED: "false"
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: ${SUPABASE_DB_HOST}
+      DB_POSTGRESDB_PORT: ${SUPABASE_DB_PORT}
+      DB_POSTGRESDB_DATABASE: ${SUPABASE_DB_DATABASE}
+      DB_POSTGRESDB_USER: ${SUPABASE_DB_USER}
+      DB_POSTGRESDB_PASSWORD: ${SUPABASE_DB_PASSWORD:-}
+      DB_POSTGRESDB_SCHEMA: lautowork_n8n
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-}
+      EXECUTIONS_MODE: regular
+      # AW-01: n8n has no grants on lautowork.server01_*.
+      LAUTOWORK_N8N_DB_ROLE: ${LAUTOWORK_N8N_DB_ROLE:-svc_lautowork_n8n}
+    networks:
+      - autowork-runtime
+    volumes:
+      - n8n_data_prod:/home/node/.n8n
+    secrets:
+      - source: gcp-service-account
+        target: gcp-service-account
+        mode: 0400
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:5678 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.25"
+          memory: 256M
 
   product-api:
     build:
       context: ../..
       dockerfile: apps/product-api/Dockerfile
+    <<: [*default-security, *default-restart]
     env_file:
       - path: .env
         required: false
@@ -63,10 +180,9 @@ services:
       PRODUCT_API_WEBHOOK_SECRET: ${PRODUCT_API_WEBHOOK_SECRET:-}
       PRODUCT_API_CLIENT_ORIGIN: ${PUBLIC_CLIENT_ORIGIN:-}
       PRODUCT_API_OPERATOR_ORIGIN: ${OPERATOR_CONSOLE_ORIGIN:-}
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
+      LAUTOWORK_PRODUCT_API_DB_ROLE: ${LAUTOWORK_PRODUCT_API_DB_ROLE:-svc_lautowork_product_api}
+    networks:
+      - autowork-edge
     depends_on:
       gateway:
         condition: service_healthy
@@ -75,50 +191,29 @@ services:
       interval: 30s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
-    # This is the only public application back-end candidate. Traefik routing is
-    # attached externally after DNS/TLS authority is supplied.
-
-  client-web:
-    build:
-      context: ../..
-      dockerfile: apps/web/Dockerfile
-    environment:
-      PORT: 8080
-      PRODUCT_API_PUBLIC_ORIGIN: ${PUBLIC_PRODUCT_API_ORIGIN:-}
-      PLATFORM_OIDC_ISSUER: ${PLATFORM_OIDC_ISSUER:-}
-      PLATFORM_OIDC_CLIENT_ID: ${PLATFORM_OIDC_CLIENT_ID:-}
-      PLATFORM_OIDC_REDIRECT_URI: ${PLATFORM_OIDC_REDIRECT_URI:-}
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    depends_on:
-      product-api:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:8080/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-    # Public UI candidate; its external route is defined only by the approved
-    # Traefik template and never exposes private controls.
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.10"
+          memory: 64M
 
   operator-console:
     build:
       context: ../..
       dockerfile: apps/operator-console/Dockerfile
+    <<: [*default-security, *default-restart]
     environment:
       PORT: 8080
       PRODUCT_API_PUBLIC_ORIGIN: ${PUBLIC_PRODUCT_API_ORIGIN:-}
       PLATFORM_OIDC_ISSUER: ${PLATFORM_OIDC_ISSUER:-}
       OPERATOR_OIDC_CLIENT_ID: ${OPERATOR_OIDC_CLIENT_ID:-}
       OPERATOR_OIDC_REDIRECT_URI: ${OPERATOR_OIDC_REDIRECT_URI:-}
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
+    networks:
+      - autowork-edge
     depends_on:
       product-api:
         condition: service_healthy
@@ -127,24 +222,68 @@ services:
       interval: 30s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
-    # Private-only. No Compose port or Traefik label is permitted here.
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+        reservations:
+          cpus: "0.05"
+          memory: 32M
+
+  # Commercial client-web is retained for the immutable release build but is
+  # not attached to autowork-edge and is not an initial-release route.
+  client-web:
+    profiles: ["retained-images"]
+    build:
+      context: ../..
+      dockerfile: apps/web/Dockerfile
+    <<: *default-security
+    restart: "no"
+    environment:
+      PORT: 8080
+      PRODUCT_API_PUBLIC_ORIGIN: ${PUBLIC_PRODUCT_API_ORIGIN:-}
+      PLATFORM_OIDC_ISSUER: ${PLATFORM_OIDC_ISSUER:-}
+      PLATFORM_OIDC_CLIENT_ID: ${PLATFORM_OIDC_CLIENT_ID:-}
+      PLATFORM_OIDC_REDIRECT_URI: ${PLATFORM_OIDC_REDIRECT_URI:-}
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:8080/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
 
   migration-preflight:
     build:
       context: ../..
       dockerfile: deploy/common/release-jobs.Dockerfile
     profiles: ["release-jobs"]
+    <<: *default-security
     env_file:
       - path: .env
         required: false
+    environment:
+      LAUTOWORK_MIGRATION_BACKUP_DB_ROLE: ${LAUTOWORK_MIGRATION_BACKUP_DB_ROLE:-svc_lautowork_migration_backup}
+      # Live SQL apply is forbidden here; the job is a checksum/dry-run only.
+      LINKAUTOWORK_MIGRATION_MODE: dry-run
     command: ["./ops/migration-preflight.sh"]
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
 
   certified-package-publisher:
     build:
       context: ../..
       dockerfile: deploy/common/release-jobs.Dockerfile
     profiles: ["release-jobs"]
+    <<: *default-security
     env_file:
       - path: .env
         required: false
@@ -154,15 +293,23 @@ services:
       LINKAUTOWORK_APPROVED_TARGET: ${LINKAUTOWORK_APPROVED_TARGET:-}
       LINKAUTOWORK_RELEASE_AUTHORIZATION: ${LINKAUTOWORK_RELEASE_AUTHORIZATION:-}
     command: ["./ops/publish-certified-packages.sh"]
+    networks:
+      - autowork-runtime
     depends_on:
       n8n:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
 
   operations-scheduler:
     build:
       context: ../..
       dockerfile: deploy/common/release-jobs.Dockerfile
     profiles: ["operations"]
+    <<: [*default-security, *default-restart]
     env_file:
       - path: .env
         required: false
@@ -170,69 +317,18 @@ services:
       LINKAUTOWORK_GATEWAY_URL: http://gateway:8080
       LINK_SERVICE_TOKEN_OPERATIONS: ${LINK_SERVICE_TOKEN_OPERATIONS:-}
       PLATFORM_INVOCATION_TOKEN: ${PLATFORM_INVOCATION_TOKEN:-}
+      LAUTOWORK_OBSERVER_DB_ROLE: ${LAUTOWORK_OBSERVER_DB_ROLE:-svc_observer}
     command: ["./ops/run-operations-scheduler.sh"]
+    networks:
+      - autowork-events
     depends_on:
       gateway:
         condition: service_healthy
-    restart: unless-stopped
-
-  n8n:
-    # Pinned official upstream n8n image (never :latest).
-    # Source of truth for upgrades: https://github.com/n8n-io/n8n releases.
-    # LiNKautowork does not use a LiNKtrend n8n fork (decision 2026-07-23).
-    image: n8nio/n8n:2.30.0
-    env_file:
-      - path: .env
-        required: false
-    environment:
-      - GENERIC_TIMEZONE=Asia/Taipei
-      - TZ=Asia/Taipei
-      - N8N_HOST=${N8N_HOST}
-      - N8N_PORT=${N8N_PORT}
-      - N8N_PROTOCOL=${N8N_PROTOCOL}
-      - N8N_SECURE_COOKIE=${N8N_SECURE_COOKIE:-false}
-      - N8N_EDITOR_BASE_URL=${N8N_EDITOR_BASE_URL}
-      - WEBHOOK_URL=${WEBHOOK_URL}
-      - N8N_DIAGNOSTICS_ENABLED=false
-      - N8N_PERSONALIZATION_ENABLED=false
-      - N8N_VERSION_NOTIFICATIONS_ENABLED=false
-      # Public API required for template import + global kill-switch revoke.
-      # Bind n8n to Tailscale-only exposure (see docs/runbooks/TAILSCALE_HARDENING.md).
-      - N8N_PUBLIC_API_DISABLED=false
-      - DB_TYPE=postgresdb
-      - DB_POSTGRESDB_HOST=${SUPABASE_DB_HOST}
-      - DB_POSTGRESDB_PORT=${SUPABASE_DB_PORT}
-      - DB_POSTGRESDB_DATABASE=${SUPABASE_DB_DATABASE}
-      - DB_POSTGRESDB_USER=${SUPABASE_DB_USER}
-      - DB_POSTGRESDB_PASSWORD=${SUPABASE_DB_PASSWORD}
-      - DB_POSTGRESDB_SCHEMA=lautowork_n8n
-      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
-      - EXECUTIONS_MODE=regular
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:5678 || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-    # n8n is operator-private; Traefik/Tailscale templates define the only ingress.
-    volumes:
-      - n8n_data_prod:/home/node/.n8n
-    secrets:
-      - source: gcp-service-account
-        target: gcp-service-account
-        mode: 0400
-
-volumes:
-  n8n_data_prod:
-  nats_jetstream_prod:
-
-secrets:
-  # The authorised deployer creates this Docker secret from the GSM-resolved
-  # service-account material. Compose never names a host-file path.
-  gcp-service-account:
-    external: true
-    name: ${GOOGLE_APPLICATION_CREDENTIALS_DOCKER_SECRET_NAME:-linkautowork-gcp-service-account}
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+        reservations:
+          cpus: "0.05"
+          memory: 32M
