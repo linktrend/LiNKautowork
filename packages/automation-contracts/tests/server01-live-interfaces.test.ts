@@ -444,6 +444,159 @@ describe('server01 live-interface disposable postgres', () => {
     expect(db.sql('select lautowork.server01_package_status();').trim()).toBe('complete');
   });
 
+  it('impersonates every EXECUTE grantee and matches owner fingerprint and package status', () => {
+    const output = db.sql(`
+      do $$
+      declare
+        v_fp text := lautowork.server01_live_fingerprint();
+        v_status text := lautowork.server01_package_status();
+        r name;
+        seen integer := 0;
+      begin
+        if v_status is distinct from 'complete' then
+          raise exception 'owner package status is %, expected complete', v_status;
+        end if;
+        for r in
+          select fp.rolname
+            from (
+              select distinct pg_get_userbyid(ae.grantee) as rolname
+                from pg_proc p
+                join pg_namespace n on n.oid = p.pronamespace
+                cross join lateral aclexplode(coalesce(p.proacl, acldefault('f'::"char", p.proowner))) as ae
+               where n.nspname = 'lautowork'
+                 and p.proname = 'server01_live_fingerprint'
+                 and pg_get_function_identity_arguments(p.oid) = ''
+                 and ae.privilege_type = 'EXECUTE'
+                 and ae.grantee <> 0
+            ) fp
+            join (
+              select distinct pg_get_userbyid(ae.grantee) as rolname
+                from pg_proc p
+                join pg_namespace n on n.oid = p.pronamespace
+                cross join lateral aclexplode(coalesce(p.proacl, acldefault('f'::"char", p.proowner))) as ae
+               where n.nspname = 'lautowork'
+                 and p.proname = 'server01_package_status'
+                 and pg_get_function_identity_arguments(p.oid) = ''
+                 and ae.privilege_type = 'EXECUTE'
+                 and ae.grantee <> 0
+            ) st on st.rolname = fp.rolname
+           order by 1
+        loop
+          seen := seen + 1;
+          execute format('set local role %I', r);
+          if lautowork.server01_live_fingerprint() is distinct from v_fp then
+            raise exception 'fingerprint drifted for role %', r;
+          end if;
+          if lautowork.server01_package_status() is distinct from v_status then
+            raise exception 'package status drifted for role %', r;
+          end if;
+          execute 'reset role';
+        end loop;
+        if seen = 0 then
+          raise exception 'no EXECUTE grantees found for both fingerprint and package status';
+        end if;
+      end $$;
+      select count(*) from (
+        select fp.rolname
+          from (
+            select distinct pg_get_userbyid(ae.grantee) as rolname
+              from pg_proc p
+              join pg_namespace n on n.oid = p.pronamespace
+              cross join lateral aclexplode(coalesce(p.proacl, acldefault('f'::"char", p.proowner))) as ae
+             where n.nspname = 'lautowork'
+               and p.proname = 'server01_live_fingerprint'
+               and pg_get_function_identity_arguments(p.oid) = ''
+               and ae.privilege_type = 'EXECUTE'
+               and ae.grantee <> 0
+          ) fp
+          join (
+            select distinct pg_get_userbyid(ae.grantee) as rolname
+              from pg_proc p
+              join pg_namespace n on n.oid = p.pronamespace
+              cross join lateral aclexplode(coalesce(p.proacl, acldefault('f'::"char", p.proowner))) as ae
+             where n.nspname = 'lautowork'
+               and p.proname = 'server01_package_status'
+               and pg_get_function_identity_arguments(p.oid) = ''
+               and ae.privilege_type = 'EXECUTE'
+               and ae.grantee <> 0
+          ) st on st.rolname = fp.rolname
+      ) grantees;
+    `).trim().split('\n').at(-1);
+    expect(Number(output)).toBeGreaterThan(0);
+  });
+
+  it('rejects missing or incorrect package status for execute grantees', () => {
+    const before = db.sql('select lautowork.server01_live_fingerprint();').trim();
+    const missing = db.sql(`
+      do $$
+      declare
+        r name := 'svc_lautowork_gateway';
+        observed text;
+      begin
+        delete from lautowork.server01_package_control
+         where package_id = 'lautowork.server01.migration-identity/1.0.0';
+        execute format('set local role %I', r);
+        observed := lautowork.server01_package_status();
+        execute 'reset role';
+        if observed is distinct from 'absent' then
+          raise exception 'missing control row returned %, expected absent', observed;
+        end if;
+        begin
+          perform lautowork.server01_assert_package_ready();
+          raise exception 'missing package status was not rejected';
+        exception when others then
+          if sqlerrm not like '%server01 migration package is not complete%' then raise; end if;
+        end;
+      end $$;
+      select lautowork.server01_package_status();
+    `).trim().split('\n').at(-1);
+    expect(missing).toBe('absent');
+    db.sql(`
+      insert into lautowork.server01_package_control
+        (package_id, apply_state, expected_relation_count, live_fingerprint, completed_at)
+      values (
+        'lautowork.server01.migration-identity/1.0.0',
+        'complete',
+        7,
+        '${before}',
+        now()
+      );
+    `);
+    const incorrect = db.sql(`
+      do $$
+      declare
+        r name := 'svc_lautowork_runtime';
+        observed text;
+      begin
+        update lautowork.server01_package_control
+           set apply_state = 'started', completed_at = null
+         where package_id = 'lautowork.server01.migration-identity/1.0.0';
+        execute format('set local role %I', r);
+        observed := lautowork.server01_package_status();
+        execute 'reset role';
+        if observed is distinct from 'partial' then
+          raise exception 'incorrect apply_state returned %, expected partial', observed;
+        end if;
+        begin
+          perform lautowork.server01_assert_package_ready();
+          raise exception 'incorrect package status was not rejected';
+        exception when others then
+          if sqlerrm not like '%server01 migration package is not complete%' then raise; end if;
+        end;
+      end $$;
+      select lautowork.server01_package_status();
+    `).trim().split('\n').at(-1);
+    expect(incorrect).toBe('partial');
+    db.sql(`
+      update lautowork.server01_package_control
+         set apply_state = 'complete',
+             live_fingerprint = '${before}',
+             completed_at = now()
+       where package_id = 'lautowork.server01.migration-identity/1.0.0';
+    `);
+    expect(db.sql('select lautowork.server01_package_status();').trim()).toBe('complete');
+  });
+
   it('rolls back the additive migration on a disposable database only', () => {
     db.sql(downSql(additiveRel));
     const gone = db.sql(`

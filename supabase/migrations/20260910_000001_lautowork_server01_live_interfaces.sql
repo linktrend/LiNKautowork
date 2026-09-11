@@ -480,10 +480,14 @@ begin
 end;
 $$;
 
+-- SECURITY DEFINER is required so EXECUTE grantees can read package status
+-- without a direct SELECT grant on server01_package_control. The function
+-- returns only a status token, runs as the owner, and pins search_path.
 create or replace function lautowork.server01_package_status()
 returns text
 language plpgsql
 stable
+security definer
 set search_path = pg_catalog, lautowork, pg_temp
 as $$
 declare
