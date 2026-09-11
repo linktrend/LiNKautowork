@@ -16,7 +16,7 @@ export type OperationAction = { id: string; actor: string; kind: RemediationKind
 export type Canary = { id: string; orgId: string; instanceIds: string[]; candidateReleaseId: string; baselineReleaseId: string; minimumSamples: number; minimumWindowMs: number; startedAt: string; candidateSuccessRate: number; baselineSuccessRate: number; status: 'canary' | 'passed' | 'rejected' | 'rolled_back' };
 export type DeploymentRecord = { id: string; deploymentId: string; at: string; state: 'canary' | 'promoted' | 'rolled_back'; candidateReleaseId: string; baselineReleaseId: string; immutableEvidenceDigest: string; actor: string; reason: string };
 export type Probe = { name: string; safe: true; minIntervalMs: number; run(): Promise<{ ok: boolean; evidenceRef?: string }> };
-export type MaintenanceInput = { versionDrift: boolean; disabledWorkflow: boolean; staleCallback: boolean; credentialState: 'unknown' | 'healthy' | 'expiring' | 'invalid' | 'revoked'; dependenciesTested: boolean; storagePressure: boolean; queuePressure: boolean; backupFresh: boolean; unresolvedIncidentCount: number };
+export type MaintenanceInput = { versionDrift: boolean; disabledWorkflow: boolean; staleCallback: boolean; credentialState: 'unknown' | 'healthy' | 'expiring' | 'invalid' | 'revoked'; dependenciesTested: boolean; storagePressure: boolean; queuePressure: boolean; backupFresh: boolean; unresolvedIncidentCount: number; jetStreamLag?: boolean; jetStreamUnavailable?: boolean };
 export type MaintenanceFinding = { code: string; severity: Severity; detail: string };
 
 const sha = (value: unknown) => `sha256:${createHash('sha256').update(JSON.stringify(value)).digest('hex')}`;
@@ -64,8 +64,29 @@ export function checkMaintenance(input: MaintenanceInput): MaintenanceFinding[] 
   add(!input.dependenciesTested, 'untested_dependency', 'warning', 'safe dependency probe has not produced current evidence');
   add(input.storagePressure, 'storage_pressure', 'warning', 'storage pressure signal requires review'); add(input.queuePressure, 'queue_pressure', 'warning', 'queue pressure signal requires review');
   add(!input.backupFresh, 'backup_stale', 'critical', 'backup freshness is not evidenced'); add(input.unresolvedIncidentCount > 0, 'unresolved_incidents', 'warning', `${input.unresolvedIncidentCount} incident(s) remain unresolved`);
+  add(Boolean(input.jetStreamLag), 'jetstream_lag', 'warning', 'JetStream consumer lag exceeded the warning threshold');
+  add(Boolean(input.jetStreamUnavailable), 'jetstream_unavailable', 'critical', 'JetStream is disconnected or a required stream is unavailable');
   return findings;
 }
+
+export {
+  JETSTREAM_DEFAULTS,
+  JETSTREAM_ROUTING_KEYS,
+  consumerLag,
+  deriveJetStreamHealth,
+  jetStreamAlertKeys,
+  planJetStreamRecovery,
+} from './jetstream.js';
+export type {
+  JetStreamClusterSnapshot,
+  JetStreamConsumerHealth,
+  JetStreamConsumerSnapshot,
+  JetStreamHealth,
+  JetStreamHealthSummary,
+  JetStreamRecoveryKind,
+  JetStreamRecoveryPlan,
+  JetStreamStreamSnapshot,
+} from './jetstream.js';
 
 /** Organisation views intentionally exclude payloads and secret references; operator view aggregates only those redacted summaries. */
 export function healthView(summaries: HealthSummary[], orgId?: string): HealthSummary[] { return orgId ? summaries.filter((summary) => summary.orgId === orgId) : summaries; }

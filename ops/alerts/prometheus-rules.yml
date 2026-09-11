@@ -27,3 +27,42 @@ groups:
           severity: critical
         annotations:
           summary: "Kill switch activated"
+
+  - name: linkautowork-jetstream
+    rules:
+      - alert: LiNKautoworkJetStreamDisconnected
+        expr: min(linkautowork_jetstream_connected) == 0
+        for: 2m
+        labels:
+          severity: critical
+          routing_key: jetstream-unavailable
+        annotations:
+          summary: "JetStream snapshot reports disconnected"
+          runbook: docs/runbooks/SERVER01-OPERATIONS.md
+      - alert: LiNKautoworkJetStreamConsumerLagCritical
+        expr: max by (stream, consumer) (linkautowork_jetstream_consumer_lag) >= 1000
+        for: 5m
+        labels:
+          severity: critical
+          routing_key: jetstream-lag-critical
+        annotations:
+          summary: "JetStream consumer lag exceeded the critical snapshot threshold"
+          runbook: docs/runbooks/SERVER01-OPERATIONS.md
+      - alert: LiNKautoworkJetStreamConsumerLagWarning
+        expr: max by (stream, consumer) (linkautowork_jetstream_consumer_lag) >= 100
+        for: 10m
+        labels:
+          severity: warning
+          routing_key: jetstream-lag
+        annotations:
+          summary: "JetStream consumer lag exceeded the warning snapshot threshold"
+          runbook: docs/runbooks/SERVER01-OPERATIONS.md
+      - alert: LiNKautoworkJetStreamAckPendingHigh
+        expr: max by (stream, consumer) (linkautowork_jetstream_ack_pending) >= 500
+        for: 5m
+        labels:
+          severity: critical
+          routing_key: jetstream-lag-critical
+        annotations:
+          summary: "JetStream ack-pending exceeded the critical snapshot threshold"
+          runbook: docs/runbooks/SERVER01-OPERATIONS.md
