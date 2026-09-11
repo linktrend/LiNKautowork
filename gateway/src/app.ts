@@ -46,6 +46,7 @@ import { N8nOperationsExecutor } from './services/deployments/n8n-operations-exe
 import { ProviderRouteService } from './services/provider-route-service.js';
 import { ProviderStoreError } from './services/provider-store.js';
 import { providerInvocationRequestSchema } from '../../packages/automation-contracts/src/provider-contract.js';
+import { RuntimeDispatchError, RuntimeDispatchService, runtimeDispatchStatus } from './services/runtime-dispatch/index.js';
 
 function parseSchema<T>(schema: z.ZodType<T>, input: unknown): T {
   try {
@@ -84,6 +85,8 @@ export type AppDeps = {
   operationsService: OperationsService;
   /** Optional until an org-scoped provider-plane runtime is configured; routes fail closed when absent. */
   providerRouteService?: ProviderRouteService;
+  /** Optional in-process n8n activation/callback bridge; routes fail closed when absent. */
+  runtimeDispatchService?: RuntimeDispatchService;
 };
 
 export function buildDependencies(env: AppEnv): AppDeps {
@@ -108,6 +111,7 @@ export function buildDependencies(env: AppEnv): AppDeps {
   const alertAdapter: AlertAdapter = { deliver: (alert) => supabaseClient.callOperationsRpc<void>('linkautowork_record_alert_delivery', { p_record: alert }) };
   const operationsExecutor = new N8nOperationsExecutor(n8nClient, supabaseClient);
   const operationsService = new OperationsService(operationsStore, alertAdapter, operationsExecutor, operationsExecutor, operationsExecutor);
+  const runtimeDispatchService = new RuntimeDispatchService({ activationInterfaceSupported: false });
 
   return {
     env,
@@ -124,6 +128,7 @@ export function buildDependencies(env: AppEnv): AppDeps {
     librarianService,
     provisioningService,
     operationsService,
+    runtimeDispatchService,
   };
 }
 
@@ -185,6 +190,23 @@ export function createApp(deps: AppDeps) {
   app.get('/v1/provider/requests/:requestId/receipt', ...providerAuth, async (req, res, next) => { try { res.json({ receipt: await providerService().receipt(req.platformInvocation!.orgId, req.params.requestId) }); } catch (error) { next(error); } });
   app.post('/v1/provider/callbacks', ingressRateLimiter, ...providerAuth, async (req, res, next) => { try { res.status(202).json({ receipt: await providerService().callback(req.platformInvocation!.orgId, req.body) }); } catch (error) { next(error); } });
   app.get('/v1/provider/events', ...providerAuth, async (req, res, next) => { try { const cursor = typeof req.query.cursor === 'string' ? req.query.cursor : null; const limit = typeof req.query.limit === 'string' ? Number(req.query.limit) : 50; res.json(await providerService().events(req.platformInvocation!.orgId, cursor, limit)); } catch (error) { next(error); } });
+
+  const runtimeDispatch = (): RuntimeDispatchService => {
+    if (!deps.runtimeDispatchService) throw new HttpError(503, 'runtime dispatch is unavailable');
+    return deps.runtimeDispatchService;
+  };
+  app.post('/v1/runtime/activations', ingressRateLimiter, ...providerAuth, (req, res, next) => {
+    try {
+      const result = runtimeDispatch().activate(req.platformInvocation!.orgId, parseSchema(providerInvocationRequestSchema, req.body));
+      res.status(result.replay ? 200 : 202).json(result);
+    } catch (error) { next(error); }
+  });
+  app.get('/v1/runtime/activations/:requestId', ...providerAuth, (req, res, next) => {
+    try { res.json({ activation: runtimeDispatch().statusOf(req.platformInvocation!.orgId, req.params.requestId) }); } catch (error) { next(error); }
+  });
+  app.post('/v1/runtime/callbacks', ingressRateLimiter, ...providerAuth, (req, res, next) => {
+    try { res.status(202).json({ receipt: runtimeDispatch().admitCallback(req.platformInvocation!.orgId, req.body), n8n_dispatched: false, live_n8n_activation: 'hold' }); } catch (error) { next(error); }
+  });
 
   app.post(
     '/v1/ingress/:workflowId',
@@ -607,6 +629,10 @@ export function createApp(deps: AppDeps) {
     if (error instanceof ProviderStoreError) {
       const status = error.category === 'not_found' ? 404 : error.category === 'conflict' ? 409 : error.category === 'blocked' ? 503 : error.category === 'forbidden' ? 403 : 400;
       res.status(status).json({ error: error.category });
+      return;
+    }
+    if (error instanceof RuntimeDispatchError) {
+      res.status(runtimeDispatchStatus(error.category)).json({ error: error.category });
       return;
     }
 
