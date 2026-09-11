@@ -30,6 +30,33 @@ function downSql(rel: string): string {
 }
 
 const additiveRel = 'supabase/migrations/20260910_000001_lautowork_server01_live_interfaces.sql';
+const configuredDatabase = 'automation_contracts';
+
+function pgIsReadyAccepting(containerName: string): string | null {
+  try {
+    const output = execFileSync('docker', [
+      'exec', containerName, 'pg_isready', '-U', 'postgres', '-d', configuredDatabase,
+    ], {
+      encoding: 'utf8',
+    });
+    return output.includes('accepting connections') ? output : null;
+  } catch {
+    return null;
+  }
+}
+
+function configuredDatabaseIsQueryable(containerName: string): boolean {
+  try {
+    execFileSync('docker', [
+      'exec', containerName,
+      'psql', '-v', 'ON_ERROR_STOP=1', '-U', 'postgres', '-d', configuredDatabase,
+      '-c', 'select 1',
+    ], { stdio: 'pipe' });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 class DisposablePostgres {
   readonly name: string;
@@ -43,22 +70,19 @@ class DisposablePostgres {
       '--name', this.name,
       '-e', 'POSTGRES_PASSWORD=ltfx.ph.aw01.disposable-postgres.v1',
       '-e', 'POSTGRES_HOST_AUTH_METHOD=trust',
-      '-e', 'POSTGRES_DB=automation_contracts',
+      '-e', `POSTGRES_DB=${configuredDatabase}`,
       'postgres:16-alpine',
     ], { stdio: 'pipe' });
     const deadline = Date.now() + 60_000;
-    let last = '';
+    let last = 'postgres did not become queryable';
     while (Date.now() < deadline) {
-      try {
-        last = execFileSync('docker', ['exec', this.name, 'pg_isready', '-U', 'postgres', '-d', 'automation_contracts'], {
-          encoding: 'utf8',
-        });
-        if (last.includes('accepting connections')) {
-          return;
-        }
-      } catch (error) {
-        last = error instanceof Error ? error.message : String(error);
+      if (configuredDatabaseIsQueryable(this.name)) {
+        return;
       }
+      const ready = pgIsReadyAccepting(this.name);
+      last = ready
+        ? `${ready.trim()} but ${configuredDatabase} is not yet queryable`
+        : last;
       execFileSync('sleep', ['1']);
     }
     throw new Error(`postgres did not become ready: ${last}`);
@@ -71,7 +95,7 @@ class DisposablePostgres {
     try {
       return execFileSync('docker', [
         'exec', '-i', this.name,
-        'psql', '-v', 'ON_ERROR_STOP=1', '-U', 'postgres', '-d', 'automation_contracts', '-q', '-t', '-A',
+        'psql', '-v', 'ON_ERROR_STOP=1', '-U', 'postgres', '-d', configuredDatabase, '-q', '-t', '-A',
       ], {
         input: readFileSync(file),
         encoding: 'utf8',
@@ -85,7 +109,7 @@ class DisposablePostgres {
     return new Promise((resolve, reject) => {
       const child = spawn('docker', [
         'exec', '-i', this.name,
-        'psql', '-v', 'ON_ERROR_STOP=1', '-U', 'postgres', '-d', 'automation_contracts', '-q', '-t', '-A',
+        'psql', '-v', 'ON_ERROR_STOP=1', '-U', 'postgres', '-d', configuredDatabase, '-q', '-t', '-A',
       ]);
       let stdout = '';
       let stderr = '';
@@ -131,6 +155,38 @@ function applyPredecessor(db: DisposablePostgres): void {
 function applyAdditive(db: DisposablePostgres): void {
   db.sql(upSql(additiveRel));
 }
+
+describe('server01 disposable postgres readiness', () => {
+  it('proves pg_isready can accept connections before automation_contracts is queryable', () => {
+    const name = `aw01-ready-${process.pid}-${Date.now()}`;
+    execFileSync('docker', [
+      'run', '-d', '--rm',
+      '--name', name,
+      '-e', 'POSTGRES_PASSWORD=ltfx.ph.aw01.disposable-postgres.v1',
+      '-e', 'POSTGRES_HOST_AUTH_METHOD=trust',
+      'postgres:16-alpine',
+    ], { stdio: 'pipe' });
+    try {
+      const deadline = Date.now() + 60_000;
+      let accepting: string | null = null;
+      while (Date.now() < deadline) {
+        accepting = pgIsReadyAccepting(name);
+        if (accepting) {
+          break;
+        }
+        execFileSync('sleep', ['1']);
+      }
+      expect(accepting).toContain('accepting connections');
+      expect(configuredDatabaseIsQueryable(name)).toBe(false);
+    } finally {
+      try {
+        execFileSync('docker', ['rm', '-f', name], { stdio: 'pipe' });
+      } catch {
+        // already removed
+      }
+    }
+  }, 180_000);
+});
 
 describe('server01 live-interface disposable postgres', () => {
   const db = new DisposablePostgres();
