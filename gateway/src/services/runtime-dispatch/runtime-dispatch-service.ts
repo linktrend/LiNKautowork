@@ -132,6 +132,8 @@ export class RuntimeDispatchService {
       if (record.receipt.receipt_id !== receipt.receipt_id) {
         throw new RuntimeDispatchError('conflict', 'provider receipt is immutable');
       }
+      record.callbackTimestamp = bridged.source_timestamp;
+      return record.receipt;
     }
     record.receipt = receipt;
     record.state = receipt.state as ActivationRecord['state'];

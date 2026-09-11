@@ -94,4 +94,31 @@ describe('RuntimeDispatchService', () => {
     expect(() => service.admitCallback(ORG, { ...callback, source_timestamp: '2026-08-13T00:02:00.000Z', receipt_id: randomUUID() })).toThrow(/receipt/);
     expect(() => service.admitCallback(OTHER, { ...callback, source_timestamp: '2026-08-13T00:02:00.000Z', org_id: OTHER })).toThrow(/isolation|organisation/);
   });
+
+  it('preserves the original terminal receipt when a later-timestamp callback reuses the same receipt_id', () => {
+    const service = new RuntimeDispatchService({ activationInterfaceSupported: true, now: () => new Date(ISSUED_AT) });
+    const request = invocation({ idempotency_key: 'runtime-dispatch-sticky-receipt-key' });
+    const activation = service.activate(ORG, request).activation;
+    const callback = {
+      request_id: request.request_id,
+      receipt_id: activation.receipt_id,
+      org_id: ORG,
+      n8n_execution_ref: 'n8n://executions/exec-sticky',
+      source_timestamp: '2026-08-13T00:01:00.000Z',
+      outcome: 'succeeded' as const,
+      request_fingerprint: activation.fingerprint,
+      callback_binding_ref: request.automation.configuration_ref.ref,
+    };
+    const original = service.admitCallback(ORG, callback);
+    const replayed = service.admitCallback(ORG, {
+      ...callback,
+      source_timestamp: '2026-08-13T00:03:00.000Z',
+      outcome: 'failed' as const,
+      n8n_execution_ref: 'n8n://executions/exec-sticky-later',
+    });
+    expect(replayed).toBe(original);
+    expect(replayed.state).toBe('succeeded');
+    expect(replayed.updated_at).toBe('2026-08-13T00:01:00.000Z');
+    expect(service.statusOf(ORG, request.request_id).state).toBe('succeeded');
+  });
 });
