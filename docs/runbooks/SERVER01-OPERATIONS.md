@@ -1,7 +1,7 @@
 # Server01 operations — JetStream observability and recovery
 
-Owner: LiNKtrend Platform  
-Last updated: 2026-09-11  
+Owner: LiNKtrend Platform
+Last updated: 2026-09-11
 Status: source rehearsal only. This runbook does **not** authorise a live Server01, NATS/JetStream, n8n, GSM, backup, restore, or deployment action.
 
 ## What this runbook covers
