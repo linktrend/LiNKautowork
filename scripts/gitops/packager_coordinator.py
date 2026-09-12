@@ -354,17 +354,17 @@ class LiveGitHub:
             if not isinstance(existing, Mapping):
                 raise CoordinatorError("invalid_phase_pr", "existing pull was not an object")
             number = existing.get("number")
+            if not isinstance(number, int) or isinstance(number, bool) or number < 1:
+                raise CoordinatorError("invalid_phase_pr", "existing pull number is required")
             if not existing.get("draft", existing.get("isDraft")):
                 raise CoordinatorError("phase_pr_not_draft", str(number))
-            updated = self._request(
+            self._request(
                 "PATCH",
                 f"https://api.github.com/repos/{repository}/pulls/{number}",
                 self.automation_token,
                 {"title": title, "body": body},
             )
-            if not isinstance(updated, Mapping):
-                updated = existing
-            identity = self._pr_identity(updated if isinstance(updated, Mapping) else existing, created=False)
+            identity = self._read_live_pr(number, created=False)
             return self._bound_live_pr(identity, head_sha)
         created = self._request(
             "POST",
@@ -380,19 +380,33 @@ class LiveGitHub:
         )
         if not isinstance(created, Mapping):
             raise CoordinatorError("invalid_phase_pr", "create response was not an object")
-        identity = self._pr_identity(created, created=True)
+        created_identity = self._pr_identity(created, created=True)
+        identity = self._read_live_pr(int(created_identity["number"]), created=True)
         return self._bound_live_pr(identity, head_sha)
+
+    def _read_live_pr(self, number: int, *, created: bool) -> dict[str, Any]:
+        payload = self._request(
+            "GET",
+            f"https://api.github.com/repos/{self.repository}/pulls/{number}",
+            self.automation_token,
+        )
+        if not isinstance(payload, Mapping):
+            raise CoordinatorError("invalid_phase_pr", "live pull readback was not an object")
+        return self._pr_identity(payload, created=created)
 
     def _bound_live_pr(self, identity: dict[str, Any], head_sha: str) -> dict[str, Any]:
         """Keep GitHub's draft/URL identity; never forge a successful draft PR."""
 
         expected = normalize_sha(head_sha)
         reported = normalize_sha(str(identity.get("headSha") or ""))
-        if is_valid_sha(reported) and reported != expected:
+        if not is_valid_sha(reported):
+            raise CoordinatorError("unverified_phase_ref", f"pr_head=missing:expected={expected}")
+        if reported != expected:
             raise CoordinatorError("unverified_phase_ref", f"pr_head={reported}:expected={expected}")
+        if identity.get("isDraft") is None:
+            raise CoordinatorError("phase_pr_not_draft", "missing live draft state")
         if not identity.get("isDraft"):
             raise CoordinatorError("phase_pr_not_draft", str(identity.get("number")))
-        identity["headSha"] = expected
         assert_live_phase_pr(identity)
         return identity
 
@@ -460,6 +474,63 @@ def assert_live_phase_pr(pr: Mapping[str, Any]) -> None:
         raise CoordinatorError("invalid_phase_pr", "live pull number is required")
     if not bool(pr.get("isDraft", False)):
         raise CoordinatorError("phase_pr_not_draft", str(number))
+
+
+def bind_exact_phase_pr_identity(
+    *,
+    repo: Path,
+    ensured: Mapping[str, Any],
+    listed: list[Mapping[str, Any]],
+    expected_head: str,
+    expected_base: str,
+    expected_head_sha: str,
+    expected_tree: str,
+    require_live_pr: bool,
+) -> dict[str, Any]:
+    """Publish only the live Phase PR identity; never infer head, base, SHA, or tree."""
+
+    if len(listed) != 1:
+        raise CoordinatorError("duplicate_phase_pr", json.dumps([row.get("number") for row in listed]))
+    live = listed[0]
+    if live.get("number") != ensured.get("number"):
+        raise CoordinatorError("duplicate_phase_pr", "stable Phase PR identity drifted")
+    if require_live_pr:
+        assert_live_phase_pr(live)
+    number = live.get("number")
+    if not isinstance(number, int) or isinstance(number, bool) or number < 1:
+        raise CoordinatorError("invalid_phase_pr", "missing live pull number")
+    url = str(live.get("url") or "")
+    if not url:
+        raise CoordinatorError("invalid_phase_pr", "missing live pull URL")
+    if "isDraft" not in live and "draft" not in live:
+        raise CoordinatorError("phase_pr_not_draft", "missing live draft state")
+    if not bool(live.get("isDraft", live.get("draft"))):
+        raise CoordinatorError("phase_pr_not_draft", str(number))
+    head_ref = str(live.get("head") or "")
+    base_ref = str(live.get("base") or "")
+    if head_ref != expected_head:
+        raise CoordinatorError("stale_phase_pr_identity", f"head={head_ref}:expected={expected_head}")
+    if base_ref != expected_base:
+        raise CoordinatorError("stale_phase_pr_identity", f"base={base_ref}:expected={expected_base}")
+    live_sha = normalize_sha(str(live.get("headSha") or ""))
+    expected_sha = normalize_sha(expected_head_sha)
+    if not is_valid_sha(live_sha):
+        raise CoordinatorError("unverified_phase_ref", f"pr_head=missing:expected={expected_sha}")
+    if live_sha != expected_sha:
+        raise CoordinatorError("unverified_phase_ref", f"pr_head={live_sha}:expected={expected_sha}")
+    live_tree = normalize_sha(_git(repo, "rev-parse", f"{live_sha}^{{tree}}"))
+    expected_tree_sha = normalize_sha(expected_tree)
+    if live_tree != expected_tree_sha:
+        raise CoordinatorError("unverified_phase_ref", f"pr_tree={live_tree}:expected={expected_tree_sha}")
+    return {
+        "number": number,
+        "url": url,
+        "isDraft": True,
+        "head": head_ref,
+        "base": base_ref,
+        "headSha": live_sha,
+        "gitTree": live_tree,
+    }
 
 
 @dataclass(frozen=True)
@@ -583,6 +654,21 @@ def consume_handoff(
     tree = normalize_sha(str(handoff.get("gitTree") or ""))
     if live_tree is not None and tree != normalize_sha(live_tree):
         return False, "handoff_stale_tree"
+    pr = handoff.get("phasePr") if isinstance(handoff.get("phasePr"), Mapping) else {}
+    extra_present = [
+        pr.get(field) not in (None, "") for field in ("head", "base", "headSha", "gitTree")
+    ]
+    if any(extra_present):
+        if not all(extra_present) or pr.get("number") in (None, "") or not pr.get("url"):
+            return False, "handoff_phase_pr_incomplete"
+        pr_sha = normalize_sha(str(pr.get("headSha") or ""))
+        if not is_valid_sha(pr_sha) or pr_sha != head:
+            return False, "handoff_phase_pr_stale"
+        pr_tree = normalize_sha(str(pr.get("gitTree") or ""))
+        if not is_valid_sha(pr_tree) or pr_tree != tree:
+            return False, "handoff_phase_pr_stale_tree"
+        if live_tree is not None and pr_tree != normalize_sha(live_tree):
+            return False, "handoff_phase_pr_stale_tree"
     return True, "ok"
 
 
@@ -943,7 +1029,11 @@ def _handoff_from(
         "phasePr": {
             "number": pr.get("number"),
             "url": pr.get("url"),
-            "isDraft": pr.get("isDraft", True),
+            "isDraft": pr.get("isDraft"),
+            "head": pr.get("head"),
+            "base": pr.get("base"),
+            "headSha": pr.get("headSha"),
+            "gitTree": pr.get("gitTree"),
         },
         "headCommit": record.get("headSha"),
         "gitTree": record.get("gitTree"),
@@ -1113,17 +1203,16 @@ def assemble_phase(
     )
     _assert_live_phase_pr_optional(pr, require_live_pr=require_live_pr)
     open_prs = github.list_open_phase_prs(repository=repository, head=phase_branch, base=development)
-    if len(open_prs) != 1:
-        raise CoordinatorError("duplicate_phase_pr", json.dumps([row.get("number") for row in open_prs]))
-    if open_prs[0].get("number") != pr.get("number"):
-        raise CoordinatorError("duplicate_phase_pr", "stable Phase PR identity drifted")
-    record["phasePr"] = {
-        "number": pr["number"],
-        "url": pr["url"],
-        "isDraft": bool(pr.get("isDraft", True)),
-        "base": development,
-        "head": phase_branch,
-    }
+    record["phasePr"] = bind_exact_phase_pr_identity(
+        repo=repo,
+        ensured=pr,
+        listed=open_prs,
+        expected_head=phase_branch,
+        expected_base=development,
+        expected_head_sha=head,
+        expected_tree=tree,
+        require_live_pr=require_live_pr,
+    )
     record["status"] = "draft-phase-pr"
     record["fastTrigger"] = "phase_pr"
     record["checkpointCI"] = False

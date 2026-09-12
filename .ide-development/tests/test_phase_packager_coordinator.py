@@ -15,11 +15,15 @@ from pathlib import Path
 from jsonschema import Draft202012Validator, RefResolver
 
 from scripts.gitops import packager_coordinator as coordinator
-from scripts.gitops import packager_discover as discover
 from scripts.ide_development.constants import RC_REQUIRED_SCHEMA_RELS
 
 
 ROOT = Path(__file__).resolve().parents[2]
+INSTALLED_HANDOFF_SCHEMA = ROOT / ".ide-development/schemas/phase-handoff.schema.json"
+INSTALLED_RECORD_SCHEMA = ROOT / ".ide-development/schemas/phase-record.schema.json"
+INSTALLED_FAST_WORKFLOW = ROOT / ".ide-development/workflows/linktrend-review-packager.yml"
+LIVE_FAST_WORKFLOW = ROOT / ".github/workflows/linktrend-review-packager.yml"
+LIVE_FULL_WORKFLOW = ROOT / ".github/workflows/linktrend-integrator-merge.yml"
 
 
 def git(repo: Path, *args: str, check: bool = True) -> str:
@@ -106,10 +110,10 @@ class PhasePackagerCoordinatorTests(unittest.TestCase):
         self.addCleanup(self.fx.cleanup)
 
     def test_discover_is_not_phase_packager(self) -> None:
-        self.assertFalse(discover.IS_PHASE_PACKAGER)
-        self.assertNotEqual(discover.COMPONENT_KIND, coordinator.COMPONENT_KIND)
+        with self.assertRaises(ImportError):
+            from scripts.gitops import packager_discover as _discover  # noqa: F401
         self.assertTrue(coordinator.IS_PHASE_PACKAGER)
-        self.assertIn("not** the Update 3 Phase Packager/Coordinator", discover.__doc__)
+        self.assertIn("not this component", coordinator.__doc__)
 
     def test_one_issue_creates_one_phase_branch_and_draft_pr(self) -> None:
         one = self.fx.accept_issue(11, "alpha.txt", "alpha\n")
@@ -126,6 +130,26 @@ class PhasePackagerCoordinatorTests(unittest.TestCase):
         self.assertEqual(result["acceptedCommits"][0]["sha"], one.sha)
         self.assertFalse(result["record"]["sealed"])
         self.assertFalse(result["fullDispatchAllowed"])
+        self._assert_published_phase_pr_identity(result, number=1)
+
+    def _assert_published_phase_pr_identity(self, result: dict, *, number: int, url: str | None = None) -> None:
+        expected_url = url or result["phasePr"]["url"]
+        for payload in (result["phasePr"], result["record"]["phasePr"], result["handoff"]["phasePr"]):
+            self.assertEqual(payload["number"], number)
+            self.assertEqual(payload["url"], expected_url)
+            self.assertTrue(payload["isDraft"])
+            self.assertEqual(payload["head"], result["phaseBranch"])
+            self.assertEqual(payload["base"], "development")
+            self.assertEqual(payload["headSha"], result["headSha"])
+            self.assertEqual(payload["gitTree"], result["gitTree"])
+            self.assertEqual(payload["headSha"], result["remoteSha"])
+        ok, detail = coordinator.consume_handoff(
+            result["handoff"],
+            live_head=result["headSha"],
+            live_tree=result["gitTree"],
+            repository="owner/name",
+        )
+        self.assertTrue(ok, detail)
 
     def test_many_compatible_issues_create_one_ordered_phase(self) -> None:
         first = self.fx.accept_issue(1, "one.txt", "one\n")
@@ -153,6 +177,83 @@ class PhasePackagerCoordinatorTests(unittest.TestCase):
         self.assertEqual(self.fx.github.ensure_calls, 2)
         self.assertEqual(self.fx.github.labels, [])
         self.assertEqual(self.fx.github.workflow_dispatches, [])
+        self._assert_published_phase_pr_identity(first, number=1)
+        self._assert_published_phase_pr_identity(second, number=1)
+        self.assertEqual(first["phasePr"], second["phasePr"])
+        self.assertEqual(first["handoff"]["phasePr"], second["handoff"]["phasePr"])
+
+    def test_created_phase_pr_publishes_exact_live_identity(self) -> None:
+        one = self.fx.accept_issue(41, "created-id.txt", "created-id\n")
+        result = self.fx.assemble([one])
+        self.assertEqual(result["action"], "created")
+        self.assertEqual(self.fx.github.ensure_calls, 1)
+        self.assertEqual(len(self.fx.github.prs), 1)
+        self._assert_published_phase_pr_identity(result, number=1)
+
+    def test_reused_phase_pr_does_not_create_a_duplicate(self) -> None:
+        one = self.fx.accept_issue(42, "reuse-id.txt", "reuse-id\n")
+        first = self.fx.assemble([one])
+        second = self.fx.assemble([one])
+        self.assertEqual(second["action"], "reused")
+        self.assertTrue(second["idempotent"])
+        self.assertEqual(self.fx.github.ensure_calls, 2)
+        self.assertEqual(len(self.fx.github.prs), 1)
+        self.assertEqual(first["phasePr"]["number"], second["phasePr"]["number"])
+        self._assert_published_phase_pr_identity(second, number=first["phasePr"]["number"])
+
+    def test_stale_live_phase_pr_sha_is_rejected(self) -> None:
+        one = self.fx.accept_issue(43, "stale-id.txt", "stale-id\n")
+        created = self.fx.assemble([one])
+
+        class StaleShaGitHub(coordinator.MemoryGitHub):
+            def list_open_phase_prs(self, *, repository: str, head: str, base: str):
+                rows = super().list_open_phase_prs(repository=repository, head=head, base=base)
+                for row in rows:
+                    row["headSha"] = "b" * 40
+                return rows
+
+        github = StaleShaGitHub(repository="owner/name")
+        github.prs = self.fx.github.prs
+        github.next_number = self.fx.github.next_number
+        github.ready_shas = set(self.fx.github.ready_shas)
+        github.evidence = dict(self.fx.github.evidence)
+        with self.assertRaisesRegex(coordinator.CoordinatorError, "unverified_phase_ref"):
+            self.fx.assemble([one], github=github)
+        self.assertEqual(len(github.prs), 1)
+        self.assertEqual(created["phasePr"]["number"], 1)
+
+    def test_mismatched_live_head_or_base_is_rejected(self) -> None:
+        one = self.fx.accept_issue(44, "mismatch-id.txt", "mismatch-id\n")
+        self.fx.assemble([one])
+        stored = next(iter(self.fx.github.prs.values()))
+        stored["head"] = "phase/other"
+        with self.assertRaisesRegex(coordinator.CoordinatorError, "stale_phase_pr_identity"):
+            self.fx.assemble([one])
+        stored["head"] = "phase/next"
+        stored["base"] = "staging"
+        with self.assertRaisesRegex(coordinator.CoordinatorError, "stale_phase_pr_identity"):
+            self.fx.assemble([one])
+        self.assertEqual(len(self.fx.github.prs), 1)
+
+    def test_duplicate_open_phase_prs_are_rejected(self) -> None:
+        one = self.fx.accept_issue(45, "dup-id.txt", "dup-id\n")
+
+        class DuplicateListGitHub(coordinator.MemoryGitHub):
+            def list_open_phase_prs(self, *, repository: str, head: str, base: str):
+                found = super().list_open_phase_prs(repository=repository, head=head, base=base)
+                if not found:
+                    return found
+                clone = dict(found[0])
+                clone["number"] = int(found[0]["number"]) + 1
+                clone["url"] = f"https://example.invalid/{repository}/pull/{clone['number']}"
+                return [found[0], clone]
+
+        github = DuplicateListGitHub(repository="owner/name")
+        github.ready_shas = set(self.fx.github.ready_shas)
+        github.evidence = dict(self.fx.github.evidence)
+        with self.assertRaisesRegex(coordinator.CoordinatorError, "duplicate_phase_pr"):
+            self.fx.assemble([one], github=github)
+        self.assertEqual(len(github.prs), 1)
 
     def test_new_accepted_commit_updates_phase_and_invalidates_old_evidence(self) -> None:
         first = self.fx.accept_issue(4, "first.txt", "first\n")
@@ -284,7 +385,7 @@ class PhasePackagerCoordinatorTests(unittest.TestCase):
         self.assertFalse(coordinator._is_ancestor(self.fx.work, extra.sha, result["headSha"]))
 
     def test_checkpoint_push_does_not_start_managed_ci_and_phase_pr_starts_fast(self) -> None:
-        fast = (ROOT / coordinator.FAST_WORKFLOW_REL).read_text(encoding="utf-8")
+        fast = INSTALLED_FAST_WORKFLOW.read_text(encoding="utf-8")
         contract = coordinator.parse_fast_trigger_contract(fast)
         self.assertTrue(contract["namedFast"])
         self.assertFalse(contract["checkpointPush"])
@@ -293,9 +394,13 @@ class PhasePackagerCoordinatorTests(unittest.TestCase):
         self.assertTrue(contract["checksExactHead"])
         self.assertTrue(contract["cancelObsolete"])
         self.assertFalse(contract["startsFull"])
-        live = (ROOT / ".github/workflows/linktrend-review-packager.yml").read_text(encoding="utf-8")
-        self.assertEqual(fast, live)
-        full = (ROOT / coordinator.FULL_WORKFLOW_REL).read_text(encoding="utf-8")
+        live = LIVE_FAST_WORKFLOW.read_text(encoding="utf-8")
+        live_contract = coordinator.parse_fast_trigger_contract(live)
+        self.assertEqual(contract["namedFast"], live_contract["namedFast"])
+        self.assertFalse(live_contract["checkpointPush"])
+        self.assertTrue(live_contract["phasePullRequest"])
+        self.assertFalse(live_contract["startsFull"])
+        full = LIVE_FULL_WORKFLOW.read_text(encoding="utf-8")
         self.assertNotRegex(full, r"(?m)^\s+push:")
         self.assertIn("types: [labeled]", full)
         one = self.fx.accept_issue(16, "fast.txt", "fast\n")
@@ -369,11 +474,11 @@ class PhasePackagerCoordinatorTests(unittest.TestCase):
             self.assertIn(key, handoff)
         self.assertEqual(handoff["kind"], "phase-handoff")
         self.assertEqual(handoff["component"], coordinator.COMPONENT_KIND)
-        schema = json.loads((ROOT / "core/managed-core/schemas/phase-handoff.schema.json").read_text(encoding="utf-8"))
+        schema = json.loads(INSTALLED_HANDOFF_SCHEMA.read_text(encoding="utf-8"))
         self.assertEqual(schema["required"], list(key for key in schema["required"]))
         for key in schema["required"]:
             self.assertIn(key, handoff)
-        record_schema = json.loads((ROOT / "core/managed-core/schemas/phase-record.schema.json").read_text(encoding="utf-8"))
+        record_schema = json.loads(INSTALLED_RECORD_SCHEMA.read_text(encoding="utf-8"))
         for key in record_schema["required"]:
             self.assertIn(key, cursor["record"])
 
@@ -403,9 +508,9 @@ class PhasePackagerCoordinatorTests(unittest.TestCase):
             json.loads((state_dir / "provider-consumer-handoff.json").read_text(encoding="utf-8")),
             typed,
         )
-        phase_schema_path = ROOT / "core/managed-core/schemas/phase-handoff.schema.json"
+        phase_schema_path = INSTALLED_HANDOFF_SCHEMA
         phase_schema = json.loads(phase_schema_path.read_text(encoding="utf-8"))
-        typed_schema_path = ROOT / "core/managed-core/schemas/provider-consumer-handoff.schema.json"
+        typed_schema_path = ROOT / ".ide-development/schemas/provider-consumer-handoff.schema.json"
         typed_schema = json.loads(typed_schema_path.read_text(encoding="utf-8"))
         resolver = RefResolver(
             phase_schema_path.as_uri(),
@@ -487,21 +592,43 @@ class PhasePackagerCoordinatorAdversarialTests(unittest.TestCase):
             self.fx.assemble([one], require_live_pr=True)
         self.assertEqual(remote_sha(self.fx.work, "phase/next"), "")
 
-    def _live_transport(self, *, url: str, draft: bool, sha: str | None = None):
+    def _live_transport(
+        self,
+        *,
+        url: str,
+        draft: bool,
+        sha: str | None = None,
+        head_ref: str = "phase/next",
+        base_ref: str = "development",
+        extra_open: list[dict[str, object]] | None = None,
+        readback_sha: str | None = None,
+    ):
         created: dict[str, object] = {}
+        posts = {"count": 0}
 
         def transport(method: str, request_url: str, token: str, body):
             if method == "GET" and "/pulls?" in request_url:
-                return [dict(created)] if created else []
+                rows = [dict(created)] if created else []
+                if extra_open:
+                    rows.extend(extra_open)
+                return rows
+            if method == "GET" and "/pulls/" in request_url:
+                if not created:
+                    raise AssertionError(f"readback before create {request_url}")
+                payload = dict(created)
+                if readback_sha is not None:
+                    payload["head"] = {"ref": head_ref, "sha": readback_sha}
+                return payload
             if method == "POST" and request_url.endswith("/pulls"):
+                posts["count"] += 1
                 head_sha = sha or remote_sha(self.fx.work, "phase/next")
                 created.update(
                     {
                         "number": 42,
                         "html_url": url,
                         "draft": draft,
-                        "head": {"ref": "phase/next", "sha": head_sha},
-                        "base": {"ref": "development"},
+                        "head": {"ref": head_ref, "sha": head_sha},
+                        "base": {"ref": base_ref},
                     }
                 )
                 return dict(created)
@@ -509,12 +636,14 @@ class PhasePackagerCoordinatorAdversarialTests(unittest.TestCase):
                 return dict(created)
             raise AssertionError(f"unexpected GitHub call {method} {request_url}")
 
-        return coordinator.LiveGitHub(
+        github = coordinator.LiveGitHub(
             repository="owner/name",
             automation_token="ltfx.coordinator.auto_token.v1",
             user_token="ltfx.coordinator.user_token.v1",
             transport=transport,
         )
+        github.posts = posts
+        return github
 
     def test_live_github_rejects_example_invalid_pr_url(self) -> None:
         invalid = self.fx.accept_issue(28, "badurl.txt", "badurl\n")
@@ -547,8 +676,57 @@ class PhasePackagerCoordinatorAdversarialTests(unittest.TestCase):
         self.assertEqual(result["phasePr"]["number"], 42)
         self.assertEqual(result["phasePr"]["url"], "https://github.com/owner/name/pull/42")
         self.assertTrue(result["phasePr"]["isDraft"])
+        self.assertEqual(result["phasePr"]["head"], "phase/next")
+        self.assertEqual(result["phasePr"]["base"], "development")
+        self.assertEqual(result["phasePr"]["headSha"], result["headSha"])
+        self.assertEqual(result["phasePr"]["gitTree"], result["gitTree"])
+        self.assertEqual(result["handoff"]["phasePr"]["headSha"], result["headSha"])
+        self.assertEqual(result["handoff"]["phasePr"]["gitTree"], result["gitTree"])
         self.assertEqual(remote_sha(self.fx.work, "phase/next"), result["headSha"])
         self.assertNotIn("example.invalid", json.dumps(result["phasePr"]))
+        ok, detail = coordinator.consume_handoff(
+            result["handoff"],
+            live_head=result["headSha"],
+            live_tree=result["gitTree"],
+            repository="owner/name",
+        )
+        self.assertTrue(ok, detail)
+
+    def test_live_github_rejects_mismatched_readback_sha(self) -> None:
+        one = self.fx.accept_issue(46, "badsha.txt", "badsha\n")
+        with self.assertRaisesRegex(coordinator.CoordinatorError, "unverified_phase_ref"):
+            self.fx.assemble(
+                [one],
+                github=self._live_transport(
+                    url="https://github.com/owner/name/pull/42",
+                    draft=True,
+                    readback_sha="a" * 40,
+                ),
+                require_live_pr=True,
+                require_evidence=False,
+            )
+
+    def test_live_github_reuses_without_second_create(self) -> None:
+        one = self.fx.accept_issue(47, "livereuse.txt", "livereuse\n")
+        github = self._live_transport(url="https://github.com/owner/name/pull/42", draft=True)
+        first = self.fx.assemble(
+            [one],
+            github=github,
+            require_live_pr=True,
+            require_evidence=False,
+        )
+        second = self.fx.assemble(
+            [one],
+            github=github,
+            require_live_pr=True,
+            require_evidence=False,
+        )
+        self.assertEqual(github.posts["count"], 1)
+        self.assertEqual(second["action"], "reused")
+        self.assertEqual(first["phasePr"]["number"], second["phasePr"]["number"])
+        self.assertEqual(first["phasePr"]["headSha"], second["phasePr"]["headSha"])
+        self.assertEqual(first["phasePr"]["gitTree"], second["phasePr"]["gitTree"])
+        self.assertEqual(github.ensure_calls, 2)
 
     def test_success_requires_verified_remote_phase_ref(self) -> None:
         one = self.fx.accept_issue(23, "push.txt", "push\n")
@@ -627,34 +805,26 @@ class PhasePackagerCoordinatorAdversarialTests(unittest.TestCase):
         self.assertNotIn("phase-assemble", listed)
 
     def test_index_manifest_schema_and_hosted_fast_cover_coordinator(self) -> None:
-        index = (ROOT / "core/managed-core/INDEX.yaml").read_text(encoding="utf-8")
+        index = (ROOT / ".ide-development/INDEX.yaml").read_text(encoding="utf-8")
         self.assertIn("schemas/phase-handoff.schema.json", index)
         self.assertIn("schemas/phase-record.schema.json", index)
         self.assertIn("core/managed-core/schemas/phase-handoff.schema.json", RC_REQUIRED_SCHEMA_RELS)
         self.assertIn("core/managed-core/schemas/phase-record.schema.json", RC_REQUIRED_SCHEMA_RELS)
-        manifest = json.loads((ROOT / "core/managed-core/MANIFEST.json").read_text(encoding="utf-8"))
+        manifest = json.loads((ROOT / ".ide-development/MANIFEST.json").read_text(encoding="utf-8"))
         sources = {row["source"] for row in manifest["files"]}
+        destinations = {row["destination"] for row in manifest["files"]}
         self.assertIn("core/managed-core/schemas/phase-handoff.schema.json", sources)
         self.assertIn("core/managed-core/schemas/phase-record.schema.json", sources)
         self.assertIn("scripts/gitops/packager_coordinator.py", sources)
         self.assertIn("scripts/tests/test_phase_packager_coordinator.py", sources)
-        index_entry = next(row for row in manifest["files"] if row["source"] == "core/managed-core/INDEX.yaml")
-        index_digest = "sha256:" + hashlib.sha256((ROOT / "core/managed-core/INDEX.yaml").read_bytes()).hexdigest()
-        self.assertEqual(index_entry["sourceHash"], index_digest)
-        runtime = json.loads((ROOT / "core/github/managed-runtime/MANIFEST.json").read_text(encoding="utf-8"))
-        self.assertIn("scripts/gitops/packager_coordinator.py", runtime["files"])
-        fast = json.loads((ROOT / ".github/linktrend-delivery-mode.json").read_text(encoding="utf-8"))
-        blob = json.dumps(fast["profiles"]["fast"]["commands"])
-        self.assertIn("packager_coordinator.py", blob)
-        self.assertIn("test_phase_packager_coordinator", blob)
+        self.assertIn(".ide-development/schemas/phase-handoff.schema.json", destinations)
+        self.assertIn("scripts/gitops/packager_coordinator.py", destinations)
+        self.assertTrue(INSTALLED_HANDOFF_SCHEMA.is_file())
+        self.assertTrue(INSTALLED_RECORD_SCHEMA.is_file())
         one = self.fx.accept_issue(27, "schema.txt", "schema\n")
         result = self.fx.assemble([one])
-        handoff_schema = json.loads(
-            (ROOT / "core/managed-core/schemas/phase-handoff.schema.json").read_text(encoding="utf-8")
-        )
-        record_schema = json.loads(
-            (ROOT / "core/managed-core/schemas/phase-record.schema.json").read_text(encoding="utf-8")
-        )
+        handoff_schema = json.loads(INSTALLED_HANDOFF_SCHEMA.read_text(encoding="utf-8"))
+        record_schema = json.loads(INSTALLED_RECORD_SCHEMA.read_text(encoding="utf-8"))
         for key in handoff_schema["required"]:
             self.assertIn(key, result["handoff"])
         extra_handoff = set(result["handoff"]) - set(handoff_schema["properties"])
