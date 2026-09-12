@@ -43,7 +43,11 @@ try:
         compute_transition_digest,
         create_transition_receipt,
     )
-    from scripts.gitops.github_auth import GitHubAuthError, resolve_phase_api_token
+    from scripts.gitops.github_auth import GitHubAuthError, resolve_live_phase_mutation_token
+    from scripts.gitops.packager_coordinator import (
+        CoordinatorError as PackagerCoordinatorError,
+        assert_draft_phase_close_eligible,
+    )
     from scripts.gitops.administrator_recovery import MemoryProtection, recover_phase_merge
 except ModuleNotFoundError:  # pragma: no cover - script-style execution
     from delivery_modes import is_phase_branch, is_valid_sha, normalize_sha  # type: ignore
@@ -55,11 +59,17 @@ except ModuleNotFoundError:  # pragma: no cover - script-style execution
         verify_receipt_payload,
     )
     from coordinator.receipts import compute_receipt_digest, compute_transition_digest, create_transition_receipt  # type: ignore
-    from github_auth import GitHubAuthError, resolve_phase_api_token  # type: ignore
+    from github_auth import GitHubAuthError, resolve_live_phase_mutation_token  # type: ignore
+    from packager_coordinator import (  # type: ignore
+        CoordinatorError as PackagerCoordinatorError,
+        assert_draft_phase_close_eligible,
+    )
     from administrator_recovery import MemoryProtection, recover_phase_merge  # type: ignore
 
 COMPONENT_KIND = "delivery_controller"
 IS_DELIVERY_CONTROLLER = True
+CONSOLIDATION_EVIDENCE_KIND = "phase-consolidation-evidence"
+CONSOLIDATION_RECEIPT_KIND = "phase-consolidation-receipt"
 OPERATION_REL = Path(".linktrend/delivery-operation.json")
 CONTROLLER_STATE_REL = Path("ide-development/delivery-controller")
 PROTECTED_BRANCHES = frozenset({"development", "staging", "main"})
@@ -228,6 +238,17 @@ class GitHubPort(Protocol):
     def push_protected(self, *, repository: str, branch: str, sha: str) -> None:
         ...
 
+    def close_draft_phase_pr(
+        self,
+        *,
+        repository: str,
+        number: int,
+        expected_head: str,
+        phase_branch: str,
+        expected_url: str | None = None,
+    ) -> dict[str, Any]:
+        ...
+
 
 @dataclass
 class MemoryGitHub:
@@ -242,6 +263,8 @@ class MemoryGitHub:
     merge_rejections: dict[int, str] = field(default_factory=dict)
     next_number: int = 1
     require_admin_bypass: bool = False
+    close_calls: list[dict[str, Any]] = field(default_factory=list)
+    closed_numbers: list[int] = field(default_factory=list)
 
     def get_pull_request(self, *, repository: str, number: int) -> dict[str, Any]:
         if repository != self.repository:
@@ -344,6 +367,51 @@ class MemoryGitHub:
             {"repository": repository, "branch": branch, "sha": normalize_sha(sha)}
         )
         raise ControllerError("direct_push_forbidden", branch)
+
+    def close_draft_phase_pr(
+        self,
+        *,
+        repository: str,
+        number: int,
+        expected_head: str,
+        phase_branch: str,
+        expected_url: str | None = None,
+    ) -> dict[str, Any]:
+        pr = self.get_pull_request(repository=repository, number=number)
+        try:
+            assert_draft_phase_close_eligible(pr, phase_branch=phase_branch)
+        except PackagerCoordinatorError as exc:
+            raise ControllerError(exc.code, exc.detail) from exc
+        if expected_url and str(pr.get("url") or "") not in {"", expected_url}:
+            raise ControllerError("unrelated_source", str(pr.get("url") or ""))
+        live_head = normalize_sha(str(pr.get("headSha") or ""))
+        expected = normalize_sha(expected_head)
+        if expected and live_head and live_head != expected:
+            raise ControllerError("stale_pr_head", f"live={live_head}:expected={expected}")
+        stored = self.prs[number]
+        already = str(stored.get("state") or "open").lower() == "closed"
+        self.close_calls.append({"number": number, "alreadyClosed": already})
+        if already:
+            return {
+                "number": number,
+                "alreadyClosed": True,
+                "isDraft": True,
+                "state": "closed",
+                "merged": False,
+                "directPush": False,
+                "refDeleted": False,
+            }
+        stored["state"] = "closed"
+        self.closed_numbers.append(number)
+        return {
+            "number": number,
+            "alreadyClosed": False,
+            "isDraft": True,
+            "state": "closed",
+            "merged": False,
+            "directPush": False,
+            "refDeleted": False,
+        }
 
 
 def _github_api(
@@ -604,6 +672,60 @@ class LiveGitHub:
     def push_protected(self, *, repository: str, branch: str, sha: str) -> None:
         raise ControllerError("direct_push_forbidden", branch)
 
+    def close_draft_phase_pr(
+        self,
+        *,
+        repository: str,
+        number: int,
+        expected_head: str,
+        phase_branch: str,
+        expected_url: str | None = None,
+    ) -> dict[str, Any]:
+        live = self.get_pull_request(repository=repository, number=number)
+        if expected_url and str(live.get("url") or "") not in {"", expected_url}:
+            raise ControllerError("unrelated_source", str(live.get("url") or ""))
+        try:
+            assert_draft_phase_close_eligible(live, phase_branch=phase_branch)
+        except PackagerCoordinatorError as exc:
+            raise ControllerError(exc.code, exc.detail) from exc
+        head = normalize_sha(str(live.get("headSha") or ""))
+        expected = normalize_sha(expected_head)
+        if expected and head and head != expected:
+            raise ControllerError("stale_pr_head", f"live={head}:expected={expected}")
+        if str(live.get("state") or "").lower() == "closed":
+            return {
+                "number": number,
+                "alreadyClosed": True,
+                "isDraft": True,
+                "state": "closed",
+                "merged": False,
+                "directPush": False,
+                "refDeleted": False,
+                "url": str(live.get("url") or ""),
+            }
+        updated = self._request(
+            "PATCH",
+            f"https://api.github.com/repos/{repository}/pulls/{number}",
+            {"state": "closed"},
+        )
+        if not isinstance(updated, Mapping):
+            raise ControllerError("github_api_failed", "close response was not an object")
+        if updated.get("merged"):
+            raise ControllerError("pr_not_open", f"merged:{number}")
+        state = str(updated.get("state") or "")
+        if state != "closed":
+            raise ControllerError("github_api_failed", f"PR #{number} was not closed")
+        return {
+            "number": number,
+            "alreadyClosed": False,
+            "isDraft": True,
+            "state": "closed",
+            "merged": False,
+            "directPush": False,
+            "refDeleted": False,
+            "url": str(updated.get("html_url") or live.get("url") or ""),
+        }
+
 
 def resolve_production_github(repository: str) -> LiveGitHub:
     """Fail closed unless a GitHub API token is configured for Phase operations.
@@ -615,7 +737,7 @@ def resolve_production_github(repository: str) -> LiveGitHub:
     if not repository or repository.count("/") != 1:
         raise ControllerError("missing_repository", "delivery requires --repository owner/name")
     try:
-        token, _source = resolve_phase_api_token()
+        token, _source = resolve_live_phase_mutation_token()
     except GitHubAuthError as exc:
         raise ControllerError(exc.code, exc.detail) from exc
     return LiveGitHub(repository=repository, automation_token=token)
@@ -1281,6 +1403,168 @@ def run_identical_under_agents(
     return {"status": "identical", "results": results, "decisionDigest": next(iter(digests))}
 
 
+def validate_phase_consolidation_evidence(
+    evidence: Mapping[str, Any],
+    *,
+    repository: str,
+) -> dict[str, Any]:
+    """Require explicit keeper and replacement identities before any close."""
+
+    if not isinstance(evidence, Mapping) or not evidence:
+        raise ControllerError("consolidation_evidence_invalid", "missing")
+    if evidence.get("schemaVersion") != 1 or evidence.get("kind") != CONSOLIDATION_EVIDENCE_KIND:
+        raise ControllerError("consolidation_evidence_invalid", "schema")
+    if str(evidence.get("repository") or "") != repository:
+        raise ControllerError("wrong_repository", str(evidence.get("repository") or ""))
+    phase_branch = str(evidence.get("phaseBranch") or "")
+    if not is_phase_branch(phase_branch):
+        raise ControllerError("invalid_phase_branch", phase_branch)
+    base = str(evidence.get("base") or "development")
+    if base in {"staging", "main"}:
+        raise ControllerError("protected_pr_close", base)
+    keeper = evidence.get("keeper")
+    replacements = evidence.get("replacements")
+    if not isinstance(keeper, Mapping):
+        raise ControllerError("keeper_evidence_missing", "keeper")
+    if not isinstance(replacements, list) or not replacements:
+        raise ControllerError("replacement_evidence_missing", "replacements")
+    keeper_number = keeper.get("number")
+    if not isinstance(keeper_number, int) or isinstance(keeper_number, bool) or keeper_number < 1:
+        raise ControllerError("keeper_evidence_missing", "number")
+    keeper_head = str(keeper.get("head") or phase_branch)
+    if keeper_head != phase_branch:
+        raise ControllerError("unrelated_source", keeper_head)
+    keeper_url = str(keeper.get("url") or "")
+    keeper_sha = normalize_sha(str(keeper.get("headSha") or ""))
+    parsed_replacements: list[dict[str, Any]] = []
+    seen: set[int] = set()
+    for row in replacements:
+        if not isinstance(row, Mapping):
+            raise ControllerError("replacement_evidence_missing", "row")
+        number = row.get("number")
+        if not isinstance(number, int) or isinstance(number, bool) or number < 1:
+            raise ControllerError("replacement_evidence_missing", "number")
+        if number == keeper_number:
+            raise ControllerError("keeper_replacement_overlap", str(number))
+        if number in seen:
+            raise ControllerError("duplicate_replacement", str(number))
+        reason = str(row.get("reason") or "").strip()
+        if not reason:
+            raise ControllerError("replacement_evidence_missing", "reason")
+        head = str(row.get("head") or phase_branch)
+        if head != phase_branch:
+            raise ControllerError("unrelated_source", head)
+        parsed_replacements.append(
+            {
+                "number": number,
+                "url": str(row.get("url") or ""),
+                "head": head,
+                "headSha": normalize_sha(str(row.get("headSha") or "")),
+                "reason": reason,
+            }
+        )
+        seen.add(number)
+    return {
+        "repository": repository,
+        "phaseBranch": phase_branch,
+        "base": base,
+        "keeper": {
+            "number": keeper_number,
+            "url": keeper_url,
+            "head": keeper_head,
+            "headSha": keeper_sha,
+        },
+        "replacements": parsed_replacements,
+    }
+
+
+def authorize_phase_consolidation(
+    *,
+    github: GitHubPort,
+    repository: str,
+    evidence: Mapping[str, Any],
+    role: str,
+    actor: str = "delivery-controller",
+    record_path: Path | None = None,
+) -> dict[str, Any]:
+    """Close only named draft replacement Phase PRs after controller authorization.
+
+    Never merges, never deletes refs, and never closes protected or non-draft PRs.
+    """
+
+    require_controller_role(role)
+    parsed = validate_phase_consolidation_evidence(evidence, repository=repository)
+    keeper_live = github.get_pull_request(repository=repository, number=int(parsed["keeper"]["number"]))
+    try:
+        assert_draft_phase_close_eligible(keeper_live, phase_branch=parsed["phaseBranch"])
+    except PackagerCoordinatorError as exc:
+        raise ControllerError(exc.code, exc.detail) from exc
+    if str(keeper_live.get("state") or "open").lower() != "open":
+        raise ControllerError("keeper_not_open", str(parsed["keeper"]["number"]))
+    keeper_url = str(parsed["keeper"]["url"] or "")
+    if keeper_url and str(keeper_live.get("url") or "") not in {"", keeper_url}:
+        raise ControllerError("unrelated_source", str(keeper_live.get("url") or ""))
+    expected_keeper_sha = normalize_sha(str(parsed["keeper"]["headSha"] or ""))
+    live_keeper_sha = normalize_sha(str(keeper_live.get("headSha") or ""))
+    if expected_keeper_sha and live_keeper_sha and expected_keeper_sha != live_keeper_sha:
+        raise ControllerError("stale_pr_head", f"keeper={live_keeper_sha}:expected={expected_keeper_sha}")
+    closed: list[dict[str, Any]] = []
+    already_closed: list[dict[str, Any]] = []
+    for replacement in parsed["replacements"]:
+        result = github.close_draft_phase_pr(
+            repository=repository,
+            number=int(replacement["number"]),
+            expected_head=str(replacement["headSha"] or live_keeper_sha),
+            phase_branch=parsed["phaseBranch"],
+            expected_url=str(replacement["url"] or "") or None,
+        )
+        row = {
+            "number": int(replacement["number"]),
+            "reason": replacement["reason"],
+            "alreadyClosed": bool(result.get("alreadyClosed")),
+            "merged": False,
+            "refDeleted": False,
+        }
+        if result.get("alreadyClosed"):
+            already_closed.append(row)
+        else:
+            closed.append(row)
+    receipt = {
+        "schemaVersion": 1,
+        "kind": CONSOLIDATION_RECEIPT_KIND,
+        "status": "consolidated",
+        "repository": repository,
+        "phaseBranch": parsed["phaseBranch"],
+        "keeper": {
+            "number": int(parsed["keeper"]["number"]),
+            "url": str(keeper_live.get("url") or parsed["keeper"]["url"]),
+            "head": parsed["phaseBranch"],
+            "headSha": live_keeper_sha,
+            "isDraft": True,
+            "state": "open",
+        },
+        "closed": closed,
+        "alreadyClosed": already_closed,
+        "merged": False,
+        "directPush": False,
+        "refDeleted": False,
+        "actor": actor,
+        "role": role,
+        "component": COMPONENT_KIND,
+        "idempotent": bool(already_closed) and not closed,
+    }
+    receipt["receiptDigest"] = hashlib.sha256(
+        json.dumps(
+            {key: value for key, value in receipt.items() if key != "receiptDigest"},
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    if record_path is not None:
+        write_operation_record(record_path, receipt)
+    return receipt
+
+
 def write_operation_record(path: Path, record: Mapping[str, Any]) -> dict[str, Any]:
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
@@ -1421,6 +1705,7 @@ def main(argv: list[str] | None = None) -> int:
             "cleanup",
             "agent-identical",
             "recover-phase",
+            "consolidate-phase",
         ],
     )
     parser.add_argument("--repository", default="")
@@ -1438,6 +1723,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--release-json", default="")
     parser.add_argument("--promote-json", default="")
     parser.add_argument("--merge-evidence-json", default="")
+    parser.add_argument("--evidence-json", default="")
     parser.add_argument("--pr-number", type=int, default=0)
     parser.add_argument("--expected-head", default="")
     parser.add_argument("--source-sha", default="")
@@ -1559,6 +1845,16 @@ def main(argv: list[str] | None = None) -> int:
                     merge_succeeded=True,
                     controller_owned=owned,
                     rollout=rollout,
+                )
+            elif args.command == "consolidate-phase":
+                if not args.evidence_json:
+                    raise ControllerError("consolidation_evidence_invalid", "missing --evidence-json")
+                result = authorize_phase_consolidation(
+                    github=github,
+                    repository=args.repository,
+                    evidence=load(args.evidence_json),
+                    role=args.role,
+                    record_path=Path(args.out) if args.out else None,
                 )
             elif args.command == "recover-phase":
                 if os.environ.get("LINKTREND_STATUS_BACKEND") != "file":

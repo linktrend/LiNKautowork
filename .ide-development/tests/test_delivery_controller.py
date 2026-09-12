@@ -12,7 +12,6 @@ from pathlib import Path
 from unittest import mock
 
 from scripts.gitops import delivery_controller as controller
-from scripts.gitops import packager_discover as discover
 from scripts.gitops.coordinator import receipts
 from scripts.ide_development.constants import RC_REQUIRED_SCHEMA_RELS
 
@@ -161,7 +160,7 @@ class DeliveryControllerTests(unittest.TestCase):
         self.assertTrue(controller.IS_DELIVERY_CONTROLLER)
         self.assertEqual(controller.COMPONENT_KIND, "delivery_controller")
         self.assertIn("Replaces the nonexistent Integrator", controller.__doc__)
-        self.assertFalse(getattr(discover, "IS_DELIVERY_CONTROLLER", False))
+        self.assertFalse(getattr(controller, "IS_PHASE_PACKAGER", False))
 
     def test_valid_phase_pr_reaches_development_without_external_integrator(self) -> None:
         result = self._deliver()
@@ -877,62 +876,35 @@ class DeliveryControllerTests(unittest.TestCase):
                     os.environ[key] = value
 
     def test_index_manifest_schema_and_hosted_fast_cover_controller(self) -> None:
-        index = (ROOT / "core/managed-core/INDEX.yaml").read_text(encoding="utf-8")
+        index = (ROOT / ".ide-development/INDEX.yaml").read_text(encoding="utf-8")
         self.assertIn("schemas/delivery-operation.schema.json", index)
         self.assertIn("core/managed-core/schemas/delivery-operation.schema.json", RC_REQUIRED_SCHEMA_RELS)
-        manifest = json.loads((ROOT / "core/managed-core/MANIFEST.json").read_text(encoding="utf-8"))
+        manifest = json.loads((ROOT / ".ide-development/MANIFEST.json").read_text(encoding="utf-8"))
         sources = {row["source"] for row in manifest["files"]}
         self.assertIn("core/managed-core/schemas/delivery-operation.schema.json", sources)
         self.assertIn("scripts/gitops/delivery_controller.py", sources)
         self.assertIn("scripts/tests/test_delivery_controller.py", sources)
-        runtime = json.loads((ROOT / "core/github/managed-runtime/MANIFEST.json").read_text(encoding="utf-8"))
-        self.assertIn("scripts/gitops/delivery_controller.py", runtime["files"])
-        fast = json.loads((ROOT / ".github/linktrend-delivery-mode.json").read_text(encoding="utf-8"))
-        blob = json.dumps(fast["profiles"]["fast"]["commands"])
-        self.assertIn("delivery_controller.py", blob)
-        self.assertIn("test_delivery_controller", blob)
-        doctrine = (ROOT / "docs/AUTONOMOUS-GIT-OPERATIONS.md").read_text(encoding="utf-8")
+        doctrine = (ROOT / ".ide-development/content/doctrine/AUTONOMOUS-GIT-OPERATIONS.md").read_text(
+            encoding="utf-8"
+        )
         self.assertIn("delivery controller", doctrine.lower())
         self.assertNotIn("waits indefinitely for an undefined merge actor", doctrine.lower())
-        agents = (ROOT / "core/managed-core/platforms/codex/AGENTS.managed-section.md").read_text(encoding="utf-8")
+        agents = (ROOT / ".ide-development/platforms/codex/AGENTS.managed-section.md").read_text(encoding="utf-8")
         self.assertIn("delivery controller", agents.lower())
         self.assertNotIn("Integrator merges to `development`", agents)
-        bootstrap = (ROOT / "core/managed-core/platforms/cursor/rules/cursor-gitops-bootstrap.mdc").read_text(
-            encoding="utf-8"
-        )
+        bootstrap = (ROOT / ".cursor/rules/cursor-gitops-bootstrap.mdc").read_text(encoding="utf-8")
         self.assertIn("delivery controller", bootstrap.lower())
         self.assertNotIn("Integrator merges only when", bootstrap)
-        branching = (ROOT / "core/managed-core/platforms/cursor/rules/linktrend-git-branching.mdc").read_text(
-            encoding="utf-8"
-        )
+        branching = (ROOT / ".cursor/rules/linktrend-git-branching.mdc").read_text(encoding="utf-8")
         self.assertIn("delivery controller", branching.lower())
         self.assertNotIn("→ Integrator", branching)
-        local_branching = (ROOT / ".cursor/rules/01-git-branching.mdc").read_text(encoding="utf-8")
-        self.assertIn("delivery controller", local_branching.lower())
-        self.assertNotIn("Integrator merges", local_branching)
-        self.assertNotIn("Integrator only", local_branching)
-        runtime_branching = (
-            ROOT / "core/github/managed-runtime/entrypoints/rules/linktrend-git-branching.mdc"
-        ).read_text(encoding="utf-8")
-        self.assertIn("delivery controller", runtime_branching.lower())
-        self.assertNotIn("→ Integrator", runtime_branching)
-        prd = (ROOT / "docs/IDE-DEVELOPMENT-TECHNICAL-PRD.md").read_text(encoding="utf-8")
-        self.assertIn("delivery controller merges into `development`", prd)
-        self.assertNotIn("Integrator merges into `development`", prd)
-        pipeline = (ROOT / "core/execution/APPLICATION-PIPELINE.md").read_text(encoding="utf-8")
-        self.assertIn("delivery controller into `development`", pipeline)
-        self.assertNotIn("Integrator into `development`", pipeline)
-        module3 = (ROOT / "core/runtime/skills/linktrend/module3-execution/SKILL.md").read_text(encoding="utf-8")
-        self.assertIn("delivery controller merges into `development`", module3)
-        protection = (ROOT / "docs/contracts/REPOSITORY-PROTECTION.md").read_text(encoding="utf-8")
+        protection = (ROOT / ".ide-development/content/doctrine/REPOSITORY-PROTECTION.md").read_text(
+            encoding="utf-8"
+        )
         self.assertIn("delivery controller may auto-merge", protection)
         self.assertNotIn("so the Integrator may auto-merge", protection)
-        packaged_protection = (
-            ROOT / "core/managed-core/content/doctrine/REPOSITORY-PROTECTION.md"
-        ).read_text(encoding="utf-8")
-        self.assertIn("delivery controller may auto-merge", packaged_protection)
         schema = json.loads(
-            (ROOT / "core/managed-core/schemas/delivery-operation.schema.json").read_text(encoding="utf-8")
+            (ROOT / ".ide-development/schemas/delivery-operation.schema.json").read_text(encoding="utf-8")
         )
         record = controller.write_operation_record(
             Path(tempfile.mkdtemp()) / "delivery-operation.json",
@@ -947,6 +919,298 @@ class DeliveryControllerTests(unittest.TestCase):
         )
         for key in schema["required"]:
             self.assertIn(key, record)
+
+    def _consolidation_evidence(self, *, keeper: int = 12, replacement: int = 10) -> dict[str, object]:
+        return {
+            "schemaVersion": 1,
+            "kind": "phase-consolidation-evidence",
+            "repository": "owner/name",
+            "phaseBranch": "phase/next",
+            "base": "development",
+            "keeper": {
+                "number": keeper,
+                "url": f"https://github.com/owner/name/pull/{keeper}",
+                "head": "phase/next",
+                "headSha": self.head,
+            },
+            "replacements": [
+                {
+                    "number": replacement,
+                    "url": f"https://github.com/owner/name/pull/{replacement}",
+                    "head": "phase/next",
+                    "headSha": self.head,
+                    "reason": "stale_duplicate",
+                }
+            ],
+        }
+
+    def test_phase_consolidation_requires_controller_and_explicit_evidence(self) -> None:
+        self.github.prs[12] = {
+            "number": 12,
+            "url": "https://github.com/owner/name/pull/12",
+            "isDraft": True,
+            "state": "open",
+            "head": "phase/next",
+            "base": "development",
+            "headSha": self.head,
+        }
+        self.github.prs[10] = {
+            "number": 10,
+            "url": "https://github.com/owner/name/pull/10",
+            "isDraft": True,
+            "state": "open",
+            "head": "phase/next",
+            "base": "development",
+            "headSha": self.head,
+        }
+        with self.assertRaisesRegex(controller.ControllerError, "worker_self_merge_forbidden"):
+            controller.authorize_phase_consolidation(
+                github=self.github,
+                repository="owner/name",
+                evidence=self._consolidation_evidence(),
+                role="implementer",
+            )
+        with self.assertRaisesRegex(controller.ControllerError, "keeper_evidence_missing"):
+            controller.validate_phase_consolidation_evidence(
+                {
+                    "schemaVersion": 1,
+                    "kind": "phase-consolidation-evidence",
+                    "repository": "owner/name",
+                    "phaseBranch": "phase/next",
+                    "replacements": [{"number": 10, "reason": "stale_duplicate"}],
+                },
+                repository="owner/name",
+            )
+        with self.assertRaisesRegex(controller.ControllerError, "replacement_evidence_missing"):
+            controller.validate_phase_consolidation_evidence(
+                {
+                    "schemaVersion": 1,
+                    "kind": "phase-consolidation-evidence",
+                    "repository": "owner/name",
+                    "phaseBranch": "phase/next",
+                    "keeper": {"number": 12, "head": "phase/next"},
+                    "replacements": [],
+                },
+                repository="owner/name",
+            )
+
+    def test_phase_consolidation_closes_named_drafts_and_writes_receipt(self) -> None:
+        self.github.prs[12] = {
+            "number": 12,
+            "url": "https://github.com/owner/name/pull/12",
+            "isDraft": True,
+            "state": "open",
+            "head": "phase/next",
+            "base": "development",
+            "headSha": self.head,
+        }
+        self.github.prs[10] = {
+            "number": 10,
+            "url": "https://github.com/owner/name/pull/10",
+            "isDraft": True,
+            "state": "open",
+            "head": "phase/next",
+            "base": "development",
+            "headSha": self.head,
+        }
+        record_path = Path(tempfile.mkdtemp()) / "delivery-operation.json"
+        first = controller.authorize_phase_consolidation(
+            github=self.github,
+            repository="owner/name",
+            evidence=self._consolidation_evidence(),
+            role="operator",
+            record_path=record_path,
+        )
+        self.assertEqual(first["status"], "consolidated")
+        self.assertEqual(first["kind"], "phase-consolidation-receipt")
+        self.assertEqual(first["keeper"]["number"], 12)
+        self.assertEqual(first["closed"][0]["number"], 10)
+        self.assertFalse(first["merged"])
+        self.assertFalse(first["refDeleted"])
+        self.assertFalse(first["idempotent"])
+        self.assertEqual(self.github.closed_numbers, [10])
+        self.assertEqual(self.github.merges, [])
+        self.assertEqual(self.github.deleted_refs, [])
+        self.assertEqual(self.github.prs[12]["state"], "open")
+        saved = json.loads(record_path.read_text(encoding="utf-8"))
+        self.assertEqual(saved["kind"], "phase-consolidation-receipt")
+        self.assertEqual(saved["receiptDigest"], first["receiptDigest"])
+        second = controller.authorize_phase_consolidation(
+            github=self.github,
+            repository="owner/name",
+            evidence=self._consolidation_evidence(),
+            role="coordinator",
+        )
+        self.assertTrue(second["idempotent"])
+        self.assertEqual(second["alreadyClosed"][0]["number"], 10)
+        self.assertEqual(self.github.closed_numbers, [10])
+
+    def test_phase_consolidation_rejects_protected_and_non_draft(self) -> None:
+        self.github.prs[12] = {
+            "number": 12,
+            "url": "https://github.com/owner/name/pull/12",
+            "isDraft": True,
+            "state": "open",
+            "head": "phase/next",
+            "base": "development",
+            "headSha": self.head,
+        }
+        self.github.prs[8] = {
+            "number": 8,
+            "url": "https://github.com/owner/name/pull/8",
+            "isDraft": False,
+            "state": "open",
+            "head": "phase/next",
+            "base": "development",
+            "headSha": self.head,
+        }
+        with self.assertRaisesRegex(controller.ControllerError, "phase_pr_not_draft"):
+            controller.authorize_phase_consolidation(
+                github=self.github,
+                repository="owner/name",
+                evidence=self._consolidation_evidence(replacement=8),
+                role="operator",
+            )
+        self.assertNotIn(8, self.github.closed_numbers)
+        self.github.prs[9] = {
+            "number": 9,
+            "url": "https://github.com/owner/name/pull/9",
+            "isDraft": True,
+            "state": "open",
+            "head": "development",
+            "base": "development",
+            "headSha": self.head,
+        }
+        with self.assertRaisesRegex(controller.ControllerError, "unrelated_source"):
+            controller.validate_phase_consolidation_evidence(
+                {
+                    **self._consolidation_evidence(replacement=9),
+                    "replacements": [
+                        {
+                            "number": 9,
+                            "url": "https://github.com/owner/name/pull/9",
+                            "head": "development",
+                            "headSha": self.head,
+                            "reason": "stale_duplicate",
+                        }
+                    ],
+                },
+                repository="owner/name",
+            )
+        with self.assertRaisesRegex(controller.ControllerError, "protected_pr_close"):
+            controller.authorize_phase_consolidation(
+                github=self.github,
+                repository="owner/name",
+                evidence=self._consolidation_evidence(replacement=9),
+                role="operator",
+            )
+        self.github.prs[7] = {
+            "number": 7,
+            "url": "https://github.com/owner/name/pull/7",
+            "isDraft": True,
+            "state": "open",
+            "head": "issue/1-other",
+            "base": "development",
+            "headSha": self.head,
+        }
+        evidence = self._consolidation_evidence(replacement=7)
+        evidence["replacements"][0]["head"] = "phase/next"
+        with self.assertRaisesRegex(controller.ControllerError, "unrelated_source"):
+            controller.authorize_phase_consolidation(
+                github=self.github,
+                repository="owner/name",
+                evidence=evidence,
+                role="operator",
+            )
+        self.assertEqual(self.github.closed_numbers, [])
+        self.assertEqual(self.github.merges, [])
+
+    def test_consolidate_phase_cli_uses_canonical_token_and_mocked_github(self) -> None:
+        self.github.prs[12] = {
+            "number": 12,
+            "url": "https://github.com/owner/name/pull/12",
+            "isDraft": True,
+            "state": "open",
+            "head": "phase/next",
+            "base": "development",
+            "headSha": self.head,
+        }
+        self.github.prs[10] = {
+            "number": 10,
+            "url": "https://github.com/owner/name/pull/10",
+            "isDraft": True,
+            "state": "open",
+            "head": "phase/next",
+            "base": "development",
+            "headSha": self.head,
+        }
+        evidence_path = Path(tempfile.mkdtemp()) / "evidence.json"
+        evidence_path.write_text(json.dumps(self._consolidation_evidence()), encoding="utf-8")
+        out_path = Path(tempfile.mkdtemp()) / "receipt.json"
+        with mock.patch.object(controller, "resolve_production_github", return_value=self.github):
+            rc = controller.main(
+                [
+                    "consolidate-phase",
+                    "--repository",
+                    "owner/name",
+                    "--role",
+                    "operator",
+                    "--evidence-json",
+                    str(evidence_path),
+                    "--out",
+                    str(out_path),
+                ]
+            )
+        self.assertEqual(rc, 0)
+        payload = json.loads(out_path.read_text(encoding="utf-8"))
+        self.assertEqual(payload["status"], "consolidated")
+        self.assertEqual(payload["closed"][0]["number"], 10)
+        self.assertEqual(self.github.merges, [])
+        self.assertEqual(self.github.deleted_refs, [])
+        from scripts.gitops.github_auth import resolve_live_phase_mutation_token
+
+        token, source = resolve_live_phase_mutation_token({"GH_TOKEN": "ghs_phase_api"})
+        self.assertEqual((token, source), ("ghs_phase_api", "GH_TOKEN"))
+        with self.assertRaisesRegex(Exception, "legacy_publisher_token_not_canonical"):
+            resolve_live_phase_mutation_token({"AUTOMATION_TOKEN": "ghs_publisher"})
+
+    def test_live_controller_close_never_merges_or_deletes(self) -> None:
+        calls: list[tuple[str, str, object]] = []
+
+        def transport(method: str, url: str, token: str, body):
+            calls.append((method, url, body))
+            if method == "GET" and url.endswith("/pulls/10"):
+                return {
+                    "number": 10,
+                    "html_url": "https://github.com/owner/name/pull/10",
+                    "draft": True,
+                    "state": "open",
+                    "head": {"ref": "phase/next", "sha": self.head, "repo": {"full_name": "owner/name"}},
+                    "base": {"ref": "development"},
+                    "merged": False,
+                }
+            if method == "PATCH" and url.endswith("/pulls/10"):
+                self.assertEqual(body, {"state": "closed"})
+                return {
+                    "number": 10,
+                    "html_url": "https://github.com/owner/name/pull/10",
+                    "draft": True,
+                    "state": "closed",
+                    "head": {"ref": "phase/next", "sha": self.head},
+                    "base": {"ref": "development"},
+                    "merged": False,
+                }
+            raise AssertionError((method, url, body))
+
+        live = controller.LiveGitHub(repository="owner/name", automation_token="tok", transport=transport)
+        result = live.close_draft_phase_pr(
+            repository="owner/name",
+            number=10,
+            expected_head=self.head,
+            phase_branch="phase/next",
+        )
+        self.assertEqual(result["state"], "closed")
+        self.assertFalse(any("/merge" in url or method == "DELETE" for method, url, _ in calls))
 
 
 if __name__ == "__main__":

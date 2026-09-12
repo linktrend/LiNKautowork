@@ -69,7 +69,7 @@ except ModuleNotFoundError:  # pragma: no cover - script-style execution
     )
 
 try:
-    from scripts.gitops.github_auth import GitHubAuthError, resolve_phase_api_token
+    from scripts.gitops.github_auth import GitHubAuthError, resolve_live_phase_mutation_token
     from scripts.gitops.issue_checkpoint import bind_issue_completion, parse_immutable_evidence_payload
     from core.execution.rollout import (
         build_provider_consumer_handoff,
@@ -77,7 +77,7 @@ try:
         evaluate_provider_consumer_handoff,
     )
 except ModuleNotFoundError:  # pragma: no cover - script-style execution
-    from github_auth import GitHubAuthError, resolve_phase_api_token  # type: ignore
+    from github_auth import GitHubAuthError, resolve_live_phase_mutation_token  # type: ignore
     from issue_checkpoint import bind_issue_completion, parse_immutable_evidence_payload  # type: ignore
     from core.execution.rollout import (  # type: ignore
         build_provider_consumer_handoff,
@@ -149,6 +149,17 @@ class GitHubPort(Protocol):
     def dispatch_workflow(self, name: str, inputs: Mapping[str, Any]) -> None:
         ...
 
+    def close_draft_phase_pr(
+        self,
+        *,
+        repository: str,
+        number: int,
+        expected_head: str,
+        phase_branch: str,
+        expected_url: str | None = None,
+    ) -> dict[str, Any]:
+        ...
+
 
 class PushPort(Protocol):
     """Bounded phase-ref push. Production uses ``GitPushAdapter``."""
@@ -169,6 +180,11 @@ class MemoryGitHub:
     workflow_dispatches: list[dict[str, Any]] = field(default_factory=list)
     ensure_calls: int = 0
     next_number: int = 1
+    extra_prs: list[dict[str, Any]] = field(default_factory=list)
+    closed_numbers: list[int] = field(default_factory=list)
+    close_calls: list[dict[str, Any]] = field(default_factory=list)
+    merge_calls: list[dict[str, Any]] = field(default_factory=list)
+    deleted_refs: list[str] = field(default_factory=list)
 
     def _key(self, repository: str, head: str, base: str) -> str:
         return f"{repository}|{head}|{base}"
@@ -206,6 +222,8 @@ class MemoryGitHub:
             "body": body,
             "record": dict(record),
             "created": True,
+            "state": "open",
+            "merged": False,
         }
         self.next_number += 1
         self.prs[key] = pr
@@ -214,7 +232,17 @@ class MemoryGitHub:
     def list_open_phase_prs(self, *, repository: str, head: str, base: str) -> list[dict[str, Any]]:
         key = self._key(repository, head, base)
         found = self.prs.get(key)
-        return [dict(found)] if found else []
+        rows = []
+        if found and str(found.get("state") or "open").lower() != "closed":
+            rows.append(dict(found))
+        for extra in self.extra_prs:
+            if (
+                extra.get("head") == head
+                and extra.get("base") == base
+                and str(extra.get("state") or "open").lower() != "closed"
+            ):
+                rows.append(dict(extra))
+        return rows
 
     def completion_bound(
         self,
@@ -240,6 +268,38 @@ class MemoryGitHub:
 
     def dispatch_workflow(self, name: str, inputs: Mapping[str, Any]) -> None:
         self.workflow_dispatches.append({"name": name, "inputs": dict(inputs)})
+
+    def _pr_by_number(self, number: int) -> dict[str, Any]:
+        for pr in list(self.prs.values()) + list(self.extra_prs):
+            if int(pr.get("number") or 0) == number:
+                return pr
+        raise CoordinatorError("pr_missing", str(number))
+
+    def close_draft_phase_pr(
+        self,
+        *,
+        repository: str,
+        number: int,
+        expected_head: str,
+        phase_branch: str,
+        expected_url: str | None = None,
+    ) -> dict[str, Any]:
+        if repository != self.repository:
+            raise CoordinatorError("wrong_repository", repository)
+        pr = self._pr_by_number(number)
+        assert_draft_phase_close_eligible(pr, phase_branch=phase_branch)
+        if expected_url and str(pr.get("url") or "") not in {"", expected_url}:
+            raise CoordinatorError("unrelated_source", str(pr.get("url") or ""))
+        live_head = normalize_sha(str(pr.get("headSha") or ""))
+        expected = normalize_sha(expected_head)
+        if expected and live_head and live_head != expected:
+            raise CoordinatorError("stale_pr_head", f"live={live_head}:expected={expected}")
+        self.close_calls.append({"number": number, "alreadyClosed": str(pr.get("state") or "").lower() == "closed"})
+        if str(pr.get("state") or "open").lower() == "closed":
+            return _closed_phase_pr_result(pr, already_closed=True)
+        pr["state"] = "closed"
+        self.closed_numbers.append(number)
+        return _closed_phase_pr_result(pr, already_closed=False)
 
 
 class GitPushAdapter:
@@ -310,10 +370,13 @@ class LiveGitHub:
         if not isinstance(number, int) or isinstance(number, bool) or number < 1:
             raise CoordinatorError("invalid_phase_pr", "missing live pull number")
         draft = payload.get("draft", payload.get("isDraft"))
+        state = str(payload.get("state") or "open")
         return {
             "number": number,
             "url": html_url,
             "isDraft": bool(draft),
+            "state": "open" if state == "open" else state,
+            "merged": bool(payload.get("merged")),
             "head": (payload.get("head") or {}).get("ref") if isinstance(payload.get("head"), Mapping) else payload.get("head"),
             "base": (payload.get("base") or {}).get("ref") if isinstance(payload.get("base"), Mapping) else payload.get("base"),
             "headSha": normalize_sha(str((payload.get("head") or {}).get("sha") or payload.get("headSha") or "")),
@@ -431,6 +494,46 @@ class LiveGitHub:
     def dispatch_workflow(self, name: str, inputs: Mapping[str, Any]) -> None:
         raise CoordinatorError("workflow_dispatch_not_permitted", name)
 
+    def close_draft_phase_pr(
+        self,
+        *,
+        repository: str,
+        number: int,
+        expected_head: str,
+        phase_branch: str,
+        expected_url: str | None = None,
+    ) -> dict[str, Any]:
+        if repository != self.repository:
+            raise CoordinatorError("wrong_repository", repository)
+        if not self.automation_token:
+            raise CoordinatorError("missing_github_credentials", "draft close requires a canonical Phase API token")
+        payload = self._request("GET", f"https://api.github.com/repos/{repository}/pulls/{number}", self.automation_token)
+        if not isinstance(payload, Mapping):
+            raise CoordinatorError("github_api_failed", "pull payload was not an object")
+        identity = self._pr_identity(payload, created=False)
+        if expected_url and str(identity.get("url") or "") not in {"", expected_url}:
+            raise CoordinatorError("unrelated_source", str(identity.get("url") or ""))
+        assert_draft_phase_close_eligible(identity, phase_branch=phase_branch)
+        live_head = normalize_sha(str(identity.get("headSha") or ""))
+        expected = normalize_sha(expected_head)
+        if expected and live_head and live_head != expected:
+            raise CoordinatorError("stale_pr_head", f"live={live_head}:expected={expected}")
+        if str(identity.get("state") or "").lower() == "closed":
+            return _closed_phase_pr_result(identity, already_closed=True)
+        updated = self._request(
+            "PATCH",
+            f"https://api.github.com/repos/{repository}/pulls/{number}",
+            self.automation_token,
+            {"state": "closed"},
+        )
+        if not isinstance(updated, Mapping):
+            updated = identity
+        closed = self._pr_identity(updated if isinstance(updated, Mapping) else identity, created=False)
+        if str(closed.get("state") or "").lower() != "closed":
+            raise CoordinatorError("github_api_failed", f"PR #{number} was not closed")
+        assert_draft_phase_close_eligible(closed, phase_branch=phase_branch)
+        return _closed_phase_pr_result(closed, already_closed=False)
+
 
 def resolve_production_adapters(repository: str) -> tuple[LiveGitHub, GitPushAdapter]:
     """Fail closed unless live GitHub and push configuration are present.
@@ -442,13 +545,48 @@ def resolve_production_adapters(repository: str) -> tuple[LiveGitHub, GitPushAda
     if not repository or "/" not in repository or repository.count("/") != 1:
         raise CoordinatorError("missing_repository", "assemble requires --repository owner/name")
     try:
-        token, _source = resolve_phase_api_token()
+        token, _source = resolve_live_phase_mutation_token()
     except GitHubAuthError as exc:
         raise CoordinatorError(exc.code, exc.detail) from exc
     return (
         LiveGitHub(repository=repository, automation_token=token, user_token=token),
         GitPushAdapter(),
     )
+
+
+def assert_draft_phase_close_eligible(pr: Mapping[str, Any], *, phase_branch: str) -> None:
+    """Reject protected, non-draft, merged, or unrelated PRs before any close."""
+
+    number = pr.get("number")
+    head = str(pr.get("head") or pr.get("headRefName") or "")
+    base = str(pr.get("base") or "")
+    if head in PROTECTED_BRANCHES or base in {"staging", "main"}:
+        raise CoordinatorError("protected_pr_close", f"{head}->{base}")
+    if not is_phase_branch(head, DEFAULT_PHASE_PREFIX):
+        raise CoordinatorError("unrelated_source", head)
+    if phase_branch and head != phase_branch:
+        raise CoordinatorError("unrelated_source", f"{head}!={phase_branch}")
+    if not bool(pr.get("isDraft", pr.get("draft"))):
+        raise CoordinatorError("phase_pr_not_draft", str(number))
+    if bool(pr.get("merged")):
+        raise CoordinatorError("pr_not_open", f"merged:{number}")
+
+
+def _closed_phase_pr_result(pr: Mapping[str, Any], *, already_closed: bool) -> dict[str, Any]:
+    return {
+        "number": int(pr.get("number") or 0),
+        "url": str(pr.get("url") or ""),
+        "head": str(pr.get("head") or ""),
+        "base": str(pr.get("base") or ""),
+        "headSha": normalize_sha(str(pr.get("headSha") or "")),
+        "isDraft": True,
+        "state": "closed",
+        "alreadyClosed": bool(already_closed),
+        "merged": False,
+        "directPush": False,
+        "refDeleted": False,
+        "component": COMPONENT_KIND,
+    }
 
 
 def assert_live_phase_pr(pr: Mapping[str, Any]) -> None:

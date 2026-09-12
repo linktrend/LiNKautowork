@@ -61,6 +61,18 @@ def checkpoint_requires_automation_token() -> bool:
     return False
 
 
+def resolve_live_phase_mutation_token(
+    environ: Mapping[str, str] | None = None,
+) -> tuple[str, str]:
+    """Canonical GH_TOKEN/GITHUB_TOKEN for live Phase PR mutations.
+
+    Covers draft PR open/update and controller-authorized draft-only close.
+    ``AUTOMATION_TOKEN`` cannot authorize consolidation or other Phase mutations.
+    """
+
+    return resolve_phase_api_token(environ)
+
+
 def resolve_phase_api_token(
     environ: Mapping[str, str] | None = None,
 ) -> tuple[str, str]:
