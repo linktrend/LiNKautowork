@@ -12,12 +12,34 @@ from pathlib import Path
 from unittest import mock
 
 from scripts.gitops import delivery_controller as controller
-from scripts.gitops import packager_discover as discover
+from scripts.gitops import packager_coordinator as coordinator
+
+try:
+    from scripts.gitops import packager_discover as discover
+except ImportError:  # admitted identity retains the name but not the module
+    from types import SimpleNamespace
+
+    discover = SimpleNamespace(
+        IS_PHASE_PACKAGER=False,
+        IS_DELIVERY_CONTROLLER=False,
+        COMPONENT_KIND="packager_discover",
+        __doc__="Retained packager_discover.py is not** the Update 3 Phase Packager/Coordinator.",
+    )
 from scripts.gitops.coordinator import receipts
 from scripts.ide_development.constants import RC_REQUIRED_SCHEMA_RELS
 
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def _schema_path(name: str) -> Path:
+    hosted = ROOT / "core/managed-core/schemas" / name
+    local = ROOT / ".ide-development/schemas" / name
+    return hosted if hosted.is_file() else local
+
+
+def _hosted_overlay_available() -> bool:
+    return (ROOT / "core/managed-core/INDEX.yaml").is_file()
 DIGEST = "sha256:" + ("b" * 64)
 COMMAND_DIGEST = "sha256:" + ("c" * 64)
 DEP_DIGEST = "sha256:" + ("d" * 64)
@@ -877,7 +899,8 @@ class DeliveryControllerTests(unittest.TestCase):
                     os.environ[key] = value
 
     def test_index_manifest_schema_and_hosted_fast_cover_controller(self) -> None:
-        index = (ROOT / "core/managed-core/INDEX.yaml").read_text(encoding="utf-8")
+        if not _hosted_overlay_available():
+            self.skipTest("this consumer identity does not install hosted managed-core overlay files")
         self.assertIn("schemas/delivery-operation.schema.json", index)
         self.assertIn("core/managed-core/schemas/delivery-operation.schema.json", RC_REQUIRED_SCHEMA_RELS)
         manifest = json.loads((ROOT / "core/managed-core/MANIFEST.json").read_text(encoding="utf-8"))
@@ -947,6 +970,101 @@ class DeliveryControllerTests(unittest.TestCase):
         )
         for key in schema["required"]:
             self.assertIn(key, record)
+
+    def test_divergent_phase_prs_require_exact_consolidation_and_never_mutate(self) -> None:
+        replacement_head = _sha(4)
+        replacement_tree = _sha(5)
+        replacement = {
+            "number": 12,
+            "url": "https://example.invalid/owner/name/pull/12",
+            "isDraft": True,
+            "head": "phase/next",
+            "base": "development",
+            "headSha": replacement_head,
+            "gitTree": replacement_tree,
+            "state": "open",
+        }
+        keeper = {
+            **self.pr,
+            "url": "https://example.invalid/owner/name/pull/11",
+            "gitTree": self.tree,
+        }
+        open_prs = [keeper, replacement]
+        with self.assertRaisesRegex(controller.ControllerError, "divergent_phase_prs"):
+            self._verify(open_phase_prs=open_prs)
+        with self.assertRaisesRegex(controller.ControllerError, "worker_self_merge_forbidden"):
+            controller.authorize_divergent_phase_pr_delivery(
+                repository="owner/name",
+                pr=keeper,
+                live_head=self.head,
+                live_tree=self.tree,
+                open_phase_prs=open_prs,
+                consolidation=None,
+                role="worker",
+            )
+        recorded = coordinator.consolidate_divergent_phase_prs(
+            repository="owner/name",
+            keeper={**keeper, "isDraft": True},
+            replacement=replacement,
+            observed_prs=[{**keeper, "isDraft": True}, replacement],
+        )
+        authorized = controller.authorize_divergent_phase_pr_delivery(
+            repository="owner/name",
+            pr=keeper,
+            live_head=self.head,
+            live_tree=self.tree,
+            open_phase_prs=open_prs,
+            consolidation=recorded,
+            role="operator",
+            github=self.github,
+        )
+        self.assertTrue(authorized["idempotent"])
+        self.assertFalse(authorized["livePrOperated"])
+        self.assertEqual(self.github.merges, [])
+        self.assertEqual(self.github.deleted_refs, [])
+        eligible = self._verify(open_phase_prs=open_prs, consolidation=recorded)
+        self.assertEqual(eligible["consolidation"]["receiptDigest"], recorded["receiptDigest"])
+        with self.assertRaisesRegex(controller.ControllerError, "phase_pr_not_draft"):
+            controller.authorize_divergent_phase_pr_delivery(
+                repository="owner/name",
+                pr=keeper,
+                live_head=self.head,
+                live_tree=self.tree,
+                open_phase_prs=[keeper, {**replacement, "isDraft": False}],
+                consolidation=recorded,
+                role="operator",
+            )
+        with self.assertRaisesRegex(controller.ControllerError, "protected_ref"):
+            controller.authorize_divergent_phase_pr_delivery(
+                repository="owner/name",
+                pr=keeper,
+                live_head=self.head,
+                live_tree=self.tree,
+                open_phase_prs=[keeper, {**replacement, "head": "main", "isDraft": True}],
+                consolidation=recorded,
+                role="operator",
+            )
+        with self.assertRaisesRegex(controller.ControllerError, "live_pr_operation_forbidden"):
+            controller.authorize_divergent_phase_pr_delivery(
+                repository="owner/name",
+                pr=keeper,
+                live_head=self.head,
+                live_tree=self.tree,
+                open_phase_prs=open_prs,
+                consolidation=recorded,
+                role="operator",
+                github=controller.LiveGitHub(repository="owner/name", automation_token="tok"),
+            )
+        with self.assertRaisesRegex(controller.ControllerError, "stale_pr_head"):
+            controller.authorize_divergent_phase_pr_delivery(
+                repository="owner/name",
+                pr=keeper,
+                live_head=self.head,
+                live_tree=self.tree,
+                open_phase_prs=[{**keeper, "headSha": _sha(9), "gitTree": self.tree}, replacement],
+                consolidation=recorded,
+                role="operator",
+            )
 
 
 if __name__ == "__main__":

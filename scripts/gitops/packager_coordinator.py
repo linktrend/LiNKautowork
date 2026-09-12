@@ -33,7 +33,7 @@ import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Mapping, Protocol
+from typing import Any, Callable, Mapping, Protocol, Sequence
 
 try:
     from scripts.gitops.delivery_modes import (
@@ -169,6 +169,8 @@ class MemoryGitHub:
     workflow_dispatches: list[dict[str, Any]] = field(default_factory=list)
     ensure_calls: int = 0
     next_number: int = 1
+    extra_open_prs: list[dict[str, Any]] = field(default_factory=list)
+    mutations: list[str] = field(default_factory=list)
 
     def _key(self, repository: str, head: str, base: str) -> str:
         return f"{repository}|{head}|{base}"
@@ -214,7 +216,12 @@ class MemoryGitHub:
     def list_open_phase_prs(self, *, repository: str, head: str, base: str) -> list[dict[str, Any]]:
         key = self._key(repository, head, base)
         found = self.prs.get(key)
-        return [dict(found)] if found else []
+        extras = [
+            dict(row)
+            for row in self.extra_open_prs
+            if str(row.get("head") or "") == head and str(row.get("base") or "") == base
+        ]
+        return ([dict(found)] if found else []) + extras
 
     def completion_bound(
         self,
@@ -965,6 +972,174 @@ def _handoff_from(
     return result
 
 
+CONSOLIDATION_KIND = "phase-pr-consolidation"
+CONSOLIDATION_SCHEMA_VERSION = 1
+PROTECTED_PROMOTION_BASES = frozenset({"staging", "main"})
+
+
+def _canonical_identity_digest(payload: Mapping[str, Any]) -> str:
+    blob = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return "sha256:" + hashlib.sha256(blob).hexdigest()
+
+
+def _phase_pr_identity(
+    payload: Mapping[str, Any],
+    *,
+    label: str,
+    git_tree: str | None = None,
+    require_draft: bool = True,
+) -> dict[str, Any]:
+    if not isinstance(payload, Mapping):
+        raise CoordinatorError("missing_pr_identity", label)
+    number = payload.get("number")
+    if not isinstance(number, int) or isinstance(number, bool) or number < 1:
+        raise CoordinatorError("missing_pr_identity", f"{label}:number")
+    head = str(payload.get("head") or payload.get("headRefName") or "")
+    base = str(payload.get("base") or payload.get("baseRefName") or "")
+    head_sha = normalize_sha(str(payload.get("headSha") or payload.get("headCommit") or payload.get("headRefOid") or ""))
+    tree = normalize_sha(str(payload.get("gitTree") or payload.get("tree") or git_tree or ""))
+    missing_code = "missing_keeper_evidence" if label == "keeper" else "missing_replacement_evidence"
+    if not is_valid_sha(head_sha):
+        raise CoordinatorError(missing_code, f"{label}:headSha")
+    if not is_valid_sha(tree):
+        raise CoordinatorError(missing_code, f"{label}:gitTree")
+    if head in PROTECTED_BRANCHES or base in PROTECTED_PROMOTION_BASES:
+        raise CoordinatorError("protected_ref", head if head in PROTECTED_BRANCHES else base)
+    if not is_phase_branch(head, DEFAULT_PHASE_PREFIX):
+        raise CoordinatorError("wrong_source", head or f"{label}:head")
+    if require_draft and not bool(payload.get("isDraft", payload.get("draft"))):
+        raise CoordinatorError("phase_pr_not_draft", str(number))
+    state = str(payload.get("state") or "open").lower()
+    if state not in {"open", ""}:
+        raise CoordinatorError("pr_not_open", str(number))
+    return {
+        "number": number,
+        "url": str(payload.get("url") or ""),
+        "isDraft": True,
+        "head": head,
+        "base": base,
+        "headSha": head_sha,
+        "gitTree": tree,
+        "state": "open",
+    }
+
+
+def others_as_replacements(
+    others: Sequence[Mapping[str, Any]],
+    *,
+    fallback_tree: str | None = None,
+) -> list[dict[str, Any]]:
+    if not others:
+        raise CoordinatorError("missing_replacement_evidence", "no replacement Phase PR supplied")
+    return [
+        _phase_pr_identity(row, label="replacement", git_tree=str(row.get("gitTree") or fallback_tree or ""))
+        for row in others
+    ]
+
+
+def _match_observed_identity(
+    evidence: Mapping[str, Any],
+    observed_prs: Sequence[Mapping[str, Any]],
+    *,
+    label: str,
+    require_draft: bool = True,
+) -> dict[str, Any]:
+    matches = [row for row in observed_prs if row.get("number") == evidence["number"]]
+    if len(matches) != 1:
+        raise CoordinatorError("pr_identity_mismatch", f"{label}:{evidence['number']}")
+    live = _phase_pr_identity(
+        matches[0],
+        label=label,
+        git_tree=str(matches[0].get("gitTree") or evidence["gitTree"]),
+        require_draft=require_draft,
+    )
+    if live["head"] != evidence["head"] or live["base"] != evidence["base"]:
+        raise CoordinatorError("pr_identity_mismatch", f"{label}:{live['head']}->{live['base']}")
+    if live["headSha"] != evidence["headSha"] or live["gitTree"] != evidence["gitTree"]:
+        raise CoordinatorError("stale_pr_head", f"{label}:live={live['headSha']}:expected={evidence['headSha']}")
+    return live
+
+
+def consolidate_divergent_phase_prs(
+    *,
+    repository: str,
+    keeper: Mapping[str, Any],
+    replacement: Mapping[str, Any] | None = None,
+    replacements: Sequence[Mapping[str, Any]] | None = None,
+    observed_prs: Sequence[Mapping[str, Any]],
+    github: GitHubPort | None = None,
+    previous: Mapping[str, Any] | None = None,
+    receipt_path: Path | None = None,
+    keeper_must_be_draft: bool = True,
+) -> dict[str, Any]:
+    """Record one fail-closed keeper/replacement decision. Never merge, reset, or delete."""
+
+    if isinstance(github, LiveGitHub):
+        raise CoordinatorError("live_pr_operation_forbidden", "consolidation must not operate live Phase PRs")
+    if github is not None and getattr(github, "repository", repository) != repository:
+        raise CoordinatorError("wrong_repository", str(getattr(github, "repository", "")))
+    keeper_id = _phase_pr_identity(keeper, label="keeper", require_draft=keeper_must_be_draft)
+    supplied = list(replacements or ())
+    if replacement is not None:
+        supplied.insert(0, replacement)
+    replacement_ids = others_as_replacements(supplied)
+    if not observed_prs:
+        raise CoordinatorError("missing_pr_identity", "observed Phase PRs are required")
+    bound_keeper = _match_observed_identity(
+        keeper_id,
+        observed_prs,
+        label="keeper",
+        require_draft=keeper_must_be_draft,
+    )
+    bound_replacements = [
+        _match_observed_identity(item, observed_prs, label="replacement") for item in replacement_ids
+    ]
+    replacement_numbers = {item["number"] for item in bound_replacements}
+    if bound_keeper["number"] in replacement_numbers:
+        raise CoordinatorError("keeper_replacement_collision", str(bound_keeper["number"]))
+    observed_numbers = {row.get("number") for row in observed_prs}
+    expected_numbers = {bound_keeper["number"], *replacement_numbers}
+    if observed_numbers != expected_numbers:
+        raise CoordinatorError("ambiguous_phase_prs", json.dumps(sorted(str(n) for n in observed_numbers)))
+    if any(
+        item["headSha"] == bound_keeper["headSha"] and item["head"] == bound_keeper["head"]
+        for item in bound_replacements
+    ):
+        raise CoordinatorError("not_divergent", "replacement is not a divergent stale Phase PR")
+    mutations = {"merge": False, "reset": False, "delete": False, "force": False, "close": False}
+    identity = {
+        "schemaVersion": CONSOLIDATION_SCHEMA_VERSION,
+        "kind": CONSOLIDATION_KIND,
+        "component": COMPONENT_KIND,
+        "repository": repository,
+        "keeper": bound_keeper,
+        "replacements": bound_replacements,
+        "mutations": mutations,
+        "livePrOperated": False,
+    }
+    digest = _canonical_identity_digest(identity)
+    if isinstance(previous, Mapping) and previous.get("receiptDigest") == digest:
+        reused = dict(previous)
+        reused["idempotent"] = True
+        reused["action"] = "reused"
+        reused["status"] = str(previous.get("status") or "recorded")
+        return reused
+    if isinstance(previous, Mapping) and previous.get("receiptDigest"):
+        raise CoordinatorError("stale_consolidation", str(previous.get("receiptDigest")))
+    receipt = {
+        **identity,
+        "status": "recorded",
+        "action": "recorded",
+        "idempotent": False,
+        "receiptDigest": digest,
+    }
+    if receipt_path is not None:
+        receipt_path.parent.mkdir(parents=True, exist_ok=True)
+        receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        receipt["receiptPath"] = str(receipt_path)
+    return receipt
+
+
 def assemble_phase(
     *,
     repo: Path,
@@ -980,6 +1155,7 @@ def assemble_phase(
     require_live_pr: bool = False,
     evidence_payloads: Mapping[str, Any] | None = None,
     provider_consumer_handoff: Mapping[str, Any] | None = None,
+    consolidation: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Create or update exactly one Phase branch and draft PR representation."""
 
@@ -1114,8 +1290,26 @@ def assemble_phase(
     _assert_live_phase_pr_optional(pr, require_live_pr=require_live_pr)
     open_prs = github.list_open_phase_prs(repository=repository, head=phase_branch, base=development)
     if len(open_prs) != 1:
-        raise CoordinatorError("duplicate_phase_pr", json.dumps([row.get("number") for row in open_prs]))
-    if open_prs[0].get("number") != pr.get("number"):
+        if consolidation is None:
+            raise CoordinatorError("duplicate_phase_pr", json.dumps([row.get("number") for row in open_prs]))
+        keeper_evidence = _phase_pr_identity(
+            pr,
+            label="keeper",
+            git_tree=tree,
+            require_draft=True,
+        )
+        others = [row for row in open_prs if row.get("number") != pr.get("number")]
+        recorded = consolidate_divergent_phase_prs(
+            repository=repository,
+            keeper=keeper_evidence,
+            replacements=others_as_replacements(others, fallback_tree=tree),
+            observed_prs=open_prs,
+            github=github,
+            previous=consolidation,
+        )
+        if recorded["keeper"]["number"] != pr.get("number"):
+            raise CoordinatorError("keeper_mismatch", str(recorded["keeper"]["number"]))
+    elif open_prs[0].get("number") != pr.get("number"):
         raise CoordinatorError("duplicate_phase_pr", "stable Phase PR identity drifted")
     record["phasePr"] = {
         "number": pr["number"],
@@ -1189,7 +1383,10 @@ def invalidate_handoff_if_head_changed(handoff: Mapping[str, Any], *, live_head:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["assemble", "consume-handoff", "full-may-start", "fast-contract"])
+    parser.add_argument(
+        "command",
+        choices=["assemble", "consume-handoff", "full-may-start", "fast-contract", "consolidate-phase-prs"],
+    )
     parser.add_argument("--repository", default="")
     parser.add_argument("--repo-path", default=".")
     parser.add_argument("--phase-branch", default="phase/next")
@@ -1207,6 +1404,11 @@ def main(argv: list[str] | None = None) -> int:
         default="",
         help="Explicit immutable evidence payload (JSON object or sha->payload map) for out-of-tree hosted validation",
     )
+    parser.add_argument("--keeper-json", default="")
+    parser.add_argument("--replacement-json", default="")
+    parser.add_argument("--observed-prs-json", default="")
+    parser.add_argument("--previous-json", default="")
+    parser.add_argument("--out", default="")
     args = parser.parse_args(argv)
 
     if args.command == "fast-contract":
@@ -1234,6 +1436,35 @@ def main(argv: list[str] | None = None) -> int:
         json.dump({"allowed": allowed, "detail": detail}, sys.stdout, sort_keys=True)
         sys.stdout.write("\n")
         return 0 if allowed else 2
+
+    if args.command == "consolidate-phase-prs":
+        if not args.repository or not args.keeper_json or not args.replacement_json or not args.observed_prs_json:
+            print(
+                "consolidate-phase-prs requires --repository --keeper-json --replacement-json --observed-prs-json",
+                file=sys.stderr,
+            )
+            return 2
+        try:
+            result = consolidate_divergent_phase_prs(
+                repository=args.repository,
+                keeper=json.loads(Path(args.keeper_json).read_text(encoding="utf-8")),
+                replacement=json.loads(Path(args.replacement_json).read_text(encoding="utf-8")),
+                observed_prs=json.loads(Path(args.observed_prs_json).read_text(encoding="utf-8")),
+                previous=(
+                    json.loads(Path(args.previous_json).read_text(encoding="utf-8"))
+                    if args.previous_json
+                    else None
+                ),
+                receipt_path=Path(args.out) if args.out else None,
+            )
+        except CoordinatorError as exc:
+            payload = {"ok": False, **exc.to_dict()}
+            json.dump(payload, sys.stdout, sort_keys=True)
+            sys.stdout.write("\n")
+            return 2
+        json.dump({"ok": True, **result}, sys.stdout, indent=2, sort_keys=True)
+        sys.stdout.write("\n")
+        return 0
 
     if not args.repository or not args.accept:
         print("assemble requires --repository and one or more --accept branch@sha", file=sys.stderr)

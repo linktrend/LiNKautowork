@@ -27,11 +27,11 @@ import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Mapping, Protocol
+from typing import Any, Callable, Mapping, Protocol, Sequence
 
 try:
     from scripts.gitops.delivery_modes import is_phase_branch, is_valid_sha, normalize_sha
-    from scripts.gitops.packager_coordinator import consume_handoff
+    from scripts.gitops.packager_coordinator import consume_handoff, consolidate_divergent_phase_prs
     from scripts.gitops.promotion_receipt_gate import (
         evaluate_development_gates,
         evaluate_main_approval,
@@ -47,7 +47,7 @@ try:
     from scripts.gitops.administrator_recovery import MemoryProtection, recover_phase_merge
 except ModuleNotFoundError:  # pragma: no cover - script-style execution
     from delivery_modes import is_phase_branch, is_valid_sha, normalize_sha  # type: ignore
-    from packager_coordinator import consume_handoff  # type: ignore
+    from packager_coordinator import consume_handoff, consolidate_divergent_phase_prs  # type: ignore
     from promotion_receipt_gate import (  # type: ignore
         evaluate_development_gates,
         evaluate_main_approval,
@@ -791,6 +791,78 @@ def _check_repository_owned_ci(
             raise ControllerError("repository_ci_stale", f"{name}:{observed or 'missing'}")
 
 
+def authorize_divergent_phase_pr_delivery(
+    *,
+    repository: str,
+    pr: Mapping[str, Any],
+    live_head: str,
+    live_tree: str,
+    open_phase_prs: Sequence[Mapping[str, Any]],
+    consolidation: Mapping[str, Any] | None,
+    role: str,
+    github: GitHubPort | None = None,
+) -> dict[str, Any] | None:
+    """Authorize delivery of one exact keeper among divergent stale draft Phase PRs.
+
+    Records or reuses consolidation evidence only. Never merges, resets, or deletes.
+    """
+
+    require_controller_role(role)
+    if github is not None and isinstance(github, LiveGitHub):
+        raise ControllerError("live_pr_operation_forbidden", "consolidation must not operate live Phase PRs")
+    open_list = list(open_phase_prs)
+    if len(open_list) <= 1:
+        return None
+    if consolidation is None:
+        raise ControllerError("divergent_phase_prs", json.dumps([row.get("number") for row in open_list]))
+    keeper = {
+        "number": int(pr.get("number") or 0),
+        "url": str(pr.get("url") or ""),
+        "isDraft": bool(pr.get("isDraft")),
+        "head": str(pr.get("head") or ""),
+        "base": str(pr.get("base") or ""),
+        "headSha": normalize_sha(live_head),
+        "gitTree": normalize_sha(live_tree),
+        "state": str(pr.get("state") or "open"),
+    }
+    replacements = [row for row in open_list if row.get("number") != keeper["number"]]
+    observed = []
+    for row in open_list:
+        identity = dict(row)
+        if identity.get("number") == keeper["number"]:
+            identity["headSha"] = normalize_sha(str(identity.get("headSha") or live_head))
+            identity["gitTree"] = normalize_sha(str(identity.get("gitTree") or live_tree))
+            identity["head"] = str(identity.get("head") or keeper["head"])
+            identity["base"] = str(identity.get("base") or keeper["base"])
+        observed.append(identity)
+    try:
+        recorded = consolidate_divergent_phase_prs(
+            repository=repository,
+            keeper=keeper,
+            replacements=replacements,
+            observed_prs=observed,
+            github=None,
+            previous=consolidation,
+            keeper_must_be_draft=False,
+        )
+    except Exception as exc:
+        if hasattr(exc, "code"):
+            raise ControllerError(str(getattr(exc, "code")), str(getattr(exc, "detail", exc))) from exc
+        raise
+    if recorded["keeper"]["number"] != keeper["number"]:
+        raise ControllerError("keeper_mismatch", str(recorded["keeper"]["number"]))
+    if recorded["keeper"]["headSha"] != normalize_sha(live_head):
+        raise ControllerError("stale_pr_head", recorded["keeper"]["headSha"])
+    if any(item["number"] == keeper["number"] for item in recorded.get("replacements") or []):
+        raise ControllerError("keeper_replacement_collision", str(keeper["number"]))
+    mutations = recorded.get("mutations") if isinstance(recorded.get("mutations"), Mapping) else {}
+    if any(bool(mutations.get(name)) for name in ("merge", "reset", "delete", "force", "close")):
+        raise ControllerError("live_pr_operation_forbidden", "consolidation receipt recorded a mutation")
+    if bool(recorded.get("livePrOperated")):
+        raise ControllerError("live_pr_operation_forbidden", "consolidation must not operate live Phase PRs")
+    return recorded
+
+
 def verify_development_eligibility(
     *,
     handoff: Mapping[str, Any],
@@ -805,6 +877,9 @@ def verify_development_eligibility(
     candidate_identity: Mapping[str, Any],
     conflict: bool = False,
     rollout: StagedRolloutConfig | None = None,
+    open_phase_prs: Sequence[Mapping[str, Any]] | None = None,
+    consolidation: Mapping[str, Any] | None = None,
+    role: str = "operator",
 ) -> dict[str, Any]:
     """Require exact gates, repo-owned CI, genuine receipt, and an unchanged Phase PR head."""
 
@@ -835,6 +910,17 @@ def verify_development_eligibility(
     identity_tree = normalize_sha(str(candidate_identity.get("gitTree") or ""))
     if identity_head != normalize_sha(live_head) or identity_tree != normalize_sha(live_tree):
         raise ControllerError("receipt_identity_mismatch", "candidate identity is not the live PR")
+    consolidation_record = None
+    if open_phase_prs is not None:
+        consolidation_record = authorize_divergent_phase_pr_delivery(
+            repository=repository,
+            pr=pr,
+            live_head=live_head,
+            live_tree=live_tree,
+            open_phase_prs=open_phase_prs,
+            consolidation=consolidation,
+            role=role,
+        )
     return {
         "eligible": True,
         "pr": accepted,
@@ -842,6 +928,7 @@ def verify_development_eligibility(
         "receiptDigest": compute_receipt_digest(receipt),
         "repositoryCi": "passed",
         "detail": "development_eligible",
+        "consolidation": consolidation_record,
     }
 
 
@@ -1421,6 +1508,7 @@ def main(argv: list[str] | None = None) -> int:
             "cleanup",
             "agent-identical",
             "recover-phase",
+            "consolidate-phase-prs",
         ],
     )
     parser.add_argument("--repository", default="")
@@ -1454,6 +1542,8 @@ def main(argv: list[str] | None = None) -> int:
         default="",
         help="Optional staged-rollout config with branch and required-check identities",
     )
+    parser.add_argument("--open-prs-json", default="")
+    parser.add_argument("--consolidation-json", default="")
     args = parser.parse_args(argv)
 
     def load(path: str) -> Any:
@@ -1486,6 +1576,21 @@ def main(argv: list[str] | None = None) -> int:
                 receipt=load(args.receipt),
                 candidate_identity=load(args.identity_json),
                 rollout=rollout,
+                open_phase_prs=load(args.open_prs_json) if args.open_prs_json else None,
+                consolidation=load(args.consolidation_json) if args.consolidation_json else None,
+                role=args.role,
+            )
+        elif args.command == "consolidate-phase-prs":
+            require_controller_role(args.role)
+            result = authorize_divergent_phase_pr_delivery(
+                repository=args.repository,
+                pr=load(args.pr_json),
+                live_head=args.live_head,
+                live_tree=args.live_tree,
+                open_phase_prs=load(args.open_prs_json),
+                consolidation=load(args.consolidation_json) if args.consolidation_json else None,
+                role=args.role,
+                github=None,
             )
         else:
             require_controller_role(args.role)
