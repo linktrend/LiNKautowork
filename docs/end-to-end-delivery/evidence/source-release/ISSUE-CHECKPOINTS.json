@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 1,
+  "kind": "v25-issue-checkpoint-bundle",
+  "amendment": "V25_BOOTSTRAP_LEAN",
+  "requiredEvidence": [
+    "exact_pushed_commit_tree",
+    "scoped_diff",
+    "focused_tests",
+    "independent_narrow_review",
+    "manifest_evidence"
+  ],
+  "evaluatorNote": "Local python lacked jsonschema so scripts/gitops/issue_checkpoint.py could not import. Fields were checked against .ide-development/execution/protocol.py valid_independent_narrow_review and evaluate_issue_checkpoint.",
+  "checkpoints": [
+    {
+      "packetId": "AW-01",
+      "githubIssue": 129,
+      "issueRef": "issue/129-aw-01-freeze-server01-live-interfaces-and-migrat",
+      "headSha": "3e9b967a10f15d3dc601bb5d9648881b735a0b8b",
+      "gitTree": "35a47381afd01e9f0c9b25abbfe11d04ae8140c4",
+      "pushed": true,
+      "scopedDiff": true,
+      "focusedTests": {"passed": true, "hostedFullSuite": "failure"},
+      "independentNarrowReview": {
+        "accepted": true,
+        "headSha": "3e9b967a10f15d3dc601bb5d9648881b735a0b8b",
+        "gitTree": "35a47381afd01e9f0c9b25abbfe11d04ae8140c4",
+        "paths": ["supabase/migrations/", "docs/contracts/server01/", "packages/automation-contracts/tests/server01-live-interfaces.test.ts", "packages/automation-contracts/tests/server01-migration-package.test.ts"],
+        "reviewer": {"actor": "bc-9280697f-b2c0-4320-91bd-aff2a348e9e5", "role": "reviewer"},
+        "implementerActor": "bc-79ac72b0-9ccd-4ffb-ae77-7126b1c80ff8"
+      },
+      "manifestEvidence": true,
+      "proofClass": "local",
+      "leanReason": "v25_bootstrap_lean_issue_checkpoint",
+      "currentLineageTipIssue": 133,
+      "currentLineageTipSha": "d60ebe7eb58acc94ddfc16e6514fd18b13fe2c25"
+    },
+    {
+      "packetId": "AW-02",
+      "githubIssue": 137,
+      "issueRef": "issue/137-aw-02-implement-durable-automation-admission-and",
+      "headSha": "c1379a1704796c56371b4807c1a349ad905a15eb",
+      "gitTree": "3839c4dc7aee2147a16636f9417132baa4d30a47",
+      "pushed": true,
+      "scopedDiff": true,
+      "focusedTests": {"passed": true, "hostedFullSuite": "success"},
+      "independentNarrowReview": {
+        "accepted": true,
+        "headSha": "c1379a1704796c56371b4807c1a349ad905a15eb",
+        "gitTree": "3839c4dc7aee2147a16636f9417132baa4d30a47",
+        "paths": ["gateway/src/services/provider-admission.ts", "gateway/src/routes/provider-v2/index.ts", "packages/automation-contracts/src/provider-persistence.ts"],
+        "reviewer": {"actor": "bc-365172f6-a3f3-4b3d-8586-22c15e9cfdea", "role": "reviewer"},
+        "implementerActor": "bc-63f4653a-70d5-42f5-ad60-37ad63c53f0f"
+      },
+      "manifestEvidence": true,
+      "proofClass": "local",
+      "leanReason": "v25_bootstrap_lean_issue_checkpoint"
+    },
+    {
+      "packetId": "AW-03",
+      "githubIssue": 139,
+      "issueRef": "issue/139-aw-03-implement-durable-n8n-activation-and-callb",
+      "headSha": "fa5375fe2f200ab621f2e5af12677af67499cdd9",
+      "gitTree": "119d968a051ef5e15ea36e352c626acd0fea09fc",
+      "pushed": true,
+      "scopedDiff": true,
+      "focusedTests": {"passed": true, "hostedFullSuite": "success"},
+      "independentNarrowReview": {
+        "accepted": true,
+        "headSha": "fa5375fe2f200ab621f2e5af12677af67499cdd9",
+        "gitTree": "119d968a051ef5e15ea36e352c626acd0fea09fc",
+        "paths": ["gateway/src/services/runtime-dispatch/", "gateway/tests/runtime-dispatch/", "gateway/src/app.ts"],
+        "reviewer": {"actor": "bc-ba3dd944-3f3a-4964-a2d1-0c4c5aa54b42", "role": "reviewer"},
+        "implementerActor": "bc-0c02eb98-85aa-4af8-a056-84bd94ccf671"
+      },
+      "manifestEvidence": true,
+      "proofClass": "local",
+      "leanReason": "v25_bootstrap_lean_issue_checkpoint"
+    },
+    {
+      "packetId": "AW-04",
+      "githubIssue": 140,
+      "issueRef": "issue/140-aw-04-build-server01-runtime-acceptance-fixture",
+      "headSha": "1488779ad1593574957f3abce2775332a31e45c0",
+      "gitTree": "33c844958129bdbe8ba4f2fdc5d01f8e6553d989",
+      "pushed": true,
+      "scopedDiff": true,
+      "focusedTests": {"passed": true, "hostedFullSuite": "success"},
+      "independentNarrowReview": {
+        "accepted": true,
+        "headSha": "1488779ad1593574957f3abce2775332a31e45c0",
+        "gitTree": "33c844958129bdbe8ba4f2fdc5d01f8e6553d989",
+        "paths": ["automations/evals/server01-runtime-acceptance/", "deploy/test/fixtures/server01-runtime-acceptance/"],
+        "reviewer": {"actor": "bc-99e51527-6412-4f4e-bf79-523d57ae6a91", "role": "reviewer"},
+        "implementerActor": "bc-3f00ebdc-7f58-4179-b82d-266bc4dcd70b"
+      },
+      "manifestEvidence": true,
+      "proofClass": "local",
+      "leanReason": "v25_bootstrap_lean_issue_checkpoint"
+    },
+    {
+      "packetId": "AW-05",
+      "githubIssue": 138,
+      "issueRef": "issue/138-aw-05-finalize-secure-server01-deployment-topolo",
+      "headSha": "d3a47113d76fa5e1d045886c394b3bd1d7cade3b",
+      "gitTree": "58fa34cd5bed1d070093b7151686a02a400bb37f",
+      "pushed": true,
+      "scopedDiff": true,
+      "focusedTests": {"passed": true, "hostedFullSuite": "success"},
+      "independentNarrowReview": {
+        "accepted": true,
+        "headSha": "d3a47113d76fa5e1d045886c394b3bd1d7cade3b",
+        "gitTree": "58fa34cd5bed1d070093b7151686a02a400bb37f",
+        "paths": ["deploy/prod/", "ops/verify-server01-acceptance.sh", "scripts/tests/deployment-readiness.test.mjs"],
+        "reviewer": {"actor": "bc-6c9426d1-1641-44d9-9836-df450eb0235b", "role": "reviewer"},
+        "implementerActor": "bc-9a1cda9b-b69b-480a-ad21-a99bdb761f64"
+      },
+      "manifestEvidence": true,
+      "proofClass": "local",
+      "leanReason": "v25_bootstrap_lean_issue_checkpoint"
+    },
+    {
+      "packetId": "AW-06",
+      "githubIssue": 141,
+      "issueRef": "issue/141-aw-06-complete-operations-jetstream-observabilit",
+      "headSha": "dc751fb28462367eaf0602c0ba4ff817a3fe6554",
+      "gitTree": "b2995baa52091bb56a996efc2b2c86447b2d2393",
+      "pushed": true,
+      "scopedDiff": true,
+      "focusedTests": {"passed": true, "hostedFullSuite": "failure"},
+      "independentNarrowReview": {
+        "accepted": true,
+        "headSha": "dc751fb28462367eaf0602c0ba4ff817a3fe6554",
+        "gitTree": "b2995baa52091bb56a996efc2b2c86447b2d2393",
+        "paths": ["packages/automation-operations/", "gateway/src/services/monitoring/jetstream-operations.ts", "docs/runbooks/SERVER01-OPERATIONS.md"],
+        "reviewer": {"actor": "bc-ef0ab255-5b0a-40a5-917d-9fc4d72cffc2", "role": "reviewer"},
+        "implementerActor": "bc-1e69ca2a-c075-4c4d-91d8-b146951e1981"
+      },
+      "manifestEvidence": true,
+      "proofClass": "local",
+      "leanReason": "v25_bootstrap_lean_issue_checkpoint",
+      "integrationBlocked": true,
+      "hostedFailure": "TS2307 gateway/tests/operations/jetstream-operations.test.ts"
+    }
+  ]
+}

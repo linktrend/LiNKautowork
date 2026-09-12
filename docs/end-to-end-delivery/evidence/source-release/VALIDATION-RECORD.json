@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "kind": "aw-07-validation-record",
+  "admittedCommitBeforeEdits": "a13a6467fc9bc2fccdddd1de8d9e258c78e57fdd",
+  "admittedTreeBeforeEdits": "10e6b59394bfd57703d6f3cee5d7bcda3aa7342f",
+  "toolchain": {
+    "ciWorkflow": ".github/workflows/ci.yml node-version 22 + npm ci",
+    "packageLockSha256": "a22c868b63ef773dee239d3b9fa4b1a240906613b954927308d7addd7eb35e0c",
+    "lockfileVersion": 3,
+    "packageJsonEngines": null,
+    "nvmrc": null,
+    "thisVmAfterNvmPath": {
+      "node": "v22.22.2",
+      "npm": "10.9.7",
+      "python": "3.12.3",
+      "execDaemonNodeWithoutNvmPath": "v22.14.0"
+    },
+    "npmCi": "PASS (frozen lockfile, 289 packages)",
+    "docker": "absent (command not found)"
+  },
+  "commands": [
+    {
+      "command": "git diff --check",
+      "exitCode": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "python3 -m json.tool docs/end-to-end-delivery/EXECUTION-MANIFEST.json",
+      "exitCode": 2,
+      "result": "FAIL",
+      "diagnosis": "FileNotFoundError: path absent on admitted tree a13a6467. Observed copy lives on issue/127 commit 3731f56d0d381c19089fc758946d4f5ab9285262 sha256 8a19a79b1461abad4abef25970a7ff3ad7c4363c042fc9c26b276d4551da34c5. Not created at the live path because it is outside allowed AW-07 paths."
+    },
+    {
+      "command": "python3 -m json.tool docs/end-to-end-delivery/evidence/source-release/*.json",
+      "exitCode": 0,
+      "result": "PASS (six evidence JSON files)"
+    },
+    {
+      "command": "npm run ci",
+      "exitCode": 127,
+      "result": "FAIL",
+      "stoppedAt": "npm run verify:automation-librarian-db -> bash disposable-db/run.sh line 29",
+      "diagnosis": "docker: command not found. This is this VM, not a missing EXECUTION-MANIFEST and not an AW-07 evidence defect. Earlier steps on admitted baseline passed: release:check, validate:templates, validate:automations, catalog:check, root tests 108, package tests, product-api, operator-console, client-product, automation-librarian. Do not repeat unchanged. Do not install Docker or edit product to pass Full CI in this packet."
+    }
+  ]
+}

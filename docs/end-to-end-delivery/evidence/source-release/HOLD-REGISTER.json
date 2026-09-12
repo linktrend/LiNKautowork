@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "kind": "aw-07-source-only-hold-register",
+  "proofClass": "local",
+  "notProduction": true,
+  "holds": [
+    {
+      "id": "AW-01-LIVE-PLATFORM-APPLY",
+      "packet": "AW-01",
+      "status": "HOLD",
+      "statement": "Live Platform migration application, fingerprint receipts, and Server01 database role grants remain HOLD. Source package and disposable tests do not prove live apply."
+    },
+    {
+      "id": "AW-02-STAGE-CREDENTIALS-DISPATCH",
+      "packet": "AW-02",
+      "status": "HOLD",
+      "statement": "Stage migration application, credentials, live queue drain, external dispatch, consumer E2E, and production remain HOLD. Outbox stays pending."
+    },
+    {
+      "id": "AW-03-EXTERNAL-ASSISTANCE",
+      "packet": "AW-03",
+      "status": "HOLD",
+      "statement": "activationInterfaceSupported remains false (503 HOLD). External assistance, live n8n, and consumer factory destinations remain HOLD."
+    },
+    {
+      "id": "AW-04-LIVE-N8N",
+      "packet": "AW-04",
+      "status": "HOLD",
+      "sourcePathOnIssue140": "automations/evals/server01-runtime-acceptance/HOLD.md",
+      "statement": "n8n_dispatched is always false. live_n8n_activation is always hold. No live/disposable n8n import/export, credentials, canary, or founder acceptance."
+    },
+    {
+      "id": "AW-05-LIVE-TOPOLOGY",
+      "packet": "AW-05",
+      "status": "HOLD",
+      "statement": "docker compose up, --live, --resolve-gsm, canary, live ports, image host digests, and Server01 install remain HOLD. Source Compose/runbooks are inactive contracts."
+    },
+    {
+      "id": "AW-06-LIVE-OPS",
+      "packet": "AW-06",
+      "status": "HOLD",
+      "statement": "Live Server01/NATS/JetStream/n8n/GSM backup/restore/deploy remain HOLD. --live and LINKTREND_ALLOW_LIVE_OPS=1 fail closed. Prometheus series are snapshot contracts, not a live exporter."
+    },
+    {
+      "id": "AW-06-HOSTED-TYPECHECK",
+      "packet": "AW-06",
+      "status": "OPEN_SOURCE_DEFECT",
+      "statement": "Hosted validate-and-test failed: TS2307 cannot find '../../../../packages/automation-operations/src/index.js' from gateway/tests/operations/jetstream-operations.test.ts. Return to issue #141. Do not assemble an immutable release on this SHA."
+    },
+    {
+      "id": "AW-07-PROTECTED-INTEGRATION",
+      "packet": "AW-07",
+      "status": "HOLD",
+      "statement": "No merge to development, no Phase PR from this implementer, no staging/main promotion, no image rebuild, no protected-ref readback of an assembled candidate."
+    },
+    {
+      "id": "AW-08-LIVE-ACCEPTANCE",
+      "packet": "AW-08",
+      "status": "HOLD",
+      "statement": "Server01 install, canary, founder walkthrough, and live receipts are out of this packet."
+    },
+    {
+      "id": "TOOLCHAIN-ENGINES-UNPINNED",
+      "packet": "AW-07",
+      "status": "DIAGNOSIS",
+      "statement": "Admitted tree has package-lock.json lockfileVersion 3 (sha256 a22c868b63ef773dee239d3b9fa4b1a240906613b954927308d7addd7eb35e0c) and CI node-version 22. There is no package.json engines field and no .nvmrc. Compiler was not silently unpinned; npm ci used nvm Node v22.22.2. Dockerfiles on other packets pin node:22.13.1-alpine. Python 3.12.3 is unpinned stdlib for json.tool."
+    }
+  ]
+}

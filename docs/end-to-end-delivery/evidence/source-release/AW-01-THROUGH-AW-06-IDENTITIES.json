@@ -1,0 +1,384 @@
+{
+  "schemaVersion": 1,
+  "kind": "aw-07-source-release-identities",
+  "amendment": "V25_BOOTSTRAP_LEAN",
+  "protectedBaseline": {
+    "repository": "linktrend/LiNKautowork",
+    "refObservedAs": "refs/heads/development (planning/manifest pin)",
+    "commit": "a13a6467fc9bc2fccdddd1de8d9e258c78e57fdd",
+    "tree": "10e6b59394bfd57703d6f3cee5d7bcda3aa7342f",
+    "subject": "Merge pull request #120 from linktrend/phase/production-readiness-20260904"
+  },
+  "collector": {
+    "role": "implementation",
+    "issue": 142,
+    "issueRef": "issue/142-aw-07-governed-integration-and-immutable-release",
+    "cloudAgent": "https://cursor.com/agents/bc-9b9a6788-f625-429d-806e-ac14078b0adf",
+    "collectedAt": "2026-09-12T02:30:00Z",
+    "readOnlySources": [],
+    "didMerge": false,
+    "didOpenOrChangePr": false,
+    "didClaimProtectedIntegration": false
+  },
+  "packets": [
+    {
+      "id": "AW-01",
+      "githubIssue": 129,
+      "title": "AW-01 freeze Server01 live interfaces and migration identity package",
+      "issueRef": "issue/129-aw-01-freeze-server01-live-interfaces-and-migrat",
+      "checkpoint": {
+        "commit": "3e9b967a10f15d3dc601bb5d9648881b735a0b8b",
+        "tree": "35a47381afd01e9f0c9b25abbfe11d04ae8140c4",
+        "subject": "test(aw-01): prove Server01 package hashes, roles, and disposable apply",
+        "pushed": true,
+        "aheadOfBaseline": 11,
+        "compareStatus": "ahead",
+        "fileCountVsBaseline": 18
+      },
+      "hostedCi": {
+        "name": "validate-and-test",
+        "conclusion": "failure",
+        "url": "https://github.com/linktrend/LiNKautowork/actions/runs/34451539763/job/102788170507"
+      },
+      "independentNarrowReview": {
+        "accepted": true,
+        "verdict": "PASS",
+        "headSha": "3e9b967a10f15d3dc601bb5d9648881b735a0b8b",
+        "gitTree": "35a47381afd01e9f0c9b25abbfe11d04ae8140c4",
+        "paths": [
+          "supabase/migrations/",
+          "docs/contracts/server01/",
+          "packages/automation-contracts/tests/server01-live-interfaces.test.ts",
+          "packages/automation-contracts/tests/server01-migration-package.test.ts"
+        ],
+        "reviewer": {
+          "actor": "bc-9280697f-b2c0-4320-91bd-aff2a348e9e5",
+          "role": "reviewer",
+          "url": "https://cursor.com/agents/bc-9280697f-b2c0-4320-91bd-aff2a348e9e5"
+        },
+        "implementerActor": "bc-79ac72b0-9ccd-4ffb-ae77-7126b1c80ff8"
+      },
+      "repairs": [
+        {
+          "githubIssue": 131,
+          "issueRef": "issue/131-repair-aw-01-phase-secret-scan-fixture-binding",
+          "commit": "baa87c4565fe3e63f89e501f153e3d546d806b57",
+          "tree": "9973b9cb15718c78adb9aeb155fd168f0afd7f5d",
+          "hostedCi": {
+            "name": "validate-and-test",
+            "conclusion": "success",
+            "url": "https://github.com/linktrend/LiNKautowork/actions/runs/34457065540/job/102805821883"
+          },
+          "independentNarrowReview": {
+            "accepted": true,
+            "verdict": "PASS",
+            "headSha": "baa87c4565fe3e63f89e501f153e3d546d806b57",
+            "gitTree": "9973b9cb15718c78adb9aeb155fd168f0afd7f5d",
+            "paths": [
+              ".github/linktrend-secret-scan-fixtures.json",
+              "packages/automation-contracts/tests/server01-live-interfaces.test.ts"
+            ],
+            "reviewer": {
+              "actor": "bc-4bf4d52e-3d92-4cc5-9af3-8818e6a5cc26",
+              "role": "reviewer",
+              "url": "https://cursor.com/agents/bc-4bf4d52e-3d92-4cc5-9af3-8818e6a5cc26"
+            },
+            "implementerActor": "bc-fac16579-2422-4993-aaef-0a2b2df5a673"
+          }
+        },
+        {
+          "githubIssue": 133,
+          "issueRef": "issue/133-repair-aw-01-final-bugbot-database-findings",
+          "commit": "d60ebe7eb58acc94ddfc16e6514fd18b13fe2c25",
+          "tree": "986223c1d62417fe342ca9c62434aee9c0bae1e8",
+          "hostedCi": {
+            "name": "validate-and-test",
+            "conclusion": "success",
+            "url": "https://github.com/linktrend/LiNKautowork/actions/runs/34578507500/job/103196401062"
+          },
+          "independentNarrowReview": {
+            "accepted": true,
+            "verdict": "PASS",
+            "headSha": "d60ebe7eb58acc94ddfc16e6514fd18b13fe2c25",
+            "gitTree": "986223c1d62417fe342ca9c62434aee9c0bae1e8",
+            "paths": [
+              ".github/linktrend-secret-scan-fixtures.json"
+            ],
+            "reviewer": {
+              "actor": "bc-37c9459f-2c47-49a4-9396-f91fc5d264a5",
+              "role": "reviewer",
+              "url": "https://cursor.com/agents/bc-37c9459f-2c47-49a4-9396-f91fc5d264a5"
+            },
+            "implementerActor": "bc-be48b85f-9c19-43d6-99ae-e267a5036f17"
+          }
+        }
+      ],
+      "phaseCandidateNotIntegrated": {
+        "pr": 132,
+        "ref": "phase/server01-aw01-interface-freeze-repair-129-131",
+        "commit": "5ebfb7478331b4c8c57d5ac2663dedf3e5bdbad9",
+        "tree": "9973b9cb15718c78adb9aeb155fd168f0afd7f5d",
+        "note": "Independently reviewed PASS vs repair tree baa87c4. Later issue #133 rebind is a newer SHA/tree. AW-07 did not merge this Phase PR."
+      },
+      "currentIssueLineageTip": {
+        "githubIssue": 133,
+        "commit": "d60ebe7eb58acc94ddfc16e6514fd18b13fe2c25",
+        "tree": "986223c1d62417fe342ca9c62434aee9c0bae1e8"
+      },
+      "legacyPublisher": {
+        "publisher": "linktrend-review-ready-publisher",
+        "state": "missing",
+        "classification": "WAIVED_LEGACY_GATE",
+        "isPass": false
+      }
+    },
+    {
+      "id": "AW-02",
+      "githubIssue": 137,
+      "title": "AW-02: implement durable automation admission and lifecycle",
+      "issueRef": "issue/137-aw-02-implement-durable-automation-admission-and",
+      "checkpoint": {
+        "commit": "c1379a1704796c56371b4807c1a349ad905a15eb",
+        "tree": "3839c4dc7aee2147a16636f9417132baa4d30a47",
+        "subject": "feat(aw-02): add durable admission lifecycle and event boundary",
+        "pushed": true,
+        "aheadOfBaseline": 1,
+        "fileCountVsBaseline": 7
+      },
+      "hostedCi": {
+        "name": "validate-and-test",
+        "conclusion": "success",
+        "url": "https://github.com/linktrend/LiNKautowork/actions/runs/34586667397/job/103222346127"
+      },
+      "independentNarrowReview": {
+        "accepted": true,
+        "verdict": "PASS",
+        "headSha": "c1379a1704796c56371b4807c1a349ad905a15eb",
+        "gitTree": "3839c4dc7aee2147a16636f9417132baa4d30a47",
+        "paths": [
+          "docs/contracts/provider-persistence-v1.md",
+          "gateway/src/routes/provider-v2/index.ts",
+          "gateway/src/services/provider-admission.ts",
+          "gateway/src/services/provider-store.ts",
+          "gateway/tests/provider-admission.test.ts",
+          "packages/automation-contracts/src/provider-persistence.ts",
+          "packages/automation-contracts/tests/provider-persistence.test.ts"
+        ],
+        "reviewer": {
+          "actor": "bc-365172f6-a3f3-4b3d-8586-22c15e9cfdea",
+          "role": "reviewer",
+          "url": "https://cursor.com/agents/bc-365172f6-a3f3-4b3d-8586-22c15e9cfdea"
+        },
+        "implementerActor": "bc-63f4653a-70d5-42f5-ad60-37ad63c53f0f"
+      },
+      "legacyPublisher": {
+        "publisher": "linktrend-review-ready-publisher",
+        "state": "missing",
+        "classification": "WAIVED_LEGACY_GATE",
+        "isPass": false
+      }
+    },
+    {
+      "id": "AW-03",
+      "githubIssue": 139,
+      "title": "AW-03: implement durable n8n activation and callback bridge",
+      "issueRef": "issue/139-aw-03-implement-durable-n8n-activation-and-callb",
+      "supersededUnaccepted": {
+        "commit": "e0e6d8bc42f831c667a7082c6dbb08305d1a438c",
+        "tree": "fcab6f1bbe1081c6c0178e66be8fba08b3db21cf",
+        "independentNarrowReview": {
+          "accepted": false,
+          "verdict": "FAIL",
+          "headSha": "e0e6d8bc42f831c667a7082c6dbb08305d1a438c",
+          "gitTree": "fcab6f1bbe1081c6c0178e66be8fba08b3db21cf",
+          "reviewer": {
+            "actor": "bc-2db02904-2ca4-4c66-a564-54090e29b414",
+            "role": "reviewer",
+            "url": "https://cursor.com/agents/bc-2db02904-2ca4-4c66-a564-54090e29b414"
+          },
+          "reason": "later-timestamp same receipt_id callback overwrote terminal AW-02 receipt"
+        }
+      },
+      "checkpoint": {
+        "commit": "fa5375fe2f200ab621f2e5af12677af67499cdd9",
+        "tree": "119d968a051ef5e15ea36e352c626acd0fea09fc",
+        "subject": "fix(gateway): keep terminal receipt sticky on same-id callbacks",
+        "pushed": true,
+        "aheadOfBaseline": 2,
+        "fileCountVsBaseline": 8
+      },
+      "hostedCi": {
+        "name": "validate-and-test",
+        "conclusion": "success",
+        "url": "https://github.com/linktrend/LiNKautowork/actions/runs/34606221809/job/103285174458"
+      },
+      "independentNarrowReview": {
+        "accepted": true,
+        "verdict": "PASS",
+        "headSha": "fa5375fe2f200ab621f2e5af12677af67499cdd9",
+        "gitTree": "119d968a051ef5e15ea36e352c626acd0fea09fc",
+        "paths": [
+          "gateway/src/app.ts",
+          "gateway/src/services/runtime-dispatch/",
+          "gateway/tests/app-runtime-dispatch.test.ts",
+          "gateway/tests/runtime-dispatch/"
+        ],
+        "reviewer": {
+          "actor": "bc-ba3dd944-3f3a-4964-a2d1-0c4c5aa54b42",
+          "role": "reviewer",
+          "url": "https://cursor.com/agents/bc-ba3dd944-3f3a-4964-a2d1-0c4c5aa54b42"
+        },
+        "implementerActor": "bc-0c02eb98-85aa-4af8-a056-84bd94ccf671"
+      },
+      "legacyPublisher": {
+        "publisher": "linktrend-review-ready-publisher",
+        "state": "missing",
+        "classification": "WAIVED_LEGACY_GATE",
+        "isPass": false
+      }
+    },
+    {
+      "id": "AW-04",
+      "githubIssue": 140,
+      "title": "AW-04: build Server01 runtime acceptance fixture",
+      "issueRef": "issue/140-aw-04-build-server01-runtime-acceptance-fixture",
+      "checkpoint": {
+        "commit": "1488779ad1593574957f3abce2775332a31e45c0",
+        "tree": "33c844958129bdbe8ba4f2fdc5d01f8e6553d989",
+        "subject": "feat(aw-04): add Server01 runtime acceptance mock fixture",
+        "pushed": true,
+        "aheadOfBaseline": 1,
+        "fileCountVsBaseline": 31
+      },
+      "hostedCi": {
+        "name": "validate-and-test",
+        "conclusion": "success",
+        "url": "https://github.com/linktrend/LiNKautowork/actions/runs/34609824626/job/103297207631"
+      },
+      "independentNarrowReview": {
+        "accepted": true,
+        "verdict": "PASS",
+        "headSha": "1488779ad1593574957f3abce2775332a31e45c0",
+        "gitTree": "33c844958129bdbe8ba4f2fdc5d01f8e6553d989",
+        "paths": [
+          "automations/evals/server01-runtime-acceptance/",
+          "deploy/test/fixtures/server01-runtime-acceptance/"
+        ],
+        "reviewer": {
+          "actor": "bc-99e51527-6412-4f4e-bf79-523d57ae6a91",
+          "role": "reviewer",
+          "url": "https://cursor.com/agents/bc-99e51527-6412-4f4e-bf79-523d57ae6a91"
+        },
+        "implementerActor": "bc-3f00ebdc-7f58-4179-b82d-266bc4dcd70b"
+      },
+      "legacyPublisher": {
+        "publisher": "linktrend-review-ready-publisher",
+        "state": "missing",
+        "classification": "WAIVED_LEGACY_GATE",
+        "isPass": false
+      }
+    },
+    {
+      "id": "AW-05",
+      "githubIssue": 138,
+      "title": "AW-05: finalize secure Server01 deployment topology",
+      "issueRef": "issue/138-aw-05-finalize-secure-server01-deployment-topolo",
+      "checkpoint": {
+        "commit": "d3a47113d76fa5e1d045886c394b3bd1d7cade3b",
+        "tree": "58fa34cd5bed1d070093b7151686a02a400bb37f",
+        "subject": "test(deploy): cover AW-05 private topology and HOLD runbooks",
+        "pushed": true,
+        "aheadOfBaseline": 3,
+        "fileCountVsBaseline": 15
+      },
+      "hostedCi": {
+        "name": "validate-and-test",
+        "conclusion": "success",
+        "url": "https://github.com/linktrend/LiNKautowork/actions/runs/34595506504/job/103250218967"
+      },
+      "independentNarrowReview": {
+        "accepted": true,
+        "verdict": "PASS",
+        "headSha": "d3a47113d76fa5e1d045886c394b3bd1d7cade3b",
+        "gitTree": "58fa34cd5bed1d070093b7151686a02a400bb37f",
+        "paths": [
+          "deploy/prod/",
+          "deploy/common/gateway.Dockerfile",
+          "deploy/common/release-jobs.Dockerfile",
+          "deploy/templates/",
+          "ops/deploy-stack.sh",
+          "ops/render-env-from-gsm.sh",
+          "ops/render-runtime-env-from-gsm.sh",
+          "ops/verify-server01-acceptance.sh",
+          "scripts/tests/deployment-readiness.test.mjs",
+          "docs/runbooks/OPERATIONS.md",
+          "docs/runbooks/TAILSCALE_HARDENING.md",
+          "vitest.config.ts"
+        ],
+        "reviewer": {
+          "actor": "bc-6c9426d1-1641-44d9-9836-df450eb0235b",
+          "role": "reviewer",
+          "url": "https://cursor.com/agents/bc-6c9426d1-1641-44d9-9836-df450eb0235b"
+        },
+        "implementerActor": "bc-9a1cda9b-b69b-480a-ad21-a99bdb761f64"
+      },
+      "legacyPublisher": {
+        "publisher": "linktrend-review-ready-publisher",
+        "state": "missing",
+        "classification": "WAIVED_LEGACY_GATE",
+        "isPass": false
+      }
+    },
+    {
+      "id": "AW-06",
+      "githubIssue": 141,
+      "title": "AW-06: complete operations JetStream observability and recovery",
+      "issueRef": "issue/141-aw-06-complete-operations-jetstream-observabilit",
+      "checkpoint": {
+        "commit": "dc751fb28462367eaf0602c0ba4ff817a3fe6554",
+        "tree": "b2995baa52091bb56a996efc2b2c86447b2d2393",
+        "subject": "style(docs): strip trailing whitespace in Server01 operations runbook",
+        "pushed": true,
+        "aheadOfBaseline": 2,
+        "fileCountVsBaseline": 10
+      },
+      "hostedCi": {
+        "name": "validate-and-test",
+        "conclusion": "failure",
+        "url": "https://github.com/linktrend/LiNKautowork/actions/runs/34618459266/job/103326147783",
+        "diagnosis": "npm run typecheck: gateway/tests/operations/jetstream-operations.test.ts(4,47): error TS2307: Cannot find module '../../../../packages/automation-operations/src/index.js'"
+      },
+      "independentNarrowReview": {
+        "accepted": true,
+        "verdict": "PASS",
+        "headSha": "dc751fb28462367eaf0602c0ba4ff817a3fe6554",
+        "gitTree": "b2995baa52091bb56a996efc2b2c86447b2d2393",
+        "paths": [
+          "docs/runbooks/SERVER01-OPERATIONS.md",
+          "gateway/src/services/monitoring/jetstream-operations.ts",
+          "gateway/tests/operations/jetstream-operations.test.ts",
+          "ops/alerts/prometheus-rules.yml",
+          "ops/export-live-from-n8n.sh",
+          "ops/restore-drill.sh",
+          "ops/run-backup.sh",
+          "packages/automation-operations/src/index.ts",
+          "packages/automation-operations/src/jetstream.ts",
+          "packages/automation-operations/tests/jetstream.test.ts"
+        ],
+        "reviewer": {
+          "actor": "bc-ef0ab255-5b0a-40a5-917d-9fc4d72cffc2",
+          "role": "reviewer",
+          "url": "https://cursor.com/agents/bc-ef0ab255-5b0a-40a5-917d-9fc4d72cffc2"
+        },
+        "implementerActor": "bc-1e69ca2a-c075-4c4d-91d8-b146951e1981",
+        "note": "Source-only review PASS. Hosted Full typecheck failed; defect remains with issue #141. AW-07 does not repair it."
+      },
+      "legacyPublisher": {
+        "publisher": "linktrend-review-ready-publisher",
+        "state": "missing",
+        "classification": "WAIVED_LEGACY_GATE",
+        "isPass": false
+      }
+    }
+  ]
+}

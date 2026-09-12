@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "kind": "aw-07-cross-branch-absence",
+  "admittedCheckout": {
+    "repository": "linktrend/LiNKautowork",
+    "ref": "issue/142-aw-07-governed-integration-and-immutable-release",
+    "commit": "a13a6467fc9bc2fccdddd1de8d9e258c78e57fdd",
+    "tree": "10e6b59394bfd57703d6f3cee5d7bcda3aa7342f"
+  },
+  "livePath": "docs/end-to-end-delivery/EXECUTION-MANIFEST.json",
+  "presentOnAdmittedTree": false,
+  "observedElsewhere": {
+    "ref": "issue/127-plan-linkautowork-end-to-end-deployment-on-links",
+    "commit": "3731f56d0d381c19089fc758946d4f5ab9285262",
+    "tree": "4d0fac79072c7a0c6101195075ba56eb1a63393b",
+    "sha256": "8a19a79b1461abad4abef25970a7ff3ad7c4363c042fc9c26b276d4551da34c5",
+    "copiedTo": "docs/end-to-end-delivery/evidence/source-release/observed-EXECUTION-MANIFEST.from-issue-127.json"
+  },
+  "alsoPresentOn": [
+    "issue/129-aw-01-freeze-server01-live-interfaces-and-migrat",
+    "issue/131-repair-aw-01-phase-secret-scan-fixture-binding",
+    "issue/133-repair-aw-01-final-bugbot-database-findings"
+  ],
+  "scopeDecision": "Do not create the live EXECUTION-MANIFEST.json on AW-07. Allowed paths are evidence/source-release only. Do not broaden into planning or product trees.",
+  "acceptanceCommandImpact": {
+    "python3 -m json.tool docs/end-to-end-delivery/EXECUTION-MANIFEST.json": "FAIL: FileNotFoundError on admitted tree a13a6467",
+    "npm run ci": "Runs against admitted baseline product source, not assembled AW-01..06. It cannot prove an integrated candidate. Docker is absent in this VM so restore/db/eval steps that spawn docker will fail closed here even if product CI is green on GitHub."
+  }
+}

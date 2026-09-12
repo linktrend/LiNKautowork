@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "kind": "aw-07-integration-preparation",
+  "protectedIntegrationClaimed": false,
+  "implementerOpenedPr": false,
+  "merged": false,
+  "assembledCandidate": null,
+  "reasonNotAssembled": [
+    "AW-07 allowed paths are evidence/source-release only; product trees are read-only.",
+    "Issue branches remain unmerged and overlapping (AW-01 overlays planning docs; AW-02/03/05/06 touch gateway/ops independently).",
+    "AW-06 hosted typecheck failed TS2307 on dc751fb28462367eaf0602c0ba4ff817a3fe6554; return to owning issue 141.",
+    "docs/end-to-end-delivery/EXECUTION-MANIFEST.json is absent on admitted baseline a13a6467; creating it is out of scope.",
+    "Phase Packager/Coordinator and delivery controller remain the only integration actors."
+  ],
+  "dependencyOrder": ["AW-01", "AW-02", "AW-03", "AW-04", "AW-05", "AW-06", "AW-07"],
+  "exactAcceptedTipsForPackager": {
+    "AW-01": {
+      "preferredTip": "d60ebe7eb58acc94ddfc16e6514fd18b13fe2c25",
+      "tree": "986223c1d62417fe342ca9c62434aee9c0bae1e8",
+      "ref": "issue/133-repair-aw-01-final-bugbot-database-findings"
+    },
+    "AW-02": {
+      "preferredTip": "c1379a1704796c56371b4807c1a349ad905a15eb",
+      "tree": "3839c4dc7aee2147a16636f9417132baa4d30a47",
+      "ref": "issue/137-aw-02-implement-durable-automation-admission-and"
+    },
+    "AW-03": {
+      "preferredTip": "fa5375fe2f200ab621f2e5af12677af67499cdd9",
+      "tree": "119d968a051ef5e15ea36e352c626acd0fea09fc",
+      "ref": "issue/139-aw-03-implement-durable-n8n-activation-and-callb"
+    },
+    "AW-04": {
+      "preferredTip": "1488779ad1593574957f3abce2775332a31e45c0",
+      "tree": "33c844958129bdbe8ba4f2fdc5d01f8e6553d989",
+      "ref": "issue/140-aw-04-build-server01-runtime-acceptance-fixture"
+    },
+    "AW-05": {
+      "preferredTip": "d3a47113d76fa5e1d045886c394b3bd1d7cade3b",
+      "tree": "58fa34cd5bed1d070093b7151686a02a400bb37f",
+      "ref": "issue/138-aw-05-finalize-secure-server01-deployment-topolo"
+    },
+    "AW-06": {
+      "preferredTip": "dc751fb28462367eaf0602c0ba4ff817a3fe6554",
+      "tree": "b2995baa52091bb56a996efc2b2c86447b2d2393",
+      "ref": "issue/141-aw-06-complete-operations-jetstream-observabilit",
+      "integrationBlocked": true,
+      "blockedBy": "hosted validate-and-test TS2307"
+    }
+  },
+  "nextActor": "scripts/gitops/packager_coordinator.py then scripts/gitops/delivery_controller.py after AW-06 repair and independent re-review of a new identity"
+}
