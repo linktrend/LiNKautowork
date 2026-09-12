@@ -46,6 +46,7 @@ import { N8nOperationsExecutor } from './services/deployments/n8n-operations-exe
 import { ProviderRouteService } from './services/provider-route-service.js';
 import { ProviderStoreError } from './services/provider-store.js';
 import { providerInvocationRequestSchema } from '../../packages/automation-contracts/src/provider-contract.js';
+import { LinksitesConsumerRegistrationService, LinksitesConsumerAdmissionError } from './services/linksites-consumer-registration.js';
 
 function parseSchema<T>(schema: z.ZodType<T>, input: unknown): T {
   try {
@@ -84,6 +85,8 @@ export type AppDeps = {
   operationsService: OperationsService;
   /** Optional until an org-scoped provider-plane runtime is configured; routes fail closed when absent. */
   providerRouteService?: ProviderRouteService;
+  /** Optional source-only LiNKsites consumer-registration grant; routes fail closed when absent. */
+  linksitesConsumerRegistration?: LinksitesConsumerRegistrationService;
 };
 
 export function buildDependencies(env: AppEnv): AppDeps {
@@ -185,6 +188,21 @@ export function createApp(deps: AppDeps) {
   app.get('/v1/provider/requests/:requestId/receipt', ...providerAuth, async (req, res, next) => { try { res.json({ receipt: await providerService().receipt(req.platformInvocation!.orgId, req.params.requestId) }); } catch (error) { next(error); } });
   app.post('/v1/provider/callbacks', ingressRateLimiter, ...providerAuth, async (req, res, next) => { try { res.status(202).json({ receipt: await providerService().callback(req.platformInvocation!.orgId, req.body) }); } catch (error) { next(error); } });
   app.get('/v1/provider/events', ...providerAuth, async (req, res, next) => { try { const cursor = typeof req.query.cursor === 'string' ? req.query.cursor : null; const limit = typeof req.query.limit === 'string' ? Number(req.query.limit) : 50; res.json(await providerService().events(req.platformInvocation!.orgId, cursor, limit)); } catch (error) { next(error); } });
+
+  app.post('/v1/consumers/linksites/registration', ingressRateLimiter, requireInternalServiceToken(deps.env), requirePlatformInvocationClaim(deps.env), (req, res, next) => {
+    try {
+      if (!deps.linksitesConsumerRegistration) throw new HttpError(503, 'LiNKsites consumer registration runtime is unavailable');
+      const registration = deps.linksitesConsumerRegistration.admit(req.platformInvocation!.orgId, req.body);
+      res.status(200).json({
+        admitted: true,
+        registration,
+        live_health: 'HOLD',
+        organisation_bound_receipt: 'HOLD',
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
 
   app.post(
     '/v1/ingress/:workflowId',
@@ -607,6 +625,11 @@ export function createApp(deps: AppDeps) {
     if (error instanceof ProviderStoreError) {
       const status = error.category === 'not_found' ? 404 : error.category === 'conflict' ? 409 : error.category === 'blocked' ? 503 : error.category === 'forbidden' ? 403 : 400;
       res.status(status).json({ error: error.category });
+      return;
+    }
+    if (error instanceof LinksitesConsumerAdmissionError) {
+      const status = error.code === 'invalid_registration' || error.code === 'missing_signing_reference' ? 400 : 403;
+      res.status(status).json({ error: error.code });
       return;
     }
 
