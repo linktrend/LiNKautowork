@@ -443,6 +443,11 @@ def _github_api(
             raise ControllerError("github_unavailable", f"{method} {url} -> {exc.code}: {detail[:240]}") from exc
         if exc.code == 403 and "rate limit" in detail.lower():
             raise ControllerError("rate_limited", f"{method} {url} -> {exc.code}") from exc
+        if exc.code == 403 and "resource not accessible by integration" in detail.lower():
+            raise ControllerError(
+                "automation_credentials_blocked",
+                f"{method} {url} -> {exc.code}: installation token cannot mutate pull requests",
+            ) from exc
         if exc.code in {405, 409, 422} and "merge" in url:
             raise ControllerError("protected_merge_rejected", f"{method} {url} -> {exc.code}: {detail[:240]}") from exc
         raise ControllerError("github_api_failed", f"{method} {url} -> {exc.code}: {detail[:300]}") from exc
