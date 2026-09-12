@@ -1452,14 +1452,17 @@ def validate_phase_consolidation_evidence(
         if not reason:
             raise ControllerError("replacement_evidence_missing", "reason")
         head = str(row.get("head") or phase_branch)
-        if head != phase_branch:
+        if not is_phase_branch(head) or head in PROTECTED_BRANCHES:
             raise ControllerError("unrelated_source", head)
+        replacement_sha = normalize_sha(str(row.get("headSha") or ""))
+        if head != phase_branch and not replacement_sha:
+            raise ControllerError("replacement_evidence_missing", "headSha")
         parsed_replacements.append(
             {
                 "number": number,
                 "url": str(row.get("url") or ""),
                 "head": head,
-                "headSha": normalize_sha(str(row.get("headSha") or "")),
+                "headSha": replacement_sha,
                 "reason": reason,
             }
         )
@@ -1515,7 +1518,7 @@ def authorize_phase_consolidation(
             repository=repository,
             number=int(replacement["number"]),
             expected_head=str(replacement["headSha"] or live_keeper_sha),
-            phase_branch=parsed["phaseBranch"],
+            phase_branch=str(replacement["head"] or parsed["phaseBranch"]),
             expected_url=str(replacement["url"] or "") or None,
         )
         row = {
