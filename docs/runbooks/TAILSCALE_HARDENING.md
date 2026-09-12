@@ -9,7 +9,7 @@ Server01 mutation remain HOLD (AW-08).**
 ## Protected Ports (must not bind 0.0.0.0 on the host)
 
 - `5678` (n8n editor/webhooks) — `autowork-runtime` only
-- `8080` (gateway / Product API / operator console) — `autowork-edge` only
+- `8080` (gateway / Product API `PRODUCT_API_PORT` / operator console) — `autowork-edge` only
 - `4222` (NATS client) — `autowork-events` only
 - `8222` (NATS monitor) — unpublished
 
@@ -54,7 +54,8 @@ Expected behaviour:
 
 ```bash
 docker compose -f deploy/prod/docker-compose.yml --env-file deploy/prod/.env.example config
-npm run test -- scripts/tests/deployment-readiness.test.mjs
+npx vitest run scripts/tests/deployment-readiness.test.mjs
+ops/verify-server01-acceptance.sh --environment prod
 ```
 
 Do not `docker exec` a production container from this packet. Do not scan a live

@@ -6,8 +6,13 @@ usage() {
 Usage: $0 [--environment prod] [--compose-file <path>] [--canary <id>]
 
 Read-only Server01 acceptance verifier for the source topology. It never SSHs,
-never applies migrations, and never activates a canary unless --canary is an
-explicit later-authorised argument (still HOLD in AW-05).
+never applies migrations, and never activates a canary.
+
+Passing --canary <id> does not mutate n8n bindings. It prints a HOLD row and,
+when source checks pass, still exits 0 (PASS with HOLD rows). Live canary
+activation remains AW-08. Forbidden live flags on sibling helpers (--up,
+--live, --resolve-gsm) print HOLD and exit 2; this verifier does not take those
+flags.
 USAGE
 }
 
@@ -96,10 +101,18 @@ fi
 if ! grep -q 'nats_jetstream_prod:/data' "$COMPOSE_FILE"; then
   fail_msg "NATS persistence volume missing"
 fi
-if ! awk '/^  nats:/{p=1} p&&/^  [a-z]/{if($1!="nats:") exit} p&&/autowork-events/{found=1} END{exit !found}' "$COMPOSE_FILE"; then
+nats_block="$(awk '
+  /^  nats:[[:space:]]*$/ {p=1; next}
+  p && /^  [a-z0-9_-]+:[[:space:]]*$/ {exit}
+  p {print}
+' "$COMPOSE_FILE")"
+if ! printf '%s\n' "$nats_block" | grep -q 'autowork-events'; then
   fail_msg "NATS is not attached only through autowork-events"
+elif printf '%s\n' "$nats_block" | grep -qE 'autowork-(edge|runtime)'; then
+  fail_msg "NATS is not attached only through autowork-events"
+else
+  pass "persistent non-host-network NATS exclusive to autowork-events"
 fi
-pass "persistent non-host-network NATS"
 
 if grep -qE '^[[:space:]]+runtime-dispatch' "$COMPOSE_FILE"; then
   fail_msg "runtime dispatcher must not be a Compose service"

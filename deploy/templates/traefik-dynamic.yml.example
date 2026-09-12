@@ -44,6 +44,7 @@ http:
         servers: [{ url: "http://<OPERATOR_CONSOLE_PRIVATE_ADDRESS>:8080" }]
     linkautowork-product-api:
       loadBalancer:
+        # Private container port; must match PRODUCT_API_PORT / Compose PORT (8080).
         servers: [{ url: "http://<PRODUCT_API_PRIVATE_ADDRESS>:8080" }]
     linkautowork-gateway:
       loadBalancer:

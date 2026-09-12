@@ -1,7 +1,7 @@
 # Operations Runbook (MVO) — source topology (AW-05)
 
 Owner: LiNKtrend Platform  
-Last updated: 2026-09-11
+Last updated: 2026-09-12
 
 This runbook describes the **source-only** Server01 production Compose contract.
 It does not authorise SSH, Tailscale mutation, GSM resolve, registry pull,
@@ -15,7 +15,7 @@ Services started in the default production project:
 - `nats` on `autowork-events` with volume `nats_jetstream_prod` (no host port)
 - `gateway` on `autowork-edge`, `autowork-runtime`, and `autowork-events`
 - `n8n` on `autowork-runtime` only (private operator route via Traefik template)
-- `product-api` and `operator-console` on `autowork-edge` (private)
+- `product-api` (`PRODUCT_API_PORT=8080`, unpublished) and `operator-console` on `autowork-edge` (private)
 - `operations-scheduler` behind `--profile operations` on `autowork-events`
 
 Release jobs (`migration-preflight`, `certified-package-publisher`) stay on
@@ -39,8 +39,15 @@ identity.
    `docker compose -f deploy/prod/docker-compose.yml --env-file deploy/prod/.env.example config`
 4. Source-only stack helper: `ops/deploy-stack.sh prod --dry-run --print-release-layout`
 5. Acceptance verifier (read-only): `ops/verify-server01-acceptance.sh --environment prod`
+6. Source topology suite (Vitest): `npx vitest run scripts/tests/deployment-readiness.test.mjs`
 
-Do not pass `--up`, `--live`, `--resolve-gsm`, or a canary id. Those exit HOLD.
+Do not pass `--up`, `--live`, or `--resolve-gsm`. Those helpers print HOLD and
+exit 2 without applying anything.
+
+Do not pass a canary id. If `--canary <id>` is supplied to the acceptance
+verifier, it still stays read-only: it prints a HOLD row, mutates no n8n
+binding, and exits 0 (`PASS with N HOLD row(s)`). Live canary activation remains
+AW-08.
 
 ## Atomic release pointer (not applied in this packet)
 

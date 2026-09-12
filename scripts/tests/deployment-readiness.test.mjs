@@ -109,8 +109,54 @@ describe('AW-05 Server01 deployment readiness', () => {
   it('keeps deploy-stack and acceptance verifier off live Server01', () => {
     const up = spawnSync('bash', [deployStack, 'prod', '--up'], { encoding: 'utf8' });
     expect(up.status).toBe(2);
+    expect(up.stderr).toMatch(/HOLD:/);
     const verifier = spawnSync('bash', [verify, '--environment', 'prod'], { encoding: 'utf8' });
     expect(verifier.status, verifier.stderr + verifier.stdout).toBe(0);
     expect(verifier.stdout).toMatch(/Live\/provider boundaries remain HOLD/);
+    expect(verifier.stdout).toMatch(/PASS with \d+ HOLD row\(s\)/);
+  });
+
+  it('documents npx vitest as the public source-topology acceptance command', () => {
+    const operations = read('docs/runbooks/OPERATIONS.md');
+    const tailscale = read('docs/runbooks/TAILSCALE_HARDENING.md');
+    const documented = 'npx vitest run scripts/tests/deployment-readiness.test.mjs';
+    expect(operations).toContain(documented);
+    expect(tailscale).toContain(documented);
+    expect(operations).not.toMatch(/Those exit HOLD/);
+  });
+
+  it('prints canary HOLD and still exits 0 (read-only, no n8n mutation)', () => {
+    const canary = spawnSync('bash', [verify, '--environment', 'prod', '--canary', 'aw05-not-live'], { encoding: 'utf8' });
+    expect(canary.status, canary.stderr + canary.stdout).toBe(0);
+    expect(canary.stdout).toMatch(/HOLD: canary 'aw05-not-live' supplied but live n8n activation is AW-08 HOLD; no binding mutated/);
+    expect(canary.stdout).toMatch(/PASS with \d+ HOLD row\(s\)/);
+    expect(canary.stdout + canary.stderr).not.toMatch(/activat(?:ed|ing) canary/i);
+  });
+
+  it('reconciles Product API port 8080 across env, Compose, and Traefik', () => {
+    expect(env).toMatch(/^PRODUCT_API_PORT=8080$/m);
+    expect(env).not.toMatch(/PRODUCT_API_PORT=8090/);
+    const productApi = compose.split(/^  product-api:\n/m)[1]?.split(/^  [a-z].*:$/m)[0] ?? '';
+    expect(productApi).toMatch(/PORT: \$\{PRODUCT_API_PORT:-8080\}/);
+    expect(productApi).toMatch(/127\.0\.0\.1:\$\{PRODUCT_API_PORT:-8080\}/);
+    expect(productApi).not.toMatch(/^\s+ports:/m);
+    expect(traefik).toMatch(/http:\/\/<PRODUCT_API_PRIVATE_ADDRESS>:8080/);
+    expect(traefik).not.toMatch(/PRODUCT_API_PRIVATE_ADDRESS>:8090/);
+  });
+
+  it('fails the verifier when NATS is attached beyond autowork-events', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'aw05-nats-'));
+    const polluted = path.join(tmp, 'docker-compose.yml');
+    const extraNets = compose.replace(
+      /(  nats:[\s\S]*?networks:\n)(      - autowork-events\n)/,
+      '$1$2      - autowork-edge\n',
+    );
+    expect(extraNets).toContain('      - autowork-edge');
+    expect(extraNets).not.toBe(compose);
+    fs.writeFileSync(polluted, extraNets);
+    const exclusive = spawnSync('bash', [verify, '--environment', 'prod', '--compose-file', polluted], { encoding: 'utf8' });
+    expect(exclusive.status, exclusive.stderr + exclusive.stdout).toBe(1);
+    expect(exclusive.stderr + exclusive.stdout).toMatch(/NATS is not attached only through autowork-events/);
+    fs.rmSync(tmp, { recursive: true, force: true });
   });
 });

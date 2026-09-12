@@ -170,7 +170,8 @@ services:
       - path: .env
         required: false
     environment:
-      PORT: 8080
+      # Same private listen port as Traefik and PRODUCT_API_PORT (no host publish).
+      PORT: ${PRODUCT_API_PORT:-8080}
       PRODUCT_API_JWT_ISSUER: ${PRODUCT_API_JWT_ISSUER}
       PRODUCT_API_JWT_AUDIENCE: ${PRODUCT_API_JWT_AUDIENCE}
       PRODUCT_API_JWKS_URL: ${PRODUCT_API_JWKS_URL}
@@ -187,7 +188,7 @@ services:
       gateway:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:8080/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:${PRODUCT_API_PORT:-8080}/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
       interval: 30s
       timeout: 5s
       retries: 5
