@@ -66,3 +66,21 @@ groups:
         annotations:
           summary: "JetStream ack-pending exceeded the critical snapshot threshold"
           runbook: docs/runbooks/SERVER01-OPERATIONS.md
+      - alert: LiNKautoworkJetStreamReplicaUnhealthy
+        expr: min by (stream) (linkautowork_jetstream_replica_healthy) == 0
+        for: 5m
+        labels:
+          severity: warning
+          routing_key: jetstream-replica
+        annotations:
+          summary: "JetStream stream replica reported unhealthy on a redacted snapshot"
+          runbook: docs/runbooks/SERVER01-OPERATIONS.md
+      - alert: LiNKautoworkJetStreamConsumerStale
+        expr: max by (stream, consumer) (linkautowork_jetstream_consumer_stale) == 1
+        for: 5m
+        labels:
+          severity: warning
+          routing_key: jetstream-stale
+        annotations:
+          summary: "JetStream consumer last activity exceeded the snapshot stale threshold"
+          runbook: docs/runbooks/SERVER01-OPERATIONS.md

@@ -46,7 +46,7 @@ export class JetStreamOperations {
   async observe(orgId: string, snapshot: JetStreamClusterSnapshot): Promise<JetStreamObservation> {
     if (snapshot.orgId !== orgId) throw new Error('jetstream snapshot returned a cross-organisation cluster');
     const now = this.clock();
-    const health = deriveJetStreamHealth(snapshot, now.getTime());
+    const health = deriveJetStreamHealth(snapshot);
     const evidenceRef = `evidence://jetstream/${digest(health).slice(7)}`;
     const open = jetStreamAlertKeys(health);
     const openSet = new Set(open.map((item) => `${item.instanceId}:${item.routingKey}`));

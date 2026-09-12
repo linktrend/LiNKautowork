@@ -23,7 +23,9 @@ Use `deriveJetStreamHealth` / `JetStreamOperations.observe` with an injected sna
 - stream: `name`, `available`, `replicaHealthy`, `lastSeq`, `consumerCount`, `subjects` (names only)
 - consumer: `stream`, `consumer`, `lastStreamSeq`, `deliveredStreamSeq`, `numPending`, `numAckPending`, `lastActivityAt`
 
-Lag is `max(0, lastStreamSeq - deliveredStreamSeq)`. Default thresholds (not production SLO claims):
+Lag is `max(0, lastStreamSeq - deliveredStreamSeq)`. Consumer staleness is `observedAt - lastActivityAt`, not the HTTP request clock, so an intentionally older redacted snapshot is not stale merely because observation ran later.
+
+Default thresholds (not production SLO claims):
 
 | Signal | Warning | Critical |
 |---|---|---|
@@ -35,7 +37,9 @@ Do not put payloads, credentials, or raw NATS objects into snapshots or incident
 
 ## Alert routing
 
-Prometheus rules live in `ops/alerts/prometheus-rules.yml` under `linkautowork-jetstream`. They evaluate **snapshot metrics** (`linkautowork_jetstream_connected`, `linkautowork_jetstream_consumer_lag`, `linkautowork_jetstream_ack_pending`). Those series are a contract for a future adapter; this packet does not scrape a live NATS exporter.
+Prometheus rules live in `ops/alerts/prometheus-rules.yml` under `linkautowork-jetstream`. They describe **snapshot metric names** (`linkautowork_jetstream_connected`, `linkautowork_jetstream_consumer_lag`, `linkautowork_jetstream_ack_pending`, `linkautowork_jetstream_replica_healthy`, `linkautowork_jetstream_consumer_stale`). Those series are a source contract for a future adapter.
+
+**HOLD — live metrics adapter:** this packet does **not** install Prometheus, Alertmanager, Grafana, a NATS exporter, or any other OSS metrics stack. There is no immutable scrape config, preservation/provenance record, reproducibility pin, or rollback evidence for a live metrics installation. Do not claim those rules are firing in production. Replica and lag remain separate routing keys (`jetstream-replica` vs `jetstream-lag` / `jetstream-lag-critical`).
 
 Until an authorised adapter is wired, prove alerts with the in-process observer tests. Alert adapters are local fakes. Do not select Slack/email recipients here.
 
@@ -43,7 +47,9 @@ Until an authorised adapter is wired, prove alerts with the in-process observer 
 
 | Health | Plan kind | Operator meaning | Must not do |
 |---|---|---|---|
-| healthy / mild lag | `observe` | Repeat the snapshot on the maintenance interval | Recreate consumers |
+| healthy / mild lag / ack-pending warning | `observe` | Repeat the snapshot on the maintenance interval; lag alerts stay on the consumer | Recreate consumers |
+| replica-only degradation (zero lag) | `observe` | Keep the replica warning on the stream; do not open a lag incident | Treat replica as lag or replay |
+| connected empty stream set | `observe` | Classify `unknown`; no lag or replica incidents | Invent missing-stream unavailability |
 | stale consumer | `recreate_consumer` | Plan a durable recreate with the same name and ack floor | Reset stream sequence |
 | critical lag / ack pending | `replay_from_ack_floor` | Plan a bounded replay from the stored ack floor | Delete the stream |
 | disconnected / missing stream | `fail_closed` | Stop publishing; keep the snapshot as evidence | Invent a live restore |
@@ -70,6 +76,7 @@ Integrity of the three backup kinds is also proven in-process by `rehearseRestor
 
 - No SSH or console session to Server01.
 - No NATS URL, JetStream API, or monitoring port contact.
+- No live Prometheus/Alertmanager/Grafana/NATS-exporter installation, scrape, or page.
 - No n8n Public API, webhook, or workflow activation.
 - No GSM / gcloud secret access.
 - No production or stage restore, failover, or consumer mutate.

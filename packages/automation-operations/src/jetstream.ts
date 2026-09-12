@@ -88,17 +88,20 @@ export function consumerLag(consumer: JetStreamConsumerSnapshot): number {
 
 /**
  * Derives JetStream health from a redacted snapshot. Process liveness is not an input.
+ * Consumer staleness is measured from `snapshot.observedAt`, not a later request clock.
  */
 export function deriveJetStreamHealth(snapshot: JetStreamClusterSnapshot, at = Date.parse(snapshot.observedAt), thresholds = JETSTREAM_DEFAULTS): JetStreamHealthSummary {
+  const observedMs = Date.parse(snapshot.observedAt);
+  const staleReferenceMs = Number.isFinite(observedMs) ? observedMs : at;
   const missingStreams = snapshot.streams.filter((stream) => !stream.available).map((stream) => stream.name);
   const replicaUnhealthy = snapshot.streams.filter((stream) => stream.available && !stream.replicaHealthy).map((stream) => stream.name);
   const consumers: JetStreamConsumerHealth[] = snapshot.consumers.map((consumer) => {
     const lag = consumerLag(consumer);
-    const stale = !consumer.lastActivityAt || at - Date.parse(consumer.lastActivityAt) > thresholds.staleMs;
+    const stale = !consumer.lastActivityAt || staleReferenceMs - Date.parse(consumer.lastActivityAt) > thresholds.staleMs;
     let health: JetStreamHealth = 'healthy';
     if (!snapshot.connected || missingStreams.includes(consumer.stream)) health = 'unhealthy';
     else if (lag >= thresholds.lagCritical || consumer.numAckPending >= thresholds.ackPendingCritical) health = 'unhealthy';
-    else if (stale || lag >= thresholds.lagWarning || consumer.numAckPending >= thresholds.ackPendingWarning || replicaUnhealthy.includes(consumer.stream)) health = 'degraded';
+    else if (stale || lag >= thresholds.lagWarning || consumer.numAckPending >= thresholds.ackPendingWarning) health = 'degraded';
     const routingKey = !snapshot.connected || missingStreams.includes(consumer.stream)
       ? 'jetstream-unavailable'
       : health === 'unhealthy'
@@ -111,8 +114,8 @@ export function deriveJetStreamHealth(snapshot: JetStreamClusterSnapshot, at = D
   let health: JetStreamHealth = 'healthy';
   if (!snapshot.connected || missingStreams.length) health = 'unhealthy';
   else if (!snapshot.streams.length) health = 'unknown';
-  else if (replicaUnhealthy.length || consumers.some((row) => row.health === 'unhealthy')) health = 'unhealthy';
-  else if (consumers.some((row) => row.health === 'degraded')) health = 'degraded';
+  else if (consumers.some((row) => row.health === 'unhealthy')) health = 'unhealthy';
+  else if (replicaUnhealthy.length || consumers.some((row) => row.health === 'degraded')) health = 'degraded';
   return { orgId: snapshot.orgId, observedAt: snapshot.observedAt, connected: snapshot.connected, health, missingStreams, replicaUnhealthy, consumers };
 }
 
@@ -175,6 +178,32 @@ export function planJetStreamRecovery(summary: JetStreamHealthSummary): JetStrea
       orgId: summary.orgId,
       reason: `consumer ${degraded.consumer} is degraded; continue observation`,
       steps: ['repeat snapshot observation at the maintenance interval', 'open or refresh a lag alert if thresholds still breach'],
+      compensatingAction: 'none: observation does not mutate JetStream',
+    };
+  }
+  if (summary.replicaUnhealthy.length) {
+    return {
+      kind: 'observe',
+      safe: true,
+      executed: false,
+      orgId: summary.orgId,
+      reason: `stream replica degraded: ${summary.replicaUnhealthy.join(',')}; replica signal remains separate from consumer sequence health`,
+      steps: [
+        'repeat snapshot observation at the maintenance interval',
+        'open or refresh a replica alert only for the affected stream',
+        'do not recreate consumers or replay from the ack floor for replica-only degradation',
+      ],
+      compensatingAction: 'none: observation does not mutate JetStream',
+    };
+  }
+  if (summary.health === 'unknown') {
+    return {
+      kind: 'observe',
+      safe: true,
+      executed: false,
+      orgId: summary.orgId,
+      reason: 'connected snapshot contains no streams to classify',
+      steps: ['repeat snapshot observation at the maintenance interval', 'do not open lag or replica incidents for an empty stream set'],
       compensatingAction: 'none: observation does not mutate JetStream',
     };
   }

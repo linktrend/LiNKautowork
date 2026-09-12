@@ -70,4 +70,28 @@ describe('AW-06 gateway JetStream operations', () => {
     expect(observation.plan.executed).toBe(false);
     expect(store.deliveries[0]).toMatchObject({ routingKey: 'jetstream-unavailable', recovered: false, severity: 'critical' });
   });
+
+  it('opens a replica warning without a zero-lag lag incident and keeps recovery observational', async () => {
+    const store = new FakeJetStreamStore();
+    const service = new JetStreamOperations(store, { deliver: async (alert) => { store.deliveries.push(alert); } }, () => new Date('2026-09-11T00:02:00Z'));
+    const replicaOnly: JetStreamClusterSnapshot = {
+      ...healthy(),
+      streams: [{ name: 'linkautowork-v1', available: true, replicaHealthy: false, lastSeq: 10, consumerCount: 1, subjects: ['linkautowork.v1.workflow.execution'] }],
+    };
+    const observation = await service.observe(orgA, replicaOnly);
+    expect(observation.health).toMatchObject({ health: 'degraded', replicaUnhealthy: ['linkautowork-v1'] });
+    expect(observation.health.consumers[0]).toMatchObject({ lag: 0, health: 'healthy' });
+    expect(observation.plan).toMatchObject({ kind: 'observe', executed: false });
+    expect(observation.plan.reason).toMatch(/replica/);
+    expect(store.deliveries.filter((item) => !item.recovered).map((item) => item.routingKey)).toEqual(['jetstream-replica']);
+  });
+
+  it('does not mark an older redacted snapshot stale merely because the request clock is newer', async () => {
+    const store = new FakeJetStreamStore();
+    const service = new JetStreamOperations(store, { deliver: async (alert) => { store.deliveries.push(alert); } }, () => new Date('2026-09-11T00:10:00Z'));
+    const observation = await service.observe(orgA, healthy());
+    expect(observation.health.consumers[0]).toMatchObject({ stale: false, health: 'healthy' });
+    expect(observation.health.health).toBe('healthy');
+    expect(store.deliveries).toEqual([]);
+  });
 });

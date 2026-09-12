@@ -79,4 +79,59 @@ describe('AW-06 JetStream observability and recovery plans', () => {
     const findings = checkMaintenance({ versionDrift: false, disabledWorkflow: false, staleCallback: false, credentialState: 'healthy', dependenciesTested: true, storagePressure: false, queuePressure: false, backupFresh: true, unresolvedIncidentCount: 0, jetStreamLag: true, jetStreamUnavailable: true });
     expect(findings.map((finding) => finding.code)).toEqual(['jetstream_lag', 'jetstream_unavailable']);
   });
+
+  it('degrades replica health without a zero-lag lag incident and plans replica observation', () => {
+    const health = deriveJetStreamHealth(snapshot({
+      streams: [{ name: 'linkautowork-v1', available: true, replicaHealthy: false, lastSeq: 40, consumerCount: 1, subjects: ['linkautowork.v1.workflow.execution'] }],
+    }), at);
+    expect(health).toMatchObject({ health: 'degraded', replicaUnhealthy: ['linkautowork-v1'] });
+    expect(health.consumers[0]).toMatchObject({ lag: 0, health: 'healthy', routingKey: 'jetstream-health' });
+    expect(jetStreamAlertKeys(health)).toEqual([{ routingKey: 'jetstream-replica', severity: 'warning', instanceId: 'jetstream:stream:linkautowork-v1' }]);
+    const plan = planJetStreamRecovery(health);
+    expect(plan).toMatchObject({ kind: 'observe', executed: false, safe: true });
+    expect(plan.reason).toMatch(/replica/);
+    expect(plan.reason).toMatch(/separate from consumer sequence health/);
+    expect(plan.steps.join(' ')).not.toMatch(/lag alert/);
+  });
+
+  it('keeps replica and warning-lag alerts as separate routing keys', () => {
+    const health = deriveJetStreamHealth(snapshot({
+      streams: [{ name: 'linkautowork-v1', available: true, replicaHealthy: false, lastSeq: 40, consumerCount: 1, subjects: ['linkautowork.v1.workflow.execution'] }],
+      consumers: [{ stream: 'linkautowork-v1', consumer: 'gateway-executions', lastStreamSeq: 40, deliveredStreamSeq: 40 - JETSTREAM_DEFAULTS.lagWarning, numPending: JETSTREAM_DEFAULTS.lagWarning, numAckPending: 0, lastActivityAt: '2026-09-11T00:01:50.000Z' }],
+    }), at);
+    expect(health.health).toBe('degraded');
+    expect(jetStreamAlertKeys(health)).toEqual([
+      { routingKey: 'jetstream-replica', severity: 'warning', instanceId: 'jetstream:stream:linkautowork-v1' },
+      { routingKey: 'jetstream-lag', severity: 'warning', instanceId: 'jetstream:linkautowork-v1:gateway-executions' },
+    ]);
+  });
+
+  it('opens an ack-pending warning without collapsing replica into the lag signal', () => {
+    const health = deriveJetStreamHealth(snapshot({
+      consumers: [{ stream: 'linkautowork-v1', consumer: 'gateway-executions', lastStreamSeq: 40, deliveredStreamSeq: 40, numPending: 0, numAckPending: JETSTREAM_DEFAULTS.ackPendingWarning, lastActivityAt: '2026-09-11T00:01:50.000Z' }],
+    }), at);
+    expect(health.health).toBe('degraded');
+    expect(health.consumers[0]).toMatchObject({ lag: 0, numAckPending: JETSTREAM_DEFAULTS.ackPendingWarning, health: 'degraded', routingKey: 'jetstream-lag' });
+    expect(jetStreamAlertKeys(health)).toEqual([{ routingKey: 'jetstream-lag', severity: 'warning', instanceId: 'jetstream:linkautowork-v1:gateway-executions' }]);
+    expect(planJetStreamRecovery(health).kind).toBe('observe');
+  });
+
+  it('classifies a connected snapshot with no streams as unknown and does not invent lag or replica incidents', () => {
+    const health = deriveJetStreamHealth(snapshot({ streams: [], consumers: [] }), at);
+    expect(health).toMatchObject({ health: 'unknown', missingStreams: [], replicaUnhealthy: [], consumers: [] });
+    expect(jetStreamAlertKeys(health)).toEqual([]);
+    const plan = planJetStreamRecovery(health);
+    expect(plan).toMatchObject({ kind: 'observe', executed: false });
+    expect(plan.reason).toMatch(/no streams/);
+  });
+
+  it('judges consumer staleness from snapshot observedAt even when the caller clock is newer', () => {
+    const later = Date.parse('2026-09-11T00:10:00.000Z');
+    const health = deriveJetStreamHealth(snapshot(), later);
+    expect(health.consumers[0]).toMatchObject({ stale: false, health: 'healthy' });
+    const stale = deriveJetStreamHealth(snapshot({
+      consumers: [{ stream: 'linkautowork-v1', consumer: 'gateway-executions', lastStreamSeq: 40, deliveredStreamSeq: 40, numPending: 0, numAckPending: 0, lastActivityAt: '2026-09-11T00:00:00.000Z' }],
+    }), later);
+    expect(stale.consumers[0]).toMatchObject({ stale: true, health: 'degraded', routingKey: 'jetstream-stale' });
+  });
 });
