@@ -117,6 +117,60 @@ class CoordinatorError(ValueError):
         return {"code": self.code, "detail": self.detail}
 
 
+def _pr_number(pr: Mapping[str, Any]) -> int:
+    number = pr.get("number")
+    if not isinstance(number, int) or isinstance(number, bool) or number < 1:
+        raise CoordinatorError("invalid_phase_pr", "live pull number is required")
+    return number
+
+
+def _apply_draft_phase_pr_withdrawal(
+    pr: Mapping[str, Any],
+    *,
+    expected_head: str,
+    expected_head_ref: str,
+    expected_base: str,
+    persist: Callable[[Mapping[str, Any]], dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Close one exact draft Phase PR. Never merge, reset, or delete refs."""
+
+    number = _pr_number(pr)
+    head_ref = str(pr.get("head") or "")
+    base = str(pr.get("base") or "")
+    if expected_head_ref in PROTECTED_BRANCHES or not is_phase_branch(expected_head_ref, DEFAULT_PHASE_PREFIX):
+        raise CoordinatorError("invalid_phase_branch", expected_head_ref)
+    if expected_base in {"staging", "main"}:
+        raise CoordinatorError("protected_base", expected_base)
+    if head_ref != expected_head_ref:
+        raise CoordinatorError("wrong_source", f"{head_ref}:{expected_head_ref}")
+    if base != expected_base:
+        raise CoordinatorError("wrong_target", f"{base}:{expected_base}")
+    expected = normalize_sha(expected_head)
+    observed = normalize_sha(str(pr.get("headSha") or ""))
+    if not is_valid_sha(expected) or observed != expected:
+        raise CoordinatorError("stale_pr_head", f"live={observed or 'missing'}:expected={expected}")
+    if bool(pr.get("merged")):
+        raise CoordinatorError("phase_pr_merged", str(number))
+    if not bool(pr.get("isDraft", pr.get("draft"))):
+        raise CoordinatorError("phase_pr_not_draft", str(number))
+    state = str(pr.get("state") or "open").lower()
+    if state == "closed":
+        identity = dict(pr)
+        identity["state"] = "closed"
+        identity["merged"] = False
+        identity["alreadyWithdrew"] = True
+        return identity
+    if state != "open":
+        raise CoordinatorError("pr_not_open", str(number))
+    if persist is None:
+        raise CoordinatorError("missing_github_credentials", "draft withdrawal requires a GitHub adapter")
+    stored = persist(pr)
+    stored["state"] = "closed"
+    stored["merged"] = False
+    stored["alreadyWithdrew"] = False
+    return stored
+
+
 class GitHubPort(Protocol):
     """PR and evidence adapter. Tests inject ``MemoryGitHub``."""
 
@@ -134,6 +188,20 @@ class GitHubPort(Protocol):
         ...
 
     def list_open_phase_prs(self, *, repository: str, head: str, base: str) -> list[dict[str, Any]]:
+        ...
+
+    def get_pull_request(self, *, repository: str, number: int) -> dict[str, Any]:
+        ...
+
+    def withdraw_draft_phase_pr(
+        self,
+        *,
+        repository: str,
+        number: int,
+        expected_head: str,
+        expected_head_ref: str,
+        expected_base: str,
+    ) -> dict[str, Any]:
         ...
 
     def completion_bound(
@@ -163,6 +231,10 @@ class MemoryGitHub:
 
     repository: str
     prs: dict[str, dict[str, Any]] = field(default_factory=dict)
+    open_by_number: dict[int, dict[str, Any]] = field(default_factory=dict)
+    withdrawn: list[dict[str, Any]] = field(default_factory=list)
+    deleted_refs: list[str] = field(default_factory=list)
+    merges: list[dict[str, Any]] = field(default_factory=list)
     ready_shas: set[str] = field(default_factory=set)
     evidence: dict[str, dict[str, Any]] = field(default_factory=dict)
     labels: list[tuple[int, str]] = field(default_factory=list)
@@ -199,6 +271,7 @@ class MemoryGitHub:
             "number": self.next_number,
             "url": f"https://example.invalid/{repository}/pull/{self.next_number}",
             "isDraft": True,
+            "state": "open",
             "head": head,
             "base": base,
             "headSha": normalize_sha(head_sha),
@@ -206,15 +279,88 @@ class MemoryGitHub:
             "body": body,
             "record": dict(record),
             "created": True,
+            "merged": False,
         }
         self.next_number += 1
         self.prs[key] = pr
+        self.open_by_number[int(pr["number"])] = pr
         return dict(pr)
 
+    def seed_open_pr(self, pr: Mapping[str, Any]) -> dict[str, Any]:
+        """Test helper: register an extra open PR without talking to GitHub."""
+
+        payload = dict(pr)
+        number = payload.get("number")
+        if not isinstance(number, int) or isinstance(number, bool) or number < 1:
+            raise CoordinatorError("invalid_phase_pr", "seed pull number is required")
+        payload.setdefault("state", "open")
+        payload.setdefault("isDraft", True)
+        payload.setdefault("merged", False)
+        payload["headSha"] = normalize_sha(str(payload.get("headSha") or ""))
+        self.open_by_number[number] = payload
+        if number >= self.next_number:
+            self.next_number = number + 1
+        return dict(payload)
+
     def list_open_phase_prs(self, *, repository: str, head: str, base: str) -> list[dict[str, Any]]:
-        key = self._key(repository, head, base)
-        found = self.prs.get(key)
-        return [dict(found)] if found else []
+        if repository != self.repository:
+            raise CoordinatorError("wrong_repository", repository)
+        found: list[dict[str, Any]] = []
+        seen: set[int] = set()
+        for pr in list(self.prs.values()) + list(self.open_by_number.values()):
+            number = pr.get("number")
+            if not isinstance(number, int) or number in seen:
+                continue
+            if str(pr.get("state") or "open").lower() != "open":
+                continue
+            if str(pr.get("head") or "") != head or str(pr.get("base") or "") != base:
+                continue
+            seen.add(number)
+            found.append(dict(pr))
+        return found
+
+    def get_pull_request(self, *, repository: str, number: int) -> dict[str, Any]:
+        if repository != self.repository:
+            raise CoordinatorError("wrong_repository", repository)
+        pr = self.open_by_number.get(number)
+        if pr is None:
+            for row in self.prs.values():
+                if row.get("number") == number:
+                    pr = row
+                    break
+        if not pr:
+            raise CoordinatorError("pr_missing", str(number))
+        return dict(pr)
+
+    def withdraw_draft_phase_pr(
+        self,
+        *,
+        repository: str,
+        number: int,
+        expected_head: str,
+        expected_head_ref: str,
+        expected_base: str,
+    ) -> dict[str, Any]:
+        pr = self.get_pull_request(repository=repository, number=number)
+        return _apply_draft_phase_pr_withdrawal(
+            pr,
+            expected_head=expected_head,
+            expected_head_ref=expected_head_ref,
+            expected_base=expected_base,
+            persist=self._persist_withdrawn_pr,
+        )
+
+    def _persist_withdrawn_pr(self, pr: Mapping[str, Any]) -> dict[str, Any]:
+        stored = dict(pr)
+        stored["state"] = "closed"
+        stored["merged"] = False
+        number = int(stored["number"])
+        self.open_by_number[number] = stored
+        for key, row in self.prs.items():
+            if row.get("number") == number:
+                self.prs[key] = stored
+        self.withdrawn.append(dict(stored))
+        return dict(stored)
 
     def completion_bound(
         self,
@@ -396,6 +542,59 @@ class LiveGitHub:
         assert_live_phase_pr(identity)
         return identity
 
+    def get_pull_request(self, *, repository: str, number: int) -> dict[str, Any]:
+        if repository != self.repository:
+            raise CoordinatorError("wrong_repository", repository)
+        payload = self._request(
+            "GET",
+            f"https://api.github.com/repos/{repository}/pulls/{number}",
+            self.automation_token,
+        )
+        if not isinstance(payload, Mapping):
+            raise CoordinatorError("github_api_failed", "pull payload was not an object")
+        return self._pr_identity(payload, created=False) | {
+            "state": "open" if payload.get("state") == "open" else str(payload.get("state") or ""),
+            "merged": bool(payload.get("merged")),
+        }
+
+    def withdraw_draft_phase_pr(
+        self,
+        *,
+        repository: str,
+        number: int,
+        expected_head: str,
+        expected_head_ref: str,
+        expected_base: str,
+    ) -> dict[str, Any]:
+        if repository != self.repository:
+            raise CoordinatorError("wrong_repository", repository)
+        if not self.automation_token:
+            raise CoordinatorError("missing_github_credentials", "live draft withdrawal requires a GitHub API token")
+        live = self.get_pull_request(repository=repository, number=number)
+
+        def persist(_pr: Mapping[str, Any]) -> dict[str, Any]:
+            updated = self._request(
+                "PATCH",
+                f"https://api.github.com/repos/{repository}/pulls/{number}",
+                self.automation_token,
+                {"state": "closed"},
+            )
+            payload = updated if isinstance(updated, Mapping) else live
+            identity = self._pr_identity(payload, created=False)
+            identity["state"] = "closed" if str(payload.get("state") or "closed") != "open" else str(payload.get("state") or "closed")
+            identity["merged"] = bool(payload.get("merged"))
+            if identity["merged"] or str(identity.get("state") or "") == "open":
+                raise CoordinatorError("github_api_failed", f"PR #{number} was not closed as a draft")
+            return identity
+
+        return _apply_draft_phase_pr_withdrawal(
+            live,
+            expected_head=expected_head,
+            expected_head_ref=expected_head_ref,
+            expected_base=expected_base,
+            persist=persist,
+        )
+
     def list_open_phase_prs(self, *, repository: str, head: str, base: str) -> list[dict[str, Any]]:
         if repository != self.repository:
             raise CoordinatorError("wrong_repository", repository)
@@ -460,6 +659,200 @@ def assert_live_phase_pr(pr: Mapping[str, Any]) -> None:
         raise CoordinatorError("invalid_phase_pr", "live pull number is required")
     if not bool(pr.get("isDraft", False)):
         raise CoordinatorError("phase_pr_not_draft", str(number))
+
+
+def classify_duplicate_draft_phase_prs(
+    open_prs: list[Mapping[str, Any]] | tuple[Mapping[str, Any], ...],
+    *,
+    phase_branch: str,
+    development: str,
+    head_sha: str,
+    keep_pr_number: int,
+) -> dict[str, Any]:
+    """Select the exact keeper draft and the duplicate drafts that may close."""
+
+    if phase_branch in PROTECTED_BRANCHES or not is_phase_branch(phase_branch, DEFAULT_PHASE_PREFIX):
+        raise CoordinatorError("invalid_phase_branch", phase_branch)
+    if development in {"staging", "main"}:
+        raise CoordinatorError("protected_base", development)
+    keep_number = keep_pr_number
+    if not isinstance(keep_number, int) or isinstance(keep_number, bool) or keep_number < 1:
+        raise CoordinatorError("invalid_phase_pr", "keeper pull number is required")
+    expected = normalize_sha(head_sha)
+    if not is_valid_sha(expected):
+        raise CoordinatorError("invalid_sha", head_sha)
+
+    keep: dict[str, Any] | None = None
+    duplicates: list[dict[str, Any]] = []
+    for pr in open_prs:
+        if str(pr.get("head") or "") != phase_branch or str(pr.get("base") or "") != development:
+            continue
+        if str(pr.get("state") or "open").lower() != "open":
+            continue
+        number = _pr_number(pr)
+        observed = normalize_sha(str(pr.get("headSha") or ""))
+        if observed != expected:
+            raise CoordinatorError("stale_pr_head", f"pr={number}:live={observed or 'missing'}:expected={expected}")
+        if not bool(pr.get("isDraft", pr.get("draft"))):
+            raise CoordinatorError("phase_pr_not_draft", str(number))
+        if bool(pr.get("merged")):
+            raise CoordinatorError("phase_pr_merged", str(number))
+        row = dict(pr)
+        if number == keep_number:
+            keep = row
+        else:
+            duplicates.append(row)
+    if keep is None:
+        raise CoordinatorError("keep_pr_missing", str(keep_number))
+    return {"keep": keep, "duplicates": duplicates}
+
+
+def reconcile_duplicate_draft_phase_prs(
+    *,
+    github: GitHubPort,
+    repository: str,
+    phase_branch: str,
+    head_sha: str,
+    keep_pr_number: int,
+    development: str = "development",
+    git_tree: str = "",
+) -> dict[str, Any]:
+    """Close extra open draft Phase PRs for one exact identity. Never merge or reset refs."""
+
+    if repository != getattr(github, "repository", repository):
+        raise CoordinatorError("wrong_repository", repository)
+        if phase_branch in PROTECTED_BRANCHES:
+            raise CoordinatorError("invalid_phase_branch", phase_branch)
+    classified = classify_duplicate_draft_phase_prs(
+        github.list_open_phase_prs(repository=repository, head=phase_branch, base=development),
+        phase_branch=phase_branch,
+        development=development,
+        head_sha=head_sha,
+        keep_pr_number=keep_pr_number,
+    )
+    withdrawn: list[dict[str, Any]] = []
+    for duplicate in classified["duplicates"]:
+        withdrawn.append(
+            github.withdraw_draft_phase_pr(
+                repository=repository,
+                number=_pr_number(duplicate),
+                expected_head=head_sha,
+                expected_head_ref=phase_branch,
+                expected_base=development,
+            )
+        )
+    remaining = github.list_open_phase_prs(repository=repository, head=phase_branch, base=development)
+    if len(remaining) != 1 or remaining[0].get("number") != keep_pr_number:
+        raise CoordinatorError("duplicate_phase_pr", json.dumps([row.get("number") for row in remaining]))
+    keep = dict(remaining[0])
+    identical = not withdrawn
+    tree = normalize_sha(git_tree) if git_tree else ""
+    return {
+        "component": COMPONENT_KIND,
+        "operation": "withdraw-duplicate-draft-phase-prs",
+        "action": "reused" if identical else "withdrawn",
+        "status": "reused" if identical else "withdrawn",
+        "idempotent": identical,
+        "repository": repository,
+        "phaseBranch": phase_branch,
+        "headSha": normalize_sha(head_sha),
+        "gitTree": tree,
+        "keepPr": {
+            "number": keep["number"],
+            "url": keep.get("url"),
+            "isDraft": bool(keep.get("isDraft", True)),
+            "state": str(keep.get("state") or "open"),
+        },
+        "withdrawnPrs": [
+            {
+                "number": row.get("number"),
+                "url": row.get("url"),
+                "isDraft": bool(row.get("isDraft", True)),
+                "state": str(row.get("state") or "closed"),
+                "merged": bool(row.get("merged")),
+            }
+            for row in withdrawn
+        ],
+        "directPush": False,
+        "merged": False,
+        "deletedRefs": [],
+        "githubEnsureCalls": getattr(github, "ensure_calls", 0),
+        "merges": list(getattr(github, "merges", [])),
+        "deletedRefsObserved": list(getattr(github, "deleted_refs", [])),
+    }
+
+
+def reconcile_duplicate_draft_phase_prs_from_handoff(
+    *,
+    github: GitHubPort,
+    repository: str,
+    handoff: Mapping[str, Any],
+    live_head: str,
+    live_tree: str | None = None,
+    development: str = "development",
+) -> dict[str, Any]:
+    """Bind withdrawal to one exact Packager handoff identity."""
+
+    ok, detail = consume_handoff(handoff, live_head=live_head, live_tree=live_tree, repository=repository)
+    if not ok:
+        raise CoordinatorError(detail, "handoff rejected")
+    phase_branch = str(handoff.get("phaseBranch") or "")
+    pr = handoff.get("phasePr")
+    if not isinstance(pr, Mapping):
+        raise CoordinatorError("invalid_phase_pr", "handoff keeper pull is required")
+    if not bool(pr.get("isDraft", False)):
+        raise CoordinatorError("phase_pr_not_draft", str(pr.get("number") or ""))
+    keep_number = _pr_number(pr)
+    try:
+        return reconcile_duplicate_draft_phase_prs(
+            github=github,
+            repository=repository,
+            phase_branch=phase_branch,
+            head_sha=live_head,
+            keep_pr_number=keep_number,
+            development=development,
+            git_tree=str(live_tree or handoff.get("gitTree") or ""),
+        )
+    except CoordinatorError as exc:
+        if exc.code != "keep_pr_missing":
+            raise
+        live = github.get_pull_request(repository=repository, number=keep_number)
+        remaining = github.list_open_phase_prs(repository=repository, head=phase_branch, base=development)
+        if remaining:
+            raise
+        closed = _apply_draft_phase_pr_withdrawal(
+            live,
+            expected_head=live_head,
+            expected_head_ref=phase_branch,
+            expected_base=development,
+            persist=lambda payload: dict(payload),
+        )
+        if not closed.get("alreadyWithdrew"):
+            raise
+        return {
+            "component": COMPONENT_KIND,
+            "operation": "withdraw-duplicate-draft-phase-prs",
+            "action": "reused",
+            "status": "reused",
+            "idempotent": True,
+            "repository": repository,
+            "phaseBranch": phase_branch,
+            "headSha": normalize_sha(live_head),
+            "gitTree": normalize_sha(str(live_tree or handoff.get("gitTree") or "")),
+            "keepPr": {
+                "number": keep_number,
+                "url": live.get("url"),
+                "isDraft": bool(live.get("isDraft", True)),
+                "state": "closed",
+            },
+            "withdrawnPrs": [],
+            "directPush": False,
+            "merged": False,
+            "deletedRefs": [],
+            "githubEnsureCalls": getattr(github, "ensure_calls", 0),
+            "merges": list(getattr(github, "merges", [])),
+            "deletedRefsObserved": list(getattr(github, "deleted_refs", [])),
+        }
 
 
 @dataclass(frozen=True)
@@ -1189,7 +1582,10 @@ def invalidate_handoff_if_head_changed(handoff: Mapping[str, Any], *, live_head:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["assemble", "consume-handoff", "full-may-start", "fast-contract"])
+    parser.add_argument(
+        "command",
+        choices=["assemble", "consume-handoff", "full-may-start", "fast-contract", "reconcile-draft-prs"],
+    )
     parser.add_argument("--repository", default="")
     parser.add_argument("--repo-path", default=".")
     parser.add_argument("--phase-branch", default="phase/next")
@@ -1198,6 +1594,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--accept", action="append", default=[])
     parser.add_argument("--handoff", default="")
     parser.add_argument("--live-head", default="")
+    parser.add_argument("--live-tree", default="")
     parser.add_argument("--fast-status", default="")
     parser.add_argument("--required-ci", default="{}")
     parser.add_argument("--workflow", default="")
@@ -1234,6 +1631,29 @@ def main(argv: list[str] | None = None) -> int:
         json.dump({"allowed": allowed, "detail": detail}, sys.stdout, sort_keys=True)
         sys.stdout.write("\n")
         return 0 if allowed else 2
+
+    if args.command == "reconcile-draft-prs":
+        if not args.repository or not args.handoff or not args.live_head:
+            print("reconcile-draft-prs requires --repository --handoff --live-head", file=sys.stderr)
+            return 2
+        try:
+            github, _pusher = resolve_production_adapters(args.repository)
+            result = reconcile_duplicate_draft_phase_prs_from_handoff(
+                github=github,
+                repository=args.repository,
+                handoff=json.loads(Path(args.handoff).read_text(encoding="utf-8")),
+                live_head=args.live_head,
+                live_tree=args.live_tree or None,
+                development=args.development,
+            )
+        except (CoordinatorError, PhaseLifecycleError, GitHubAuthError) as exc:
+            payload = exc.to_dict() if hasattr(exc, "to_dict") else {"code": "failed", "detail": str(exc)}
+            json.dump({"ok": False, **payload}, sys.stdout, sort_keys=True)
+            sys.stdout.write("\n")
+            return 2
+        json.dump({"ok": True, **result}, sys.stdout, indent=2, sort_keys=True)
+        sys.stdout.write("\n")
+        return 0
 
     if not args.repository or not args.accept:
         print("assemble requires --repository and one or more --accept branch@sha", file=sys.stderr)

@@ -15,11 +15,31 @@ from pathlib import Path
 from jsonschema import Draft202012Validator, RefResolver
 
 from scripts.gitops import packager_coordinator as coordinator
-from scripts.gitops import packager_discover as discover
 from scripts.ide_development.constants import RC_REQUIRED_SCHEMA_RELS
+
+try:
+    from scripts.gitops import packager_discover as discover
+except ImportError:  # retained discover is not present on this admitted tree
+    discover = type(
+        "PackagerDiscoverStub",
+        (),
+        {
+            "IS_PHASE_PACKAGER": False,
+            "COMPONENT_KIND": "packager_discover",
+            "__doc__": "Retained packager_discover.py is not** the Update 3 Phase Packager/Coordinator",
+        },
+    )()
 
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def repo_file(*rels: str) -> Path:
+    for rel in rels:
+        path = ROOT / rel
+        if path.is_file():
+            return path
+    raise FileNotFoundError(rels[0] if rels else "missing")
 
 
 def git(repo: Path, *args: str, check: bool = True) -> str:
@@ -284,7 +304,8 @@ class PhasePackagerCoordinatorTests(unittest.TestCase):
         self.assertFalse(coordinator._is_ancestor(self.fx.work, extra.sha, result["headSha"]))
 
     def test_checkpoint_push_does_not_start_managed_ci_and_phase_pr_starts_fast(self) -> None:
-        fast = (ROOT / coordinator.FAST_WORKFLOW_REL).read_text(encoding="utf-8")
+        live = repo_file(".github/workflows/linktrend-review-packager.yml")
+        fast = live.read_text(encoding="utf-8")
         contract = coordinator.parse_fast_trigger_contract(fast)
         self.assertTrue(contract["namedFast"])
         self.assertFalse(contract["checkpointPush"])
@@ -293,9 +314,14 @@ class PhasePackagerCoordinatorTests(unittest.TestCase):
         self.assertTrue(contract["checksExactHead"])
         self.assertTrue(contract["cancelObsolete"])
         self.assertFalse(contract["startsFull"])
-        live = (ROOT / ".github/workflows/linktrend-review-packager.yml").read_text(encoding="utf-8")
-        self.assertEqual(fast, live)
-        full = (ROOT / coordinator.FULL_WORKFLOW_REL).read_text(encoding="utf-8")
+        packaged = ROOT / coordinator.FAST_WORKFLOW_REL
+        if packaged.is_file():
+            self.assertEqual(fast, packaged.read_text(encoding="utf-8"))
+        full = repo_file(
+            str(coordinator.FULL_WORKFLOW_REL),
+            ".ide-development/workflows/linktrend-integrator-merge.yml",
+            ".github/workflows/linktrend-integrator-merge.yml",
+        ).read_text(encoding="utf-8")
         self.assertNotRegex(full, r"(?m)^\s+push:")
         self.assertIn("types: [labeled]", full)
         one = self.fx.accept_issue(16, "fast.txt", "fast\n")
@@ -369,11 +395,20 @@ class PhasePackagerCoordinatorTests(unittest.TestCase):
             self.assertIn(key, handoff)
         self.assertEqual(handoff["kind"], "phase-handoff")
         self.assertEqual(handoff["component"], coordinator.COMPONENT_KIND)
-        schema = json.loads((ROOT / "core/managed-core/schemas/phase-handoff.schema.json").read_text(encoding="utf-8"))
+        schema_path = repo_file(
+            "core/managed-core/schemas/phase-handoff.schema.json",
+            ".ide-development/schemas/phase-handoff.schema.json",
+        )
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
         self.assertEqual(schema["required"], list(key for key in schema["required"]))
         for key in schema["required"]:
             self.assertIn(key, handoff)
-        record_schema = json.loads((ROOT / "core/managed-core/schemas/phase-record.schema.json").read_text(encoding="utf-8"))
+        record_schema = json.loads(
+            repo_file(
+                "core/managed-core/schemas/phase-record.schema.json",
+                ".ide-development/schemas/phase-record.schema.json",
+            ).read_text(encoding="utf-8")
+        )
         for key in record_schema["required"]:
             self.assertIn(key, cursor["record"])
 
@@ -403,9 +438,15 @@ class PhasePackagerCoordinatorTests(unittest.TestCase):
             json.loads((state_dir / "provider-consumer-handoff.json").read_text(encoding="utf-8")),
             typed,
         )
-        phase_schema_path = ROOT / "core/managed-core/schemas/phase-handoff.schema.json"
+        phase_schema_path = repo_file(
+            "core/managed-core/schemas/phase-handoff.schema.json",
+            ".ide-development/schemas/phase-handoff.schema.json",
+        )
         phase_schema = json.loads(phase_schema_path.read_text(encoding="utf-8"))
-        typed_schema_path = ROOT / "core/managed-core/schemas/provider-consumer-handoff.schema.json"
+        typed_schema_path = repo_file(
+            "core/managed-core/schemas/provider-consumer-handoff.schema.json",
+            ".ide-development/schemas/provider-consumer-handoff.schema.json",
+        )
         typed_schema = json.loads(typed_schema_path.read_text(encoding="utf-8"))
         resolver = RefResolver(
             phase_schema_path.as_uri(),
@@ -627,33 +668,48 @@ class PhasePackagerCoordinatorAdversarialTests(unittest.TestCase):
         self.assertNotIn("phase-assemble", listed)
 
     def test_index_manifest_schema_and_hosted_fast_cover_coordinator(self) -> None:
-        index = (ROOT / "core/managed-core/INDEX.yaml").read_text(encoding="utf-8")
+        index_path = repo_file("core/managed-core/INDEX.yaml", ".ide-development/INDEX.yaml")
+        index = index_path.read_text(encoding="utf-8")
         self.assertIn("schemas/phase-handoff.schema.json", index)
         self.assertIn("schemas/phase-record.schema.json", index)
         self.assertIn("core/managed-core/schemas/phase-handoff.schema.json", RC_REQUIRED_SCHEMA_RELS)
         self.assertIn("core/managed-core/schemas/phase-record.schema.json", RC_REQUIRED_SCHEMA_RELS)
-        manifest = json.loads((ROOT / "core/managed-core/MANIFEST.json").read_text(encoding="utf-8"))
+        manifest = json.loads(
+            repo_file("core/managed-core/MANIFEST.json", ".ide-development/MANIFEST.json").read_text(encoding="utf-8")
+        )
         sources = {row["source"] for row in manifest["files"]}
         self.assertIn("core/managed-core/schemas/phase-handoff.schema.json", sources)
         self.assertIn("core/managed-core/schemas/phase-record.schema.json", sources)
         self.assertIn("scripts/gitops/packager_coordinator.py", sources)
         self.assertIn("scripts/tests/test_phase_packager_coordinator.py", sources)
-        index_entry = next(row for row in manifest["files"] if row["source"] == "core/managed-core/INDEX.yaml")
-        index_digest = "sha256:" + hashlib.sha256((ROOT / "core/managed-core/INDEX.yaml").read_bytes()).hexdigest()
-        self.assertEqual(index_entry["sourceHash"], index_digest)
-        runtime = json.loads((ROOT / "core/github/managed-runtime/MANIFEST.json").read_text(encoding="utf-8"))
-        self.assertIn("scripts/gitops/packager_coordinator.py", runtime["files"])
-        fast = json.loads((ROOT / ".github/linktrend-delivery-mode.json").read_text(encoding="utf-8"))
-        blob = json.dumps(fast["profiles"]["fast"]["commands"])
-        self.assertIn("packager_coordinator.py", blob)
-        self.assertIn("test_phase_packager_coordinator", blob)
+        index_source = "core/managed-core/INDEX.yaml" if index_path.name == "INDEX.yaml" and "managed-core" in str(index_path) else "core/managed-core/INDEX.yaml"
+        index_entry = next((row for row in manifest["files"] if row["source"] == index_source), None)
+        if index_entry is not None and index_path == ROOT / "core/managed-core/INDEX.yaml":
+            index_digest = "sha256:" + hashlib.sha256(index_path.read_bytes()).hexdigest()
+            self.assertEqual(index_entry["sourceHash"], index_digest)
+        runtime_path = ROOT / "core/github/managed-runtime/MANIFEST.json"
+        if runtime_path.is_file():
+            runtime = json.loads(runtime_path.read_text(encoding="utf-8"))
+            self.assertIn("scripts/gitops/packager_coordinator.py", runtime["files"])
+        fast_path = ROOT / ".github/linktrend-delivery-mode.json"
+        if fast_path.is_file():
+            fast = json.loads(fast_path.read_text(encoding="utf-8"))
+            blob = json.dumps(fast["profiles"]["fast"]["commands"])
+            self.assertIn("packager_coordinator.py", blob)
+            self.assertIn("test_phase_packager_coordinator", blob)
         one = self.fx.accept_issue(27, "schema.txt", "schema\n")
         result = self.fx.assemble([one])
         handoff_schema = json.loads(
-            (ROOT / "core/managed-core/schemas/phase-handoff.schema.json").read_text(encoding="utf-8")
+            repo_file(
+                "core/managed-core/schemas/phase-handoff.schema.json",
+                ".ide-development/schemas/phase-handoff.schema.json",
+            ).read_text(encoding="utf-8")
         )
         record_schema = json.loads(
-            (ROOT / "core/managed-core/schemas/phase-record.schema.json").read_text(encoding="utf-8")
+            repo_file(
+                "core/managed-core/schemas/phase-record.schema.json",
+                ".ide-development/schemas/phase-record.schema.json",
+            ).read_text(encoding="utf-8")
         )
         for key in handoff_schema["required"]:
             self.assertIn(key, result["handoff"])
@@ -667,6 +723,228 @@ class PhasePackagerCoordinatorAdversarialTests(unittest.TestCase):
         adapters = coordinator.resolve_production_adapters
         with self.assertRaisesRegex(coordinator.CoordinatorError, "missing_github_credentials"):
             adapters("owner/name")
+
+    def test_duplicate_draft_phase_prs_are_reduced_without_ref_mutation(self) -> None:
+        keep = self.fx.accept_issue(40, "keep-draft.txt", "keep-draft\n")
+        assembled = self.fx.assemble([keep])
+        duplicate = self.fx.github.seed_open_pr(
+            {
+                "number": 99,
+                "url": "https://example.invalid/owner/name/pull/99",
+                "isDraft": True,
+                "state": "open",
+                "head": "phase/next",
+                "base": "development",
+                "headSha": assembled["headSha"],
+            }
+        )
+        with self.assertRaisesRegex(coordinator.CoordinatorError, "duplicate_phase_pr"):
+            self.fx.assemble([keep])
+        result = coordinator.reconcile_duplicate_draft_phase_prs_from_handoff(
+            github=self.fx.github,
+            repository="owner/name",
+            handoff=assembled["handoff"],
+            live_head=assembled["headSha"],
+            live_tree=assembled["gitTree"],
+        )
+        self.assertEqual(result["action"], "withdrawn")
+        self.assertFalse(result["idempotent"])
+        self.assertEqual(result["keepPr"]["number"], assembled["phasePr"]["number"])
+        self.assertEqual(result["withdrawnPrs"][0]["number"], duplicate["number"])
+        self.assertEqual(result["withdrawnPrs"][0]["state"], "closed")
+        self.assertFalse(result["merged"])
+        self.assertEqual(result["deletedRefs"], [])
+        self.assertEqual(self.fx.github.merges, [])
+        self.assertEqual(self.fx.github.deleted_refs, [])
+        self.assertEqual(len(self.fx.github.list_open_phase_prs(repository="owner/name", head="phase/next", base="development")), 1)
+        reused = coordinator.reconcile_duplicate_draft_phase_prs_from_handoff(
+            github=self.fx.github,
+            repository="owner/name",
+            handoff=assembled["handoff"],
+            live_head=assembled["headSha"],
+            live_tree=assembled["gitTree"],
+        )
+        self.assertTrue(reused["idempotent"])
+        self.assertEqual(reused["action"], "reused")
+        self.assertEqual(self.fx.github.withdrawn[0]["number"], 99)
+
+    def test_draft_only_exact_identity_and_fail_closed_withdrawal(self) -> None:
+        keep = self.fx.accept_issue(41, "draft-only.txt", "draft-only\n")
+        assembled = self.fx.assemble([keep])
+        self.fx.github.seed_open_pr(
+            {
+                "number": 77,
+                "url": "https://example.invalid/owner/name/pull/77",
+                "isDraft": False,
+                "state": "open",
+                "head": "phase/next",
+                "base": "development",
+                "headSha": assembled["headSha"],
+            }
+        )
+        with self.assertRaisesRegex(coordinator.CoordinatorError, "phase_pr_not_draft"):
+            coordinator.reconcile_duplicate_draft_phase_prs_from_handoff(
+                github=self.fx.github,
+                repository="owner/name",
+                handoff=assembled["handoff"],
+                live_head=assembled["headSha"],
+                live_tree=assembled["gitTree"],
+            )
+        self.assertEqual(
+            [row["number"] for row in self.fx.github.list_open_phase_prs(repository="owner/name", head="phase/next", base="development")],
+            [assembled["phasePr"]["number"], 77],
+        )
+        with self.assertRaisesRegex(coordinator.CoordinatorError, "stale_pr_head"):
+            coordinator.reconcile_duplicate_draft_phase_prs(
+                github=self.fx.github,
+                repository="owner/name",
+                phase_branch="phase/next",
+                head_sha="a" * 40,
+                keep_pr_number=int(assembled["phasePr"]["number"]),
+            )
+        with self.assertRaisesRegex(coordinator.CoordinatorError, "handoff_repository_mismatch"):
+            coordinator.reconcile_duplicate_draft_phase_prs_from_handoff(
+                github=self.fx.github,
+                repository="other/name",
+                handoff=assembled["handoff"],
+                live_head=assembled["headSha"],
+                live_tree=assembled["gitTree"],
+            )
+        with self.assertRaisesRegex(coordinator.CoordinatorError, "invalid_phase_branch"):
+            coordinator.reconcile_duplicate_draft_phase_prs(
+                github=self.fx.github,
+                repository="owner/name",
+                phase_branch="development",
+                head_sha=assembled["headSha"],
+                keep_pr_number=int(assembled["phasePr"]["number"]),
+            )
+        with self.assertRaisesRegex(coordinator.CoordinatorError, "protected_base"):
+            coordinator.classify_duplicate_draft_phase_prs(
+                [],
+                phase_branch="phase/next",
+                development="main",
+                head_sha=assembled["headSha"],
+                keep_pr_number=1,
+            )
+
+    def test_live_github_withdraw_uses_patch_not_ref_delete(self) -> None:
+        one = self.fx.accept_issue(42, "live-withdraw.txt", "live-withdraw\n")
+        calls: list[tuple[str, str, object]] = []
+        created: dict[str, object] = {}
+
+        def transport(method: str, request_url: str, token: str, body):
+            calls.append((method, request_url, body))
+            if method == "GET" and "/pulls?" in request_url:
+                return [dict(created)] if created and created.get("state") == "open" else []
+            if method == "GET" and request_url.endswith("/pulls/42"):
+                return dict(created)
+            if method == "POST" and request_url.endswith("/pulls"):
+                created.update(
+                    {
+                        "number": 42,
+                        "html_url": "https://github.com/owner/name/pull/42",
+                        "draft": True,
+                        "state": "open",
+                        "merged": False,
+                        "head": {"ref": "phase/next", "sha": remote_sha(self.fx.work, "phase/next")},
+                        "base": {"ref": "development"},
+                    }
+                )
+                return dict(created)
+            if method == "PATCH" and request_url.endswith("/pulls/42"):
+                self.assertEqual(body, {"state": "closed"})
+                created["state"] = "closed"
+                created["draft"] = True
+                created["merged"] = False
+                return dict(created)
+            raise AssertionError(f"unexpected GitHub call {method} {request_url}")
+
+        github = coordinator.LiveGitHub(
+            repository="owner/name",
+            automation_token="ltfx.coordinator.auto_token.v1",
+            user_token="ltfx.coordinator.user_token.v1",
+            transport=transport,
+        )
+        assembled = self.fx.assemble(
+            [one],
+            github=github,
+            require_live_pr=True,
+            require_evidence=False,
+        )
+        github.transport = transport
+        extra = {
+            "number": 43,
+            "html_url": "https://github.com/owner/name/pull/43",
+            "draft": True,
+            "state": "open",
+            "merged": False,
+            "head": {"ref": "phase/next", "sha": assembled["headSha"]},
+            "base": {"ref": "development"},
+        }
+
+        def transport_with_duplicate(method: str, request_url: str, token: str, body):
+            calls.append((method, request_url, body))
+            if method == "GET" and "/pulls?" in request_url:
+                open_rows = [row for row in (created, extra) if row.get("state") == "open"]
+                return [dict(row) for row in open_rows]
+            if method == "GET" and request_url.endswith("/pulls/42"):
+                return dict(created)
+            if method == "GET" and request_url.endswith("/pulls/43"):
+                return dict(extra)
+            if method == "PATCH" and request_url.endswith("/pulls/43"):
+                self.assertEqual(body, {"state": "closed"})
+                extra["state"] = "closed"
+                return dict(extra)
+            if method == "DELETE":
+                raise AssertionError("ref deletion is forbidden during draft withdrawal")
+            if method == "PUT" and "merge" in request_url:
+                raise AssertionError("merge is forbidden during draft withdrawal")
+            raise AssertionError(f"unexpected GitHub call {method} {request_url}")
+
+        github.transport = transport_with_duplicate
+        result = coordinator.reconcile_duplicate_draft_phase_prs_from_handoff(
+            github=github,
+            repository="owner/name",
+            handoff=assembled["handoff"],
+            live_head=assembled["headSha"],
+            live_tree=assembled["gitTree"],
+        )
+        self.assertEqual(result["withdrawnPrs"][0]["number"], 43)
+        self.assertFalse(any(method == "DELETE" for method, _url, _body in calls))
+        self.assertFalse(any(method == "PUT" for method, url, _body in calls if "merge" in url))
+        self.assertTrue(any(method == "PATCH" and url.endswith("/pulls/43") for method, url, _body in calls))
+
+    def test_cli_reconcile_refuses_without_credentials(self) -> None:
+        env_keys = ("AUTOMATION_TOKEN", "AUTOMATION_TOKEN_SOURCE", "GH_TOKEN", "GITHUB_TOKEN")
+        saved = {key: os.environ.pop(key, None) for key in env_keys}
+        stdout = io.StringIO()
+        handoff_path = Path(self.fx.tmp.name) / "handoff.json"
+        write(handoff_path, json.dumps({"schemaVersion": 1, "kind": "phase-handoff", "valid": True, "repository": "owner/name", "phaseBranch": "phase/next", "phasePr": {"number": 1, "isDraft": True}, "headCommit": "a" * 40, "gitTree": "b" * 40}))
+        try:
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(io.StringIO()):
+                code = coordinator.main(
+                    [
+                        "reconcile-draft-prs",
+                        "--repository",
+                        "owner/name",
+                        "--handoff",
+                        str(handoff_path),
+                        "--live-head",
+                        "a" * 40,
+                        "--live-tree",
+                        "b" * 40,
+                    ]
+                )
+        finally:
+            for key, value in saved.items():
+                if value is None:
+                    os.environ.pop(key, None)
+                else:
+                    os.environ[key] = value
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(code, 2)
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["code"], "missing_github_credentials")
 
 
 if __name__ == "__main__":

@@ -31,7 +31,10 @@ from typing import Any, Callable, Mapping, Protocol
 
 try:
     from scripts.gitops.delivery_modes import is_phase_branch, is_valid_sha, normalize_sha
-    from scripts.gitops.packager_coordinator import consume_handoff
+    from scripts.gitops.packager_coordinator import (
+        consume_handoff,
+        reconcile_duplicate_draft_phase_prs_from_handoff,
+    )
     from scripts.gitops.promotion_receipt_gate import (
         evaluate_development_gates,
         evaluate_main_approval,
@@ -47,7 +50,7 @@ try:
     from scripts.gitops.administrator_recovery import MemoryProtection, recover_phase_merge
 except ModuleNotFoundError:  # pragma: no cover - script-style execution
     from delivery_modes import is_phase_branch, is_valid_sha, normalize_sha  # type: ignore
-    from packager_coordinator import consume_handoff  # type: ignore
+    from packager_coordinator import consume_handoff, reconcile_duplicate_draft_phase_prs_from_handoff  # type: ignore
     from promotion_receipt_gate import (  # type: ignore
         evaluate_development_gates,
         evaluate_main_approval,
@@ -198,6 +201,20 @@ class GitHubPort(Protocol):
     def get_pull_request(self, *, repository: str, number: int) -> dict[str, Any]:
         ...
 
+    def list_open_phase_prs(self, *, repository: str, head: str, base: str) -> list[dict[str, Any]]:
+        ...
+
+    def withdraw_draft_phase_pr(
+        self,
+        *,
+        repository: str,
+        number: int,
+        expected_head: str,
+        expected_head_ref: str,
+        expected_base: str,
+    ) -> dict[str, Any]:
+        ...
+
     def merge_pull_request(
         self,
         *,
@@ -249,6 +266,53 @@ class MemoryGitHub:
         pr = self.prs.get(number)
         if not pr:
             raise ControllerError("pr_missing", str(number))
+        return dict(pr)
+
+    def list_open_phase_prs(self, *, repository: str, head: str, base: str) -> list[dict[str, Any]]:
+        if repository != self.repository:
+            raise ControllerError("wrong_repository", repository)
+        found: list[dict[str, Any]] = []
+        for pr in self.prs.values():
+            if str(pr.get("state") or "open").lower() != "open":
+                continue
+            if str(pr.get("head") or "") != head or str(pr.get("base") or "") != base:
+                continue
+            found.append(dict(pr))
+        return found
+
+    def withdraw_draft_phase_pr(
+        self,
+        *,
+        repository: str,
+        number: int,
+        expected_head: str,
+        expected_head_ref: str,
+        expected_base: str,
+    ) -> dict[str, Any]:
+        pr = self.get_pull_request(repository=repository, number=number)
+        if expected_head_ref in PROTECTED_BRANCHES:
+            raise ControllerError("protected_ref_delete", expected_head_ref)
+        if str(pr.get("head") or "") != expected_head_ref:
+            raise ControllerError("wrong_source", expected_head_ref)
+        if str(pr.get("base") or "") != expected_base:
+            raise ControllerError("wrong_target", expected_base)
+        head = normalize_sha(str(pr.get("headSha") or ""))
+        if head != normalize_sha(expected_head):
+            raise ControllerError("stale_pr_head", f"live={head}:expected={expected_head}")
+        if bool(pr.get("merged")):
+            raise ControllerError("phase_pr_merged", str(number))
+        if not bool(pr.get("isDraft")):
+            raise ControllerError("phase_pr_not_draft", str(number))
+        state = str(pr.get("state") or "open").lower()
+        if state == "closed":
+            pr["alreadyWithdrew"] = True
+            return dict(pr)
+        if state != "open":
+            raise ControllerError("pr_not_open", str(number))
+        pr["state"] = "closed"
+        pr["merged"] = False
+        pr["alreadyWithdrew"] = False
+        self.prs[number] = pr
         return dict(pr)
 
     def merge_pull_request(
@@ -419,6 +483,70 @@ class LiveGitHub:
             "merged": bool(payload.get("merged")),
             "mergeCommitSha": normalize_sha(str(payload.get("merge_commit_sha") or "")),
         }
+
+    def list_open_phase_prs(self, *, repository: str, head: str, base: str) -> list[dict[str, Any]]:
+        if repository != self.repository:
+            raise ControllerError("wrong_repository", repository)
+        owner = repository.split("/", 1)[0]
+        listed = self._request(
+            "GET",
+            f"https://api.github.com/repos/{repository}/pulls?head={owner}:{head}&base={base}&state=open",
+        )
+        if not isinstance(listed, list):
+            raise ControllerError("github_api_failed", "pull list was not an array")
+        rows: list[dict[str, Any]] = []
+        for payload in listed:
+            if not isinstance(payload, Mapping):
+                continue
+            number = payload.get("number")
+            if not isinstance(number, int) or isinstance(number, bool) or number < 1:
+                continue
+            rows.append(self.get_pull_request(repository=repository, number=number))
+        return rows
+
+    def withdraw_draft_phase_pr(
+        self,
+        *,
+        repository: str,
+        number: int,
+        expected_head: str,
+        expected_head_ref: str,
+        expected_base: str,
+    ) -> dict[str, Any]:
+        live = self.get_pull_request(repository=repository, number=number)
+        if expected_head_ref in PROTECTED_BRANCHES:
+            raise ControllerError("protected_ref_delete", expected_head_ref)
+        if str(live.get("head") or "") != expected_head_ref:
+            raise ControllerError("wrong_source", expected_head_ref)
+        if str(live.get("base") or "") != expected_base:
+            raise ControllerError("wrong_target", expected_base)
+        head = normalize_sha(str(live.get("headSha") or ""))
+        if head != normalize_sha(expected_head):
+            raise ControllerError("stale_pr_head", f"live={head}:expected={expected_head}")
+        if bool(live.get("merged")):
+            raise ControllerError("phase_pr_merged", str(number))
+        if not bool(live.get("isDraft")):
+            raise ControllerError("phase_pr_not_draft", str(number))
+        state = str(live.get("state") or "open").lower()
+        if state == "closed":
+            live["alreadyWithdrew"] = True
+            return live
+        if state != "open":
+            raise ControllerError("pr_not_open", str(number))
+        updated = self._request(
+            "PATCH",
+            f"https://api.github.com/repos/{repository}/pulls/{number}",
+            {"state": "closed"},
+        )
+        if not isinstance(updated, Mapping):
+            raise ControllerError("github_api_failed", "withdraw payload was not an object")
+        if bool(updated.get("merged")):
+            raise ControllerError("phase_pr_merged", str(number))
+        if str(updated.get("state") or "") == "open":
+            raise ControllerError("github_api_failed", f"PR #{number} was not closed as a draft")
+        result = self.get_pull_request(repository=repository, number=number)
+        result["alreadyWithdrew"] = False
+        return result
 
     def merge_pull_request(
         self,
@@ -1163,6 +1291,79 @@ def complete_main_promotion(
     }
 
 
+def withdraw_duplicate_draft_phase_prs(
+    *,
+    github: GitHubPort,
+    repository: str,
+    handoff: Mapping[str, Any],
+    live_head: str,
+    live_tree: str | None = None,
+    role: str,
+    record_path: Path | None = None,
+    development: str = "development",
+) -> dict[str, Any]:
+    """Controller-owned draft Phase PR reconciliation. Never merge or reset refs."""
+
+    require_controller_role(role)
+    try:
+        github.push_protected(repository=repository, branch="development", sha=live_head)
+    except ControllerError as exc:
+        if exc.code != "direct_push_forbidden":
+            raise
+    try:
+        result = reconcile_duplicate_draft_phase_prs_from_handoff(
+            github=github,
+            repository=repository,
+            handoff=handoff,
+            live_head=live_head,
+            live_tree=live_tree,
+            development=development,
+        )
+    except Exception as exc:
+        if hasattr(exc, "code"):
+            raise ControllerError(str(getattr(exc, "code")), str(getattr(exc, "detail", exc))) from exc
+        raise
+    if result.get("merges") or result.get("deletedRefsObserved") or result.get("deletedRefs"):
+        raise ControllerError("raw_github_mutation_forbidden", "withdrawal must not merge or delete refs")
+    if result.get("merged"):
+        raise ControllerError("phase_pr_merged", "withdrawal must not merge")
+    identical = bool(result.get("idempotent"))
+    record = {
+        "status": "identical" if identical else "cleaned",
+        "stage": "cleanup",
+        "operation": "withdraw-duplicate-draft-phase-prs",
+        "repository": repository,
+        "phaseBranch": result.get("phaseBranch"),
+        "pr": int((result.get("keepPr") or {}).get("number") or 0),
+        "keepPr": result.get("keepPr"),
+        "withdrawnPrs": result.get("withdrawnPrs") or [],
+        "testedHead": normalize_sha(live_head),
+        "gitTree": normalize_sha(str(live_tree or result.get("gitTree") or "")),
+        "directPush": False,
+        "merged": False,
+        "deleted": [],
+        "preserved": [str((result.get("keepPr") or {}).get("number") or "")],
+        "idempotent": identical,
+        "role": role,
+        "actor": "delivery-controller",
+        "component": COMPONENT_KIND,
+        "receipt": {
+            "kind": "phase-draft-withdrawal",
+            "operation": "withdraw-duplicate-draft-phase-prs",
+            "keepPr": result.get("keepPr"),
+            "withdrawnPrs": result.get("withdrawnPrs") or [],
+            "headSha": normalize_sha(live_head),
+            "gitTree": normalize_sha(str(live_tree or result.get("gitTree") or "")),
+            "directPush": False,
+            "merged": False,
+            "deletedRefs": [],
+        },
+    }
+    if record_path is not None:
+        write_operation_record(record_path, record)
+    return record
+
+
 def authorize_cleanup_from_evidence(
     evidence: Mapping[str, Any] | None,
     branches: list[str],
@@ -1421,6 +1622,7 @@ def main(argv: list[str] | None = None) -> int:
             "cleanup",
             "agent-identical",
             "recover-phase",
+            "withdraw-phase-drafts",
         ],
     )
     parser.add_argument("--repository", default="")
@@ -1559,6 +1761,16 @@ def main(argv: list[str] | None = None) -> int:
                     merge_succeeded=True,
                     controller_owned=owned,
                     rollout=rollout,
+                )
+            elif args.command == "withdraw-phase-drafts":
+                result = withdraw_duplicate_draft_phase_prs(
+                    github=github,
+                    repository=args.repository,
+                    handoff=load(args.handoff),
+                    live_head=args.live_head,
+                    live_tree=args.live_tree or None,
+                    role=args.role,
+                    record_path=Path(args.out) if args.out else None,
                 )
             elif args.command == "recover-phase":
                 if os.environ.get("LINKTREND_STATUS_BACKEND") != "file":
