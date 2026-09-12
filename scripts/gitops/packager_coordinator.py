@@ -721,8 +721,8 @@ def reconcile_duplicate_draft_phase_prs(
 
     if repository != getattr(github, "repository", repository):
         raise CoordinatorError("wrong_repository", repository)
-        if phase_branch in PROTECTED_BRANCHES:
-            raise CoordinatorError("invalid_phase_branch", phase_branch)
+    if phase_branch in PROTECTED_BRANCHES:
+        raise CoordinatorError("invalid_phase_branch", phase_branch)
     classified = classify_duplicate_draft_phase_prs(
         github.list_open_phase_prs(repository=repository, head=phase_branch, base=development),
         phase_branch=phase_branch,
@@ -1633,27 +1633,17 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if allowed else 2
 
     if args.command == "reconcile-draft-prs":
-        if not args.repository or not args.handoff or not args.live_head:
-            print("reconcile-draft-prs requires --repository --handoff --live-head", file=sys.stderr)
-            return 2
-        try:
-            github, _pusher = resolve_production_adapters(args.repository)
-            result = reconcile_duplicate_draft_phase_prs_from_handoff(
-                github=github,
-                repository=args.repository,
-                handoff=json.loads(Path(args.handoff).read_text(encoding="utf-8")),
-                live_head=args.live_head,
-                live_tree=args.live_tree or None,
-                development=args.development,
-            )
-        except (CoordinatorError, PhaseLifecycleError, GitHubAuthError) as exc:
-            payload = exc.to_dict() if hasattr(exc, "to_dict") else {"code": "failed", "detail": str(exc)}
-            json.dump({"ok": False, **payload}, sys.stdout, sort_keys=True)
-            sys.stdout.write("\n")
-            return 2
-        json.dump({"ok": True, **result}, sys.stdout, indent=2, sort_keys=True)
+        payload = {
+            "ok": False,
+            "code": "controller_owned_operation",
+            "detail": (
+                "live draft-Phase withdrawal is owned by delivery_controller "
+                "withdraw-phase-drafts; packager reconcile-draft-prs is not a live close path"
+            ),
+        }
+        json.dump(payload, sys.stdout, sort_keys=True)
         sys.stdout.write("\n")
-        return 0
+        return 2
 
     if not args.repository or not args.accept:
         print("assemble requires --repository and one or more --accept branch@sha", file=sys.stderr)

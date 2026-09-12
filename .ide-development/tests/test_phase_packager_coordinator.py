@@ -914,13 +914,14 @@ class PhasePackagerCoordinatorAdversarialTests(unittest.TestCase):
         self.assertFalse(any(method == "PUT" for method, url, _body in calls if "merge" in url))
         self.assertTrue(any(method == "PATCH" and url.endswith("/pulls/43") for method, url, _body in calls))
 
-    def test_cli_reconcile_refuses_without_credentials(self) -> None:
+    def test_cli_reconcile_draft_prs_is_not_a_live_close_path(self) -> None:
         env_keys = ("AUTOMATION_TOKEN", "AUTOMATION_TOKEN_SOURCE", "GH_TOKEN", "GITHUB_TOKEN")
         saved = {key: os.environ.pop(key, None) for key in env_keys}
         stdout = io.StringIO()
         handoff_path = Path(self.fx.tmp.name) / "handoff.json"
         write(handoff_path, json.dumps({"schemaVersion": 1, "kind": "phase-handoff", "valid": True, "repository": "owner/name", "phaseBranch": "phase/next", "phasePr": {"number": 1, "isDraft": True}, "headCommit": "a" * 40, "gitTree": "b" * 40}))
         try:
+            os.environ["GH_TOKEN"] = "ghs_must_not_open_a_second_live_close_path"
             with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(io.StringIO()):
                 code = coordinator.main(
                     [
@@ -944,7 +945,8 @@ class PhasePackagerCoordinatorAdversarialTests(unittest.TestCase):
         payload = json.loads(stdout.getvalue())
         self.assertEqual(code, 2)
         self.assertFalse(payload["ok"])
-        self.assertEqual(payload["code"], "missing_github_credentials")
+        self.assertEqual(payload["code"], "controller_owned_operation")
+        self.assertIn("withdraw-phase-drafts", payload["detail"])
 
 
 if __name__ == "__main__":

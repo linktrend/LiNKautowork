@@ -936,6 +936,17 @@ class DeliveryControllerTests(unittest.TestCase):
         self.assertEqual(payload["kind"], "delivery-operation")
         self.assertEqual(payload["component"], "delivery_controller")
         self.assertEqual(payload["receipt"]["kind"], "phase-draft-withdrawal")
+        with self.assertRaisesRegex(controller.ControllerError, "operation_record_exists"):
+            controller.write_operation_record(record_path, result)
+        with self.assertRaisesRegex(controller.ControllerError, "protected_ref_delete"):
+            controller.withdraw_duplicate_draft_phase_prs(
+                github=self.github,
+                repository="owner/name",
+                handoff={**self.handoff, "phaseBranch": "development"},
+                live_head=self.head,
+                live_tree=self.tree,
+                role="operator",
+            )
         reused = controller.withdraw_duplicate_draft_phase_prs(
             github=self.github,
             repository="owner/name",
@@ -949,6 +960,7 @@ class DeliveryControllerTests(unittest.TestCase):
         with mock.patch.object(controller, "resolve_production_github", return_value=self.github):
             handoff_path = Path(tempfile.mkdtemp()) / "handoff.json"
             handoff_path.write_text(json.dumps(self.handoff), encoding="utf-8")
+            out_path = Path(tempfile.mkdtemp()) / "delivery-operation.json"
             rc = controller.main(
                 [
                     "withdraw-phase-drafts",
@@ -962,9 +974,16 @@ class DeliveryControllerTests(unittest.TestCase):
                     self.head,
                     "--live-tree",
                     self.tree,
+                    "--out",
+                    str(out_path),
                 ]
             )
         self.assertEqual(rc, 0)
+        stored = json.loads(out_path.read_text(encoding="utf-8"))
+        self.assertEqual(stored["kind"], "delivery-operation")
+        self.assertEqual(stored["schemaVersion"], 1)
+        self.assertEqual(stored["receipt"]["kind"], "phase-draft-withdrawal")
+        self.assertNotEqual(stored.get("status"), "rejected")
         self.github.prs[13] = {
             "number": 13,
             "isDraft": False,

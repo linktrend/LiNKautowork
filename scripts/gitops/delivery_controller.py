@@ -1305,6 +1305,11 @@ def withdraw_duplicate_draft_phase_prs(
     """Controller-owned draft Phase PR reconciliation. Never merge or reset refs."""
 
     require_controller_role(role)
+    phase_branch = str(handoff.get("phaseBranch") or "")
+    if phase_branch in PROTECTED_BRANCHES:
+        raise ControllerError("protected_ref_delete", phase_branch)
+    if str(development or "") in {"staging", "main"}:
+        raise ControllerError("protected_base", development)
     try:
         github.push_protected(repository=repository, branch="development", sha=live_head)
     except ControllerError as exc:
@@ -1484,6 +1489,8 @@ def run_identical_under_agents(
 
 def write_operation_record(path: Path, record: Mapping[str, Any]) -> dict[str, Any]:
     path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        raise ControllerError("operation_record_exists", str(path))
     payload = {
         "schemaVersion": 1,
         "kind": "delivery-operation",
@@ -1657,6 +1664,7 @@ def main(argv: list[str] | None = None) -> int:
         help="Optional staged-rollout config with branch and required-check identities",
     )
     args = parser.parse_args(argv)
+    wrote_durable_receipt = False
 
     def load(path: str) -> Any:
         return json.loads(Path(path).read_text(encoding="utf-8"))
@@ -1772,6 +1780,7 @@ def main(argv: list[str] | None = None) -> int:
                     role=args.role,
                     record_path=Path(args.out) if args.out else None,
                 )
+                wrote_durable_receipt = bool(args.out)
             elif args.command == "recover-phase":
                 if os.environ.get("LINKTREND_STATUS_BACKEND") != "file":
                     raise ControllerError(
@@ -1797,13 +1806,15 @@ def main(argv: list[str] | None = None) -> int:
     except ControllerError as exc:
         payload = {"status": "rejected", **exc.to_dict(), "component": COMPONENT_KIND}
         text = json.dumps(payload, indent=2, sort_keys=True) + "\n"
-        if args.out:
-            Path(args.out).write_text(text, encoding="utf-8")
+        if args.out and not wrote_durable_receipt:
+            dest = Path(args.out)
+            if not dest.exists():
+                dest.write_text(text, encoding="utf-8")
         sys.stderr.write(text)
         return 2
 
     text = json.dumps(result, indent=2, sort_keys=True) + "\n"
-    if args.out:
+    if args.out and not wrote_durable_receipt:
         Path(args.out).write_text(text, encoding="utf-8")
     sys.stdout.write(text)
     return 0
