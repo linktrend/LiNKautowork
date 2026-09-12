@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { JetStreamOperations, type JetStreamAlertStore } from '../../src/services/monitoring/jetstream-operations.js';
 import type { AlertDelivery } from '../../src/services/monitoring/operations-service.js';
-import type { JetStreamClusterSnapshot } from '../../../../packages/automation-operations/src/index.js';
+import type { JetStreamClusterSnapshot } from '../../../packages/automation-operations/src/index.js';
 
 const orgA = '00000000-0000-0000-0000-000000000001';
 const orgB = '00000000-0000-0000-0000-000000000002';
