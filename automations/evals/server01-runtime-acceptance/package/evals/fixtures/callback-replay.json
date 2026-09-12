@@ -1,12 +1,4 @@
 {
-  "simulate_failure": true,
   "failure_class": "callback_replay",
-  "callback_timestamp_order": "replayed",
-  "mock": {
-    "branch": "callback_replay",
-    "error_code": "invalid_callback",
-    "receipt_mutated": false,
-    "n8n_dispatched": false,
-    "live_n8n_activation": "hold"
-  }
+  "callback_timestamp_order": "replayed"
 }

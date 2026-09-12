@@ -1,10 +1,13 @@
 # Server01 runtime-acceptance mock
 
-Safe mock of n8n/AW-03 callback behavior for AW-04. It never starts Docker,
-never calls n8n, never reads credentials, and never claims Server01 or production.
+In-process mock of AW-02 admission and AW-03 callback/receipt behavior for AW-04.
+It never starts Docker, never calls n8n, never reads credentials, and never
+claims Server01, canary, certified release, or production.
 
 ```bash
 node deploy/test/fixtures/server01-runtime-acceptance/mock-n8n.mjs --self-test
+node --test deploy/test/fixtures/server01-runtime-acceptance/mock-runtime.test.mjs
+node scripts/run-automation-evals.mjs --profile=smoke
 ```
 
 Optional HTTP listener (loopback only):

@@ -1,11 +1,4 @@
 {
-  "simulate_failure": true,
-  "failure_class": "cancelled",
   "cancel_phase": "before_dispatch",
-  "mock": {
-    "branch": "cancel_before",
-    "state": "cancelled",
-    "n8n_dispatched": false,
-    "live_n8n_activation": "hold"
-  }
+  "failure_class": "cancelled"
 }

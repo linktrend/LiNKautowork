@@ -1,10 +1,4 @@
 {
-  "simulate_failure": true,
-  "failure_class": "validation",
-  "mock": {
-    "branch": "rejection",
-    "error_code": "invalid_state",
-    "n8n_dispatched": false,
-    "live_n8n_activation": "hold"
-  }
+  "input": { "unexpected_field": true },
+  "failure_class": "validation"
 }

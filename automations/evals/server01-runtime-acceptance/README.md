@@ -11,13 +11,14 @@ GSM, providers, or deployment surfaces.
 ## Layout
 
 - `package/` — inactive Golden Automation Package v0.1 (n8n-core-only, no secrets, no external nodes).
-- `HOLD.md` — live, production, and disposable-n8n boundaries that remain HOLD.
+- `HOLD.md` — live, production, Docker-n8n, and canary boundaries that remain HOLD.
 - `deploy/test/fixtures/server01-runtime-acceptance/` — mock runtime that evaluates the suite without Docker or n8n.
 
 ## Activation
 
-The workflow remains `active: false`. Activation is reserved for AW-08 technical
-canary authority. After live acceptance the fixture must be disabled or removed.
+The workflow remains `active: false`. This fixture does not perform or authorize
+live canary, certified-release, or rollback operations. After a future live
+acceptance packet (AW-08), the fixture must stay disabled or be removed.
 
 ## Catalogue
 

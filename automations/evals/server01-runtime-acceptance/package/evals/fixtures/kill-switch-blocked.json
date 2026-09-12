@@ -1,10 +1,3 @@
 {
-  "simulate_failure": true,
-  "failure_class": "kill_switch",
-  "mock": {
-    "branch": "kill_switch",
-    "error_code": "blocked",
-    "n8n_dispatched": false,
-    "live_n8n_activation": "hold"
-  }
+  "failure_class": "kill_switch"
 }

@@ -16,9 +16,9 @@
     "channel": "development",
     "lifecycle": "draft",
     "identity": {
-      "package_digest": "sha256:d321aeff64f33605281f5f87765aca8a861b200c538f25295d0f8c9e9140e260",
+      "package_digest": "sha256:520900c4b2c179254e5e36892d2f94c164f372b0909c517da019b6baad2196b2",
       "workflow_digest": "sha256:d2e205cd6cfd960803bd0c68c2427969e075bdca321dbf3c8c165d70e509c67c",
-      "source_git_sha": "a13a6467fc9bc2fccdddd1de8d9e258c78e57fdd",
+      "source_git_sha": "1488779ad1593574957f3abce2775332a31e45c0",
       "n8n_version": "2.30.0"
     }
   },
