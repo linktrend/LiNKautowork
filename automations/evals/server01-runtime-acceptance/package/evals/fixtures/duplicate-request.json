@@ -1,0 +1,4 @@
+{
+  "idempotency_key": "server01-runtime-acceptance-duplicate-key-01",
+  "failure_class": "idempotency"
+}

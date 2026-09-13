@@ -101,7 +101,8 @@ AGENT_ENV_KEYS = (
     "AIDER_MODEL",
     "ANTHROPIC_MODEL",
 )
-FAST_WORKFLOW_REL = Path("core/github/managed-workflows/linktrend-review-packager.yml")
+INSTALLED_FAST_WORKFLOW_REL = Path(".github/workflows/linktrend-review-packager.yml")
+FAST_WORKFLOW_REL = INSTALLED_FAST_WORKFLOW_REL
 FULL_WORKFLOW_REL = Path("core/github/managed-workflows/linktrend-integrator-merge.yml")
 
 
@@ -519,6 +520,41 @@ def parse_fast_trigger_contract(text: str) -> dict[str, Any]:
         "checksExactHead": "github.event.pull_request.head.sha" in text,
     }
     return result
+
+
+def fast_contract_holds(contract: Mapping[str, Any]) -> bool:
+    """Named Fast must exist, must not wake on checkpoint push, and must not start Full."""
+
+    return bool(contract.get("namedFast") and not contract.get("checkpointPush") and not contract.get("startsFull"))
+
+
+def resolve_installed_fast_workflow(repo: Path, workflow: Path | str | None = None) -> Path:
+    """Return the repository-owned Fast workflow, or fail closed if it is missing or invalid.
+
+    The installed GitHub Actions path is authoritative. This resolver does not
+    vendor or fall back to a managed-core source tree.
+    """
+
+    repo = Path(repo)
+    if workflow is None:
+        candidate = repo / INSTALLED_FAST_WORKFLOW_REL
+    else:
+        candidate = Path(workflow)
+        if not candidate.is_absolute():
+            candidate = repo / candidate
+    if not candidate.is_file():
+        raise CoordinatorError("fast_workflow_missing", str(candidate))
+    try:
+        text = candidate.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise CoordinatorError("fast_workflow_unreadable", f"{candidate}: {exc}") from exc
+    contract = parse_fast_trigger_contract(text)
+    if not fast_contract_holds(contract):
+        raise CoordinatorError(
+            "fast_workflow_invalid",
+            json.dumps(contract, sort_keys=True),
+        )
+    return candidate.resolve()
 
 
 def full_may_start(
@@ -1210,11 +1246,18 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.command == "fast-contract":
-        path = Path(args.workflow) if args.workflow else FAST_WORKFLOW_REL
-        contract = parse_fast_trigger_contract(path.read_text(encoding="utf-8"))
+        repo = Path(args.repo_path)
+        override = Path(args.workflow) if args.workflow else None
+        try:
+            path = resolve_installed_fast_workflow(repo, override)
+            contract = parse_fast_trigger_contract(path.read_text(encoding="utf-8"))
+        except CoordinatorError as exc:
+            json.dump({"ok": False, **exc.to_dict()}, sys.stdout, indent=2, sort_keys=True)
+            sys.stdout.write("\n")
+            return 1
         json.dump(contract, sys.stdout, indent=2, sort_keys=True)
         sys.stdout.write("\n")
-        return 0 if contract["namedFast"] and not contract["checkpointPush"] and not contract["startsFull"] else 1
+        return 0 if fast_contract_holds(contract) else 1
 
     if args.command == "consume-handoff":
         payload = json.loads(Path(args.handoff).read_text(encoding="utf-8"))

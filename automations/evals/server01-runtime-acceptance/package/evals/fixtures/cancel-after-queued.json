@@ -1,0 +1,4 @@
+{
+  "cancel_phase": "after_queued",
+  "failure_class": "cancelled"
+}

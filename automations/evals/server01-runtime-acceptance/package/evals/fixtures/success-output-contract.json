@@ -1,0 +1,8 @@
+{
+  "input": { "case_id": "success-output-contract" },
+  "expected_output": {
+    "status": "ok",
+    "automation_id": "server01-runtime-acceptance",
+    "n8n_dispatched": false
+  }
+}

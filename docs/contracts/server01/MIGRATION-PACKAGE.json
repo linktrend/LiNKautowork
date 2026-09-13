@@ -1,0 +1,146 @@
+{
+  "packageId": "lautowork.server01.migration-identity/1.0.0",
+  "schemaVersion": 1,
+  "platformConsumable": true,
+  "applyOwner": "LiNKplatform",
+  "author": "LiNKautowork",
+  "additive": true,
+  "platformAuthClaims": "platform.auth-claims/1.1.0",
+  "providerContract": "2026-08-13.v1",
+  "platformProtectedDevelopment": {
+    "commit": "f6373fccc89732cbb88bb18562daa69cc031a2e3",
+    "tree": "83feddf7d935561cfede60df456ea616a021d726"
+  },
+  "orderedSql": [
+    {
+      "order": 1,
+      "path": "supabase/migrations/20260715_000001_lautowork_control_core.sql",
+      "sha256": "b9597e4639b5aa3c47519757db077e254e3ecbb9bcc45e3625a215fd0e359c68",
+      "bytes": 9875
+    },
+    {
+      "order": 2,
+      "path": "supabase/migrations/20260715_000002_lautowork_n8n_isolation.sql",
+      "sha256": "c423ef7eef4bbacf8eea01706d776d92348cbd5520788254af24866610e5db78",
+      "bytes": 5171
+    },
+    {
+      "order": 3,
+      "path": "supabase/migrations/20260718_000001_lautowork_control_persistence.sql",
+      "sha256": "6e2fc859257bd52740e92a64394cba68979cdfe9e2dac405e828eb29451e2484",
+      "bytes": 4422
+    },
+    {
+      "order": 4,
+      "path": "supabase/migrations/20260804_000001_lautowork_automation_control_model.sql",
+      "sha256": "370b11e2f36b58ecedafa4be35d4e6c847a83d4d7a66a87ce707eec2b4981dc5",
+      "bytes": 44993
+    },
+    {
+      "order": 5,
+      "path": "supabase/migrations/20260804_000002_lautowork_wave2_runtime_corrections.sql",
+      "sha256": "c8982b00bc67d0214b0c3243cd311e317f2dae540a5e252c6e9e76bd36e0b631",
+      "bytes": 16898
+    },
+    {
+      "order": 6,
+      "path": "supabase/migrations/20260804_000003_lautowork_librarian_state.sql",
+      "sha256": "1d642714ee017878f727f749cfd0934388f333196824ad373668104c45ea3924",
+      "bytes": 8259
+    },
+    {
+      "order": 7,
+      "path": "supabase/migrations/20260804_000004_lautowork_operations_runtime.sql",
+      "sha256": "bd2383a747bb2be2f9a50f78fa7d88861b34368ce341d2c1bfc50f758822c705",
+      "bytes": 44100
+    },
+    {
+      "order": 8,
+      "path": "supabase/migrations/20260804_000005_lautowork_product_durability.sql",
+      "sha256": "9279c73056eabc6e7a41eafd589edb6b411a9eabe8d5d4c0465a8ff7f174b040",
+      "bytes": 14656
+    },
+    {
+      "order": 9,
+      "path": "supabase/migrations/20260804_000006_lautowork_product_api_read_models.sql",
+      "sha256": "a14933037342be37e7b24518c015d110b1015c28a3a0cc7aa94401d6bd67a1d4",
+      "bytes": 9034
+    },
+    {
+      "order": 10,
+      "path": "supabase/migrations/20260804_000007_lautowork_commercial_lifecycle.sql",
+      "sha256": "192027512a51c0ac6e03d292d51160e04479ee777d33f83bad0b9f6abc652898",
+      "bytes": 5703
+    },
+    {
+      "order": 11,
+      "path": "supabase/migrations/20260804_000008_lautowork_product_api_closure.sql",
+      "sha256": "dd0c0ea083e5fad9af7f31233db1daa51a8ec3e688b7ee582d90dbddfe298c4e",
+      "bytes": 16247
+    },
+    {
+      "order": 12,
+      "path": "supabase/migrations/20260804_000010_lautowork_operator_operations.sql",
+      "sha256": "83385a752a6aa3db11b01d1a5ebd54bfe59be1b2d5f8ffadbe2003f473714a97",
+      "bytes": 31963
+    },
+    {
+      "order": 13,
+      "path": "supabase/migrations/20260804_000011_lautowork_governed_commercial_webhooks.sql",
+      "sha256": "b0ea06d6158c2de42ab976bb55491505d487497b4adca43ce978286c3507290f",
+      "bytes": 42773
+    },
+    {
+      "order": 14,
+      "path": "supabase/migrations/20260804_000012_lautowork_durable_audit_outbox.sql",
+      "sha256": "f1050707813bd545b5f3e4d1164514bcc4a2f2114ee23f1f0e3b9738c9d267ba",
+      "bytes": 24378
+    },
+    {
+      "order": 15,
+      "path": "supabase/migrations/20260813_000001_lautowork_provider_plane.sql",
+      "sha256": "44887be82f74f88826e50e167c85c1bbb6d43cd3469fe97e7688ea17667f2d4f",
+      "bytes": 18183
+    },
+    {
+      "order": 16,
+      "path": "supabase/migrations/20260910_000001_lautowork_server01_live_interfaces.sql",
+      "sha256": "8f2ca0aa453dd69013497a14676c526442a08d1b4640c5fd7c29d41a06d80aa2",
+      "bytes": 31237
+    }
+  ],
+  "contracts": [
+    {
+      "path": "docs/contracts/server01/README.md",
+      "sha256": "5e99c9ac3015b1269a3c373e109a6f86a4eebeacff9dcc71bf3ffc7fa68da91e",
+      "bytes": 3734
+    },
+    {
+      "path": "docs/contracts/server01/CONTRACT-VERSION-MATRIX.md",
+      "sha256": "3045bd8ff4d799cb7f6b97b02f7e5b92cdaefb89b0a301a2221516c8aea8b521",
+      "bytes": 1809
+    },
+    {
+      "path": "docs/contracts/server01/ROLES-AND-GRANTS.md",
+      "sha256": "28957317bccbd8bd9e7833f7ccbf7ea7220af4ed7d3fa7c500a4fbc97622f082",
+      "bytes": 1405
+    },
+    {
+      "path": "docs/contracts/server01/RECOVERY.md",
+      "sha256": "521bf30872d98f0e7910e8e95e6e90794c5179ff05a16a6301d118cf58d62f2b",
+      "bytes": 1879
+    },
+    {
+      "path": "docs/contracts/server01/verification.sql",
+      "sha256": "eb753ac85e345eeb0a1e6798c071dc78b888ea87fb2cc14ca44df73867d4ba49",
+      "bytes": 5574
+    },
+    {
+      "path": "docs/contracts/server01/fixtures/server01-conformance.sql",
+      "sha256": "0ab0aba3a3fafdf765b66b39461eee4924426fda8f5f90c9395c7d1d5291a354",
+      "bytes": 4618
+    }
+  ],
+  "orderedSqlCanonicalSha256": "0ee450ad52fe75c0b159ba0d03c3389cf149171aff748163cabd45628acd0dd3",
+  "liveApply": "HOLD"
+}
