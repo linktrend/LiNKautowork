@@ -9,6 +9,8 @@ const envSchema = z.object({
   PLATFORM_JWT_ISSUER: z.string().url().default('https://platform.test.linktrend.local'),
   PLATFORM_JWT_AUDIENCE: z.string().default('linkautowork-gateway'),
   PLATFORM_JWT_TEST_SECRET: z.string().min(32).optional(),
+  PLATFORM_JWKS_URL: z.string().url().optional(),
+  PLATFORM_JWKS_CACHE_TTL_SECONDS: z.coerce.number().int().min(30).max(300).default(300),
   LINK_HMAC_SHARED_SECRETS: z.string().optional(),
   LINK_HMAC_SHARED_SECRETS_SECRET_NAME: z.string().default('LINKAUTOWORK_LINK_HMAC_SHARED_SECRETS'),
   LINK_SERVICE_TOKENS: z.string().optional(),
