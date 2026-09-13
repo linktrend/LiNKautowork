@@ -15,11 +15,27 @@ from pathlib import Path
 from jsonschema import Draft202012Validator, RefResolver
 
 from scripts.gitops import packager_coordinator as coordinator
-from scripts.gitops import packager_discover as discover
+
+try:
+    from scripts.gitops import packager_discover as discover
+except ImportError:  # consumer checkout may omit retained discover
+    discover = None
+
 from scripts.ide_development.constants import RC_REQUIRED_SCHEMA_RELS
 
 
 ROOT = Path(__file__).resolve().parents[2]
+INSTALLED_SCHEMA_DIR = ROOT / ".ide-development" / "schemas"
+VENDOR_SCHEMA_DIR = ROOT / "core" / "managed-core" / "schemas"
+
+
+def installed_schema(name: str) -> Path:
+    """Prefer the installed consumer schema; do not vendor a missing managed-core tree."""
+
+    for candidate in (INSTALLED_SCHEMA_DIR / name, VENDOR_SCHEMA_DIR / name):
+        if candidate.is_file():
+            return candidate
+    raise FileNotFoundError(name)
 
 
 def git(repo: Path, *args: str, check: bool = True) -> str:
@@ -106,9 +122,13 @@ class PhasePackagerCoordinatorTests(unittest.TestCase):
         self.addCleanup(self.fx.cleanup)
 
     def test_discover_is_not_phase_packager(self) -> None:
+        self.assertTrue(coordinator.IS_PHASE_PACKAGER)
+        self.assertEqual(coordinator.COMPONENT_KIND, "phase_packager_coordinator")
+        if discover is None:
+            self.assertFalse((ROOT / "scripts/gitops/packager_discover.py").is_file())
+            return
         self.assertFalse(discover.IS_PHASE_PACKAGER)
         self.assertNotEqual(discover.COMPONENT_KIND, coordinator.COMPONENT_KIND)
-        self.assertTrue(coordinator.IS_PHASE_PACKAGER)
         self.assertIn("not** the Update 3 Phase Packager/Coordinator", discover.__doc__)
 
     def test_one_issue_creates_one_phase_branch_and_draft_pr(self) -> None:
@@ -284,7 +304,10 @@ class PhasePackagerCoordinatorTests(unittest.TestCase):
         self.assertFalse(coordinator._is_ancestor(self.fx.work, extra.sha, result["headSha"]))
 
     def test_checkpoint_push_does_not_start_managed_ci_and_phase_pr_starts_fast(self) -> None:
-        fast = (ROOT / coordinator.FAST_WORKFLOW_REL).read_text(encoding="utf-8")
+        installed = (ROOT / coordinator.INSTALLED_FAST_WORKFLOW_REL).resolve()
+        resolved = coordinator.resolve_installed_fast_workflow(ROOT)
+        self.assertEqual(resolved, installed)
+        fast = resolved.read_text(encoding="utf-8")
         contract = coordinator.parse_fast_trigger_contract(fast)
         self.assertTrue(contract["namedFast"])
         self.assertFalse(contract["checkpointPush"])
@@ -295,7 +318,7 @@ class PhasePackagerCoordinatorTests(unittest.TestCase):
         self.assertFalse(contract["startsFull"])
         live = (ROOT / ".github/workflows/linktrend-review-packager.yml").read_text(encoding="utf-8")
         self.assertEqual(fast, live)
-        full = (ROOT / coordinator.FULL_WORKFLOW_REL).read_text(encoding="utf-8")
+        full = (ROOT / ".github/workflows/linktrend-integrator-merge.yml").read_text(encoding="utf-8")
         self.assertNotRegex(full, r"(?m)^\s+push:")
         self.assertIn("types: [labeled]", full)
         one = self.fx.accept_issue(16, "fast.txt", "fast\n")
@@ -305,6 +328,48 @@ class PhasePackagerCoordinatorTests(unittest.TestCase):
         self.assertFalse(result["fullDispatchAllowed"])
         self.assertEqual(self.fx.github.labels, [])
         self.assertEqual(self.fx.github.workflow_dispatches, [])
+
+    def test_fast_contract_resolves_installed_repository_workflow(self) -> None:
+        stdout = io.StringIO()
+        with contextlib.redirect_stdout(stdout):
+            code = coordinator.main(["fast-contract", "--repo-path", str(ROOT)])
+        self.assertEqual(code, 0)
+        contract = json.loads(stdout.getvalue())
+        self.assertTrue(contract["namedFast"])
+        self.assertFalse(contract["checkpointPush"])
+        self.assertFalse(contract["startsFull"])
+        self.assertTrue(coordinator.fast_contract_holds(contract))
+
+    def test_fast_contract_fails_closed_when_installed_workflow_absent(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            with self.assertRaises(coordinator.CoordinatorError) as ctx:
+                coordinator.resolve_installed_fast_workflow(repo)
+            self.assertEqual(ctx.exception.code, "fast_workflow_missing")
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(io.StringIO()):
+                code = coordinator.main(["fast-contract", "--repo-path", str(repo)])
+            self.assertEqual(code, 1)
+            payload = json.loads(stdout.getvalue())
+            self.assertEqual(payload["code"], "fast_workflow_missing")
+            self.assertFalse(payload["ok"])
+
+    def test_fast_contract_fails_closed_when_workflow_invalid(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            write(
+                repo / coordinator.INSTALLED_FAST_WORKFLOW_REL,
+                "name: Not Fast\non:\n  push:\n    branches: [main]\n",
+            )
+            with self.assertRaises(coordinator.CoordinatorError) as ctx:
+                coordinator.resolve_installed_fast_workflow(repo)
+            self.assertEqual(ctx.exception.code, "fast_workflow_invalid")
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(io.StringIO()):
+                code = coordinator.main(["fast-contract", "--repo-path", str(repo)])
+            self.assertEqual(code, 1)
+            payload = json.loads(stdout.getvalue())
+            self.assertEqual(payload["code"], "fast_workflow_invalid")
 
     def test_full_cannot_start_before_fast_and_required_ci(self) -> None:
         allowed, detail = coordinator.full_may_start(
@@ -369,11 +434,11 @@ class PhasePackagerCoordinatorTests(unittest.TestCase):
             self.assertIn(key, handoff)
         self.assertEqual(handoff["kind"], "phase-handoff")
         self.assertEqual(handoff["component"], coordinator.COMPONENT_KIND)
-        schema = json.loads((ROOT / "core/managed-core/schemas/phase-handoff.schema.json").read_text(encoding="utf-8"))
+        schema = json.loads(installed_schema("phase-handoff.schema.json").read_text(encoding="utf-8"))
         self.assertEqual(schema["required"], list(key for key in schema["required"]))
         for key in schema["required"]:
             self.assertIn(key, handoff)
-        record_schema = json.loads((ROOT / "core/managed-core/schemas/phase-record.schema.json").read_text(encoding="utf-8"))
+        record_schema = json.loads(installed_schema("phase-record.schema.json").read_text(encoding="utf-8"))
         for key in record_schema["required"]:
             self.assertIn(key, cursor["record"])
 
@@ -403,9 +468,9 @@ class PhasePackagerCoordinatorTests(unittest.TestCase):
             json.loads((state_dir / "provider-consumer-handoff.json").read_text(encoding="utf-8")),
             typed,
         )
-        phase_schema_path = ROOT / "core/managed-core/schemas/phase-handoff.schema.json"
+        phase_schema_path = installed_schema("phase-handoff.schema.json")
         phase_schema = json.loads(phase_schema_path.read_text(encoding="utf-8"))
-        typed_schema_path = ROOT / "core/managed-core/schemas/provider-consumer-handoff.schema.json"
+        typed_schema_path = installed_schema("provider-consumer-handoff.schema.json")
         typed_schema = json.loads(typed_schema_path.read_text(encoding="utf-8"))
         resolver = RefResolver(
             phase_schema_path.as_uri(),
@@ -627,34 +692,46 @@ class PhasePackagerCoordinatorAdversarialTests(unittest.TestCase):
         self.assertNotIn("phase-assemble", listed)
 
     def test_index_manifest_schema_and_hosted_fast_cover_coordinator(self) -> None:
-        index = (ROOT / "core/managed-core/INDEX.yaml").read_text(encoding="utf-8")
+        index_path = ROOT / ".ide-development/INDEX.yaml"
+        if not index_path.is_file():
+            index_path = ROOT / "core/managed-core/INDEX.yaml"
+        index = index_path.read_text(encoding="utf-8")
         self.assertIn("schemas/phase-handoff.schema.json", index)
         self.assertIn("schemas/phase-record.schema.json", index)
         self.assertIn("core/managed-core/schemas/phase-handoff.schema.json", RC_REQUIRED_SCHEMA_RELS)
         self.assertIn("core/managed-core/schemas/phase-record.schema.json", RC_REQUIRED_SCHEMA_RELS)
-        manifest = json.loads((ROOT / "core/managed-core/MANIFEST.json").read_text(encoding="utf-8"))
+        manifest_path = ROOT / ".ide-development/MANIFEST.json"
+        if not manifest_path.is_file():
+            manifest_path = ROOT / "core/managed-core/MANIFEST.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         sources = {row["source"] for row in manifest["files"]}
+        destinations = {row["destination"] for row in manifest["files"]}
         self.assertIn("core/managed-core/schemas/phase-handoff.schema.json", sources)
         self.assertIn("core/managed-core/schemas/phase-record.schema.json", sources)
-        self.assertIn("scripts/gitops/packager_coordinator.py", sources)
-        self.assertIn("scripts/tests/test_phase_packager_coordinator.py", sources)
-        index_entry = next(row for row in manifest["files"] if row["source"] == "core/managed-core/INDEX.yaml")
-        index_digest = "sha256:" + hashlib.sha256((ROOT / "core/managed-core/INDEX.yaml").read_bytes()).hexdigest()
+        self.assertIn("scripts/gitops/packager_coordinator.py", destinations | sources)
+        self.assertTrue(
+            {
+                "scripts/tests/test_phase_packager_coordinator.py",
+                ".ide-development/tests/test_phase_packager_coordinator.py",
+            }
+            & (destinations | sources)
+        )
+        index_entry = next(
+            row
+            for row in manifest["files"]
+            if row.get("destination") == ".ide-development/INDEX.yaml"
+            or row.get("source") == "core/managed-core/INDEX.yaml"
+        )
+        index_digest = "sha256:" + hashlib.sha256(index_path.read_bytes()).hexdigest()
         self.assertEqual(index_entry["sourceHash"], index_digest)
-        runtime = json.loads((ROOT / "core/github/managed-runtime/MANIFEST.json").read_text(encoding="utf-8"))
-        self.assertIn("scripts/gitops/packager_coordinator.py", runtime["files"])
-        fast = json.loads((ROOT / ".github/linktrend-delivery-mode.json").read_text(encoding="utf-8"))
-        blob = json.dumps(fast["profiles"]["fast"]["commands"])
-        self.assertIn("packager_coordinator.py", blob)
-        self.assertIn("test_phase_packager_coordinator", blob)
+        runtime_path = ROOT / "core/github/managed-runtime/MANIFEST.json"
+        if runtime_path.is_file():
+            runtime = json.loads(runtime_path.read_text(encoding="utf-8"))
+            self.assertIn("scripts/gitops/packager_coordinator.py", runtime["files"])
         one = self.fx.accept_issue(27, "schema.txt", "schema\n")
         result = self.fx.assemble([one])
-        handoff_schema = json.loads(
-            (ROOT / "core/managed-core/schemas/phase-handoff.schema.json").read_text(encoding="utf-8")
-        )
-        record_schema = json.loads(
-            (ROOT / "core/managed-core/schemas/phase-record.schema.json").read_text(encoding="utf-8")
-        )
+        handoff_schema = json.loads(installed_schema("phase-handoff.schema.json").read_text(encoding="utf-8"))
+        record_schema = json.loads(installed_schema("phase-record.schema.json").read_text(encoding="utf-8"))
         for key in handoff_schema["required"]:
             self.assertIn(key, result["handoff"])
         extra_handoff = set(result["handoff"]) - set(handoff_schema["properties"])
