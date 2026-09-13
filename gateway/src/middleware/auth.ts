@@ -79,29 +79,96 @@ const platformClaimsSchema = z.object({
   org_id: z.string().uuid(), org_entitlements: z.array(z.string().uuid()),
 }).passthrough();
 
-/** Verifies the local HS256 contract adapter. Production stays fail-closed until the live OIDC verifier is configured. */
-export function requirePlatformInvocationClaim(env: AppEnv) {
+/** Platform PACI JWKS key. Production accepts ES256 P-256 signing keys only. */
+export type PlatformJwk = CryptoJsonWebKey & { kid?: string; use?: string; kty?: string; crv?: string };
+/** Resolves a Platform PACI signing key by kid. */
+export interface PlatformJwksProvider { get(kid: string): Promise<PlatformJwk | undefined>; }
+
+/** Bounded remote JWKS cache for Platform PACI ES256 keys. Unknown kids trigger at most one refresh per 30 seconds. */
+export class RemotePlatformJwksProvider implements PlatformJwksProvider {
+  private readonly keys = new Map<string, PlatformJwk>();
+  private expiresAt = 0;
+  private lastUnknownRefresh = 0;
+  private inFlight?: Promise<void>;
+  constructor(private readonly url: string, private readonly ttlMs: number, private readonly fetcher: typeof fetch = fetch) {}
+  async get(kid: string): Promise<PlatformJwk | undefined> {
+    const now = Date.now();
+    if (now < this.expiresAt && this.keys.has(kid)) return this.keys.get(kid);
+    if (now < this.expiresAt && !this.keys.has(kid)) {
+      if (now - this.lastUnknownRefresh < 30_000) return undefined;
+      this.lastUnknownRefresh = now;
+    }
+    await this.refresh();
+    return this.keys.get(kid);
+  }
+  private async refresh() {
+    if (this.inFlight) return this.inFlight;
+    this.inFlight = (async () => {
+      const response = await this.fetcher(this.url, { headers: { accept: 'application/json' } });
+      if (!response.ok) throw new Error(`Platform JWKS unavailable (${response.status})`);
+      const body = await response.json() as { keys?: PlatformJwk[] };
+      if (!Array.isArray(body.keys) || body.keys.length > 20) throw new Error('Platform JWKS payload is invalid');
+      const next = new Map<string, PlatformJwk>();
+      for (const key of body.keys) {
+        if (key.kty === 'EC' && key.crv === 'P-256' && key.use === 'sig' && typeof key.kid === 'string') next.set(key.kid, key);
+      }
+      this.keys.clear();
+      for (const [id, key] of next) this.keys.set(id, key);
+      this.expiresAt = Date.now() + Math.min(this.ttlMs, 300_000);
+    })().finally(() => { this.inFlight = undefined; });
+    return this.inFlight;
+  }
+}
+
+function acceptPlatformClaims(env: AppEnv, claims: z.infer<typeof platformClaimsSchema>, req: Request, next: NextFunction): void {
+  const now = Math.floor(Date.now() / 1000);
+  const audience = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
+  if (claims.iss !== env.PLATFORM_JWT_ISSUER || !audience.includes(env.PLATFORM_JWT_AUDIENCE)) throw new HttpError(401, 'invalid Platform token issuer or audience');
+  if (claims.exp <= now || (claims.nbf !== undefined && claims.nbf > now)) throw new HttpError(401, 'Platform token is expired or not active');
+  if (!req.linkService || claims.service !== req.linkService || !claims.org_entitlements.includes(claims.org_id)) throw new HttpError(403, 'Platform service or organisation entitlement denied');
+  req.platformInvocation = { orgId: claims.org_id, service: claims.service, subject: claims.sub };
+  next();
+}
+
+function verifyPlatformEs256(encodedHeader: string, encodedClaims: string, encodedSignature: string, jwk: PlatformJwk): boolean {
+  return verifySignature(
+    'SHA256',
+    Buffer.from(`${encodedHeader}.${encodedClaims}`),
+    { key: createPublicKey({ key: jwk, format: 'jwk' }), dsaEncoding: 'ieee-p1363' },
+    Buffer.from(encodedSignature, 'base64url'),
+  );
+}
+
+/**
+ * Verifies Platform PACI invocation tokens.
+ * HS256 is test-only. Every non-test environment requires a configured issuer, audience, and JWKS URL and verifies ES256 with kid.
+ */
+export function requirePlatformInvocationClaim(env: AppEnv, injectedProvider?: PlatformJwksProvider) {
+  const productionProvider = injectedProvider ?? (env.PLATFORM_JWKS_URL ? new RemotePlatformJwksProvider(env.PLATFORM_JWKS_URL, env.PLATFORM_JWKS_CACHE_TTL_SECONDS * 1000) : undefined);
   return (req: Request, _res: Response, next: NextFunction): void => {
     try {
-      if (env.NODE_ENV === 'production' || !env.PLATFORM_JWT_TEST_SECRET) throw new HttpError(503, 'live Platform JWT verifier is not configured');
       const value = req.header('authorization');
       if (!value?.startsWith('Bearer ')) throw new HttpError(401, 'missing Platform bearer token');
       const parts = value.slice(7).split('.');
       if (parts.length !== 3) throw new HttpError(401, 'invalid Platform bearer token');
       const [encodedHeader, encodedClaims, encodedSignature] = parts;
-      const header = JSON.parse(Buffer.from(encodedHeader, 'base64url').toString('utf8')) as { alg?: string; typ?: string };
-      if (header.alg !== 'HS256' || header.typ !== 'JWT') throw new HttpError(401, 'unsupported Platform token algorithm');
-      const expected = createHmac('sha256', env.PLATFORM_JWT_TEST_SECRET).update(`${encodedHeader}.${encodedClaims}`).digest();
-      const supplied = Buffer.from(encodedSignature, 'base64url');
-      if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) throw new HttpError(401, 'invalid Platform token signature');
-      const claims = platformClaimsSchema.parse(JSON.parse(Buffer.from(encodedClaims, 'base64url').toString('utf8')));
-      const now = Math.floor(Date.now() / 1000);
-      const audience = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
-      if (claims.iss !== env.PLATFORM_JWT_ISSUER || !audience.includes(env.PLATFORM_JWT_AUDIENCE)) throw new HttpError(401, 'invalid Platform token issuer or audience');
-      if (claims.exp <= now || (claims.nbf !== undefined && claims.nbf > now)) throw new HttpError(401, 'Platform token is expired or not active');
-      if (!req.linkService || claims.service !== req.linkService || !claims.org_entitlements.includes(claims.org_id)) throw new HttpError(403, 'Platform service or organisation entitlement denied');
-      req.platformInvocation = { orgId: claims.org_id, service: claims.service, subject: claims.sub };
-      next();
+      const header = JSON.parse(Buffer.from(encodedHeader, 'base64url').toString('utf8')) as { alg?: string; typ?: string; kid?: string };
+      if (header.typ !== 'JWT') throw new HttpError(401, 'unsupported Platform token type');
+      if (env.NODE_ENV === 'test') {
+        if (header.alg !== 'HS256' || !env.PLATFORM_JWT_TEST_SECRET) throw new HttpError(503, 'Platform test JWT verifier is not configured');
+        const expected = createHmac('sha256', env.PLATFORM_JWT_TEST_SECRET).update(`${encodedHeader}.${encodedClaims}`).digest();
+        const supplied = Buffer.from(encodedSignature, 'base64url');
+        if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) throw new HttpError(401, 'invalid Platform token signature');
+        acceptPlatformClaims(env, platformClaimsSchema.parse(JSON.parse(Buffer.from(encodedClaims, 'base64url').toString('utf8'))), req, next);
+        return;
+      }
+      if (header.alg !== 'ES256' || !header.kid) throw new HttpError(401, 'Platform token requires ES256 and kid');
+      if (!env.PLATFORM_JWT_ISSUER || !env.PLATFORM_JWT_AUDIENCE || !productionProvider) throw new HttpError(503, 'live Platform JWT verifier is not configured');
+      productionProvider.get(header.kid).then((jwk) => {
+        if (!jwk) throw new HttpError(401, 'Platform signing key is unknown');
+        if (!verifyPlatformEs256(encodedHeader, encodedClaims, encodedSignature, jwk)) throw new HttpError(401, 'invalid Platform token signature');
+        acceptPlatformClaims(env, platformClaimsSchema.parse(JSON.parse(Buffer.from(encodedClaims, 'base64url').toString('utf8'))), req, next);
+      }).catch((error) => next(error instanceof HttpError ? error : error instanceof z.ZodError ? new HttpError(401, 'invalid Platform token claims') : new HttpError(503, 'Platform JWKS verifier unavailable')));
     } catch (error) { next(error instanceof z.ZodError ? new HttpError(401, 'invalid Platform token claims') : error); }
   };
 }

@@ -90,4 +90,20 @@ describe('runtime dispatch HTTP routes', () => {
     const { app, headers } = fixture(new RuntimeDispatchService({ activationInterfaceSupported: false }));
     await request(app).post('/v1/runtime/activations').set(headers).send(body({ idempotency_key: 'runtime-dispatch-http-unavailable' })).expect(503);
   });
+
+  it('fails closed on production runtime dispatch without Platform JWKS and never accepts HS256', async () => {
+    const env = {
+      NODE_ENV: 'production',
+      REPLAY_WINDOW_SECONDS: 60,
+      serviceTokens: new Map([['ide-client', 'ltfx.ph.d27582b366.v1']]),
+      hmacSecrets: new Map(),
+      PLATFORM_JWT_TEST_SECRET: 'ltfx.runtime.dispatch.test.ts.platformjwttestsecre.15.1.v1',
+      PLATFORM_JWT_ISSUER: 'https://platform.example.test',
+      PLATFORM_JWT_AUDIENCE: 'lautowork',
+    } as AppEnv;
+    const app = createApp({ env, nonceStore: new NonceStore(60), runtimeDispatchService: new RuntimeDispatchService({ activationInterfaceSupported: true }) } as AppDeps);
+    const headers = { 'x-link-service': 'ide-client', 'x-link-service-token': 'ltfx.ph.d27582b366.v1', authorization: `Bearer ${token()}` };
+    const missingJwks = await request(app).post('/v1/runtime/activations').set(headers).send(body()).expect(503);
+    expect(missingJwks.body.error).toMatch(/live Platform JWT verifier/);
+  });
 });
