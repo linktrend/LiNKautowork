@@ -1,4 +1,4 @@
-import { createHmac, randomUUID } from 'node:crypto';
+import { createHmac, generateKeyPairSync, randomUUID, sign } from 'node:crypto';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { createApp, type AppDeps } from '../src/app.js';
@@ -102,8 +102,14 @@ describe('runtime dispatch HTTP routes', () => {
       PLATFORM_JWT_AUDIENCE: 'lautowork',
     } as AppEnv;
     const app = createApp({ env, nonceStore: new NonceStore(60), runtimeDispatchService: new RuntimeDispatchService({ activationInterfaceSupported: true }) } as AppDeps);
-    const headers = { 'x-link-service': 'ide-client', 'x-link-service-token': 'ltfx.ph.d27582b366.v1', authorization: `Bearer ${token()}` };
-    const missingJwks = await request(app).post('/v1/runtime/activations').set(headers).send(body()).expect(503);
+    const hs256Headers = { 'x-link-service': 'ide-client', 'x-link-service-token': 'ltfx.ph.d27582b366.v1', authorization: `Bearer ${token()}` };
+    const hs256 = await request(app).post('/v1/runtime/activations').set(hs256Headers).send(body()).expect(401);
+    expect(hs256.body.error).toMatch(/ES256/);
+    const { privateKey } = generateKeyPairSync('ec', { namedCurve: 'P-256' });
+    const header = Buffer.from(JSON.stringify({ alg: 'ES256', typ: 'JWT', kid: 'key-1' })).toString('base64url');
+    const claims = Buffer.from(JSON.stringify({ iss: env.PLATFORM_JWT_ISSUER, aud: env.PLATFORM_JWT_AUDIENCE, sub: 'caller', exp: Math.floor(Date.now() / 1000) + 3600, service: 'ide-client', org_id: ORG, org_entitlements: [ORG] })).toString('base64url');
+    const es256 = `${header}.${claims}.${sign('SHA256', Buffer.from(`${header}.${claims}`), { key: privateKey, dsaEncoding: 'ieee-p1363' }).toString('base64url')}`;
+    const missingJwks = await request(app).post('/v1/runtime/activations').set({ ...hs256Headers, authorization: `Bearer ${es256}` }).send(body()).expect(503);
     expect(missingJwks.body.error).toMatch(/live Platform JWT verifier/);
   });
 });
