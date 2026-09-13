@@ -6,6 +6,7 @@ export default defineConfig({
     include: [
       'gateway/tests/**/*.test.ts',
       'packages/automation-catalog/test/**/*.test.mjs',
+      'scripts/tests/**/*.test.mjs',
     ],
     coverage: {
       enabled: false,
