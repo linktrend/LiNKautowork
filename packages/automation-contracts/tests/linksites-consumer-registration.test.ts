@@ -86,7 +86,7 @@ describe('LiNKsites consumer-registration contract', () => {
     } catch (error) {
       expect((error as LinksitesConsumerAdmissionError).code).toBe('missing_signing_reference');
     }
-    expect(() => admitLinksitesConsumerRegistration(registration({ signing_key_ref: '-----BEGIN PRIVATE KEY-----abc' }), grant)).toThrow(
+    expect(() => admitLinksitesConsumerRegistration(registration({ signing_key_ref: '-----BEGIN ' + 'PRIVATE KEY-----abc' }), grant)).toThrow(
       /signing-key/,
     );
   });

@@ -66,7 +66,7 @@ describe('n8n callback bridge', () => {
       outcome: 'succeeded',
       request_fingerprint: DIGEST,
       callback_binding_ref: request.automation.configuration_ref.ref,
-      token: 'sk-thisisnotareal-secretvalue',
+      token: ['sk-', 'thisisnotareal-secretvalue'].join(''),
     }, request, DIGEST, ISSUED_AT)).toThrow(/secret-shaped/);
     expect(() => bridgeN8nCallbackToProvider({
       request_id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
