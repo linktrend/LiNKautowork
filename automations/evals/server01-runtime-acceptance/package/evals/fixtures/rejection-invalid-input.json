@@ -1,0 +1,4 @@
+{
+  "input": { "unexpected_field": true },
+  "failure_class": "validation"
+}

@@ -1,0 +1,114 @@
+{
+  "schema_version": "0.1",
+  "suite_id": "server01-runtime-acceptance-suite",
+  "automation_id": "server01-runtime-acceptance",
+  "automation_version": "0.1.0",
+  "required_runtime": { "engine": "n8n", "n8n_version": "2.30.0" },
+  "pass_threshold": 1,
+  "cases": [
+    {
+      "case_id": "success-output-contract",
+      "case_type": "happy_path",
+      "fixture_ref": "fixtures/success-output-contract.json",
+      "expected": {
+        "outcome": "success",
+        "assertions": ["Mocked output status is exactly ok.", "Mocked n8n dispatch remains false."],
+        "receipt_fields": ["release_id", "instance_id", "execution_id", "status", "latency_ms"]
+      },
+      "side_effect_mode": "mocked"
+    },
+    {
+      "case_id": "no-side-effects",
+      "case_type": "side_effect_safety",
+      "fixture_ref": "fixtures/no-side-effects.json",
+      "expected": {
+        "outcome": "no_side_effect",
+        "assertions": ["The workflow has no credentialed or external-action node.", "The workflow remains inactive after evaluation."],
+        "receipt_fields": ["release_id", "execution_id", "status"]
+      },
+      "side_effect_mode": "prohibited"
+    },
+    {
+      "case_id": "rejection-invalid-input",
+      "case_type": "validation",
+      "fixture_ref": "fixtures/rejection-invalid-input.json",
+      "expected": { "outcome": "controlled_failure", "assertions": ["Invalid input is rejected before mock dispatch."] },
+      "side_effect_mode": "prohibited"
+    },
+    {
+      "case_id": "duplicate-request",
+      "case_type": "idempotency",
+      "fixture_ref": "fixtures/duplicate-request.json",
+      "expected": { "outcome": "controlled_failure", "assertions": ["Duplicate idempotency key replays the committed execution identity."] },
+      "side_effect_mode": "prohibited"
+    },
+    {
+      "case_id": "cancel-before-dispatch",
+      "case_type": "authorization",
+      "fixture_ref": "fixtures/cancel-before-dispatch.json",
+      "expected": { "outcome": "controlled_failure", "assertions": ["Cancel before queue prevents mock n8n activation."] },
+      "side_effect_mode": "prohibited"
+    },
+    {
+      "case_id": "cancel-after-queued",
+      "case_type": "regression",
+      "fixture_ref": "fixtures/cancel-after-queued.json",
+      "expected": { "outcome": "controlled_failure", "assertions": ["Cancel after queue is terminal without a second mock dispatch."] },
+      "side_effect_mode": "prohibited"
+    },
+    {
+      "case_id": "timeout-exhausted",
+      "case_type": "upstream_failure",
+      "fixture_ref": "fixtures/timeout-exhausted.json",
+      "expected": { "outcome": "controlled_failure", "assertions": ["Timeout is classified as timed_out without live n8n."] },
+      "side_effect_mode": "mocked"
+    },
+    {
+      "case_id": "provider-outage",
+      "case_type": "upstream_failure",
+      "fixture_ref": "fixtures/provider-outage.json",
+      "expected": { "outcome": "controlled_failure", "assertions": ["Provider outage is unavailable or HOLD, never dispatched."] },
+      "side_effect_mode": "mocked"
+    },
+    {
+      "case_id": "callback-replay",
+      "case_type": "compatibility",
+      "fixture_ref": "fixtures/callback-replay.json",
+      "expected": { "outcome": "controlled_failure", "assertions": ["Replayed callback fails closed without mutating the receipt."] },
+      "side_effect_mode": "mocked"
+    },
+    {
+      "case_id": "late-callback",
+      "case_type": "regression",
+      "fixture_ref": "fixtures/late-callback.json",
+      "expected": { "outcome": "success", "assertions": ["Late callback returns the original terminal receipt."] },
+      "side_effect_mode": "mocked"
+    },
+    {
+      "case_id": "kill-switch-blocked",
+      "case_type": "authorization",
+      "fixture_ref": "fixtures/kill-switch-blocked.json",
+      "expected": { "outcome": "controlled_failure", "assertions": ["Kill switch blocks mock activation before queue."] },
+      "side_effect_mode": "prohibited"
+    },
+    {
+      "case_id": "restart-continuity",
+      "case_type": "regression",
+      "fixture_ref": "fixtures/restart-continuity.json",
+      "expected": { "outcome": "success", "assertions": ["Restart replays queued identity without a second mock dispatch."] },
+      "side_effect_mode": "mocked"
+    },
+    {
+      "case_id": "privacy-redaction",
+      "case_type": "privacy",
+      "fixture_ref": "fixtures/privacy-redaction.json",
+      "expected": { "outcome": "success", "assertions": ["Receipt redacts sensitive fixture fields."] },
+      "side_effect_mode": "none"
+    }
+  ],
+  "evidence_policy": {
+    "retain": ["case_result", "assertion_result", "release_hash", "runtime_version", "receipt_hash"],
+    "redact": ["Do not persist fixture input values outside the mock harness.", "Never retain credentials, tokens, or raw n8n payloads."],
+    "independent_verdict_required": true
+  }
+}
