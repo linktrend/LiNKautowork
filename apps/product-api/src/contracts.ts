@@ -3,7 +3,8 @@ import { z } from 'zod';
 export const productRoleSchema = z.enum(['visitor', 'client_member', 'client_admin', 'operator', 'approver']);
 export type ProductRole = z.infer<typeof productRoleSchema>;
 export const platformIdentitySchema = z.object({ sub: z.string().min(1).max(200), org_id: z.string().uuid(), roles: z.array(productRoleSchema).min(1), iss: z.string(), aud: z.union([z.string(), z.array(z.string())]), exp: z.number().int(), nbf: z.number().int().optional(), jti: z.string().min(8).max(200).optional() }).strict();
-export type PlatformIdentity = z.infer<typeof platformIdentitySchema>;
+/** Authenticated Product API actor; PACI identities intentionally carry no application role. */
+export type PlatformIdentity = z.infer<typeof platformIdentitySchema> & { authentication?: 'test' | 'paci'; permittedOperations?: readonly string[] };
 
 export const errorEnvelopeSchema = z.object({ error: z.object({ code: z.string(), message: z.string(), correlationId: z.string() }) });
 export const actionSchema = z.object({ action: z.enum(['pause', 'resume']), reason: z.string().min(3).max(280), idempotencyKey: z.string().min(8).max(128) }).strict();
