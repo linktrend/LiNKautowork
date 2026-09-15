@@ -14,3 +14,6 @@ stable
 as $$
   select current_setting('request.jwt.claim.org_id', true) = target_org_id::text;
 $$;
+
+-- Dedicated runtime fixture for older Product API-only migration harnesses.
+do $$ begin if not exists(select 1 from pg_roles where rolname='svc_lautowork_product_api') then create role svc_lautowork_product_api nologin; end if; end $$;

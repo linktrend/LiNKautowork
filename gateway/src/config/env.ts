@@ -10,6 +10,10 @@ const envSchema = z.object({
   PLATFORM_JWT_AUDIENCE: z.string().default('linkautowork-gateway'),
   PLATFORM_JWT_TEST_SECRET: z.string().min(32).optional(),
   PLATFORM_JWKS_URL: z.string().url().optional(),
+  PLATFORM_INTROSPECTION_URL: z.string().url().optional(),
+  PLATFORM_CLIENT_ID: z.string().min(1).optional(),
+  PLATFORM_CLIENT_KEY_ID: z.string().min(1).optional(),
+  PLATFORM_CLIENT_ASSERTION_SECRET_RESOURCE: z.string().min(1).optional(),
   PLATFORM_JWKS_CACHE_TTL_SECONDS: z.coerce.number().int().min(30).max(300).default(300),
   LINK_HMAC_SHARED_SECRETS: z.string().optional(),
   LINK_HMAC_SHARED_SECRETS_SECRET_NAME: z.string().default('LINKAUTOWORK_LINK_HMAC_SHARED_SECRETS'),
@@ -33,6 +37,8 @@ const envSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY_SECRET_NAME: z
     .string()
     .default('LINKAUTOWORK_SUPABASE_SERVICE_ROLE_KEY'),
+  SUPABASE_API_KEY: z.string().min(1).optional(),
+  SUPABASE_API_KEY_SECRET_NAME: z.string().default(''),
   SUPABASE_AUDIT_RPC: z.string().default('linkautowork_write_audit_run'),
   SUPABASE_RUNTIME_JWT: z.string().min(1).optional(),
   SUPABASE_RUNTIME_JWT_SECRET_NAME: z.string().default('LINKAUTOWORK_SUPABASE_RUNTIME_JWT'),
@@ -109,6 +115,7 @@ export async function loadEnv(
     slackSigningSecret,
     supabaseRuntimeJwt,
     evalReceiptVerifierKeys,
+    supabaseApiKey,
   ] = await Promise.all([
     resolveRequiredSecret({
       directValue: parsed.LINK_HMAC_SHARED_SECRETS,
@@ -128,12 +135,12 @@ export async function loadEnv(
       projectId: gcpProjectId,
       label: 'LINK_CONTROL_TOKEN',
     }),
-    resolveRequiredSecret({
+    parsed.NODE_ENV === 'test' ? resolveRequiredSecret({
       directValue: parsed.SUPABASE_SERVICE_ROLE_KEY,
       secretName: parsed.SUPABASE_SERVICE_ROLE_KEY_SECRET_NAME,
       projectId: gcpProjectId,
       label: 'SUPABASE_SERVICE_ROLE_KEY',
-    }),
+    }) : Promise.resolve(''),
     resolveRequiredSecret({
       directValue: parsed.N8N_API_KEY,
       secretName: parsed.N8N_API_KEY_SECRET_NAME,
@@ -151,6 +158,7 @@ export async function loadEnv(
       projectId: gcpProjectId,
     }),
     resolveOptionalSecret({ directValue: parsed.EVAL_RECEIPT_VERIFIER_KEYS, secretName: parsed.EVAL_RECEIPT_VERIFIER_KEYS_SECRET_NAME, projectId: gcpProjectId }),
+    resolveOptionalSecret({ directValue: parsed.SUPABASE_API_KEY, secretName: parsed.SUPABASE_API_KEY_SECRET_NAME, projectId: gcpProjectId }),
   ]);
 
   return {
@@ -163,6 +171,7 @@ export async function loadEnv(
     N8N_API_KEY: n8nApiKey,
     SLACK_SIGNING_SECRET: slackSigningSecret,
     SUPABASE_RUNTIME_JWT: supabaseRuntimeJwt,
+    SUPABASE_API_KEY: supabaseApiKey,
     hmacSecrets: parseKeyValuePairs(linkHmacSharedSecrets),
     serviceTokens: parseKeyValuePairs(linkServiceTokens),
     evalReceiptVerifierKeys: parseKeyValuePairs(evalReceiptVerifierKeys ?? ''),

@@ -106,7 +106,7 @@ describe('runtime dispatch HTTP routes', () => {
     const hs256 = await request(app).post('/v1/runtime/activations').set(hs256Headers).send(body()).expect(401);
     expect(hs256.body.error).toMatch(/ES256/);
     const { privateKey } = generateKeyPairSync('ec', { namedCurve: 'P-256' });
-    const header = Buffer.from(JSON.stringify({ alg: 'ES256', typ: 'JWT', kid: 'key-1' })).toString('base64url');
+    const header = Buffer.from(JSON.stringify({ alg: 'ES256', typ: 'paci+jwt', kid: 'key-1' })).toString('base64url');
     const claims = Buffer.from(JSON.stringify({ iss: env.PLATFORM_JWT_ISSUER, aud: env.PLATFORM_JWT_AUDIENCE, sub: 'caller', exp: Math.floor(Date.now() / 1000) + 3600, service: 'ide-client', org_id: ORG, org_entitlements: [ORG] })).toString('base64url');
     const es256 = `${header}.${claims}.${sign('SHA256', Buffer.from(`${header}.${claims}`), { key: privateKey, dsaEncoding: 'ieee-p1363' }).toString('base64url')}`;
     const missingJwks = await request(app).post('/v1/runtime/activations').set({ ...hs256Headers, authorization: `Bearer ${es256}` }).send(body()).expect(503);

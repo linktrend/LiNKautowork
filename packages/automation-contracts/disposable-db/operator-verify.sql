@@ -1,8 +1,8 @@
 \set ON_ERROR_STOP on
 
 select set_config('request.jwt.claim.org_id', '00000000-0000-0000-0000-000000000002', false);
-select set_config('request.jwt.claim.role', 'service_role', false);
-select set_config('request.jwt.claims', '{"role":"service_role","org_id":"00000000-0000-0000-0000-000000000002","sub":"operator-sql-verifier"}', false);
+select set_config('request.jwt.claim.role', 'svc_lautowork_product_api', false);
+select set_config('request.jwt.claims', '{"role":"svc_lautowork_product_api","org_id":"00000000-0000-0000-0000-000000000002","sub":"operator-sql-verifier"}', false);
 select set_config('request.headers', '{"x-link-org-id":"00000000-0000-0000-0000-000000000002"}', false);
 
 do $$
@@ -29,10 +29,13 @@ select public.linkautowork_product_operator_action('librarian-candidates','a0000
 select public.linkautowork_product_operator_action('certification','30000000-0000-0000-0000-000000000002','approve','Approve independent evaluation receipt','operator-certification-approve','1','operator-sql-verifier');
 
 select public.linkautowork_product_operator_action('deployments','50000000-0000-0000-0000-000000000011','canary','Start candidate canary with approved evidence','operator-deployment-canary','1','operator-sql-verifier');
+-- This direct runtime read is outside Product API audit delegation.
+select set_config('request.jwt.claims', '{"role":"svc_lautowork_runtime","org_id":"00000000-0000-0000-0000-000000000002"}', false);
 select public.assert_true(
   (public.linkautowork_deployment_authority('00000000-0000-0000-0000-000000000002','50000000-0000-0000-0000-000000000011')->>'sampleCount')::integer >= 1,
   'operator canary has durable execution evidence before promotion'
 );
+select set_config('request.jwt.claims', '{"role":"svc_lautowork_product_api","org_id":"00000000-0000-0000-0000-000000000002","sub":"operator-sql-verifier"}', false);
 select public.linkautowork_product_operator_action('deployments','50000000-0000-0000-0000-000000000011','promote','Promote after canary sample and health evidence','operator-deployment-promote','2','operator-sql-verifier');
 select public.linkautowork_product_operator_action('deployments','50000000-0000-0000-0000-000000000011','rollback','Restore the certified baseline','operator-deployment-rollback','3','operator-sql-verifier');
 
