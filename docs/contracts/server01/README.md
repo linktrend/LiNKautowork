@@ -108,3 +108,34 @@ File 17 also revokes legacy Product API transport grants. Its scoped role is the
 only accepted Product API transport; nested provisioning requires the existing
 audit reservation before delegating to the durable command guard. Browser
 identity remains separate and is not inferred from machine PACI claims.
+
+## Product API PACI consumer contract
+
+The production Product API now consumes the same canonical Platform envelope:
+ES256, `typ=paci+jwt`, one exact `linkautowork-product-api` audience, the
+configured issuer and `ACTIVE_TENANT_UUID`, and exact `autowork` / `read`
+claims. It accepts PACI only for organisation-scoped client GET routes. It does
+not translate a service identity into client, operator, or approver roles, so
+mutations and operator-wide reads remain denied to this least-privilege token.
+The explicit `NODE_ENV=test` HS256 fixture boundary is unchanged.
+
+Configure `PRODUCT_API_PACI_JWKS_URL` as exactly
+`<issuer>/.well-known/jwks.json` and `PRODUCT_API_PACI_INTROSPECTION_URL` as
+exactly `<issuer>/oauth/introspect`. Introspection uses the RFC 7662 form fields
+`token`, `token_type_hint=access_token`, `client_id`, `client_assertion_type`,
+and an endpoint-bound ES256 `private_key_jwt`. The client key is read only from
+the numeric version named by
+`PRODUCT_API_PACI_CLIENT_ASSERTION_SECRET_RESOURCE`; the Product API receives
+the existing ADC Docker secret and never receives an issuer private key.
+
+Every protected read performs uncached introspection and requires the exact
+active response fields and identity binding published by Platform. Inactive or
+revoked credentials, malformed responses, identity drift, unknown signing
+kids, and JWKS or introspection outages fail closed. `PRODUCT_API_SESSION_URL`
+and the former RS256 verifier are unsupported.
+
+Platform must independently admit an org/audience/service/operation-scoped
+introspection grant for the Product API client before live use. The inspected
+Platform Issue 282 source intentionally denies Product API introspection, and
+the inspected Issue 290 ref does not yet contain a successor grant. This source
+checkpoint therefore makes no live-readiness or deployment claim.

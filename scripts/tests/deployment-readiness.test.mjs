@@ -144,6 +144,19 @@ describe('AW-05 Server01 deployment readiness', () => {
     expect(traefik).not.toMatch(/PRODUCT_API_PRIVATE_ADDRESS>:8090/);
   });
 
+  it('wires the Product API canonical PACI verifier without a session endpoint', () => {
+    const productApi = compose.split(/^  product-api:\n/m)[1]?.split(/^  [a-z].*:$/m)[0] ?? '';
+    expect(env).toMatch(/^PRODUCT_API_JWT_AUDIENCE=linkautowork-product-api$/m);
+    expect(env).toMatch(/^PRODUCT_API_PACI_JWKS_URL=.*\/\.well-known\/jwks\.json$/m);
+    expect(env).toMatch(/^PRODUCT_API_PACI_INTROSPECTION_URL=.*\/oauth\/introspect$/m);
+    expect(env).toMatch(/^PRODUCT_API_PACI_CLIENT_ID=server01-lautowork-product-api$/m);
+    expect(env).toMatch(/^PRODUCT_API_PACI_CLIENT_ASSERTION_SECRET_RESOURCE=<PINNED_GSM_PRODUCT_API_CLIENT_PEM_VERSION_RESOURCE>$/m);
+    expect(env).not.toMatch(/^PRODUCT_API_SESSION_URL=/m);
+    expect(productApi).toMatch(/PRODUCT_API_ORG_ID: \$\{ACTIVE_TENANT_UUID\}/);
+    expect(productApi).toMatch(/GOOGLE_APPLICATION_CREDENTIALS: \/run\/secrets\/gcp-service-account/);
+    expect(productApi).not.toMatch(/PRODUCT_API_SESSION_URL/);
+  });
+
   it('fails the verifier when NATS is attached beyond autowork-events', () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'aw05-nats-'));
     const polluted = path.join(tmp, 'docker-compose.yml');

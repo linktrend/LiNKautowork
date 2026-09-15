@@ -16,10 +16,14 @@ function stubProductionEnvironment(): void {
   const values = {
     PRODUCT_API_POSTGREST_URL: 'http://postgrest.test/rest/v1',
     PRODUCT_API_RUNTIME_TOKEN: runtimeToken(),
-    PRODUCT_API_SESSION_URL: 'http://session.test/check',
     PRODUCT_API_JWT_ISSUER: 'https://issuer.example',
     PRODUCT_API_JWT_AUDIENCE: 'linkautowork-product-api',
-    PRODUCT_API_JWKS_URL: 'http://jwks.test/keys',
+    PRODUCT_API_ORG_ID: '00000000-0000-4000-8000-000000000002',
+    PRODUCT_API_PACI_JWKS_URL: 'https://issuer.example/.well-known/jwks.json',
+    PRODUCT_API_PACI_INTROSPECTION_URL: 'https://issuer.example/oauth/introspect',
+    PRODUCT_API_PACI_CLIENT_ID: 'server01-lautowork-product-api',
+    PRODUCT_API_PACI_CLIENT_KEY_ID: 'product-api-key-1',
+    PRODUCT_API_PACI_CLIENT_ASSERTION_SECRET_RESOURCE: 'projects/disposable-project/secrets/product-api-client/versions/1',
     PRODUCT_API_WEBHOOK_SECRET: 'ltfx.ph.e48b2e34cf.v1',
     PRODUCT_API_CLIENT_ORIGIN: clientOrigin,
     PRODUCT_API_OPERATOR_ORIGIN: operatorOrigin,
@@ -45,6 +49,14 @@ describe('Product API production constructor', () => {
 
     expect(() => createProductionServer({ ...process.env, PRODUCT_API_CLIENT_ORIGIN: undefined })).toThrow('PRODUCT_API_CLIENT_ORIGIN');
     expect(() => createProductionServer({ ...process.env, PRODUCT_API_OPERATOR_ORIGIN: undefined })).toThrow('PRODUCT_API_OPERATOR_ORIGIN');
+  });
+
+  it('requires exact PACI endpoints, audience, org binding, and a pinned GSM client key version', () => {
+    stubProductionEnvironment();
+    expect(() => createProductionServer({ ...process.env, PRODUCT_API_ORG_ID: undefined })).toThrow('PRODUCT_API_ORG_ID');
+    expect(() => createProductionServer({ ...process.env, PRODUCT_API_JWT_AUDIENCE: 'other-api' })).toThrow('linkautowork-product-api');
+    expect(() => createProductionServer({ ...process.env, PRODUCT_API_PACI_INTROSPECTION_URL: 'https://other.example/oauth/introspect' })).toThrow('exactly match');
+    expect(() => createProductionServer({ ...process.env, PRODUCT_API_PACI_CLIENT_ASSERTION_SECRET_RESOURCE: 'projects/disposable-project/secrets/product-api-client/versions/latest' })).toThrow('numeric GSM version');
   });
 
   it('mounts PostgREST RPCs at the supplied restUrl root when rpcPath is empty', async () => {
