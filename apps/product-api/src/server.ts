@@ -1,4 +1,5 @@
 import { createProductApi, type ProductApiEnv } from './app.js';
+import { gsmProductApiPaciIntrospector, RemoteProductApiPaciJwksProvider } from './paci.js';
 import { createPostgrestRpc } from './postgrest.js';
 import { PostgrestProductApiService, PostgrestProvisioningAdapter } from './service.js';
 
@@ -7,14 +8,21 @@ function required(env: NodeJS.ProcessEnv, name: string): string { const value = 
 /** Constructs the production server only from runtime configuration; test auth is impossible here. */
 export function createProductionServer(env: NodeJS.ProcessEnv = process.env) {
   const rpc = createPostgrestRpc({ restUrl: required(env, 'PRODUCT_API_POSTGREST_URL'), runtimeToken: required(env, 'PRODUCT_API_RUNTIME_TOKEN'), apiKey: env.PRODUCT_API_API_KEY });
-  const sessionUrl = required(env, 'PRODUCT_API_SESSION_URL');
+  const issuer = required(env, 'PRODUCT_API_JWT_ISSUER');
+  const audience = required(env, 'PRODUCT_API_JWT_AUDIENCE');
+  const jwksUrl = required(env, 'PRODUCT_API_PACI_JWKS_URL');
+  const introspectionUrl = required(env, 'PRODUCT_API_PACI_INTROSPECTION_URL');
+  const paciClientId = required(env, 'PRODUCT_API_PACI_CLIENT_ID');
+  if (audience !== 'linkautowork-product-api') throw new Error('PRODUCT_API_JWT_AUDIENCE must be linkautowork-product-api');
+  const issuerUrl = new URL(issuer);
+  if (issuerUrl.protocol !== 'https:' || issuer !== issuerUrl.origin || issuerUrl.pathname !== '/' || issuerUrl.search || issuerUrl.hash || issuerUrl.username || issuerUrl.password || jwksUrl !== `${issuer}/.well-known/jwks.json` || introspectionUrl !== `${issuer}/oauth/introspect`) throw new Error('Product API PACI endpoints must exactly match the root HTTPS issuer');
+  const cacheSeconds = Number.parseInt(env.PRODUCT_API_PACI_JWKS_CACHE_TTL_SECONDS ?? '300', 10);
+  if (!Number.isSafeInteger(cacheSeconds) || cacheSeconds < 30 || cacheSeconds > 300) throw new Error('PRODUCT_API_PACI_JWKS_CACHE_TTL_SECONDS must be between 30 and 300');
   const apiEnv: ProductApiEnv = {
-    nodeEnv: 'production', issuer: required(env, 'PRODUCT_API_JWT_ISSUER'), audience: required(env, 'PRODUCT_API_JWT_AUDIENCE'), platformJwksUrl: required(env, 'PRODUCT_API_JWKS_URL'), webhookSecret: required(env, 'PRODUCT_API_WEBHOOK_SECRET'),
+    nodeEnv: 'production', issuer, audience, orgId: required(env, 'PRODUCT_API_ORG_ID'), paciClientId, webhookSecret: required(env, 'PRODUCT_API_WEBHOOK_SECRET'),
     publicClientOrigin: required(env, 'PRODUCT_API_CLIENT_ORIGIN'), operatorConsoleOrigin: required(env, 'PRODUCT_API_OPERATOR_ORIGIN'),
-    sessionActive: async (subject, sessionId) => {
-      const response = await fetch(sessionUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ subject, sessionId }) });
-      return response.ok && (await response.json() as { active?: boolean }).active === true;
-    },
+    paciJwks: new RemoteProductApiPaciJwksProvider(jwksUrl, cacheSeconds * 1000),
+    paciIntrospector: gsmProductApiPaciIntrospector(introspectionUrl, paciClientId, required(env, 'PRODUCT_API_PACI_CLIENT_KEY_ID'), required(env, 'PRODUCT_API_PACI_CLIENT_ASSERTION_SECRET_RESOURCE')),
   };
   return createProductApi(apiEnv, new PostgrestProductApiService(rpc, new PostgrestProvisioningAdapter(rpc)));
 }

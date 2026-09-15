@@ -30,6 +30,15 @@ AW-01 database role names in `deploy/prod/.env.example` are placeholders.
 Platform owns live grants. Broad `service_role` is not a production runtime
 identity.
 
+Product API production identity uses Platform PACI ES256 plus authenticated,
+uncached introspection. The environment example contains endpoint URLs, client
+identity, registered key id, and a pinned GSM SecretVersion resource only; it
+contains no PEM or secret value. The JWKS and introspection URLs must be the
+canonical paths on `PRODUCT_API_JWT_ISSUER`, and the audience remains exactly
+`linkautowork-product-api`. Do not restore `PRODUCT_API_SESSION_URL`, RS256, or
+an offline/decoded-token fallback. Until Platform admits the Product API's
+narrow introspection ACL, protected production reads remain fail-closed.
+
 ## Names-only configuration (disposable / local)
 
 1. Validate GSM **names**: `ops/render-env-from-gsm.sh prod --placeholders`
