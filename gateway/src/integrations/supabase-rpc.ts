@@ -54,6 +54,17 @@ export class SupabaseAuditClient implements ExecutionStore {
   constructor(private readonly env: AppEnv) {}
 
   private headers(): Record<string, string> {
+    if (this.env.NODE_ENV !== 'test') {
+      const token = this.env.SUPABASE_RUNTIME_JWT;
+      if (!token) throw new Error('organisation-scoped automation runtime credential is not configured');
+      let claims: { role?: string; org_id?: string };
+      try { claims = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString()); }
+      catch { throw new Error('invalid gateway runtime credential configuration'); }
+      // Configuration guard only: PostgREST verifies the JWT signature/lifetime.
+      if (claims.role !== 'svc_lautowork_gateway' || claims.org_id !== this.env.ACTIVE_TENANT_UUID) throw new Error('gateway runtime credential must match dedicated role and active organisation');
+      return { ...(this.env.SUPABASE_API_KEY ? { apikey: this.env.SUPABASE_API_KEY } : {}),
+        authorization: `Bearer ${token}`, 'content-type': 'application/json', 'x-link-org-id': this.env.ACTIVE_TENANT_UUID };
+    }
     return {
       apikey: this.env.SUPABASE_SERVICE_ROLE_KEY,
       authorization: `Bearer ${this.env.SUPABASE_SERVICE_ROLE_KEY}`,
@@ -204,7 +215,9 @@ export class SupabaseAuditClient implements ExecutionStore {
   }
 
   async listActiveKillSwitches(): Promise<ActiveKillSwitch[]> {
-    const response = await this.callRpc('linkautowork_active_killswitches', {}, 'active-killswitches');
+    const response = this.env.NODE_ENV === 'test'
+      ? await this.callRpc('linkautowork_active_killswitches', {}, 'active-killswitches')
+      : await this.callRpc('linkautowork_gateway_active_killswitches', { p_org_id: this.env.ACTIVE_TENANT_UUID }, 'active-killswitches', this.env.ACTIVE_TENANT_UUID);
     const payload = (await response.json()) as unknown;
     if (!Array.isArray(payload)) {
       return [];

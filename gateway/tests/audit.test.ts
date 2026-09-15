@@ -4,7 +4,7 @@ import type { MissionEnvelope } from '../src/contracts/types.js';
 import { AuditService } from '../src/services/audit.js';
 import { SupabaseAuditClient, type AuditRecord } from '../src/integrations/supabase-rpc.js';
 
-const auditEnv = {
+const auditEnv = { NODE_ENV: 'test',
   SUPABASE_URL: 'https://project.supabase.co',
   SUPABASE_AUDIT_RPC: 'linkautowork_write_audit_run',
   SUPABASE_SERVICE_ROLE_KEY: 'service-role-key',

@@ -12,7 +12,7 @@ sign_jwt() {
     const crypto=require("node:crypto");
     const enc=(value)=>Buffer.from(JSON.stringify(value)).toString("base64url");
     const header=enc({alg:"HS256",typ:"JWT"});
-    const payload=enc({role:"svc_lautowork_runtime",org_id:process.env.JWT_ORG,exp:Math.floor(Date.now()/1000)+300});
+    const payload=enc({role:"svc_lautowork_product_api",org_id:process.env.JWT_ORG,exp:Math.floor(Date.now()/1000)+300});
     const sig=crypto.createHmac("sha256",process.env.JWT_SECRET).update(`${header}.${payload}`).digest("base64url");
     process.stdout.write(`${header}.${payload}.${sig}`);'
 }

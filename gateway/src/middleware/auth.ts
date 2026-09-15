@@ -6,6 +6,8 @@ import { verifyLinkSignature } from '../lib/signing.js';
 import { createHmac, createPublicKey, timingSafeEqual, verify as verifySignature } from 'node:crypto';
 import type { JsonWebKey as CryptoJsonWebKey } from 'node:crypto';
 import { z } from 'zod';
+import { acceptPaciClaims, isActivePaciIdentity } from './paci-claims.js';
+import { configuredPaciIntrospector, type PlatformIntrospector } from './paci-introspection.js';
 
 export function requireSignedIngress(env: AppEnv, nonceStore: NonceStore) {
   return (req: Request, _res: Response, next: NextFunction): void => {
@@ -143,7 +145,8 @@ function verifyPlatformEs256(encodedHeader: string, encodedClaims: string, encod
  * Verifies Platform PACI invocation tokens.
  * HS256 is test-only. Every non-test environment requires a configured issuer, audience, and JWKS URL and verifies ES256 with kid.
  */
-export function requirePlatformInvocationClaim(env: AppEnv, injectedProvider?: PlatformJwksProvider) {
+export function requirePlatformInvocationClaim(env: AppEnv, injectedProvider?: PlatformJwksProvider, injectedIntrospector?: PlatformIntrospector) {
+  const introspector = injectedIntrospector ?? (env.NODE_ENV !== 'test' ? configuredPaciIntrospector(env) : undefined);
   const productionProvider = injectedProvider ?? (env.PLATFORM_JWKS_URL ? new RemotePlatformJwksProvider(env.PLATFORM_JWKS_URL, env.PLATFORM_JWKS_CACHE_TTL_SECONDS * 1000) : undefined);
   return (req: Request, _res: Response, next: NextFunction): void => {
     try {
@@ -153,8 +156,8 @@ export function requirePlatformInvocationClaim(env: AppEnv, injectedProvider?: P
       if (parts.length !== 3) throw new HttpError(401, 'invalid Platform bearer token');
       const [encodedHeader, encodedClaims, encodedSignature] = parts;
       const header = JSON.parse(Buffer.from(encodedHeader, 'base64url').toString('utf8')) as { alg?: string; typ?: string; kid?: string };
-      if (header.typ !== 'JWT') throw new HttpError(401, 'unsupported Platform token type');
       if (env.NODE_ENV === 'test') {
+        if (header.typ !== 'JWT') throw new HttpError(401, 'unsupported Platform token type');
         if (header.alg !== 'HS256' || !env.PLATFORM_JWT_TEST_SECRET) throw new HttpError(503, 'Platform test JWT verifier is not configured');
         const expected = createHmac('sha256', env.PLATFORM_JWT_TEST_SECRET).update(`${encodedHeader}.${encodedClaims}`).digest();
         const supplied = Buffer.from(encodedSignature, 'base64url');
@@ -163,11 +166,23 @@ export function requirePlatformInvocationClaim(env: AppEnv, injectedProvider?: P
         return;
       }
       if (header.alg !== 'ES256' || !header.kid) throw new HttpError(401, 'Platform token requires ES256 and kid');
+      if (header.typ !== 'paci+jwt' || Object.keys(header).some((key) => !['alg', 'typ', 'kid'].includes(key))) throw new HttpError(401, 'unsupported Platform token type or header');
       if (!env.PLATFORM_JWT_ISSUER || !env.PLATFORM_JWT_AUDIENCE || !productionProvider) throw new HttpError(503, 'live Platform JWT verifier is not configured');
-      productionProvider.get(header.kid).then((jwk) => {
+      productionProvider.get(header.kid).then(async (jwk) => {
         if (!jwk) throw new HttpError(401, 'Platform signing key is unknown');
         if (!verifyPlatformEs256(encodedHeader, encodedClaims, encodedSignature, jwk)) throw new HttpError(401, 'invalid Platform token signature');
-        acceptPlatformClaims(env, platformClaimsSchema.parse(JSON.parse(Buffer.from(encodedClaims, 'base64url').toString('utf8'))), req, next);
+        // The authenticated caller service selects a durable consumer binding;
+        // it is not an invented field in the Platform token.
+        if (!req.linkService) throw new HttpError(403, 'authenticated consumer service is required');
+        const operation = req.method === 'GET' ? 'read' : req.params?.operation ?? 'execute';
+        const identity = acceptPaciClaims(JSON.parse(Buffer.from(encodedClaims, 'base64url').toString('utf8')), env.PLATFORM_JWT_ISSUER, env.PLATFORM_JWT_AUDIENCE, operation);
+        if (!introspector) throw new HttpError(503, 'live Platform introspection is not configured');
+        let active: unknown;
+        try { active = await introspector.introspect(value.slice(7)); }
+        catch { throw new HttpError(503, 'Platform introspection unavailable'); }
+        if (!isActivePaciIdentity(active, identity)) throw new HttpError(401, 'Platform token is inactive or identity changed');
+        req.platformInvocation = { orgId: identity.orgId, service: req.linkService, subject: identity.subject };
+        next();
       }).catch((error) => next(error instanceof HttpError ? error : error instanceof z.ZodError ? new HttpError(401, 'invalid Platform token claims') : new HttpError(503, 'Platform JWKS verifier unavailable')));
     } catch (error) { next(error instanceof z.ZodError ? new HttpError(401, 'invalid Platform token claims') : error); }
   };
