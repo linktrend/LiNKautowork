@@ -13,6 +13,23 @@ do $$ begin
    raise exception 'Product API bypasses audited RPCs';
  end if;
 end $$;
+do $$ declare old_role text; begin
+ foreach old_role in array array['service_role','svc_lautowork_runtime'] loop
+   if exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+     where n.nspname='public' and p.proname like 'linkautowork\_product\_%' escape '\'
+       and has_function_privilege(old_role,p.oid,'execute')) then
+     raise exception 'legacy role retains Product API transport';
+   end if;
+   perform set_config('request.jwt.claims',jsonb_build_object('role',old_role)::text,true);
+   perform set_config('request.headers','{"x-link-org-id":"00000000-0000-0000-0000-0000000000d1"}',true);
+   begin
+     perform lautowork.assert_product_api_transport_authorized('00000000-0000-0000-0000-0000000000d1');
+     raise exception 'legacy JWT role remains authorized';
+   exception when others then
+     if sqlerrm <> 'Product API organization authorization denied' then raise; end if;
+   end;
+ end loop;
+end $$;
 set local role svc_lautowork_product_api;
 select set_config('request.jwt.claims','{}',true);
 select set_config('request.headers','{"x-link-org-id":"00000000-0000-0000-0000-0000000000d1","x-link-request-claims":"{\"role\":\"svc_lautowork_product_api\"}"}',true);

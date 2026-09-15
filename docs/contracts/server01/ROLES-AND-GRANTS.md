@@ -13,3 +13,10 @@ Broad `service_role` is **not** a production runtime identity.
 | `svc_lautowork_runtime` | nologin | Legacy Autowork runtime (predecessor packet) | existing grants plus execute on Server01 RPCs for disposable continuity | accept/callback/receipt |
 
 Organisation isolation uses forced RLS on org-scoped `server01_*` tables: `org_id` must equal `request.jwt.claim.org_id`. Cross-organisation rows are invisible. n8n cannot read Autowork control or Server01 invocation tables.
+
+AW08 file 17 retires `service_role` and `svc_lautowork_runtime` from the Product
+API transport namespace. File 18 adds `svc_lautowork_gateway` execute rights on
+v2 resolve/accept/callback, active pause, and an org-filtered kill-switch wrapper.
+The production gateway accepts only an org-bound dedicated-role JWT and uses a
+separate publishable API key. Legacy runtime grants remain historical and are
+not the production gateway credential route.

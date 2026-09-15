@@ -74,3 +74,37 @@ already receipted through file 16, back up, isolated-restore, then apply only fi
 17. Recovery uses the prior application plus forward-fix; do not run file 16's
 disposable down migration after file 17. The scoped SQL fixture proves audited
 read/finalization and rejects forged role headers, wrong org and missing audit.
+
+## AW08 live gateway supplement
+
+File 18, `20260915033750_lautowork_gateway_scoped_runtime.sql`, grants the
+`svc_lautowork_gateway` role only the existing v2 resolve/accept/callback/pause
+RPCs and an org-filtered kill-switch reader. It adds no direct execution-table
+write, provisioning, Product API, or operator grant. The first sixteen migration
+files remain byte-for-byte unchanged. Fresh deployment applies all eighteen;
+an installation receipted through sixteen applies seventeen and eighteen after
+backup and isolated restore verification.
+
+The production gateway uses `SUPABASE_RUNTIME_JWT` with role
+`svc_lautowork_gateway` and `org_id` equal to `ACTIVE_TENANT_UUID`.
+`SUPABASE_API_KEY` is a separate publishable routing key when the API gateway
+requires it. Production never loads `SUPABASE_SERVICE_ROLE_KEY`. The minimum
+private workflow uses `POST /v2/instances/:instanceId/operations/precheck/execute`
+with a certified release and a durable consumer/instance binding. Database
+acceptance and idempotency precede the real n8n webhook; the disabled v1
+in-memory activation adapter is not live execution evidence.
+
+Production PACI accepts only ES256 `paci+jwt` and the namespaced
+`platform.auth-claims/1.1.0` envelope. It verifies matching identities, issuer,
+audience, lifetime, `autowork` scope and exact requested operation, then performs
+uncached live introspection. The gateway client needs a separately admitted,
+org/audience/service-scoped `introspect` grant. Configure the exact client ID,
+registered kid, endpoint, and pinned GSM version resource in the production env
+contract. Only the runtime signer reads the client PEM via its dedicated ADC
+identity. No issuer private key is used. Missing configuration, revocation,
+identity mismatch, or unavailable authority prevents dispatch.
+
+File 17 also revokes legacy Product API transport grants. Its scoped role is the
+only accepted Product API transport; nested provisioning requires the existing
+audit reservation before delegating to the durable command guard. Browser
+identity remains separate and is not inferred from machine PACI claims.

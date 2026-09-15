@@ -659,6 +659,12 @@ describe('server01 live-interface disposable postgres', () => {
     expect(() => db.sql(`begin;\n${migration}\n${fixture}\nrollback;`)).not.toThrow();
   });
 
+  it('admits dedicated gateway durable execution and denies cross-org or excess grants', () => {
+    const migration = upSql('supabase/migrations/20260915033750_lautowork_gateway_scoped_runtime.sql');
+    const fixture = readFileSync(join(repoRoot, 'docs/contracts/server01/fixtures/gateway-scoped-runtime.sql'), 'utf8');
+    expect(() => db.sql(`begin;\n${migration}\n${fixture}\nrollback;`)).not.toThrow();
+  });
+
   it('rolls back the additive migration on a disposable database only', () => {
     db.sql(downSql(additiveRel));
     const gone = db.sql(`

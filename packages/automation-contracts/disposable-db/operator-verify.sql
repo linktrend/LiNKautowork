@@ -1,8 +1,8 @@
 \set ON_ERROR_STOP on
 
 select set_config('request.jwt.claim.org_id', '00000000-0000-0000-0000-000000000002', false);
-select set_config('request.jwt.claim.role', 'service_role', false);
-select set_config('request.jwt.claims', '{"role":"service_role","org_id":"00000000-0000-0000-0000-000000000002","sub":"operator-sql-verifier"}', false);
+select set_config('request.jwt.claim.role', 'svc_lautowork_product_api', false);
+select set_config('request.jwt.claims', '{"role":"svc_lautowork_product_api","org_id":"00000000-0000-0000-0000-000000000002","sub":"operator-sql-verifier"}', false);
 select set_config('request.headers', '{"x-link-org-id":"00000000-0000-0000-0000-000000000002"}', false);
 
 do $$

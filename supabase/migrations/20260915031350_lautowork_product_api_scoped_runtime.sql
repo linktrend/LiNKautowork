@@ -17,9 +17,20 @@ begin
     role_name:=coalesce(role_name,nullif(current_setting('request.jwt.claim.role',true),''));
     header_org:=coalesce(header_org,nullif(current_setting('request.jwt.claim.org_id',true),''));
   end if;
-  if role_name is null or role_name not in ('service_role','svc_lautowork_runtime','svc_lautowork_product_api') or p_target_org_id is null or header_org is distinct from p_target_org_id::text then
+  if role_name is distinct from 'svc_lautowork_product_api' or p_target_org_id is null or header_org is distinct from p_target_org_id::text then
     raise exception 'Product API organization authorization denied';
   end if;
+end $$;
+
+-- Retire only the Product API surface from legacy broad identities. The frozen
+-- namespace contains public transport entrypoints, including unaudited predecessors.
+do $$ declare f record; begin
+ for f in select p.oid::regprocedure signature from pg_proc p
+   join pg_namespace n on n.oid=p.pronamespace
+   where n.nspname='public' and p.proname like 'linkautowork\_product\_%' escape '\'
+ loop
+   execute format('revoke all on function %s from public, service_role, svc_lautowork_runtime', f.signature);
+ end loop;
 end $$;
 
 grant execute on function public.linkautowork_product_reserve_audit(text,text,text,text,text)
@@ -58,5 +69,60 @@ grant execute on function public.linkautowork_product_published_products(integer
 
 -- Existing HMAC-verified webhook ingress retains its finite replay/order guard.
 grant execute on function public.linkautowork_product_record_provider_event(text,text,uuid,timestamptz,bigint) to svc_lautowork_product_api;
+
+create or replace function lautowork.assert_command_authorized(p_target_org_id uuid)
+returns void
+language plpgsql
+stable
+set search_path = lautowork, pg_temp
+as $$
+declare
+  claims jsonb := coalesce(nullif(current_setting('request.jwt.claims', true), '')::jsonb, '{}'::jsonb);
+  headers jsonb := coalesce(nullif(current_setting('request.headers', true), '')::jsonb, '{}'::jsonb);
+  delegated_claims jsonb := coalesce(nullif(headers->>'x-link-request-claims', '')::jsonb, '{}'::jsonb);
+  test_context boolean := coalesce(current_setting('lautowork.test_context', true), 'off') = 'on';
+  claim_org_id text;
+  claim_role text;
+  transport_role text;
+  header_org_id text;
+begin
+  claim_org_id := claims->>'org_id';
+  claim_role := claims->>'role';
+  transport_role := claim_role;
+  header_org_id := headers->>'x-link-org-id';
+  if test_context then
+    claim_org_id := coalesce(claim_org_id, nullif(current_setting('request.jwt.claim.org_id', true), ''));
+    claim_role := coalesce(claim_role, nullif(current_setting('request.jwt.claim.role', true), ''));
+    transport_role := claim_role;
+    header_org_id := coalesce(header_org_id, claim_org_id);
+  end if;
+  if transport_role = 'service_role'
+     and delegated_claims->>'role' = 'service_role' then
+    claim_org_id := coalesce(claim_org_id, delegated_claims->>'org_id');
+  end if;
+  -- Audited Product API provisioning calls the durable runtime internally.
+  -- Its scoped transport delegates org authority only through the audit guard.
+  if transport_role = 'svc_lautowork_product_api' then
+    perform lautowork.assert_product_api_authorized(p_target_org_id);
+    return;
+  end if;
+  if p_target_org_id is null or claim_org_id is distinct from p_target_org_id::text then
+    raise exception 'command is not authorized for target organization';
+  end if;
+  if header_org_id is distinct from p_target_org_id::text then
+    raise exception 'request organization header does not match authorized organization';
+  end if;
+
+  if claim_role in ('service_role', 'svc_lautowork_runtime') then
+    return;
+  end if;
+
+  if platform.has_org_access(p_target_org_id, 'client_viewer') then
+    return;
+  end if;
+
+  raise exception 'caller has no membership authority for target organization';
+end;
+$$;
 
 -- Recovery is forward-fix only. This additive grant migration deletes no data.

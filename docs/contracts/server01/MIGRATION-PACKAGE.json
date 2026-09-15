@@ -111,15 +111,21 @@
     {
       "order": 17,
       "path": "supabase/migrations/20260915031350_lautowork_product_api_scoped_runtime.sql",
-      "sha256": "0ba0f94da288b9801c190f2601f554b2e9a4516d50f1a2aa934d1f099ce57477",
-      "bytes": 3993
+      "sha256": "e272396ed58c345add88c8b45c0c37a46962afda25ee4671df1d11f4951c3492",
+      "bytes": 6712
+    },
+    {
+      "order": 18,
+      "path": "supabase/migrations/20260915033750_lautowork_gateway_scoped_runtime.sql",
+      "sha256": "e2f1fc140cf26b2692a5843ea70e59f73be98c8d3e61ac17a119068bd41e1cdc",
+      "bytes": 4731
     }
   ],
   "contracts": [
     {
       "path": "docs/contracts/server01/README.md",
-      "sha256": "bf43b69e4f2b1579fcf0c0bdf4e7ff3718389d2be79066aeab7f430729ea0cc1",
-      "bytes": 4895
+      "sha256": "7be807cb63c751a24fd6fde0a860fb837def8ba5ebac3ea56e64f9cfb53923f3",
+      "bytes": 7006
     },
     {
       "path": "docs/contracts/server01/CONTRACT-VERSION-MATRIX.md",
@@ -128,8 +134,8 @@
     },
     {
       "path": "docs/contracts/server01/ROLES-AND-GRANTS.md",
-      "sha256": "d510abf3d364d4673ef47cb61dd9025d35839529cb0cd924f832e3df6761654f",
-      "bytes": 1507
+      "sha256": "7aff17cd5e3e4fc1bf08f1e0a56074c57fb2ca097fc5f99a2e044cdf3ebe2f71",
+      "bytes": 1954
     },
     {
       "path": "docs/contracts/server01/RECOVERY.md",
@@ -148,10 +154,15 @@
     },
     {
       "path": "docs/contracts/server01/fixtures/product-api-scoped-runtime.sql",
-      "sha256": "d16bcde278d1cfdfdb92a27d7691e25728b1fa6694805aeb515ac0b9bab73478",
-      "bytes": 3015
+      "sha256": "38a119e7b2fa761efd3740add54d5a5ae1b15ce751ff05b79c453b9c35242d07",
+      "bytes": 3953
+    },
+    {
+      "path": "docs/contracts/server01/fixtures/gateway-scoped-runtime.sql",
+      "sha256": "dd69855eeb10491fca5047f16099f629fee212b831721189da2be784b89fde1d",
+      "bytes": 5766
     }
   ],
-  "orderedSqlCanonicalSha256": "9156c53a6d358ec4dba12478781cedd9348bc3ec60223261ce3cf5c5655383ab",
+  "orderedSqlCanonicalSha256": "59688b7cc66ce87bd7e06a8a669680c3cbfe6f5939e22e555a2984acfada7ecb",
   "liveApply": "HOLD"
 }
