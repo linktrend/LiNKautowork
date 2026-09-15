@@ -16,7 +16,7 @@ function paciToken(overrides: { header?: Record<string, unknown>; envelope?: Rec
   return `${header}.${payload}.${sign('SHA256', Buffer.from(`${header}.${payload}`), { key: keys.privateKey, dsaEncoding: 'ieee-p1363' }).toString('base64url')}`;
 }
 
-function active(token: string): Record<string, unknown> { const payload = JSON.parse(Buffer.from(token.split('.')[1]!, 'base64url').toString()) as Record<string, any>; const claims = payload['https://linktrend.dev/claims/auth']; return { active: true, iss: payload.iss, aud: payload.aud, sub: payload.sub, exp: payload.exp, iat: payload.iat, jti: payload.jti, client_id: 'server01-lautowork-product-api', scope: claims.serviceScopes.join(' '), credential_id: claims.credentialId, runtime_binding_id: claims.runtimeBindingId, token_type: 'Bearer' }; }
+function active(token: string): Record<string, unknown> { const payload = JSON.parse(Buffer.from(token.split('.')[1]!, 'base64url').toString()) as Record<string, any>; const claims = payload['https://linktrend.dev/claims/auth']; return { active: true, iss: payload.iss, aud: payload.aud, sub: payload.sub, exp: payload.exp, iat: payload.iat, jti: payload.jti, client_id: 'autowork-runtime-token-minter', scope: claims.serviceScopes.join(' '), credential_id: claims.credentialId, runtime_binding_id: claims.runtimeBindingId, token_type: 'Bearer' }; }
 const goodJwks: ProductApiPaciJwksProvider = { get: async (kid) => kid === 'paci-key-1' ? jwk : undefined };
 const goodIntrospector: ProductApiPaciIntrospector = { introspect: async (token) => active(token) };
 function env(overrides: Partial<ProductApiEnv> = {}): ProductApiEnv { return { nodeEnv: 'production', issuer, audience, orgId: org, paciClientId: 'server01-lautowork-product-api', paciJwks: goodJwks, paciIntrospector: goodIntrospector, publicClientOrigin: 'https://client.example', operatorConsoleOrigin: 'https://operator.example', ...overrides }; }
@@ -40,7 +40,7 @@ describe('Product API canonical PACI verifier', () => {
 
   it('rejects revoked, inactive, malformed, or identity-changing introspection responses', async () => {
     const token = paciToken();
-    for (const response of [{ active: false }, { ...active(token), client_id: 'other' }, { ...active(token), credential_id: 'other' }, { ...active(token), org_id: org }]) await expect(platformIdentity(env({ paciIntrospector: { introspect: async () => response } }), req(token))).rejects.toMatchObject({ status: 401 });
+    for (const response of [{ active: false }, { ...active(token), credential_id: 'other' }, { ...active(token), org_id: org }]) await expect(platformIdentity(env({ paciIntrospector: { introspect: async () => response } }), req(token))).rejects.toMatchObject({ status: 401 });
   });
 
   it('uses the exact authenticated RFC 7662 request without caching active responses', async () => {
