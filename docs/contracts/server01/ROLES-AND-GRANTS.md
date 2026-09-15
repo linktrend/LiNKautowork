@@ -5,7 +5,7 @@ Broad `service_role` is **not** a production runtime identity.
 | Role | Login | Purpose | Data grants | Mutating RPCs |
 |---|---|---|---|---|
 | `svc_lautowork_gateway` | nologin | Gateway admission | insert/update invocation, prepared intent, outbox; insert credential-binding refs | `server01_accept_invocation` |
-| `svc_lautowork_product_api` | nologin | Product API / operator reads | SELECT on `server01_*` only | none |
+| `svc_lautowork_product_api` | nologin | Product API / operator reads | SELECT on `server01_*`; audited Product API RPC access, no direct audit/table writes | finite audited Product API commands after file 17 |
 | `svc_lautowork_runtime_dispatch` | nologin | n8n callback/receipt bridge | insert receipts/callbacks; update intent/outbox | `server01_admit_callback`, `server01_write_receipt` |
 | `svc_lautowork_n8n` | nologin | n8n internal schema only | **no** grants on `lautowork.server01_*` | none |
 | `svc_observer` | nologin | Read-only operations | SELECT | none |

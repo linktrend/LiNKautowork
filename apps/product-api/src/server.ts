@@ -6,7 +6,7 @@ function required(env: NodeJS.ProcessEnv, name: string): string { const value = 
 
 /** Constructs the production server only from runtime configuration; test auth is impossible here. */
 export function createProductionServer(env: NodeJS.ProcessEnv = process.env) {
-  const rpc = createPostgrestRpc({ restUrl: required(env, 'PRODUCT_API_POSTGREST_URL'), serviceRoleToken: required(env, 'PRODUCT_API_SERVICE_ROLE_TOKEN') });
+  const rpc = createPostgrestRpc({ restUrl: required(env, 'PRODUCT_API_POSTGREST_URL'), runtimeToken: required(env, 'PRODUCT_API_RUNTIME_TOKEN'), apiKey: env.PRODUCT_API_API_KEY });
   const sessionUrl = required(env, 'PRODUCT_API_SESSION_URL');
   const apiEnv: ProductApiEnv = {
     nodeEnv: 'production', issuer: required(env, 'PRODUCT_API_JWT_ISSUER'), audience: required(env, 'PRODUCT_API_JWT_AUDIENCE'), platformJwksUrl: required(env, 'PRODUCT_API_JWKS_URL'), webhookSecret: required(env, 'PRODUCT_API_WEBHOOK_SECRET'),

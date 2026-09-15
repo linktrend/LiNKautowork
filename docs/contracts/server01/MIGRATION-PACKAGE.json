@@ -107,13 +107,19 @@
       "path": "supabase/migrations/20260910_000001_lautowork_server01_live_interfaces.sql",
       "sha256": "8f2ca0aa453dd69013497a14676c526442a08d1b4640c5fd7c29d41a06d80aa2",
       "bytes": 31237
+    },
+    {
+      "order": 17,
+      "path": "supabase/migrations/20260915031350_lautowork_product_api_scoped_runtime.sql",
+      "sha256": "89f961b9bc37d2810a06bccd454029e4c126bc508b824bb4063b80b43b47be53",
+      "bytes": 3770
     }
   ],
   "contracts": [
     {
       "path": "docs/contracts/server01/README.md",
-      "sha256": "5e99c9ac3015b1269a3c373e109a6f86a4eebeacff9dcc71bf3ffc7fa68da91e",
-      "bytes": 3734
+      "sha256": "bf43b69e4f2b1579fcf0c0bdf4e7ff3718389d2be79066aeab7f430729ea0cc1",
+      "bytes": 4895
     },
     {
       "path": "docs/contracts/server01/CONTRACT-VERSION-MATRIX.md",
@@ -122,8 +128,8 @@
     },
     {
       "path": "docs/contracts/server01/ROLES-AND-GRANTS.md",
-      "sha256": "28957317bccbd8bd9e7833f7ccbf7ea7220af4ed7d3fa7c500a4fbc97622f082",
-      "bytes": 1405
+      "sha256": "d510abf3d364d4673ef47cb61dd9025d35839529cb0cd924f832e3df6761654f",
+      "bytes": 1507
     },
     {
       "path": "docs/contracts/server01/RECOVERY.md",
@@ -139,8 +145,13 @@
       "path": "docs/contracts/server01/fixtures/server01-conformance.sql",
       "sha256": "0ab0aba3a3fafdf765b66b39461eee4924426fda8f5f90c9395c7d1d5291a354",
       "bytes": 4618
+    },
+    {
+      "path": "docs/contracts/server01/fixtures/product-api-scoped-runtime.sql",
+      "sha256": "d16bcde278d1cfdfdb92a27d7691e25728b1fa6694805aeb515ac0b9bab73478",
+      "bytes": 3015
     }
   ],
-  "orderedSqlCanonicalSha256": "0ee450ad52fe75c0b159ba0d03c3389cf149171aff748163cabd45628acd0dd3",
+  "orderedSqlCanonicalSha256": "3082f21db9bd816baffa6679cf2442687f7b088114071c613cb351556a676f9e",
   "liveApply": "HOLD"
 }

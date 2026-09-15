@@ -146,7 +146,7 @@ function applyPredecessor(db: DisposablePostgres): void {
   db.sql(bootstrap);
   for (const entry of packageJson.orderedSql) {
     if (entry.path === additiveRel) {
-      continue;
+      break;
     }
     db.sql(upSql(entry.path));
   }
@@ -651,6 +651,12 @@ describe('server01 live-interface disposable postgres', () => {
        where package_id = 'lautowork.server01.migration-identity/1.0.0';
     `);
     expect(db.sql('select lautowork.server01_package_status();').trim()).toBe('complete');
+  });
+
+  it('upgrades Product API to scoped audited RPCs and rejects forged role or organisation headers', () => {
+    const migration = upSql('supabase/migrations/20260915031350_lautowork_product_api_scoped_runtime.sql');
+    const fixture = readFileSync(join(repoRoot, 'docs/contracts/server01/fixtures/product-api-scoped-runtime.sql'), 'utf8');
+    expect(() => db.sql(`begin;\n${migration}\n${fixture}\nrollback;`)).not.toThrow();
   });
 
   it('rolls back the additive migration on a disposable database only', () => {

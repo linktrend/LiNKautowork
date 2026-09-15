@@ -55,3 +55,22 @@ Existing `npm --prefix packages/automation-contracts run verify:db` remains the 
 ## HOLD
 
 Live Platform service registration, PACI issuer/JWKS/introspection, production logins for `lautowork` / `lautowork_n8n`, and governed application receipts remain **HOLD**. Source work uses fakes only.
+
+## AW08 scoped Product API supplement
+
+File 17, `20260915031350_lautowork_product_api_scoped_runtime.sql`, preserves all
+sixteen predecessor migration bytes. It grants the dedicated Product API role the
+existing audited RPC entrypoints and adds that role to the organisation transport
+guard. It grants neither role inheritance nor table writes nor BYPASSRLS.
+
+Use `PRODUCT_API_RUNTIME_TOKEN` containing a signed PostgREST JWT with role
+`svc_lautowork_product_api`. Platform owns issuance/rotation and the PostgREST
+role binding. If the hosted API gateway requires a key, supply its publishable
+key separately as `PRODUCT_API_API_KEY`. The JWT is never used as an API key or
+copied into browser state. Browser identity remains a separate Platform contract.
+
+Apply the full seventeen-file package for a fresh deployment; for an installation
+already receipted through file 16, back up, isolated-restore, then apply only file
+17. Recovery uses the prior application plus forward-fix; do not run file 16's
+disposable down migration after file 17. The scoped SQL fixture proves audited
+read/finalization and rejects forged role headers, wrong org and missing audit.
