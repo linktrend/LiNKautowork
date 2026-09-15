@@ -124,8 +124,8 @@
   "contracts": [
     {
       "path": "docs/contracts/server01/README.md",
-      "sha256": "7be807cb63c751a24fd6fde0a860fb837def8ba5ebac3ea56e64f9cfb53923f3",
-      "bytes": 7006
+      "sha256": "60ae925a649f63924e5753d92b5a26d6fb0ce73e902bc0506d91b313d874f899",
+      "bytes": 8895
     },
     {
       "path": "docs/contracts/server01/CONTRACT-VERSION-MATRIX.md",
