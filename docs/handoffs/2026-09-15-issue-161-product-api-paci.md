@@ -19,7 +19,7 @@ to a browser, operator, or approver role, so mutation and operator-wide routes
 remain denied. The existing HS256 role fixture remains confined to `NODE_ENV=test`.
 RS256 and `PRODUCT_API_SESSION_URL` have been removed from the production contract.
 
-Focused Product API typecheck and all 39 Product API tests pass. The 14-test
+Focused Product API typecheck and all 40 Product API tests pass. The 14-test
 deployment-readiness suite, release-readiness check, Compose YAML parse, and
 `git diff --check` pass using an existing repository dependency installation.
 The legacy and managed fixture-aware secret scans pass after the official
