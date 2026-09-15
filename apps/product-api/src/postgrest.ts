@@ -36,7 +36,7 @@ export function createPostgrestRpc(config: PostgrestConfig): PostgrestRpc {
       },
       body: JSON.stringify(body),
     });
-    if (!response.ok) throw new Error(`product_persistence_unavailable:${response.status}:response_rejected`);
+    if (!response.ok) throw new Error(`product_persistence_unavailable:${response.status}:${(await response.text()).slice(0, 240)}`);
     return response.json() as Promise<unknown>;
   };
 }
