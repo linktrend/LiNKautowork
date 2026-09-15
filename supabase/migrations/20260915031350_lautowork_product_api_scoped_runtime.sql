@@ -56,4 +56,7 @@ grant execute on function public.linkautowork_product_operator_action_audited(te
   to svc_lautowork_product_api;
 grant execute on function public.linkautowork_product_published_products(integer,text) to svc_lautowork_product_api;
 
+-- Existing HMAC-verified webhook ingress retains its finite replay/order guard.
+grant execute on function public.linkautowork_product_record_provider_event(text,text,uuid,timestamptz,bigint) to svc_lautowork_product_api;
+
 -- Recovery is forward-fix only. This additive grant migration deletes no data.

@@ -111,8 +111,8 @@
     {
       "order": 17,
       "path": "supabase/migrations/20260915031350_lautowork_product_api_scoped_runtime.sql",
-      "sha256": "89f961b9bc37d2810a06bccd454029e4c126bc508b824bb4063b80b43b47be53",
-      "bytes": 3770
+      "sha256": "0ba0f94da288b9801c190f2601f554b2e9a4516d50f1a2aa934d1f099ce57477",
+      "bytes": 3993
     }
   ],
   "contracts": [
@@ -152,6 +152,6 @@
       "bytes": 3015
     }
   ],
-  "orderedSqlCanonicalSha256": "3082f21db9bd816baffa6679cf2442687f7b088114071c613cb351556a676f9e",
+  "orderedSqlCanonicalSha256": "9156c53a6d358ec4dba12478781cedd9348bc3ec60223261ce3cf5c5655383ab",
   "liveApply": "HOLD"
 }

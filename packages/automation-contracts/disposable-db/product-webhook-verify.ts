@@ -17,7 +17,7 @@ const postgrestRetryDelayMs = 500;
 function jwt() {
   const encode = (value: unknown) => Buffer.from(JSON.stringify(value)).toString('base64url');
   const header = encode({ alg: 'HS256', typ: 'JWT' });
-  const payload = encode({ role: 'service_role', org_id: orgId, exp: Math.floor(Date.now() / 1000) + 300 });
+  const payload = encode({ role: 'svc_lautowork_product_api', org_id: orgId, exp: Math.floor(Date.now() / 1000) + 300 });
   return `${header}.${payload}.${createHmac('sha256', postgrestSecret).update(`${header}.${payload}`).digest('base64url')}`;
 }
 
@@ -45,7 +45,7 @@ async function waitForPostgrest(): Promise<void> {
 }
 
 await waitForPostgrest();
-const rawRpc = createPostgrestRpc({ restUrl, rpcPath: '', serviceRoleToken: jwt() });
+const rawRpc = createPostgrestRpc({ restUrl, rpcPath: '', runtimeToken: jwt() });
 const rpc: typeof rawRpc = async (...args) => {
   let lastError: unknown;
   for (let attempt = 1; attempt <= postgrestRetryLimit; attempt += 1) {

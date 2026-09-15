@@ -22,6 +22,7 @@ MIGRATIONS=(
   "$ROOT_DIR/supabase/migrations/20260804_000010_lautowork_operator_operations.sql"
   "$ROOT_DIR/supabase/migrations/20260804_000011_lautowork_governed_commercial_webhooks.sql"
   "$ROOT_DIR/supabase/migrations/20260804_000012_lautowork_durable_audit_outbox.sql"
+  "$ROOT_DIR/supabase/migrations/20260915031350_lautowork_product_api_scoped_runtime.sql"
 )
 APPLIED_MIGRATIONS=()
 trap cleanup EXIT
