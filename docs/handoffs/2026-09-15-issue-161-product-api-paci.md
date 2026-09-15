@@ -6,7 +6,8 @@ it does not claim protected integration, independent review, deployment, or live
 acceptance.
 
 The Product API production verifier now accepts only the canonical Platform PACI
-ES256 `paci+jwt` envelope for exact issuer, `linkautowork-product-api` audience,
+ES256 `paci+jwt` envelope through `jose` for an exact root issuer,
+`linkautowork-product-api` audience,
 configured organisation, service `autowork`, and operation `read`. It verifies
 the exact nested claim binding, a bounded same-origin JWKS key, and an uncached
 RFC 7662 response authenticated with endpoint-bound `private_key_jwt`. The client

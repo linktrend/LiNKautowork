@@ -111,7 +111,8 @@ identity remains separate and is not inferred from machine PACI claims.
 
 ## Product API PACI consumer contract
 
-The production Product API now consumes the same canonical Platform envelope:
+The production Product API now consumes the same canonical Platform envelope
+through the maintained `jose` verifier:
 ES256, `typ=paci+jwt`, one exact `linkautowork-product-api` audience, the
 configured issuer and `ACTIVE_TENANT_UUID`, and exact `autowork` / `read`
 claims. It accepts PACI only for organisation-scoped client GET routes. It does

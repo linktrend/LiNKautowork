@@ -2,7 +2,7 @@ import { generateKeyPairSync, sign, verify } from 'node:crypto';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { createProductApi, platformIdentity, type ProductApiEnv } from '../src/app.ts';
-import { RemoteProductApiPaciIntrospector, type ProductApiPaciIntrospector, type ProductApiPaciJwksProvider } from '../src/paci.ts';
+import { RemoteProductApiPaciIntrospector, RemoteProductApiPaciJwksProvider, type ProductApiPaciIntrospector, type ProductApiPaciJwksProvider } from '../src/paci.ts';
 import { InMemoryProductApiService } from '../src/service.ts';
 
 const issuer = 'https://auth.example.test'; const audience = 'linkautowork-product-api';
@@ -58,5 +58,19 @@ describe('Product API canonical PACI verifier', () => {
     await expect(platformIdentity(env(), req(paciToken({ header: { kid: 'unknown' } })))).rejects.toMatchObject({ status: 401 });
     await expect(platformIdentity(env({ paciJwks: { get: async () => { throw new Error('PACI JWKS unavailable'); } } }), req(paciToken()))).rejects.toMatchObject({ status: 503 });
     await expect(platformIdentity(env({ paciIntrospector: { introspect: async () => { throw new Error('PACI introspection unavailable'); } } }), req(paciToken()))).rejects.toMatchObject({ status: 503 });
+  });
+
+  it('validates every JWKS entry before rejecting collisions and accepts canonical optional metadata', async () => {
+    const provider = (entries: unknown[]) => new RemoteProductApiPaciJwksProvider(`${issuer}/.well-known/jwks.json`, 300_000, async () => new Response(JSON.stringify({ keys: entries })));
+    const withoutOptionalMetadata = { ...jwk, use: undefined, alg: undefined, key_ops: ['verify'] };
+    await expect(provider([withoutOptionalMetadata]).get('paci-key-1')).resolves.toMatchObject({ kid: 'paci-key-1' });
+    for (const invalid of [
+      { ...jwk, key_ops: ['sign'] },
+      { ...jwk, d: 'private-material-is-forbidden' },
+      { ...jwk, use: 'enc' },
+      { ...jwk, x: 'not-a-coordinate' },
+    ]) await expect(provider([invalid]).get('paci-key-1')).rejects.toThrow(/PACI JWKS/);
+    await expect(provider([jwk, { ...jwk, d: 'private-material-is-forbidden' }]).get('paci-key-1')).rejects.toThrow(/PACI JWKS/);
+    await expect(provider([jwk, { ...jwk }]).get('paci-key-1')).rejects.toThrow(/collision/);
   });
 });

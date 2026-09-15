@@ -14,7 +14,8 @@ export function createProductionServer(env: NodeJS.ProcessEnv = process.env) {
   const introspectionUrl = required(env, 'PRODUCT_API_PACI_INTROSPECTION_URL');
   const paciClientId = required(env, 'PRODUCT_API_PACI_CLIENT_ID');
   if (audience !== 'linkautowork-product-api') throw new Error('PRODUCT_API_JWT_AUDIENCE must be linkautowork-product-api');
-  if (new URL(issuer).protocol !== 'https:' || issuer.endsWith('/') || jwksUrl !== `${issuer}/.well-known/jwks.json` || introspectionUrl !== `${issuer}/oauth/introspect`) throw new Error('Product API PACI endpoints must exactly match the HTTPS issuer');
+  const issuerUrl = new URL(issuer);
+  if (issuerUrl.protocol !== 'https:' || issuerUrl.pathname !== '/' || issuerUrl.search || issuerUrl.hash || issuerUrl.username || issuerUrl.password || issuer.endsWith('/') || jwksUrl !== `${issuer}/.well-known/jwks.json` || introspectionUrl !== `${issuer}/oauth/introspect`) throw new Error('Product API PACI endpoints must exactly match the root HTTPS issuer');
   const cacheSeconds = Number.parseInt(env.PRODUCT_API_PACI_JWKS_CACHE_TTL_SECONDS ?? '300', 10);
   if (!Number.isSafeInteger(cacheSeconds) || cacheSeconds < 30 || cacheSeconds > 300) throw new Error('PRODUCT_API_PACI_JWKS_CACHE_TTL_SECONDS must be between 30 and 300');
   const apiEnv: ProductApiEnv = {

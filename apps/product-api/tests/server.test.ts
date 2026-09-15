@@ -56,6 +56,7 @@ describe('Product API production constructor', () => {
     expect(() => createProductionServer({ ...process.env, PRODUCT_API_ORG_ID: undefined })).toThrow('PRODUCT_API_ORG_ID');
     expect(() => createProductionServer({ ...process.env, PRODUCT_API_JWT_AUDIENCE: 'other-api' })).toThrow('linkautowork-product-api');
     expect(() => createProductionServer({ ...process.env, PRODUCT_API_PACI_INTROSPECTION_URL: 'https://other.example/oauth/introspect' })).toThrow('exactly match');
+    expect(() => createProductionServer({ ...process.env, PRODUCT_API_JWT_ISSUER: 'https://issuer.example/path', PRODUCT_API_PACI_JWKS_URL: 'https://issuer.example/path/.well-known/jwks.json', PRODUCT_API_PACI_INTROSPECTION_URL: 'https://issuer.example/path/oauth/introspect' })).toThrow('root HTTPS issuer');
     expect(() => createProductionServer({ ...process.env, PRODUCT_API_PACI_CLIENT_ASSERTION_SECRET_RESOURCE: 'projects/disposable-project/secrets/product-api-client/versions/latest' })).toThrow('numeric GSM version');
   });
 

@@ -1,5 +1,6 @@
-import { createPrivateKey, createPublicKey, randomUUID, sign, verify, type JsonWebKey, type KeyObject } from 'node:crypto';
+import { createPrivateKey, createPublicKey, randomUUID, type JsonWebKey, type KeyObject } from 'node:crypto';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
+import { decodeProtectedHeader, importJWK, jwtVerify, SignJWT, type JWK } from 'jose';
 import { z } from 'zod';
 import type { PlatformIdentity } from './contracts.js';
 
@@ -31,26 +32,39 @@ export interface ProductApiPaciJwksProvider { get(kid: string): Promise<ProductA
 /** Performs one authenticated live PACI introspection request. */
 export interface ProductApiPaciIntrospector { introspect(token: string): Promise<unknown>; }
 
+const PRIVATE_JWK_FIELDS = ['d', 'p', 'q', 'dp', 'dq', 'qi', 'oth', 'k'] as const;
+
+function assertPublicPaciJwk(key: ProductApiPaciJwk): asserts key is ProductApiPaciJwk & { kid: string } {
+  if (key.kty !== 'EC' || key.crv !== 'P-256') throw new Error('PACI JWKS key must be EC P-256');
+  if (key.alg !== undefined && key.alg !== 'ES256') throw new Error('PACI JWKS alg must be ES256 or absent');
+  if (key.use !== undefined && key.use !== 'sig') throw new Error('PACI JWKS use must be sig or absent');
+  if (typeof key.kid !== 'string' || key.kid.trim().length === 0) throw new Error('PACI JWKS kid is invalid');
+  for (const field of PRIVATE_JWK_FIELDS) if (Object.prototype.hasOwnProperty.call(key, field)) throw new Error('PACI JWKS contains private material');
+  if (key.key_ops !== undefined && (!Array.isArray(key.key_ops) || key.key_ops.length !== 1 || key.key_ops[0] !== 'verify')) throw new Error('PACI JWKS key_ops must be exactly verify');
+  for (const coordinate of [key.x, key.y]) if (typeof coordinate !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(coordinate) || Buffer.from(coordinate, 'base64url').length !== 32 || Buffer.from(coordinate, 'base64url').toString('base64url') !== coordinate) throw new Error('PACI JWKS coordinate is invalid');
+  try { createPublicKey({ key, format: 'jwk' }); } catch { throw new Error('PACI JWKS public point is invalid'); }
+}
+
 /** Bounded PACI JWKS cache. Unknown kids cause at most one refresh per 30 seconds. */
 export class RemoteProductApiPaciJwksProvider implements ProductApiPaciJwksProvider {
   private readonly keys = new Map<string, ProductApiPaciJwk>(); private expiresAt = 0; private lastUnknownRefresh = 0; private inFlight?: Promise<void>;
   constructor(private readonly url: string, private readonly ttlMs: number, private readonly fetcher: typeof fetch = fetch) {}
   async get(kid: string): Promise<ProductApiPaciJwk | undefined> { const now = Date.now(); if (now < this.expiresAt && this.keys.has(kid)) return this.keys.get(kid); if (now < this.expiresAt && !this.keys.has(kid)) { if (now - this.lastUnknownRefresh < 30_000) return undefined; this.lastUnknownRefresh = now; } await this.refresh(); return this.keys.get(kid); }
-  private async refresh(): Promise<void> { if (this.inFlight) return this.inFlight; this.inFlight = (async () => { const response = await this.fetcher(this.url, { headers: { accept: 'application/json' }, redirect: 'error', signal: AbortSignal.timeout(5000) }); if (!response.ok) throw new Error('PACI JWKS unavailable'); const body = await response.json() as { keys?: ProductApiPaciJwk[] }; if (!Array.isArray(body.keys) || body.keys.length === 0 || body.keys.length > 20) throw new Error('PACI JWKS payload is invalid'); const next = new Map<string, ProductApiPaciJwk>(); for (const key of body.keys) { if (key.kty === 'EC' && key.crv === 'P-256' && key.use === 'sig' && (key.alg === undefined || key.alg === 'ES256') && typeof key.kid === 'string' && key.kid.trim().length > 0 && !('d' in key)) { if (next.has(key.kid)) throw new Error('PACI JWKS kid collision'); next.set(key.kid, key); } } if (next.size === 0) throw new Error('PACI JWKS has no usable signing keys'); this.keys.clear(); for (const [id, key] of next) this.keys.set(id, key); this.expiresAt = Date.now() + Math.min(this.ttlMs, 300_000); })().finally(() => { this.inFlight = undefined; }); return this.inFlight; }
+  private async refresh(): Promise<void> { if (this.inFlight) return this.inFlight; this.inFlight = (async () => { const response = await this.fetcher(this.url, { headers: { accept: 'application/json' }, redirect: 'error', signal: AbortSignal.timeout(5000) }); if (!response.ok) throw new Error('PACI JWKS unavailable'); const body = await response.json() as { keys?: ProductApiPaciJwk[] }; if (!Array.isArray(body.keys) || body.keys.length === 0 || body.keys.length > 20) throw new Error('PACI JWKS payload is invalid'); const next = new Map<string, ProductApiPaciJwk>(); for (const key of body.keys) { assertPublicPaciJwk(key); if (next.has(key.kid)) throw new Error('PACI JWKS kid collision'); next.set(key.kid, key); } this.keys.clear(); for (const [id, key] of next) this.keys.set(id, key); this.expiresAt = Date.now() + Math.min(this.ttlMs, 300_000); })().finally(() => { this.inFlight = undefined; }); return this.inFlight; }
 }
 
 /** Creates the exact endpoint-bound ES256 private_key_jwt required by Platform PACI. */
-export function productApiClientAssertion(clientId: string, kid: string, endpoint: string, key: KeyObject): string {
+export async function productApiClientAssertion(clientId: string, kid: string, endpoint: string, key: KeyObject): Promise<string> {
   if (key.type !== 'private' || key.asymmetricKeyType !== 'ec' || key.asymmetricKeyDetails?.namedCurve !== 'prime256v1') throw new Error('PACI client signing key must be a private P-256 key');
-  const now = Math.floor(Date.now() / 1000); const header = Buffer.from(JSON.stringify({ alg: 'ES256', typ: 'JWT', kid })).toString('base64url'); const payload = Buffer.from(JSON.stringify({ iss: clientId, sub: clientId, aud: endpoint, iat: now, exp: now + 60, jti: randomUUID() })).toString('base64url'); const input = `${header}.${payload}`;
-  return `${input}.${sign('SHA256', Buffer.from(input), { key, dsaEncoding: 'ieee-p1363' }).toString('base64url')}`;
+  const now = Math.floor(Date.now() / 1000);
+  return new SignJWT({}).setProtectedHeader({ alg: 'ES256', typ: 'JWT', kid }).setIssuer(clientId).setSubject(clientId).setAudience(endpoint).setIssuedAt(now).setExpirationTime(now + 60).setJti(randomUUID()).sign(key);
 }
 
 /** Uncached RFC 7662 lookup authenticated with the Product API client credential. */
 export class RemoteProductApiPaciIntrospector implements ProductApiPaciIntrospector {
   private key?: Promise<KeyObject>;
   constructor(private readonly endpoint: string, private readonly clientId: string, private readonly kid: string, private readonly loadKey: () => Promise<KeyObject>, private readonly fetcher: typeof fetch = fetch) {}
-  async introspect(token: string): Promise<unknown> { this.key ??= this.loadKey().catch((error) => { this.key = undefined; throw error; }); const assertion = productApiClientAssertion(this.clientId, this.kid, this.endpoint, await this.key); const response = await this.fetcher(this.endpoint, { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(5000), headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' }, body: new URLSearchParams({ token, token_type_hint: 'access_token', client_id: this.clientId, client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer', client_assertion: assertion }) }); if (!response.ok) throw new Error('PACI introspection rejected'); return response.json(); }
+  async introspect(token: string): Promise<unknown> { this.key ??= this.loadKey().catch((error) => { this.key = undefined; throw error; }); const assertion = await productApiClientAssertion(this.clientId, this.kid, this.endpoint, await this.key); const response = await this.fetcher(this.endpoint, { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(5000), headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' }, body: new URLSearchParams({ token, token_type_hint: 'access_token', client_id: this.clientId, client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer', client_assertion: assertion }) }); if (!response.ok) throw new Error('PACI introspection rejected'); return response.json(); }
 }
 
 /** Loads only a pinned GSM secret version containing the Product API client private key. */
@@ -64,14 +78,13 @@ export type VerifyProductApiPaciInput = { token: string; issuer: string; audienc
 
 /** Verifies the canonical PACI envelope and live credential state for Product API read access. */
 export async function verifyProductApiPaci(input: VerifyProductApiPaciInput): Promise<PlatformIdentity> {
-  const parts = input.token.split('.'); if (parts.length !== 3) throw new Error('invalid_token'); const [encodedHeader, encodedPayload, encodedSignature] = parts;
-  let header: { alg?: string; typ?: string; kid?: string }; let raw: unknown;
-  try { header = JSON.parse(Buffer.from(encodedHeader, 'base64url').toString('utf8')) as typeof header; raw = JSON.parse(Buffer.from(encodedPayload, 'base64url').toString('utf8')); } catch { throw new Error('invalid_token'); }
+  const parts = input.token.split('.'); if (parts.length !== 3) throw new Error('invalid_token');
+  let header: { alg?: string; typ?: string; kid?: string }; try { header = decodeProtectedHeader(input.token); } catch { throw new Error('invalid_token'); }
   if (header.alg !== 'ES256' || header.typ !== 'paci+jwt' || !header.kid || Object.keys(header).some((key) => !['alg', 'typ', 'kid'].includes(key))) throw new Error('invalid_token');
   let jwk: ProductApiPaciJwk | undefined; try { jwk = await input.jwks.get(header.kid); } catch { throw new Error('jwks_unavailable'); } if (!jwk) throw new Error('unknown_kid');
-  let signatureValid = false; try { signatureValid = verify('SHA256', Buffer.from(`${encodedHeader}.${encodedPayload}`), { key: createPublicKey({ key: jwk, format: 'jwk' }), dsaEncoding: 'ieee-p1363' }, Buffer.from(encodedSignature, 'base64url')); } catch { throw new Error('invalid_token'); }
-  if (!signatureValid) throw new Error('invalid_token');
-  const token = envelopeSchema.parse(raw); const claims = token[PACI_AUTH_CLAIM]; const now = input.now ?? Math.floor(Date.now() / 1000);
+  const now = input.now ?? Math.floor(Date.now() / 1000); let raw: unknown;
+  try { const key = await importJWK(jwk as JWK, 'ES256'); raw = (await jwtVerify(input.token, key, { algorithms: ['ES256'], issuer: input.issuer, audience: input.audience, clockTolerance: 0, currentDate: new Date(now * 1000) })).payload; } catch { throw new Error('invalid_token'); }
+  const token = envelopeSchema.parse(raw); const claims = token[PACI_AUTH_CLAIM];
   if (token.iss !== input.issuer || claims.issuer !== input.issuer || token.aud.length !== 1 || token.aud[0] !== input.audience || claims.audience.length !== 1 || claims.audience[0] !== input.audience || token.sub !== claims.actorId || claims.orgId !== input.orgId) throw new Error('invalid_token');
   if (token.iat > now || token.nbf !== token.iat || token.exp <= now || token.exp <= token.iat || token.exp - token.iat > 900 || Date.parse(claims.issuedAt) !== token.iat * 1000 || Date.parse(claims.expiresAt) !== token.exp * 1000) throw new Error('invalid_token');
   if (claims.actorKind !== 'service' || claims.serviceScopes.length !== 1 || claims.serviceScopes[0] !== 'autowork' || claims.permittedOperations.length !== 1 || claims.permittedOperations[0] !== 'read' || claims.programRestrictions?.length || claims.repositoryRestrictions?.length) throw new Error('forbidden_token');
