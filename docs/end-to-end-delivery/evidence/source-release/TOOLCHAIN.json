@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "kind": "issue-166-toolchain",
+  "admittedSourcePins": {
+    "githubActions": {
+      "workflow": ".github/workflows/ci.yml",
+      "sha256": "9f5724a81688139354068e68140dffdea6110dc9daad4e7f81e961063d4f25da",
+      "runsOn": "ubuntu-24.04-arm",
+      "setupNode": "22",
+      "install": "npm ci",
+      "playwright": "npx playwright install --with-deps chromium"
+    },
+    "applicationImages": {
+      "nodeRuntimeImage": "node:22.13.1-alpine"
+    },
+    "lockfile": {
+      "path": "package-lock.json",
+      "lockfileVersion": 3,
+      "sha256": "87d00a878b77184b2a8ba743b4b72e4f08064a76082e2d6a70eefc1a9d034ab0",
+      "bytes": 159296,
+      "resolvedFromNpmCi": true
+    },
+    "lockedToolVersions": {
+      "typescript": "5.9.3",
+      "vitest": "4.1.10",
+      "playwright": "1.57.0"
+    }
+  },
+  "pinDefects": {
+    "packageJsonEngines": "missing",
+    "nvmrc": "missing",
+    "nodeVersionFile": "missing",
+    "pythonPin": "none; python3 stdlib json.tool only",
+    "compilerNotSilentlyUnpinned": true,
+    "locksNotChanged": true,
+    "cleanupPreserveDefaults": {
+      "path": "scripts/gitops/cleanup_preserve.defaults.json",
+      "status": "missing",
+      "diagnosis": "cleanup-merged-branches.sh --remote fail-closed; no remote deletes applied. File is outside allowed write paths."
+    },
+    "diagnosis": "CI pins Node major 22 via actions/setup-node; images pin 22.13.1-alpine. Root package.json has no engines field. Writer used nvm Node v22.22.2 + npm 10.9.7 for npm ci. Default which node was /exec-daemon/node v22.14.0 until PATH was prefixed."
+  },
+  "cloudWriterRuntime": {
+    "os": "Ubuntu 24.04.4 LTS",
+    "kernel": "6.12.94+",
+    "arch": "x86_64",
+    "differsFromCiArch": "CI is ubuntu-24.04-arm; writer is x86_64",
+    "node": "v22.22.2",
+    "npm": "10.9.7",
+    "python": "3.12.3",
+    "docker": "absent",
+    "podman": "absent",
+    "environmentBuildId": "bld-20260917-51a8b941-667d-426a-83a2-0bc69da7e300",
+    "gitSetup": "reuse_then_checkout"
+  },
+  "npmCi": {
+    "command": "PATH=/home/ubuntu/.nvm/versions/node/v22.22.2/bin:$PATH npm ci",
+    "exit": 0,
+    "deprecationWarnings": [
+      "node-domexception@1.0.0",
+      "glob@10.5.0",
+      "nats@2.29.3 moved to @nats-io/transport-node"
+    ],
+    "auditOnInstall": "7 vulnerabilities (5 moderate, 2 high) including dev; lock not mutated"
+  },
+  "npmAuditOmitDev": {
+    "command": "npm audit --omit=dev",
+    "productionVulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 3,
+      "high": 0,
+      "critical": 0,
+      "total": 3
+    },
+    "named": [
+      {"name": "body-parser", "severity": "moderate", "range": "1.20.5 - 1.20.6"},
+      {"name": "express", "severity": "moderate", "range": "4.22.2"},
+      {"name": "qs", "severity": "moderate", "range": "2.2.5 - 6.15.3"}
+    ],
+    "lockMutation": "refused"
+  }
+}

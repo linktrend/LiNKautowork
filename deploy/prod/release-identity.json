@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "packet": "AW-05",
+  "purpose": "Immutable source identity for Server01 production Compose. Image IDs and content digests are HOLD until an authorised local/Server01 build records them. No registry is part of the accepted initial path.",
+  "source": {
+    "repository": "https://github.com/linktrend/LiNKautowork",
+    "refHold": "protected development after Phase Packager integration; this packet records the work-branch identity at checkpoint",
+    "dockerfiles": {
+      "gateway": "deploy/common/gateway.Dockerfile",
+      "releaseJobs": "deploy/common/release-jobs.Dockerfile",
+      "productApi": "apps/product-api/Dockerfile",
+      "operatorConsole": "apps/operator-console/Dockerfile",
+      "clientWeb": "apps/web/Dockerfile"
+    },
+    "lockfile": "package-lock.json",
+    "nodeRuntimeImage": "node:22.13.1-alpine",
+    "ciNodeMajor": "22"
+  },
+  "images": {
+    "nats": {
+      "name": "nats:2.10.26-alpine",
+      "digest": "HOLD",
+      "digestHoldReason": "No authorised registry resolution in AW-05; tag pin only until AW-08 records the host image ID."
+    },
+    "n8n": {
+      "name": "n8nio/n8n:2.30.0",
+      "evidenceDigest": "sha256:62294bc32d5a521ebb56abd98d6f6d3c6983cf9cf39c53cafb1fa87d971ae72f",
+      "evidenceDigestSource": "docs/production-roadmap/evidence/WP-12-RELEASE-CANDIDATE-MANIFEST.md",
+      "hostImageId": "HOLD"
+    },
+    "gateway": {
+      "build": "deploy/common/gateway.Dockerfile",
+      "hostImageId": "HOLD",
+      "contentDigest": "HOLD"
+    },
+    "product-api": {
+      "build": "apps/product-api/Dockerfile",
+      "hostImageId": "HOLD",
+      "contentDigest": "HOLD"
+    },
+    "operator-console": {
+      "build": "apps/operator-console/Dockerfile",
+      "hostImageId": "HOLD",
+      "contentDigest": "HOLD"
+    },
+    "client-web": {
+      "build": "apps/web/Dockerfile",
+      "initialReleaseRoute": false,
+      "hostImageId": "HOLD",
+      "contentDigest": "HOLD"
+    }
+  },
+  "releaseLayout": {
+    "releasesRoot": "/srv/linktrend/deploy/linkautowork/releases/<commit>",
+    "currentPointer": "/srv/linktrend/deploy/linkautowork/current",
+    "runtimeRoot": "/srv/linktrend/runtime/linkautowork",
+    "runtimeEnvMode": "0600",
+    "applyAuthority": "AW-08 HOLD"
+  },
+  "aw01Roles": {
+    "gateway": "svc_lautowork_gateway",
+    "productApi": "svc_lautowork_product_api",
+    "runtimeDispatch": "svc_lautowork_runtime_dispatch",
+    "n8n": "svc_lautowork_n8n",
+    "observer": "svc_observer",
+    "migrationBackup": "svc_lautowork_migration_backup",
+    "legacyRuntime": "svc_lautowork_runtime",
+    "liveGrants": "HOLD"
+  },
+  "networks": ["autowork-edge", "autowork-runtime", "autowork-events"],
+  "protectedPortsNeverPublished": [4222, 8222, 5678, 8080],
+  "live": {
+    "server01": "HOLD",
+    "tailscale": "HOLD",
+    "gsmResolve": "HOLD",
+    "registry": "NOT_APPLICABLE",
+    "providers": "HOLD",
+    "platformMigration": "HOLD"
+  }
+}
