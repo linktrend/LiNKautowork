@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "kind": "issue-166-source-identity",
+  "notProduction": true,
+  "protectedIntegrationClaimed": false,
+  "implementerOpenedPr": false,
+  "mergedByThisPacket": false,
+  "inputIdentity": {
+    "repository": "linktrend/LiNKautowork",
+    "ref": "issue/166-consolidate-linkautowork-1-0-repository-and-publ",
+    "commit": "a3c22a868a89c7627bd3018ece5edb21e7c59351",
+    "tree": "bf85913dc6fb0b41c3c235cb6e8050db597802a3"
+  },
+  "initialCachedIdentity": {
+    "repository": "linktrend/LiNKautowork",
+    "origin": "https://github.com/linktrend/LiNKautowork",
+    "branch": "cursor/linkautowork-1-0-consolidation-166-r3-8512b5de-d1b8",
+    "commit": "a3c22a868a89c7627bd3018ece5edb21e7c59351",
+    "tree": "bf85913dc6fb0b41c3c235cb6e8050db597802a3",
+    "dirty": false,
+    "note": "Cached cloud checkout was already at the supplied SHA/tree on a cursor/* branch, not main."
+  },
+  "fetchedSuppliedBranch": {
+    "ref": "origin/issue/166-consolidate-linkautowork-1-0-repository-and-publ",
+    "commit": "a3c22a868a89c7627bd3018ece5edb21e7c59351",
+    "tree": "bf85913dc6fb0b41c3c235cb6e8050db597802a3",
+    "matchedInput": true
+  },
+  "admittedStartingWorkIdentity": {
+    "repository": "linktrend/LiNKautowork",
+    "branch": "issue/166-consolidate-linkautowork-1-0-repository-and-publ",
+    "commit": "a3c22a868a89c7627bd3018ece5edb21e7c59351",
+    "tree": "bf85913dc6fb0b41c3c235cb6e8050db597802a3",
+    "dirty": false,
+    "role": "writer",
+    "createIssueBranchHelper": "not-run",
+    "createIssueBranchHelperReason": "scripts/gitops/create_issue_branch.py fetches origin/development and would violate exact supplied identity. Issue #166 already owned this branch at the supplied SHA."
+  },
+  "agent1EngineeringCandidate": {
+    "commit": "20f3d4cc03445ca443e31c41f22d34347c866acf",
+    "tree": "95bec98a0d65ca30889e595a7bcaa85ddfe52b47",
+    "hostedCiRun": "https://github.com/linktrend/LiNKautowork/actions/runs/34955615212",
+    "equalsOriginDevelopmentAtAdmission": true
+  },
+  "planningManifestBaseline": {
+    "path": "docs/end-to-end-delivery/EXECUTION-MANIFEST.json",
+    "recordedBaselineCommit": "a13a6467fc9bc2fccdddd1de8d9e258c78e57fdd",
+    "recordedBaselineTree": "10e6b59394bfd57703d6f3cee5d7bcda3aa7342f",
+    "note": "Planning JSON not rewritten; out of allowed write paths except json.tool validation."
+  },
+  "cloudRun": {
+    "bcId": "bc-f5e4896f-313f-453c-93e0-993b98d3d1fe",
+    "url": "https://cursor.com/agents/bc-f5e4896f-313f-453c-93e0-993b98d3d1fe",
+    "designatedCursorBranch": "cursor/linkautowork-1-0-consolidation-166-r3-8512b5de-d1b8",
+    "writerUsedOwnedIssueBranch": true
+  }
+}

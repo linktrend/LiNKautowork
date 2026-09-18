@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "kind": "aw-07-image-config-migration-references",
+  "notProduction": true,
+  "hostImageIds": "HOLD",
+  "registry": "NOT_APPLICABLE",
+  "source": {
+    "repository": "https://github.com/linktrend/LiNKautowork",
+    "commit": "20f3d4cc03445ca443e31c41f22d34347c866acf",
+    "tree": "95bec98a0d65ca30889e595a7bcaa85ddfe52b47",
+    "compose": {
+      "path": "deploy/prod/docker-compose.yml",
+      "sha256": "8bf9367787b01b13cc89b223d05074f61b5bc8593d85ccf03e3f28cd4364869a",
+      "project": "linkautowork-prod",
+      "networks": ["autowork-edge", "autowork-runtime", "autowork-events"],
+      "protectedPortsNeverPublished": [4222, 8222, 5678, 8080]
+    },
+    "releaseIdentity": {
+      "path": "deploy/prod/release-identity.json",
+      "sha256": "d21180d562cc7f44dd82d1bb134ad52c8a88c1af91c00f84dd799e37001ef0c6"
+    },
+    "envExampleNamesOnly": {
+      "path": "deploy/prod/.env.example",
+      "sha256": "79e0add9bc8152ba15b005a19c1484fef08f2cf19bea4a57f42ef7b6f168f874"
+    }
+  },
+  "images": {
+    "nats": {
+      "name": "nats:2.10.26-alpine",
+      "digest": "HOLD",
+      "digestHoldReason": "No authorised registry resolution or host inspect in this packet."
+    },
+    "n8n": {
+      "name": "n8nio/n8n:2.30.0",
+      "evidenceDigest": "sha256:62294bc32d5a521ebb56abd98d6f6d3c6983cf9cf39c53cafb1fa87d971ae72f",
+      "evidenceDigestSource": "docs/production-roadmap/evidence/WP-12-RELEASE-CANDIDATE-MANIFEST.md",
+      "hostImageId": "HOLD"
+    },
+    "gateway": {
+      "build": "deploy/common/gateway.Dockerfile",
+      "sha256": "38720c09958b67b202a3e998c82073842c0b15b2c8a4ec8fe7e1dd44815fb307",
+      "from": "node:22.13.1-alpine",
+      "hostImageId": "HOLD",
+      "contentDigest": "HOLD"
+    },
+    "releaseJobs": {
+      "build": "deploy/common/release-jobs.Dockerfile",
+      "sha256": "c91637a2059516e8aa2daf5b8e039c39b185632a300e765032e757b68f3fda3e",
+      "from": "node:22.13.1-alpine",
+      "hostImageId": "HOLD"
+    },
+    "product-api": {
+      "build": "apps/product-api/Dockerfile",
+      "sha256": "6bf5f93b70fe6ddb11581db7c3598c449b76a99d3d3cc503f3241eec13fd336b",
+      "from": "node:22.13.1-alpine",
+      "hostImageId": "HOLD"
+    },
+    "operator-console": {
+      "build": "apps/operator-console/Dockerfile",
+      "sha256": "0511bcbb36f1f2a732c59dd9e953ff177e20bbd7a0cc041d64b9c9c035e80e2a",
+      "from": "node:22.13.1-alpine",
+      "hostImageId": "HOLD"
+    },
+    "client-web": {
+      "build": "apps/web/Dockerfile",
+      "sha256": "c3f5b270464c0c0f2c9eb090f62602e873011e1e1657d19f79dc42f9e6758db0",
+      "from": "node:22.13.1-alpine",
+      "initialReleaseRoute": false,
+      "hostImageId": "HOLD"
+    }
+  },
+  "migrationPackage": {
+    "path": "docs/contracts/server01/MIGRATION-PACKAGE.json",
+    "sha256": "695749ef45c3ca22272837d5e97d5d80e6552fb4883637d75a9b94ebbc448d59",
+    "packageId": "lautowork.server01.migration-identity/1.0.0",
+    "applyOwner": "LiNKplatform",
+    "liveApply": "HOLD",
+    "orderedSqlCount": 18,
+    "lastSql": "supabase/migrations/20260915033750_lautowork_gateway_scoped_runtime.sql",
+    "platformProtectedDevelopmentPin": {
+      "commit": "f6373fccc89732cbb88bb18562daa69cc031a2e3",
+      "tree": "83feddf7d935561cfede60df456ea616a021d726"
+    }
+  },
+  "roles": {
+    "gateway": "svc_lautowork_gateway",
+    "productApi": "svc_lautowork_product_api",
+    "runtimeDispatch": "svc_lautowork_runtime_dispatch",
+    "n8n": "svc_lautowork_n8n",
+    "observer": "svc_observer",
+    "migrationBackup": "svc_lautowork_migration_backup",
+    "liveGrants": "HOLD"
+  }
+}

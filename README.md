@@ -1,48 +1,64 @@
 # LiNKautowork
 
-> Production status: the pre-configuration engineering baseline is complete. See [the production-readiness index](docs/PRODUCTION-READINESS.md) for remaining configuration, staging, deployment, and operational acceptance work.
+LiNKtrend’s self-hosted automation engine: pinned stock n8n `2.30.0`, a policy
+gateway, canonical governance templates, durable kill-switch/lifecycle data,
+and `linkautowork.v1.*` events on the shared platform database.
 
-LiNKautowork is LiNKtrend's self-hosted automation engine: a pinned n8n Community runtime, a policy/security gateway, canonical governance templates, persisted kill-switch/lifecycle controls, and audit/event interoperability on the shared platform database.
+**1.0 source status:** engineering candidate is sealed; live Server01 install
+is a later packet. Protected `main` is not yet this line. Do not treat tag
+`v1.0.0` as this candidate (it peels to an older commit).
 
-## Start here (source of truth)
+## Start here
 
-These four documents are the current, authoritative description of this Program. If anything elsewhere in this repo (including older docs under `docs/archive/`) disagrees with them, **these four win**:
+| Role | Document |
+|---|---|
+| **Any AI agent** | [`docs/LINKAUTOWORK-AI-AGENT-GUIDE.md`](docs/LINKAUTOWORK-AI-AGENT-GUIDE.md) |
+| **Server01 deploy agent (later)** | [`docs/end-to-end-delivery/evidence/source-release/DEPLOYMENT-HANDOFF.md`](docs/end-to-end-delivery/evidence/source-release/DEPLOYMENT-HANDOFF.md) |
+| Product “why / how / Principal handbook” | [`docs/LINKAUTOWORK-INTENT.md`](docs/LINKAUTOWORK-INTENT.md), [`docs/LINKAUTOWORK-TECHNICAL-PRD.md`](docs/LINKAUTOWORK-TECHNICAL-PRD.md), [`docs/LINKAUTOWORK-OPERATIONS-MANUAL.md`](docs/LINKAUTOWORK-OPERATIONS-MANUAL.md) |
+| Remaining live configuration work | [`docs/PRD.md`](docs/PRD.md), [`docs/WORK-PACKETS.md`](docs/WORK-PACKETS.md) |
+| Historical / superseded | [`docs/archive/LINKAUTOWORK-1.0-SUPERSEDED-INDEX.md`](docs/archive/LINKAUTOWORK-1.0-SUPERSEDED-INDEX.md) |
 
-- **[`docs/LINKAUTOWORK-INTENT.md`](docs/LINKAUTOWORK-INTENT.md)** — why LiNKautowork exists, who it's for, scope, and what "done" means.
-- **[`docs/LINKAUTOWORK-TECHNICAL-PRD.md`](docs/LINKAUTOWORK-TECHNICAL-PRD.md)** — the exhaustive technical reference: architecture, gateway + stock upstream n8n, Supabase schemas, rituals, kill-switch/lifecycle, events, platform integration, and deferred items.
-- **[`docs/LINKAUTOWORK-OPERATIONS-MANUAL.md`](docs/LINKAUTOWORK-OPERATIONS-MANUAL.md)** — a plain-English handbook for the Principal.
-- **[`docs/OPEN-ISSUES.md`](docs/OPEN-ISSUES.md)** — append-only engineering build / compliance log (what was built, deferred, and limited).
+If older prose (including `docs/archive/` and dated handoffs) disagrees with
+the AI agent guide plus the source-release packet, **those two win for 1.0
+procedure**.
 
 ## Layout
 
-- `automations/templates/` — live governance templates (authority for what n8n should run)
-- `automations/templates/archive/` — retired templates (kept for history)
-- `gateway/` — policy gateway (signed ingress, tokens, GSM secrets, audit, kill-switch, NATS)
-- `deploy/dev` / `deploy/prod` — Compose stacks (NATS + gateway + pinned stock n8n `2.30.0`)
-- `supabase/migrations/` — `lautowork` control schema + `lautowork_n8n` isolation + persistence RPCs
-- `ops/` — import/export/backup/GSM/deploy scripts
-- `docs/runbooks/` — operator procedures still used for real bring-up
-- `docs/archive/` — superseded documentation (see `docs/archive/README.md`)
-- `archive/legacy-dev-mirrors-2026-07-15/` — pre-existing bulk archive (untouched by doc cleanups)
+- `automations/templates/` — live governance templates (authority for n8n)
+- `gateway/` — policy gateway (signed ingress, tokens, GSM names, audit, NATS)
+- `deploy/prod` — production Compose (unpublished protected ports)
+- `supabase/migrations/` — `lautowork` + `lautowork_n8n` (Platform applies live)
+- `ops/` — import/export/backup/GSM/deploy scripts (many refuse `--live`)
+- `docs/runbooks/` — operator procedures for source topology and later bring-up
+- `docs/archive/` — superseded documentation
+- `archive/legacy-dev-mirrors-2026-07-15/` — bulk archive; leave untouched
 
-## MVO highlights
+## Constants
 
-- Internal-only org UUID: `00000000-0000-0000-0000-000000000001` (`linktrend_internal`)
+- Internal org UUID: `00000000-0000-0000-0000-000000000001` (`linktrend_internal`)
 - Ritual windows (Taipei): `08:00` / `10:45` / `14:45`
-- Event contract: `linkautowork.v1.*`
-- Control schema: `lautowork` · n8n schema: `lautowork_n8n` · env split: `linkplatform-stage` vs `linkplatform-prod`
+- Control schema: `lautowork` · n8n schema: `lautowork_n8n`
+- Compose project: `linkautowork-prod`
 
-## Pre-VPS release package
+## Source checks (no live host)
 
-1. Run `npm ci && npm run release:check && npm run ci` from a clean checkout.
-2. Review the [release candidate manifest](docs/production-roadmap/evidence/WP-12-RELEASE-CANDIDATE-MANIFEST.md), environment matrix, and [VPS Deployment Input Register](docs/production-roadmap/evidence/WP-12-VPS-DEPLOYMENT-INPUT-REGISTER.md).
-3. Do not render GSM values, apply migrations, or start a stack until the external inputs and explicit authority in that register are supplied.
+From a clean checkout bound to the intended commit/tree:
 
-Full operator detail: [`docs/DEPLOY_READINESS.md`](docs/DEPLOY_READINESS.md) and [`docs/runbooks/OPERATIONS.md`](docs/runbooks/OPERATIONS.md).
+```bash
+# Prefix nvm Node 22 if PATH still has /exec-daemon/node
+npm ci
+git diff --check
+python3 -m json.tool docs/end-to-end-delivery/EXECUTION-MANIFEST.json
+npm run release:check
+```
 
-## Live template inventory (2026-07-18)
+Hosted `npm run ci` is the full proof. Local writer VMs without Docker cannot
+complete disposable Postgres / eval:full / restore / durable browser steps;
+do not start Docker from a docs packet.
 
-Governance-only. The historical program-shell archive is non-authoritative and cannot be generated or imported by current release scripts.
+## Live template inventory
+
+Governance-only. Historical program-shell archives are non-authoritative.
 
 | Template | Purpose |
 |----------|---------|
@@ -51,6 +67,8 @@ Governance-only. The historical program-shell archive is non-authoritative and c
 | `promotion-review-governance.json` | Lifecycle promotion approvals |
 | `restore-authorization-governance.json` | Restore auth + scoped kill-switch |
 
-## Status
+## Integration
 
-**Pre-VPS release-readiness is in progress.** Local validation can prove source and disposable dependencies only. It cannot prove a selected VPS, live migration, GSM, DNS/TLS, payment, external identity, alert delivery, backup target, or production integration. See the WP-12 evidence for the exact state.
+Implementers commit and push `issue/<n>-<slug>` checkpoints only. The Phase
+Packager opens the Phase PR; the delivery controller merges to `development`.
+Promotion to `staging` / `main` and tagging are not implementer actions.
