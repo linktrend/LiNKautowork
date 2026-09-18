@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "kind": "issue-166-validation-record",
+  "proofClass": "local-docs-acceptance",
+  "notProduction": true,
+  "admittedStartCommit": "a3c22a868a89c7627bd3018ece5edb21e7c59351",
+  "admittedStartTree": "bf85913dc6fb0b41c3c235cb6e8050db597802a3",
+  "checkpointCommit": "c54603735556f95e6eb9c94339452d711bfb019c",
+  "checkpointTree": "4a7835ad752ef47d9a56a4ea052e08c0d4e7212c",
+  "recordedAt": "2026-09-18T04:20:00Z",
+  "acceptanceCommands": [
+    {
+      "command": "git diff --check",
+      "exit": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "python3 -m json.tool docs/end-to-end-delivery/EXECUTION-MANIFEST.json",
+      "exit": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "PATH=/home/ubuntu/.nvm/versions/node/v22.22.2/bin:$PATH npm run release:check",
+      "exit": 0,
+      "result": "PASS",
+      "stdout": "Release-readiness check passed: supported surfaces have no retired runtime path and required release artifacts exist."
+    }
+  ],
+  "engineeringHostedCiNotRerun": {
+    "reason": "Docs-only packet; Docker absent; full npm run ci not repeated after Agent 1 diagnosis",
+    "url": "https://github.com/linktrend/LiNKautowork/actions/runs/34955615212",
+    "headSha": "20f3d4cc03445ca443e31c41f22d34347c866acf",
+    "conclusion": "success"
+  },
+  "cleanupApply": {
+    "command": "bash scripts/cleanup-merged-branches.sh --remote --repo linktrend/LiNKautowork",
+    "exit": 1,
+    "result": "FAIL_CLOSED",
+    "diagnosis": "export-preserve invalid JSON because scripts/gitops/cleanup_preserve.defaults.json is missing",
+    "boundedCorrection": "Did not retry apply. Classified all 57 remote heads into BRANCH-CLEANUP-MANIFEST.json. Deleted 0 branches. Did not delete local worktrees."
+  }
+}
