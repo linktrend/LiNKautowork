@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "kind": "aw-07-tagged-main-candidate",
+  "notProduction": true,
+  "tagCreatedByThisPacket": false,
+  "mainUpdatedByThisPacket": false,
+  "status": "HOLD_UNTIL_PROTECTED_TAG_ON_MAIN",
+  "staleTagMustNotInstall": {
+    "name": "v1.0.0",
+    "tagObject": "88330d2e5ff1dc1627ab52652714681dd5c1af61",
+    "peeledCommit": "7e76a5e77306d42cdcfd4fd59f22473235c7e7fc",
+    "tree": "44e85044d16c9a3a6fad5f7e95e607ca0e027358",
+    "reason": "Peeled commit is not the 1.0 engineering candidate 20f3d4cc03445ca443e31c41f22d34347c866acf"
+  },
+  "admissionProtectedTips": {
+    "main": {
+      "commit": "2e30109acfb9510cd77e49f759648b2b6a666adc",
+      "tree": "af6883f2b5b093e221eed5f0d033aa7647582717"
+    },
+    "staging": {
+      "commit": "96267009bfa6dc55921484a2294f74709224940b",
+      "tree": "10e6b59394bfd57703d6f3cee5d7bcda3aa7342f"
+    },
+    "development": {
+      "commit": "20f3d4cc03445ca443e31c41f22d34347c866acf",
+      "tree": "95bec98a0d65ca30889e595a7bcaa85ddfe52b47",
+      "note": "Equals Agent 1 engineering candidate; does not yet include issue 165/166 docs commits"
+    }
+  },
+  "engineeringCandidateProvenOnHostedCi": {
+    "commit": "20f3d4cc03445ca443e31c41f22d34347c866acf",
+    "tree": "95bec98a0d65ca30889e595a7bcaa85ddfe52b47",
+    "ciRun": "https://github.com/linktrend/LiNKautowork/actions/runs/34955615212"
+  },
+  "requiredBind": {
+    "repository": "linktrend/LiNKautowork",
+    "refType": "annotated-tag-on-protected-main",
+    "tagName": "HOLD_CONTROLLER_OR_PRINCIPAL",
+    "peeledCommitMustEqual": "origin/main",
+    "forbiddenFallbacks": [
+      "issue/165-prepare-linkautowork-1-0-release-candidate-and-d",
+      "issue/166-consolidate-linkautowork-1-0-repository-and-publ",
+      "cursor/*",
+      "origin/development",
+      "origin/staging",
+      "refs/tags/v1.0.0"
+    ]
+  }
+}

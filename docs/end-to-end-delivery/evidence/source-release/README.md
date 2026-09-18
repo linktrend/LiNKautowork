@@ -1,42 +1,48 @@
-# LiNKautowork 1.0 source-release candidate (AW-07 / issue 165)
+# LiNKautowork 1.0 source-release packet (issues 165 + 166)
 
-Status: **SOURCE-ONLY DEPLOYMENT-READY CANDIDATE**. This packet does **not**
-open or merge a PR, promote protected refs, deploy, resolve GSM, apply
-migrations, start Docker, or claim live Server01/Platform acceptance.
+Status: **SOURCE-ONLY**. No implementer PR, protected merge, Server01, Docker,
+GSM value resolve, SQL apply, or production message is authorised here.
 
-Prepared: 2026-09-18T03:51:44Z from admitted identity
-`linktrend/LiNKautowork`
-`issue/165-prepare-linkautowork-1-0-release-candidate-and-d`
-commit `20f3d4cc03445ca443e31c41f22d34347c866acf`
-tree `95bec98a0d65ca30889e595a7bcaa85ddfe52b47`.
+| Packet | Role |
+|---|---|
+| Issue 165 | Agent 1: sealed engineering candidate + first receipts |
+| Issue 166 | This file set: AI-agent guide, README consolidation, archive index, tagged-main handoff, branch cleanup manifest |
 
-Production authority reused (read-only):
+## Identities
 
-- `docs/production-roadmap/LINKAUTOWORK-PRODUCTION-ROADMAP.md`
-- `docs/production-roadmap/EXECUTION-STATE.yaml` (`pre_vps_complete`)
-- `docs/runbooks/PRODUCTION_RELEASE_GATES.md`
-- `docs/end-to-end-delivery/LINKAUTOWORK-SERVER01-DELIVERY-PLAN.md`
-- `docs/contracts/server01/MIGRATION-PACKAGE.json`
-- `deploy/prod/release-identity.json`
+Engineering candidate (hosted CI green):
 
-## Packager / controller inputs
+- commit `20f3d4cc03445ca443e31c41f22d34347c866acf`
+- tree `95bec98a0d65ca30889e595a7bcaa85ddfe52b47`
+- run https://github.com/linktrend/LiNKautowork/actions/runs/34955615212
+
+Issue 166 admitted start (Agent 1 checkpoint, including 165 docs):
+
+- branch `issue/166-consolidate-linkautowork-1-0-repository-and-publ`
+- commit `a3c22a868a89c7627bd3018ece5edb21e7c59351`
+- tree `bf85913dc6fb0b41c3c235cb6e8050db597802a3`
+
+**Tagged main candidate:** not published at admission. Stale tag `v1.0.0` peels
+to `7e76a5e77306d42cdcfd4fd59f22473235c7e7fc` and **must not** be installed.
+See `DEPLOYMENT-HANDOFF.md` and `TAGGED-MAIN-CANDIDATE.json`.
+
+## Files
 
 | File | Purpose |
 |---|---|
-| `SOURCE-IDENTITY.json` | Starting vs admitted vs hosted identities |
-| `TOOLCHAIN.json` | CI/image pins vs writer runtime; lock diagnosis |
-| `VALIDATION-RECORD.json` | Commands, exits, hosted CI substitution |
-| `IMAGE-CONFIG-MIGRATION-REFERENCES.json` | Image tags, Dockerfiles, compose, migration package |
-| `HOLD-REGISTER.json` | Remaining live/Platform/Docker HOLDs |
-| `ROLLBACK.md` | Source rollback contract (not executed) |
-| `DEPLOYMENT-HANDOFF.md` | AW-08 inputs this candidate may hand off |
+| `SOURCE-IDENTITY.json` | Cached vs admitted vs engineering identities |
+| `TOOLCHAIN.json` | CI/image pins, writer runtime, lock diagnosis |
+| `VALIDATION-RECORD.json` | Issue 166 acceptance commands |
+| `IMAGE-CONFIG-MIGRATION-REFERENCES.json` | Image tags, Dockerfiles, SQL package (Agent 1; files unchanged) |
+| `HOLD-REGISTER.json` | Live/Platform/Docker/protected HOLDs |
+| `ROLLBACK.md` | Source + later application rollback (not executed) |
+| `DEPLOYMENT-HANDOFF.md` | Non-secret AW-08 inputs for a **separate** Server01 agent |
+| `TAGGED-MAIN-CANDIDATE.json` | Exact tag-on-main bind contract |
+| `BRANCH-CLEANUP-MANIFEST.json` | Every remote head classified; no deletes applied |
 
 ## Hard limits
 
-- Allowed write path: `docs/end-to-end-delivery/evidence/source-release/` only.
-- Implementer does not open the Phase PR. Phase Packager/Coordinator and
-  delivery controller remain the integration actors.
-- Writer VM has no Docker. Full `npm run ci` locally failed at
-  `packages/automation-contracts` disposable Postgres (`spawnSync docker ENOENT`).
-  Hosted `validate-and-test` on the **same commit** succeeded
-  (run `34955615212`).
+- Allowed writes this issue: root/`docs` READMEs, AI-agent guide, `docs/archive/`,
+  this directory.
+- Implementer does not open the Phase PR.
+- Writer VM has no Docker. Do not install Docker to force `npm run ci`.

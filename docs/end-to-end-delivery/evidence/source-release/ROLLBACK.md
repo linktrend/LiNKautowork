@@ -27,8 +27,14 @@ Platform alone backs up, isolated-restores, applies, and receipts
   is disposable pre-production only and must never run against stage/production.
 - Stop on `partial` or `drift`. Autowork workers must not apply SQL.
 
+## Stale tag
+
+Do not roll **forward** onto `v1.0.0` peeled `7e76a5e77306d42cdcfd4fd59f22473235c7e7fc`.
+That tag is older than the 1.0 engineering candidate.
+
 ## This checkpoint
 
 If the evidence commit is rejected, abandon this issue-branch tip. Do not
 reset unknown work or rewrite protected refs. A new identity is required
-for any later source change.
+for any later source change. This packet did not retag, promote, or delete
+remote branches.

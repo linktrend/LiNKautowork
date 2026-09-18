@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "kind": "aw-07-toolchain",
+  "kind": "issue-166-toolchain",
   "admittedSourcePins": {
     "githubActions": {
       "workflow": ".github/workflows/ci.yml",
@@ -11,14 +11,7 @@
       "playwright": "npx playwright install --with-deps chromium"
     },
     "applicationImages": {
-      "nodeRuntimeImage": "node:22.13.1-alpine",
-      "dockerfiles": [
-        "deploy/common/gateway.Dockerfile",
-        "deploy/common/release-jobs.Dockerfile",
-        "apps/product-api/Dockerfile",
-        "apps/operator-console/Dockerfile",
-        "apps/web/Dockerfile"
-      ]
+      "nodeRuntimeImage": "node:22.13.1-alpine"
     },
     "lockfile": {
       "path": "package-lock.json",
@@ -40,17 +33,25 @@
     "pythonPin": "none; python3 stdlib json.tool only",
     "compilerNotSilentlyUnpinned": true,
     "locksNotChanged": true,
-    "diagnosis": "CI pins Node major 22 via actions/setup-node; images pin 22.13.1-alpine. Root package.json has no engines field. Writer used nvm Node v22.22.2 + npm 10.9.7 for npm ci against the lockfile. Default shell PATH exposed /exec-daemon/node v22.14.0; PATH was prefixed to the nvm binary so node and npm matched."
+    "cleanupPreserveDefaults": {
+      "path": "scripts/gitops/cleanup_preserve.defaults.json",
+      "status": "missing",
+      "diagnosis": "cleanup-merged-branches.sh --remote fail-closed; no remote deletes applied. File is outside allowed write paths."
+    },
+    "diagnosis": "CI pins Node major 22 via actions/setup-node; images pin 22.13.1-alpine. Root package.json has no engines field. Writer used nvm Node v22.22.2 + npm 10.9.7 for npm ci. Default which node was /exec-daemon/node v22.14.0 until PATH was prefixed."
   },
   "cloudWriterRuntime": {
     "os": "Ubuntu 24.04.4 LTS",
+    "kernel": "6.12.94+",
     "arch": "x86_64",
     "differsFromCiArch": "CI is ubuntu-24.04-arm; writer is x86_64",
     "node": "v22.22.2",
     "npm": "10.9.7",
     "python": "3.12.3",
     "docker": "absent",
-    "podman": "absent"
+    "podman": "absent",
+    "environmentBuildId": "bld-20260917-51a8b941-667d-426a-83a2-0bc69da7e300",
+    "gitSetup": "reuse_then_checkout"
   },
   "npmCi": {
     "command": "PATH=/home/ubuntu/.nvm/versions/node/v22.22.2/bin:$PATH npm ci",
@@ -77,6 +78,6 @@
       {"name": "express", "severity": "moderate", "range": "4.22.2"},
       {"name": "qs", "severity": "moderate", "range": "2.2.5 - 6.15.3"}
     ],
-    "lockMutation": "refused; AW-07 may not edit package-lock.json"
+    "lockMutation": "refused"
   }
 }
