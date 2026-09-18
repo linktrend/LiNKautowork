@@ -1,89 +1,42 @@
 {
   "schemaVersion": 1,
-  "kind": "aw-07-validation-record",
-  "proofClass": "mixed-local-and-hosted",
+  "kind": "issue-166-validation-record",
+  "proofClass": "local-docs-acceptance",
   "notProduction": true,
-  "admittedCommit": "20f3d4cc03445ca443e31c41f22d34347c866acf",
-  "admittedTree": "95bec98a0d65ca30889e595a7bcaa85ddfe52b47",
-  "recordedAt": "2026-09-18T03:51:44Z",
+  "admittedStartCommit": "a3c22a868a89c7627bd3018ece5edb21e7c59351",
+  "admittedStartTree": "bf85913dc6fb0b41c3c235cb6e8050db597802a3",
+  "checkpointCommit": "c54603735556f95e6eb9c94339452d711bfb019c",
+  "checkpointTree": "4a7835ad752ef47d9a56a4ea052e08c0d4e7212c",
+  "recordedAt": "2026-09-18T04:20:00Z",
   "acceptanceCommands": [
-    {
-      "command": "python3 -m json.tool docs/end-to-end-delivery/EXECUTION-MANIFEST.json",
-      "exit": 0,
-      "result": "PASS"
-    },
     {
       "command": "git diff --check",
       "exit": 0,
       "result": "PASS"
     },
     {
-      "command": "npm run release:check",
+      "command": "python3 -m json.tool docs/end-to-end-delivery/EXECUTION-MANIFEST.json",
+      "exit": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "PATH=/home/ubuntu/.nvm/versions/node/v22.22.2/bin:$PATH npm run release:check",
       "exit": 0,
       "result": "PASS",
       "stdout": "Release-readiness check passed: supported surfaces have no retired runtime path and required release artifacts exist."
-    },
-    {
-      "command": "npm run ci",
-      "exit": 1,
-      "result": "FAIL_LOCAL_DOCKER_ABSENT",
-      "diagnosis": "Stopped in npm run test:automation-contracts. packages/automation-contracts/tests/server01-live-interfaces.test.ts spawnSync docker ENOENT. Writer policy forbids installing or starting Docker. Not a source defect on this SHA.",
-      "boundedCorrection": "Did not retry unchanged npm run ci. Completed every remaining non-Docker step locally. Substituted hosted LiNKautowork CI run 34955615212 success on the exact SHA for Docker-backed steps (contracts disposable Postgres, eval:full, restore:rehearse, durable browser E2E)."
     }
   ],
-  "securityAndDiffExtras": [
-    {"command": "ops/validate-env-contract.sh", "exit": 0, "result": "PASS"},
-    {"command": "ops/security/scan-secrets.sh", "exit": 0, "result": "PASS"},
-    {"command": "bash -n ops/*.sh ops/security/*.sh", "exit": 0, "result": "PASS"}
-  ],
-  "localNonDocker": [
-    {"command": "npm run validate:templates", "exit": 0, "detail": "4 manifest entries, 5 JSON files"},
-    {"command": "npm run validate:automations", "exit": 0, "detail": "1 catalogue release"},
-    {"command": "npm run catalog:check", "exit": 0},
-    {"command": "npm test", "exit": 0, "detail": "34 files, 161 tests"},
-    {"command": "npm run test:automation-architect", "exit": 0, "detail": "2 files, 17 tests"},
-    {"command": "npm --prefix packages/automation-contracts run test -- --exclude tests/server01-live-interfaces.test.ts", "exit": 0, "detail": "5 files, 20 tests"},
-    {"command": "npm run test:automation-operations", "exit": 0, "detail": "2 files, 15 tests"},
-    {"command": "npm run test:product-api", "exit": 0, "detail": "3 files, 40 tests"},
-    {"command": "npm run test:operator-console", "exit": 0, "detail": "1 file, 4 tests"},
-    {"command": "npm run test:client-product", "exit": 0, "detail": "4 files, 11 tests"},
-    {"command": "npm run test:automation-librarian", "exit": 0, "detail": "1 file, 16 tests"},
-    {"command": "npm run test:automation-evals", "exit": 0, "detail": "8 pass (mocked docker runner)"},
-    {"command": "npm run eval:smoke", "exit": 0, "receiptDigest": "sha256:47e3cc0cd2fc8406658f1bea9a9b7dc904f610377fc0c21b6ce3636e7b82e729"},
-    {"command": "npm run typecheck", "exit": 0},
-    {"command": "npm run typecheck:packages", "exit": 0},
-    {"command": "npm run typecheck:product-api", "exit": 0},
-    {"command": "npm run build:product-api", "exit": 0},
-    {"command": "npm run build:operator-console", "exit": 0},
-    {"command": "npm run typecheck:operator-console", "exit": 0},
-    {"command": "npm run build:client-product", "exit": 0},
-    {"command": "npm run typecheck:client-product", "exit": 0},
-    {"command": "npm run typecheck:automation-librarian", "exit": 0}
-  ],
-  "localDockerBlocked": [
-    {"command": "npm --prefix packages/automation-contracts run test", "exit": 1, "error": "spawnSync docker ENOENT"},
-    {"command": "npm run verify:automation-librarian-db", "notRun": true, "reason": "disposable-db/run.sh requires docker compose"},
-    {"command": "npm run eval:full", "notRun": true, "reason": "DockerN8nRuntime would pull/run n8nio/n8n:2.30.0"},
-    {"command": "npm run restore:rehearse", "notRun": true, "reason": "alias of verify:db; docker compose"},
-    {"command": "npm run test:browser", "exit": 1, "error": "e2e/run-durable-browser-e2e.sh: docker: command not found"}
-  ],
-  "hostedCiSubstitution": {
+  "engineeringHostedCiNotRerun": {
+    "reason": "Docs-only packet; Docker absent; full npm run ci not repeated after Agent 1 diagnosis",
     "url": "https://github.com/linktrend/LiNKautowork/actions/runs/34955615212",
     "headSha": "20f3d4cc03445ca443e31c41f22d34347c866acf",
-    "conclusion": "success",
-    "job": "validate-and-test",
-    "coversLocallyBlocked": [
-      "Run Automation Contracts package tests",
-      "Verify Automation Librarian durable RPC migration",
-      "Run disposable automation evaluator full profile",
-      "Run disposable operations restore rehearsal",
-      "Run real-browser client and operator journey"
-    ]
+    "conclusion": "success"
   },
-  "migrationPackageHashCheck": {
-    "orderedSqlAndContractSha256": "PASS all 18 SQL files and 8 contract files match MIGRATION-PACKAGE.json sha256/bytes",
-    "orderedSqlCanonicalSha256Field": "59688b7cc66ce87bd7e06a8a669680c3cbfe6f5939e22e555a2984acfada7ecb",
-    "newlineJoinedOrderedSqlSha256": "52209abb1bf36501171444bdad173393a51166f729ee1a6e21017943b4627875",
-    "diagnosis": "Canonical field is not a naive newline join of the ordered SQL hashes. Field left unchanged; out of allowed write paths."
+  "cleanupApply": {
+    "command": "bash scripts/cleanup-merged-branches.sh --remote --repo linktrend/LiNKautowork",
+    "exit": 1,
+    "result": "FAIL_CLOSED",
+    "diagnosis": "export-preserve invalid JSON because scripts/gitops/cleanup_preserve.defaults.json is missing",
+    "boundedCorrection": "Did not retry apply. Classified all 57 remote heads into BRANCH-CLEANUP-MANIFEST.json. Deleted 0 branches. Did not delete local worktrees."
   }
 }
