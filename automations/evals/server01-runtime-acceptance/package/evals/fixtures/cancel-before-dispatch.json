@@ -1,0 +1,4 @@
+{
+  "cancel_phase": "before_dispatch",
+  "failure_class": "cancelled"
+}

@@ -22,6 +22,7 @@ MIGRATIONS=(
   "$ROOT_DIR/supabase/migrations/20260804_000010_lautowork_operator_operations.sql"
   "$ROOT_DIR/supabase/migrations/20260804_000011_lautowork_governed_commercial_webhooks.sql"
   "$ROOT_DIR/supabase/migrations/20260804_000012_lautowork_durable_audit_outbox.sql"
+  "$ROOT_DIR/supabase/migrations/20260915031350_lautowork_product_api_scoped_runtime.sql"
 )
 APPLIED_MIGRATIONS=()
 trap cleanup EXIT
@@ -76,7 +77,7 @@ if [[ -z "$DISPOSABLE_POSTGREST_JWT_SECRET" ]]; then
   echo 'Disposable PostgREST JWT secret missing from docker-compose.yml' >&2
   exit 1
 fi
-TOKEN="$(JWT_SECRET="$DISPOSABLE_POSTGREST_JWT_SECRET" node -e "const c=require('node:crypto');const secret=process.env.JWT_SECRET;if(!secret){process.exit(1)}const h=Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url');const p=Buffer.from(JSON.stringify({role:'service_role',org_id:'00000000-0000-0000-0000-000000000002',exp:Math.floor(Date.now()/1000)+600})).toString('base64url');console.log(h+'.'+p+'.'+c.createHmac('sha256',secret).update(h+'.'+p).digest('base64url'))")"
+TOKEN="$(JWT_SECRET="$DISPOSABLE_POSTGREST_JWT_SECRET" node -e "const c=require('node:crypto');const secret=process.env.JWT_SECRET;if(!secret){process.exit(1)}const h=Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url');const p=Buffer.from(JSON.stringify({role:'svc_lautowork_product_api',org_id:'00000000-0000-0000-0000-000000000002',exp:Math.floor(Date.now()/1000)+600})).toString('base64url');console.log(h+'.'+p+'.'+c.createHmac('sha256',secret).update(h+'.'+p).digest('base64url'))")"
 REST_URL="http://127.0.0.1:${REST_PORT}"
 export REST_URL
 AUDIT_TOKEN="$TOKEN" node --input-type=module <<'NODE'

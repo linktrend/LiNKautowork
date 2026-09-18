@@ -1,7 +1,7 @@
 \set ON_ERROR_STOP on
 
 select set_config('request.jwt.claim.org_id', '00000000-0000-0000-0000-000000000002', false);
-select set_config('request.jwt.claim.role', 'service_role', false);
+select set_config('request.jwt.claim.role', 'svc_lautowork_product_api', false);
 
 insert into lautowork.automation_products(id,org_id,definition_id,offering_key,display_name,status)
 values('90000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000002','10000000-0000-0000-0000-000000000001','approved-automation','Approved Automation','active') on conflict (id) do nothing;

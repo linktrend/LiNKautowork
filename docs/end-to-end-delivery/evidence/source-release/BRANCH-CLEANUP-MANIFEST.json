@@ -1,0 +1,893 @@
+{
+  "schemaVersion": 1,
+  "kind": "issue-166-branch-cleanup-manifest",
+  "notProduction": true,
+  "deletedThisPacket": false,
+  "localWorktreesDeleted": false,
+  "protectedNeverDeleted": [
+    "development",
+    "staging",
+    "main"
+  ],
+  "cleanupTool": {
+    "script": "scripts/cleanup-merged-branches.sh --remote --repo linktrend/LiNKautowork",
+    "apply": false,
+    "result": "FAIL_CLOSED",
+    "error": "preserve policy missing: scripts/gitops/cleanup_preserve.defaults.json",
+    "diagnosis": "Without export-preserve JSON the official cleaner must not delete. Issue 166 cannot add that file (outside allowed paths)."
+  },
+  "reviewBranches": {
+    "openPullRequests": [
+      {
+        "number": 128,
+        "title": "chore(deps): bump @vitest/mocker and vitest",
+        "head": "dependabot/npm_and_yarn/multi-d0c2d048a7",
+        "base": "main",
+        "url": "https://github.com/linktrend/LiNKautowork/pull/128",
+        "decision": "KEEP"
+      }
+    ],
+    "note": "No open Phase PR into development at review time. Merged/closed review (phase/*) heads listed in branches[]."
+  },
+  "activeOneOhBranches": [
+    "issue/165-prepare-linkautowork-1-0-release-candidate-and-d",
+    "issue/166-consolidate-linkautowork-1-0-repository-and-publ"
+  ],
+  "wouldDeleteIfPreserveResolved": [
+    "phase/autowork-successor-20260915-r1",
+    "phase/autowork-successor-20260915-r2",
+    "phase/aw01-aw07-complete-r2",
+    "phase/aw01-aw07-complete-r4",
+    "phase/aw08-production-paci-verifier-r2",
+    "phase/aw08-scoped-runtime-release"
+  ],
+  "counts": {
+    "totalRemoteHeads": 57,
+    "keep": 51,
+    "wouldDeleteIfPreserveResolved": 6
+  },
+  "branches": [
+    {
+      "branch": "cursor/linkautowork-aw01-fixture-repair-2f1b6ea-dedd",
+      "tip": "5b8a1be3cbd19aa486904d4a81e6e72e48f0afe6",
+      "form": "not-candidate",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "not a cleanup candidate form (allowlist is issue/*, phase/*, dev/*, promote/*)",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "cursor/linkautowork-aw02-implement-a13a646-20f3",
+      "tip": "c1379a1704796c56371b4807c1a349ad905a15eb",
+      "form": "not-candidate",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "not a cleanup candidate form (allowlist is issue/*, phase/*, dev/*, promote/*)",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "cursor/linkautowork-aw03-implement-a13a646-e3e7",
+      "tip": "e0e6d8bc42f831c667a7082c6dbb08305d1a438c",
+      "form": "not-candidate",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "not a cleanup candidate form (allowlist is issue/*, phase/*, dev/*, promote/*)",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "cursor/linkautowork-aw03-linksites-compose-a13a646-5e10",
+      "tip": "3f72afd22531f1602102f760368c8d2ceda81659",
+      "form": "not-candidate",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "not a cleanup candidate form (allowlist is issue/*, phase/*, dev/*, promote/*)",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "cursor/linkautowork-aw04-implement-a13a646-b659",
+      "tip": "1488779ad1593574957f3abce2775332a31e45c0",
+      "form": "not-candidate",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "not a cleanup candidate form (allowlist is issue/*, phase/*, dev/*, promote/*)",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "cursor/linkautowork-aw06-health-repair-ce5fbb9-11dd",
+      "tip": "c0ee8b8af5b1a510f355955ef639ff7da7aea085",
+      "form": "not-candidate",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "not a cleanup candidate form (allowlist is issue/*, phase/*, dev/*, promote/*)",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "cursor/linkautowork-issue146-live-consolidation-a13a646-dc76",
+      "tip": "f9a178e301350a80571a3872d256b620458aff43",
+      "form": "not-candidate",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "not a cleanup candidate form (allowlist is issue/*, phase/*, dev/*, promote/*)",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "cursor/linkautowork-issue157-paci-phase-fixture-repair-79f9",
+      "tip": "84b4d6c4fe09342642b54d26e47370232f2d2eb0",
+      "form": "not-candidate",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "not a cleanup candidate form (allowlist is issue/*, phase/*, dev/*, promote/*)",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "cursor/linkautowork-phase-consolidate-f9a178e-2812",
+      "tip": "3d9f46c166c5660d1a7cce3117b8349b604faf2b",
+      "form": "not-candidate",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "not a cleanup candidate form (allowlist is issue/*, phase/*, dev/*, promote/*)",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "cursor/s01-autowork-contract-hardening-009-c2d9",
+      "tip": "c2272cac3abd92e68f4f81860ddf3bd72b0598ef",
+      "form": "not-candidate",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "not a cleanup candidate form (allowlist is issue/*, phase/*, dev/*, promote/*)",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "dependabot/npm_and_yarn/multi-d0c2d048a7",
+      "tip": "1e001b4f91527341181c571760106a57ab4914c8",
+      "form": "not-candidate",
+      "prEvidence": "OPEN",
+      "prHeadOid": "1e001b4f91527341181c571760106a57ab4914c8",
+      "prs": [
+        {
+          "number": 128,
+          "state": "OPEN",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/128",
+          "mergedAt": null
+        }
+      ],
+      "decision": "KEEP",
+      "reason": "not a cleanup candidate form (allowlist is issue/*, phase/*, dev/*, promote/*)",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "development",
+      "tip": "20f3d4cc03445ca443e31c41f22d34347c866acf",
+      "form": "protected",
+      "prEvidence": "MERGED",
+      "prHeadOid": "3f5f85703ae9dbb7537384bd667a6b6803d1a015",
+      "prs": [
+        {
+          "number": 121,
+          "state": "CLOSED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/121",
+          "mergedAt": null
+        },
+        {
+          "number": 78,
+          "state": "MERGED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/78",
+          "mergedAt": "2026-08-12T23:22:00Z"
+        },
+        {
+          "number": 52,
+          "state": "CLOSED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/52",
+          "mergedAt": null
+        },
+        {
+          "number": 48,
+          "state": "MERGED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/48",
+          "mergedAt": "2026-08-04T10:10:57Z"
+        },
+        {
+          "number": 43,
+          "state": "MERGED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/43",
+          "mergedAt": "2026-07-23T05:46:31Z"
+        },
+        {
+          "number": 40,
+          "state": "MERGED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/40",
+          "mergedAt": "2026-07-19T03:56:19Z"
+        },
+        {
+          "number": 37,
+          "state": "MERGED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/37",
+          "mergedAt": "2026-07-19T01:47:05Z"
+        },
+        {
+          "number": 34,
+          "state": "MERGED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/34",
+          "mergedAt": "2026-07-19T01:35:59Z"
+        },
+        {
+          "number": 30,
+          "state": "MERGED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/30",
+          "mergedAt": "2026-07-19T01:23:00Z"
+        },
+        {
+          "number": 28,
+          "state": "MERGED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/28",
+          "mergedAt": "2026-07-19T01:12:08Z"
+        }
+      ],
+      "decision": "KEEP",
+      "reason": "protected",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "issue/124-s01-autowork-source-01-bounded-source-and-artifa",
+      "tip": "c2272cac3abd92e68f4f81860ddf3bd72b0598ef",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "issue/126-repair-exact-phase-125-stale-secret-scan-fixture",
+      "tip": "fe953eccb903cc572d3a3d6c40c67bd184e5a614",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "issue/127-plan-linkautowork-end-to-end-deployment-on-links",
+      "tip": "3731f56d0d381c19089fc758946d4f5ab9285262",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "issue/129-aw-01-freeze-server01-live-interfaces-and-migrat",
+      "tip": "3e9b967a10f15d3dc601bb5d9648881b735a0b8b",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "issue/131-repair-aw-01-phase-secret-scan-fixture-binding",
+      "tip": "baa87c4565fe3e63f89e501f153e3d546d806b57",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "issue/133-repair-aw-01-final-bugbot-database-findings",
+      "tip": "d60ebe7eb58acc94ddfc16e6514fd18b13fe2c25",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "issue/137-aw-02-implement-durable-automation-admission-and",
+      "tip": "c1379a1704796c56371b4807c1a349ad905a15eb",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "issue/138-aw-05-finalize-secure-server01-deployment-topolo",
+      "tip": "c12a6cefaf48fff35011cb5aca5fa4c75b9e2dd2",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "issue/139-aw-03-implement-durable-n8n-activation-and-callb",
+      "tip": "fa5375fe2f200ab621f2e5af12677af67499cdd9",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "issue/140-aw-04-build-server01-runtime-acceptance-fixture",
+      "tip": "a4794cd87eee8eafb8432235b3901d48745721a5",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "issue/141-aw-06-complete-operations-jetstream-observabilit",
+      "tip": "c0ee8b8af5b1a510f355955ef639ff7da7aea085",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "issue/142-aw-07-governed-integration-and-immutable-release",
+      "tip": "fc636bddec2c4aaff49f92c264517e2d40e1cafd",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "issue/143-add-controller-owned-production-safe-phase-withd",
+      "tip": "5e7a32dadb385ce183b457fdbac04c45e676ce25",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "issue/144-publish-exact-phase-pr-identity-in-packager-hand",
+      "tip": "18cac4f030377febc5b4b27be112c20daabbe5d1",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "issue/145-add-governed-consolidation-for-divergent-stale-p",
+      "tip": "5ae70878a158960911631e17f4a58188d4bd1a86",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "issue/146-enable-controller-authorized-live-phase-consolid",
+      "tip": "3d9f46c166c5660d1a7cce3117b8349b604faf2b",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "issue/147-add-linksites-source-only-consumer-registration",
+      "tip": "82e600b19e011d130cacbc8eb4398fbed9324c32",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "issue/149-repair-phase-fast-contract-workflow-path",
+      "tip": "17012ce29b3ebe19e82dac935708020ca168a1bf",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "issue/150-compose-aw-03-runtime-dispatch-with-linksites-co",
+      "tip": "3f72afd22531f1602102f760368c8d2ceda81659",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "issue/152-repair-phase-151-secret-scan-fixture-declaration",
+      "tip": "58bb3ed2c382651fe11c3c257a4971da48a393ce",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "issue/153-compose-phase-151-secret-scan-repair",
+      "tip": "d378bc4e0d7bce7c6d9c71ddb59e8650f21d8b3d",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "issue/155-enable-production-platform-jwks-verification-for",
+      "tip": "cad33ad3b5266ff69bebec5969bdeda9ffc5df36",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "issue/157-refresh-paci-verifier-phase-safety-register",
+      "tip": "84b4d6c4fe09342642b54d26e47370232f2d2eb0",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "issue/159-complete-aw08-scoped-product-api-runtime-and-rel",
+      "tip": "c7b5c8cd4803b81807a58aee931024a234a6d70b",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "issue/161-align-autowork-product-api-production-authentica",
+      "tip": "eff1619796f7d2385dfbd3e40632949ab432ed81",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "issue/163-refresh-server01-migration-package-identity-afte",
+      "tip": "7e3696f1269e16b14319b004a263257322c4b5e0",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "issue/165-prepare-linkautowork-1-0-release-candidate-and-d",
+      "tip": "a3c22a868a89c7627bd3018ece5edb21e7c59351",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "active 1.0 issue branch",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "issue/166-consolidate-linkautowork-1-0-repository-and-publ",
+      "tip": "a3c22a868a89c7627bd3018ece5edb21e7c59351",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "active 1.0 issue branch",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "main",
+      "tip": "2e30109acfb9510cd77e49f759648b2b6a666adc",
+      "form": "protected",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "protected",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "phase/autowork-successor-20260915-r1",
+      "tip": "ce3bc3dc16647696fb7c22070c2e28d6fb9ac058",
+      "form": "work",
+      "prEvidence": "MERGED",
+      "prHeadOid": "ce3bc3dc16647696fb7c22070c2e28d6fb9ac058",
+      "prs": [
+        {
+          "number": 162,
+          "state": "MERGED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/162",
+          "mergedAt": "2026-09-15T10:00:42Z"
+        }
+      ],
+      "decision": "WOULD_DELETE_REMOTE_IF_PRESERVE_RESOLVED",
+      "reason": "MERGED evidence; blocked by missing scripts/gitops/cleanup_preserve.defaults.json",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "phase/autowork-successor-20260915-r2",
+      "tip": "65e3f8217440197e6b7328a2a77a8800dc888dac",
+      "form": "work",
+      "prEvidence": "MERGED",
+      "prHeadOid": "65e3f8217440197e6b7328a2a77a8800dc888dac",
+      "prs": [
+        {
+          "number": 164,
+          "state": "MERGED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/164",
+          "mergedAt": "2026-09-15T10:00:41Z"
+        }
+      ],
+      "decision": "WOULD_DELETE_REMOTE_IF_PRESERVE_RESOLVED",
+      "reason": "MERGED evidence; blocked by missing scripts/gitops/cleanup_preserve.defaults.json",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "phase/aw01-aw07-complete-r2",
+      "tip": "2e4902ab3088f501b92f27024381b7d40600b811",
+      "form": "work",
+      "prEvidence": "MERGED",
+      "prHeadOid": "2e4902ab3088f501b92f27024381b7d40600b811",
+      "prs": [
+        {
+          "number": 151,
+          "state": "MERGED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/151",
+          "mergedAt": "2026-09-13T04:57:15Z"
+        }
+      ],
+      "decision": "WOULD_DELETE_REMOTE_IF_PRESERVE_RESOLVED",
+      "reason": "MERGED evidence; blocked by missing scripts/gitops/cleanup_preserve.defaults.json",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "phase/aw01-aw07-complete-r4",
+      "tip": "74a74e561f1f569992176a4514955c6dcda8d1b1",
+      "form": "work",
+      "prEvidence": "MERGED",
+      "prHeadOid": "74a74e561f1f569992176a4514955c6dcda8d1b1",
+      "prs": [
+        {
+          "number": 154,
+          "state": "MERGED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/154",
+          "mergedAt": "2026-09-13T04:57:12Z"
+        }
+      ],
+      "decision": "WOULD_DELETE_REMOTE_IF_PRESERVE_RESOLVED",
+      "reason": "MERGED evidence; blocked by missing scripts/gitops/cleanup_preserve.defaults.json",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "phase/aw01-ci-db-ready",
+      "tip": "6c0bc6aadd30d0dd45091f894b4031a6e6408f1e",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [
+        {
+          "number": 135,
+          "state": "CLOSED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/135",
+          "mergedAt": null
+        }
+      ],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "phase/aw01-final-bugbot-database-findings",
+      "tip": "6130f12b59902a27780c18672049a40be4b63858",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "phase/aw01-final-bugbot-database-findings-r2",
+      "tip": "b240d1889dcdda4ed68a4f9e0d2e98596a0f53f9",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [
+        {
+          "number": 148,
+          "state": "CLOSED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/148",
+          "mergedAt": null
+        }
+      ],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "phase/aw01-fixture-rebind",
+      "tip": "44bd504cca5426f4090307f974f337adc8c585b7",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [
+        {
+          "number": 136,
+          "state": "CLOSED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/136",
+          "mergedAt": null
+        }
+      ],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "phase/aw08-production-paci-verifier-r1",
+      "tip": "5187ccd3a8841f1066d65db9d604119279a48fc0",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [
+        {
+          "number": 156,
+          "state": "CLOSED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/156",
+          "mergedAt": null
+        }
+      ],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "phase/aw08-production-paci-verifier-r2",
+      "tip": "c6b5f29aec7ef47aa621b05a379121ec1afe02b9",
+      "form": "work",
+      "prEvidence": "MERGED",
+      "prHeadOid": "c6b5f29aec7ef47aa621b05a379121ec1afe02b9",
+      "prs": [
+        {
+          "number": 158,
+          "state": "MERGED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/158",
+          "mergedAt": "2026-09-13T06:59:13Z"
+        }
+      ],
+      "decision": "WOULD_DELETE_REMOTE_IF_PRESERVE_RESOLVED",
+      "reason": "MERGED evidence; blocked by missing scripts/gitops/cleanup_preserve.defaults.json",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "phase/aw08-scoped-runtime-release",
+      "tip": "e937b7b344aecab34cd56094ff1879c8c4061307",
+      "form": "work",
+      "prEvidence": "MERGED",
+      "prHeadOid": "e937b7b344aecab34cd56094ff1879c8c4061307",
+      "prs": [
+        {
+          "number": 160,
+          "state": "MERGED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/160",
+          "mergedAt": "2026-09-15T04:06:08Z"
+        }
+      ],
+      "decision": "WOULD_DELETE_REMOTE_IF_PRESERVE_RESOLVED",
+      "reason": "MERGED evidence; blocked by missing scripts/gitops/cleanup_preserve.defaults.json",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "phase/next",
+      "tip": "7d5a3e7d4d2dc55a0edace76a56e1fb26396f3f0",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [
+        {
+          "number": 134,
+          "state": "CLOSED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/134",
+          "mergedAt": null
+        }
+      ],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "phase/s01-autowork-011",
+      "tip": "6ac64b3bc8fee856e1c9c77f41e06d6358dbc32e",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [
+        {
+          "number": 125,
+          "state": "CLOSED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/125",
+          "mergedAt": null
+        }
+      ],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "phase/server01-aw01-interface-freeze-129",
+      "tip": "443ee32eb5270526f0eb36e4f1fab9d98fb8d6f6",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [
+        {
+          "number": 130,
+          "state": "CLOSED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/130",
+          "mergedAt": null
+        }
+      ],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "phase/server01-aw01-interface-freeze-repair-129-131",
+      "tip": "5ebfb7478331b4c8c57d5ac2663dedf3e5bdbad9",
+      "form": "work",
+      "prEvidence": "NONE",
+      "prHeadOid": null,
+      "prs": [
+        {
+          "number": 132,
+          "state": "CLOSED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/132",
+          "mergedAt": null
+        }
+      ],
+      "decision": "KEEP",
+      "reason": "no merged/abandoned PR evidence",
+      "deletedThisPacket": false
+    },
+    {
+      "branch": "staging",
+      "tip": "96267009bfa6dc55921484a2294f74709224940b",
+      "form": "protected",
+      "prEvidence": "MERGED",
+      "prHeadOid": "2ee0c6773053bba5034ee797929fd865a47fa794",
+      "prs": [
+        {
+          "number": 79,
+          "state": "MERGED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/79",
+          "mergedAt": "2026-08-12T23:23:28Z"
+        },
+        {
+          "number": 49,
+          "state": "MERGED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/49",
+          "mergedAt": "2026-08-04T10:17:26Z"
+        },
+        {
+          "number": 44,
+          "state": "MERGED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/44",
+          "mergedAt": "2026-07-23T05:48:12Z"
+        },
+        {
+          "number": 41,
+          "state": "MERGED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/41",
+          "mergedAt": "2026-07-19T03:57:52Z"
+        },
+        {
+          "number": 38,
+          "state": "MERGED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/38",
+          "mergedAt": "2026-07-19T01:48:58Z"
+        },
+        {
+          "number": 35,
+          "state": "MERGED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/35",
+          "mergedAt": "2026-07-19T01:37:51Z"
+        },
+        {
+          "number": 31,
+          "state": "MERGED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/31",
+          "mergedAt": "2026-07-19T01:25:06Z"
+        },
+        {
+          "number": 29,
+          "state": "MERGED",
+          "url": "https://github.com/linktrend/LiNKautowork/pull/29",
+          "mergedAt": "2026-07-19T01:14:13Z"
+        }
+      ],
+      "decision": "KEEP",
+      "reason": "protected",
+      "deletedThisPacket": false
+    }
+  ]
+}
