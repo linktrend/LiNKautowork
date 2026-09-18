@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "kind": "aw-07-source-identity",
+  "notProduction": true,
+  "protectedIntegrationClaimed": false,
+  "implementerOpenedPr": false,
+  "mergedByThisPacket": false,
+  "inputIdentity": {
+    "repository": "linktrend/LiNKautowork",
+    "ref": "issue/165-prepare-linkautowork-1-0-release-candidate-and-d",
+    "commit": "20f3d4cc03445ca443e31c41f22d34347c866acf",
+    "tree": "95bec98a0d65ca30889e595a7bcaa85ddfe52b47"
+  },
+  "initialCachedIdentity": {
+    "repository": "linktrend/LiNKautowork",
+    "origin": "https://github.com/linktrend/LiNKautowork",
+    "branch": "cursor/linkautowork-1-0-release-candidate-165-ed82",
+    "commit": "20f3d4cc03445ca443e31c41f22d34347c866acf",
+    "tree": "95bec98a0d65ca30889e595a7bcaa85ddfe52b47",
+    "dirty": false,
+    "note": "Cached cloud checkout was already at the supplied SHA/tree on a cursor/* tracking branch, not main."
+  },
+  "fetchedSuppliedBranch": {
+    "ref": "origin/issue/165-prepare-linkautowork-1-0-release-candidate-and-d",
+    "commit": "20f3d4cc03445ca443e31c41f22d34347c866acf",
+    "tree": "95bec98a0d65ca30889e595a7bcaa85ddfe52b47",
+    "matchedInput": true
+  },
+  "admittedStartingWorkIdentity": {
+    "repository": "linktrend/LiNKautowork",
+    "branch": "issue/165-prepare-linkautowork-1-0-release-candidate-and-d",
+    "commit": "20f3d4cc03445ca443e31c41f22d34347c866acf",
+    "tree": "95bec98a0d65ca30889e595a7bcaa85ddfe52b47",
+    "dirty": false,
+    "role": "writer",
+    "createIssueBranchHelper": "not-run",
+    "createIssueBranchHelperReason": "scripts/gitops/create_issue_branch.py fetches origin/development; that would violate exact supplied identity. Issue #165 already owned this branch at the supplied SHA."
+  },
+  "planningManifestBaseline": {
+    "path": "docs/end-to-end-delivery/EXECUTION-MANIFEST.json",
+    "sha256": "8a19a79b1461abad4abef25970a7ff3ad7c4363c042fc9c26b276d4551da34c5",
+    "recordedBaselineCommit": "a13a6467fc9bc2fccdddd1de8d9e258c78e57fdd",
+    "recordedBaselineTree": "10e6b59394bfd57703d6f3cee5d7bcda3aa7342f",
+    "note": "Planning JSON still records the 2026-09-10 development pin. This packet does not rewrite that file. Candidate source identity is the admitted SHA above."
+  },
+  "hostedCiOnExactCommit": {
+    "workflow": "LiNKautowork CI",
+    "runId": 34955615212,
+    "url": "https://github.com/linktrend/LiNKautowork/actions/runs/34955615212",
+    "headSha": "20f3d4cc03445ca443e31c41f22d34347c866acf",
+    "conclusion": "success",
+    "event": "push",
+    "displayTitle": "Merge pull request #164 from linktrend/phase/autowork-successor-20260915-r2"
+  }
+}

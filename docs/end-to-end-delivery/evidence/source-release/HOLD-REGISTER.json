@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "kind": "aw-07-source-only-hold-register",
+  "proofClass": "local",
+  "notProduction": true,
+  "holds": [
+    {
+      "id": "AW-01-LIVE-PLATFORM-APPLY",
+      "packet": "AW-01",
+      "status": "HOLD",
+      "statement": "Live Platform migration application, fingerprint receipts, and Server01 database role grants remain HOLD. Source package hashes match; live apply is not claimed."
+    },
+    {
+      "id": "AW-02-STAGE-CREDENTIALS-DISPATCH",
+      "packet": "AW-02",
+      "status": "HOLD",
+      "statement": "Stage/production credentials, live queue drain, external dispatch, and consumer E2E remain HOLD."
+    },
+    {
+      "id": "AW-03-LIVE-N8N-BRIDGE",
+      "packet": "AW-03",
+      "status": "HOLD",
+      "statement": "Live n8n activation, callback ingress, and consumer factory destinations remain HOLD."
+    },
+    {
+      "id": "AW-04-LIVE-N8N",
+      "packet": "AW-04",
+      "status": "HOLD",
+      "sourcePath": "automations/evals/server01-runtime-acceptance/HOLD.md",
+      "statement": "n8n_dispatched is always false. live_n8n_activation is always hold. eval:smoke used source-only mock."
+    },
+    {
+      "id": "AW-05-LIVE-TOPOLOGY",
+      "packet": "AW-05",
+      "status": "HOLD",
+      "statement": "docker compose up, GSM resolve, canary, live ports, and host image IDs remain HOLD. Tag pins and Dockerfiles are source contracts only."
+    },
+    {
+      "id": "AW-06-LIVE-OPS",
+      "packet": "AW-06",
+      "status": "HOLD",
+      "statement": "Live Server01/NATS/JetStream/n8n/GSM backup/restore/deploy remain HOLD."
+    },
+    {
+      "id": "AW-07-PROTECTED-INTEGRATION",
+      "packet": "AW-07",
+      "status": "HOLD",
+      "statement": "No merge to development from this implementer, no Phase PR, no staging/main promotion. Packager/controller own integration."
+    },
+    {
+      "id": "AW-07-LOCAL-NPM-CI",
+      "packet": "AW-07",
+      "status": "HOLD_LOCAL",
+      "statement": "Writer npm run ci failed because docker is absent and Docker start is forbidden. Hosted CI on the same SHA is success. Local non-Docker remainder passed."
+    },
+    {
+      "id": "AW-08-LIVE-ACCEPTANCE",
+      "packet": "AW-08",
+      "status": "HOLD",
+      "statement": "Server01 install, canary, founder walkthrough, and live receipts are out of this packet."
+    },
+    {
+      "id": "TOOLCHAIN-ENGINES-UNPINNED",
+      "packet": "AW-07",
+      "status": "DIAGNOSIS",
+      "statement": "No package.json engines and no .nvmrc. CI Node 22 and image node:22.13.1-alpine remain the source pins. Writer used nvm 22.22.2 after diagnosing PATH hijack by /exec-daemon/node 22.14.0."
+    },
+    {
+      "id": "NPM-AUDIT-PRODUCTION-MODERATE",
+      "packet": "AW-07",
+      "status": "DIAGNOSIS",
+      "statement": "npm audit --omit=dev reports 3 moderate findings (express, body-parser, qs) on the frozen lock. Lock not changed in this packet."
+    }
+  ]
+}
