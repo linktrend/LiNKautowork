@@ -44,6 +44,24 @@ describe('Product API production constructor', () => {
     expect(app).toEqual(expect.any(Function));
   });
 
+  it('accepts an explicitly rooted private PostgREST transport', async () => {
+    stubProductionEnvironment();
+    vi.stubEnv('PRODUCT_API_POSTGREST_URL', 'http://product-api-postgrest:3000');
+    vi.stubEnv('PRODUCT_API_POSTGREST_RPC_PATH', '');
+    const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    createProductionServer();
+    const rpc = createPostgrestRpc({ restUrl: process.env.PRODUCT_API_POSTGREST_URL!, rpcPath: process.env.PRODUCT_API_POSTGREST_RPC_PATH!, runtimeToken: process.env.PRODUCT_API_RUNTIME_TOKEN! });
+    await rpc('linkautowork_product_published_products', { p_limit: 1, p_cursor: null });
+    expect(fetchMock).toHaveBeenCalledWith('http://product-api-postgrest:3000/rpc/linkautowork_product_published_products', expect.anything());
+  });
+
+  it('rejects unexpected PostgREST path overrides', () => {
+    stubProductionEnvironment();
+    vi.stubEnv('PRODUCT_API_POSTGREST_RPC_PATH', '/admin');
+    expect(() => createProductionServer()).toThrow('PRODUCT_API_POSTGREST_RPC_PATH');
+  });
+
   it('fails before constructing the production app when either exact origin is absent', () => {
     stubProductionEnvironment();
 
