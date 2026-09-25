@@ -25,10 +25,14 @@ runs `ops/operator-console-loopback.py` as the systemd unit
 the `operator-console` container by Compose project/service label on each
 connection, so recreating the container does not break the route.
 
-Public inbound webhooks use the separate `deploy/edge` Compose project (Caddy,
-automatic TLS). It publishes 80/443 on the public address only and proxies just
-`/webhook/`, `/webhook-test/`, and `/webhook-waiting/` to `n8n:5678`; every other
-path on the public host returns 404. n8n's `WEBHOOK_URL` is the public base, so
+Public inbound webhooks use the separate `deploy/edge` Compose project. Server 01
+drops all public inbound traffic to containers (`linktrend-docker-firewall`), so
+ingress is an outbound-only Cloudflare Tunnel: Cloudflare terminates TLS for
+`autowork.linktrend.one`, `cloudflared` forwards to `http://caddy:80`, and Caddy
+passes only `/webhook/`, `/webhook-test/`, and `/webhook-waiting/` to
+`n8n:5678`; every other path returns 404. `cloudflared` is not on the runtime
+network, so it cannot reach n8n except through Caddy. The tunnel's public
+hostname must point at `http://caddy:80`. n8n's `WEBHOOK_URL` is the public base, so
 the webhook URLs n8n shows are the public ones. The editor, API, gateway, and
 consoles remain tailnet-only.
 
