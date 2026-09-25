@@ -36,11 +36,15 @@ hostname must point at `http://caddy:80`. n8n's `WEBHOOK_URL` is the public base
 the webhook URLs n8n shows are the public ones. The editor, API, gateway, and
 consoles remain tailnet-only.
 
-The operations scheduler maps the runtime names `OPERATIONS_SERVICE_TOKEN` and
-`OPERATIONS_PLATFORM_INVOCATION_TOKEN` onto `LINK_SERVICE_TOKEN_OPERATIONS` and
-`PLATFORM_INVOCATION_TOKEN`. The gateway only accepts a Platform-signed PACI
-token that lives at most 15 minutes, so the scheduler still needs a PACI client
-that mints a fresh token per run before it can be started.
+The operations scheduler mints a fresh Platform PACI token for every run
+(`ops/mint-platform-token.mjs`: `client_credentials` with a signed client
+assertion as `server01-lautowork-operations`, audience `linkautowork-gateway`,
+operation `execute`). Its private key is the Docker secret
+`operations-platform-client-key`. It calls the gateway as service `operations`
+with `OPERATIONS_SERVICE_TOKEN`, which must equal the gateway's `operations`
+entry in `LINK_SERVICE_TOKENS`. The gateway introspects those tokens as
+`server01-lautowork-gateway` (Platform grants that client a narrow introspection
+policy for scheduler tokens only).
 
 Release jobs (`migration-preflight`, `certified-package-publisher`) stay on
 `--profile release-jobs`. Migration mode is `dry-run` and refuses SQL apply.
