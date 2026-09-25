@@ -1,0 +1,22 @@
+# Public edge for LiNKautowork. Only n8n webhook paths are public; everything
+# else on the host is reserved for the future dashboard and answers 404.
+# The n8n editor, API, gateway, and consoles stay tailnet-only.
+{
+	email {$ACME_EMAIL}
+}
+
+{$AUTOWORK_PUBLIC_HOST} {
+	header -Server
+
+	@webhooks path /webhook/* /webhook-test/* /webhook-waiting/*
+	handle @webhooks {
+		request_body {
+			max_size 16MB
+		}
+		reverse_proxy n8n:5678
+	}
+
+	handle {
+		respond 404
+	}
+}

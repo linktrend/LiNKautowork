@@ -304,7 +304,7 @@ services:
       N8N_API_KEY: ${N8N_API_KEY:-}
       LINKAUTOWORK_APPROVED_TARGET: ${LINKAUTOWORK_APPROVED_TARGET:-}
       LINKAUTOWORK_RELEASE_AUTHORIZATION: ${LINKAUTOWORK_RELEASE_AUTHORIZATION:-}
-    command: ["./ops/publish-certified-packages.sh"]
+    command: ["./ops/publish-certified-packages.sh", "--environment", "prod"]
     networks:
       - autowork-runtime
     depends_on:
