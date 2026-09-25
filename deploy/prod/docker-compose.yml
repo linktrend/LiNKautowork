@@ -166,6 +166,27 @@ services:
           cpus: "0.25"
           memory: 256M
 
+  product-api-postgrest:
+    image: postgrest/postgrest@sha256:7afcb0447b7849f6875bba4a0c603d79b1e2e44aec97af123bf9a0a2ccfeae52
+    restart: unless-stopped
+    user: "0:0"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 128m
+    pids_limit: 64
+    environment:
+      PGRST_DB_URI: "@/run/secrets/db-uri"
+      PGRST_JWT_SECRET: "@/run/secrets/jwt-secret"
+      PGRST_DB_ANON_ROLE: svc_lautowork_product_api_anon
+      PGRST_DB_SCHEMAS: public
+      PGRST_DB_POOL: "5"
+      PGRST_SERVER_PORT: "3000"
+    volumes:
+      - /srv/linktrend/runtime/autowork-product-postgrest:/run/secrets:ro
+    networks:
+      - autowork-edge
+
   product-api:
     build:
       context: ../..
@@ -188,6 +209,7 @@ services:
       PRODUCT_API_PACI_CLIENT_ASSERTION_SECRET_RESOURCE: ${PRODUCT_API_PACI_CLIENT_ASSERTION_SECRET_RESOURCE}
       GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/gcp-service-account
       PRODUCT_API_POSTGREST_URL: ${PRODUCT_API_POSTGREST_URL:-}
+      PRODUCT_API_POSTGREST_RPC_PATH: ${PRODUCT_API_POSTGREST_RPC_PATH-/rest/v1}
       PRODUCT_API_RUNTIME_TOKEN: ${PRODUCT_API_RUNTIME_TOKEN:-}
       PRODUCT_API_API_KEY: ${PRODUCT_API_API_KEY:-}
       PRODUCT_API_WEBHOOK_SECRET: ${PRODUCT_API_WEBHOOK_SECRET:-}
