@@ -1,0 +1,26 @@
+# Public edge for LiNKautowork, reached only through the Cloudflare Tunnel
+# (cloudflared -> caddy:80). Cloudflare terminates TLS. Only n8n webhook paths
+# pass; everything else is reserved for the future dashboard and answers 404.
+# The n8n editor, API, gateway, and consoles stay tailnet-only.
+{
+	auto_https off
+}
+
+:80 {
+	header -Server
+
+	@webhooks {
+		host {$AUTOWORK_PUBLIC_HOST}
+		path /webhook/* /webhook-test/*
+	}
+	handle @webhooks {
+		request_body {
+			max_size 16MB
+		}
+		reverse_proxy n8n:5678
+	}
+
+	handle {
+		respond 404
+	}
+}

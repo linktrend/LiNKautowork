@@ -18,6 +18,34 @@ Services started in the default production project:
 - `product-api` (`PRODUCT_API_PORT=8080`, unpublished) and `operator-console` on `autowork-edge` (private)
 - `operations-scheduler` behind `--profile operations` on `autowork-events`
 
+The operator console is reached on the tailnet through Tailscale Serve
+(`:8445` → `127.0.0.1:18803`). Compose publishes no host ports, so the host
+runs `ops/operator-console-loopback.py` as the systemd unit
+`deploy/prod/linkautowork-operator-console-loopback.service`. The relay looks up
+the `operator-console` container by Compose project/service label on each
+connection, so recreating the container does not break the route.
+
+Public inbound webhooks use the separate `deploy/edge` Compose project. Server 01
+drops all public inbound traffic to containers (`linktrend-docker-firewall`), so
+ingress is an outbound-only Cloudflare Tunnel: Cloudflare terminates TLS for
+`autowork.linktrend.one`, `cloudflared` forwards to `http://caddy:80`, and Caddy
+passes only `/webhook/` and `/webhook-test/` to
+`n8n:5678`; every other path returns 404. `cloudflared` is not on the runtime
+network, so it cannot reach n8n except through Caddy. The tunnel's public
+hostname must point at `http://caddy:80`. n8n's `WEBHOOK_URL` is the public base, so
+the webhook URLs n8n shows are the public ones. The editor, API, gateway, and
+consoles remain tailnet-only.
+
+The operations scheduler mints a fresh Platform PACI token for every run
+(`ops/mint-platform-token.mjs`: `client_credentials` with a signed client
+assertion as `server01-lautowork-operations`, audience `linkautowork-gateway`,
+operation `execute`). Its private key is the Docker secret
+`operations-platform-client-key`. It calls the gateway as service `operations`
+with `OPERATIONS_SERVICE_TOKEN`, which must equal the gateway's `operations`
+entry in `LINK_SERVICE_TOKENS`. The gateway introspects those tokens as
+`server01-lautowork-gateway` (Platform grants that client a narrow introspection
+policy for scheduler tokens only).
+
 Release jobs (`migration-preflight`, `certified-package-publisher`) stay on
 `--profile release-jobs`. Migration mode is `dry-run` and refuses SQL apply.
 `client-web` is `--profile retained-images` only: it may be built and kept with

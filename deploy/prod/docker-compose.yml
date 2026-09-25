@@ -36,6 +36,11 @@ secrets:
   gcp-service-account:
     external: true
     name: ${GOOGLE_APPLICATION_CREDENTIALS_DOCKER_SECRET_NAME:-linkautowork-gcp-service-account}
+  # Operations scheduler PACI client private key (ES256). Public half is
+  # registered on Platform as server01-lautowork-operations.
+  operations-platform-client-key:
+    external: true
+    name: ${OPERATIONS_PLATFORM_CLIENT_KEY_DOCKER_SECRET_NAME:-linkautowork-operations-platform-client-key}
 
 services:
   nats:
@@ -304,7 +309,7 @@ services:
       N8N_API_KEY: ${N8N_API_KEY:-}
       LINKAUTOWORK_APPROVED_TARGET: ${LINKAUTOWORK_APPROVED_TARGET:-}
       LINKAUTOWORK_RELEASE_AUTHORIZATION: ${LINKAUTOWORK_RELEASE_AUTHORIZATION:-}
-    command: ["./ops/publish-certified-packages.sh"]
+    command: ["./ops/publish-certified-packages.sh", "--environment", "prod"]
     networks:
       - autowork-runtime
     depends_on:
@@ -327,12 +332,24 @@ services:
         required: false
     environment:
       LINKAUTOWORK_GATEWAY_URL: http://gateway:8080
-      LINK_SERVICE_TOKEN_OPERATIONS: ${LINK_SERVICE_TOKEN_OPERATIONS:-}
-      PLATFORM_INVOCATION_TOKEN: ${PLATFORM_INVOCATION_TOKEN:-}
+      # The rendered runtime env names the service token OPERATIONS_SERVICE_TOKEN
+      # (see .env.example secret names); it must equal the gateway's
+      # LINK_SERVICE_TOKENS entry for LINK_SERVICE_NAME_OPERATIONS.
+      LINK_SERVICE_TOKEN_OPERATIONS: ${LINK_SERVICE_TOKEN_OPERATIONS:-${OPERATIONS_SERVICE_TOKEN:-}}
+      LINK_SERVICE_NAME_OPERATIONS: ${LINK_SERVICE_NAME_OPERATIONS:-operations}
+      # Each run mints a fresh Platform PACI token (ops/mint-platform-token.mjs).
+      PLATFORM_JWT_ISSUER: ${PLATFORM_JWT_ISSUER:-}
+      OPERATIONS_PLATFORM_CLIENT_ID: ${OPERATIONS_PLATFORM_CLIENT_ID:-server01-lautowork-operations}
+      OPERATIONS_PLATFORM_CLIENT_KEY_ID: ${OPERATIONS_PLATFORM_CLIENT_KEY_ID:-server01-lautowork-operations}
+      OPERATIONS_PLATFORM_CLIENT_KEY_FILE: /run/secrets/operations-platform-client-key
       LAUTOWORK_OBSERVER_DB_ROLE: ${LAUTOWORK_OBSERVER_DB_ROLE:-svc_observer}
     command: ["./ops/run-operations-scheduler.sh"]
     networks:
       - autowork-events
+    secrets:
+      - source: operations-platform-client-key
+        target: operations-platform-client-key
+        mode: 0400
     depends_on:
       gateway:
         condition: service_healthy
