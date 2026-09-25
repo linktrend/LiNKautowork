@@ -1,5 +1,5 @@
 -- Runs only in the disposable PostgreSQL conformance transaction.
-insert into platform.organizations(id,slug) values
+insert into platform.organizations(id,name) values
  ('00000000-0000-0000-0000-0000000000d1','scoped-product-a'),
  ('00000000-0000-0000-0000-0000000000d2','scoped-product-b');
 set local lautowork.test_context = 'off';

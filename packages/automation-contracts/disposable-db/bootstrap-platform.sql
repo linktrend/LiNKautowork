@@ -5,7 +5,8 @@ do $$ begin if not exists(select 1 from pg_roles where rolname='wrong_runtime') 
 create type platform.member_role as enum ('client_viewer');
 create table platform.organizations (
   id uuid primary key,
-  slug text not null unique
+  name text not null,
+  status text not null default 'active'
 );
 create or replace function platform.has_org_access(target_org_id uuid, minimum_role platform.member_role)
 returns boolean
