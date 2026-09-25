@@ -5,6 +5,9 @@ WORKDIR /app
 # the existing gateway contract, not a second service.
 COPY package.json package-lock.json tsconfig.json ./
 COPY gateway ./gateway
+# The gateway imports these workspace packages at runtime.
+COPY packages/automation-contracts ./packages/automation-contracts
+COPY packages/automation-operations ./packages/automation-operations
 RUN npm ci --ignore-scripts --no-audit --no-fund
 
 FROM node:22.13.1-alpine AS build
@@ -19,6 +22,7 @@ COPY --from=build /app/dist /app/dist
 COPY --from=deps /app/node_modules /app/node_modules
 COPY --from=deps /app/package.json /app/package.json
 COPY --from=deps /app/package-lock.json /app/package-lock.json
+COPY --from=deps /app/packages /app/packages
 RUN addgroup -S app && adduser -S -G app app && chown -R app:app /app
 USER app
 EXPOSE 8080

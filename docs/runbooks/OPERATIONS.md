@@ -18,6 +18,19 @@ Services started in the default production project:
 - `product-api` (`PRODUCT_API_PORT=8080`, unpublished) and `operator-console` on `autowork-edge` (private)
 - `operations-scheduler` behind `--profile operations` on `autowork-events`
 
+The operator console is reached on the tailnet through Tailscale Serve
+(`:8445` → `127.0.0.1:18803`). Compose publishes no host ports, so the host
+runs `ops/operator-console-loopback.py` as the systemd unit
+`deploy/prod/linkautowork-operator-console-loopback.service`. The relay looks up
+the `operator-console` container by Compose project/service label on each
+connection, so recreating the container does not break the route.
+
+The operations scheduler maps the runtime names `OPERATIONS_SERVICE_TOKEN` and
+`OPERATIONS_PLATFORM_INVOCATION_TOKEN` onto `LINK_SERVICE_TOKEN_OPERATIONS` and
+`PLATFORM_INVOCATION_TOKEN`. The gateway only accepts a Platform-signed PACI
+token that lives at most 15 minutes, so the scheduler still needs a PACI client
+that mints a fresh token per run before it can be started.
+
 Release jobs (`migration-preflight`, `certified-package-publisher`) stay on
 `--profile release-jobs`. Migration mode is `dry-run` and refuses SQL apply.
 `client-web` is `--profile retained-images` only: it may be built and kept with
