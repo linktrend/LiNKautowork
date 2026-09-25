@@ -75,10 +75,10 @@ $$;
 create or replace function lautowork.operator_records_organisations(p_limit integer, p_offset integer)
 returns jsonb language sql stable security definer set search_path = lautowork, platform, pg_temp as $$
   select coalesce(jsonb_agg(jsonb_build_object(
-    'id', o.id, 'orgId', o.id, 'state', 'active', 'status', o.name, 'version', 1,
+    'id', o.id, 'orgId', o.id, 'state', o.status::text, 'status', o.status::text, 'version', 1,
     'summary', 'Organisation ' || o.name
-  ) order by o.name), '[]'::jsonb)
-  from (select * from platform.organizations order by name offset p_offset limit p_limit) o;
+  ) order by o.name, o.id), '[]'::jsonb)
+  from (select * from platform.organizations order by name, id offset p_offset limit p_limit) o;
 $$;
 
 create or replace function lautowork.operator_records_subscriptions(p_limit integer, p_offset integer)
