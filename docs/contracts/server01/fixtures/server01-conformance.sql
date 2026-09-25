@@ -1,6 +1,6 @@
 \set ON_ERROR_STOP on
 
-insert into platform.organizations (id, slug) values
+insert into platform.organizations (id, name) values
   ('00000000-0000-0000-0000-0000000000a1', 'server01-org-a'),
   ('00000000-0000-0000-0000-0000000000b1', 'server01-org-b')
 on conflict (id) do nothing;
