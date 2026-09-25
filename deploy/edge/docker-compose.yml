@@ -1,0 +1,49 @@
+# Public webhook edge (separate project so the production Compose keeps its
+# no-host-ports policy). Binds 80/443 on the public address only, because
+# tailscaled already holds 443 on the tailnet address.
+name: linkautowork-edge
+
+networks:
+  autowork-runtime:
+    external: true
+    name: linkautowork_autowork-runtime
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+services:
+  caddy:
+    image: caddy:2.11.4-alpine
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    read_only: true
+    tmpfs:
+      - /tmp
+    environment:
+      AUTOWORK_PUBLIC_HOST: ${AUTOWORK_PUBLIC_HOST:?public webhook host required}
+      ACME_EMAIL: ${ACME_EMAIL:?ACME contact email required}
+    ports:
+      - "${AUTOWORK_PUBLIC_BIND_IP:?public bind address required}:80:80"
+      - "${AUTOWORK_PUBLIC_BIND_IP}:443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - autowork-runtime
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:2019/config/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M

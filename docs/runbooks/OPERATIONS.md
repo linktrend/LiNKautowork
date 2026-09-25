@@ -25,6 +25,13 @@ runs `ops/operator-console-loopback.py` as the systemd unit
 the `operator-console` container by Compose project/service label on each
 connection, so recreating the container does not break the route.
 
+Public inbound webhooks use the separate `deploy/edge` Compose project (Caddy,
+automatic TLS). It publishes 80/443 on the public address only and proxies just
+`/webhook/`, `/webhook-test/`, and `/webhook-waiting/` to `n8n:5678`; every other
+path on the public host returns 404. n8n's `WEBHOOK_URL` is the public base, so
+the webhook URLs n8n shows are the public ones. The editor, API, gateway, and
+consoles remain tailnet-only.
+
 The operations scheduler maps the runtime names `OPERATIONS_SERVICE_TOKEN` and
 `OPERATIONS_PLATFORM_INVOCATION_TOKEN` onto `LINK_SERVICE_TOKEN_OPERATIONS` and
 `PLATFORM_INVOCATION_TOKEN`. The gateway only accepts a Platform-signed PACI
