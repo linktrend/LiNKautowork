@@ -3,7 +3,17 @@
 -- Platform applies after the accepted sixteen-file package and verified backup.
 -- migrate:up
 
-alter role svc_lautowork_product_api nologin nosuperuser nocreatedb nocreaterole noreplication nobypassrls;
+-- Supabase has no superuser migration identity, and only a superuser may
+-- restate SUPERUSER/REPLICATION/BYPASSRLS. Assert them instead, then drop LOGIN.
+do $$
+begin
+  if exists (select 1 from pg_roles where rolname = 'svc_lautowork_product_api'
+              and (rolsuper or rolcreatedb or rolcreaterole or rolreplication or rolbypassrls)) then
+    raise exception 'svc_lautowork_product_api must not hold superuser, createdb, createrole, replication, or bypassrls';
+  end if;
+end
+$$;
+alter role svc_lautowork_product_api nologin;
 grant usage on schema public, lautowork to svc_lautowork_product_api;
 
 create or replace function lautowork.assert_product_api_transport_authorized(p_target_org_id uuid)

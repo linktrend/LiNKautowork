@@ -1,7 +1,17 @@
 -- AW08 dedicated gateway access to the existing durable v2 execution path.
 -- No table writes, role inheritance, BYPASSRLS, provisioning or operator grants.
 -- migrate:up
-alter role svc_lautowork_gateway nologin nosuperuser nocreatedb nocreaterole noreplication nobypassrls;
+-- Supabase has no superuser migration identity, and only a superuser may
+-- restate SUPERUSER/REPLICATION/BYPASSRLS. Assert them instead, then drop LOGIN.
+do $$
+begin
+  if exists (select 1 from pg_roles where rolname = 'svc_lautowork_gateway'
+              and (rolsuper or rolcreatedb or rolcreaterole or rolreplication or rolbypassrls)) then
+    raise exception 'svc_lautowork_gateway must not hold superuser, createdb, createrole, replication, or bypassrls';
+  end if;
+end
+$$;
+alter role svc_lautowork_gateway nologin;
 grant usage on schema public, lautowork to svc_lautowork_gateway;
 
 create or replace function lautowork.assert_command_authorized(p_target_org_id uuid)
