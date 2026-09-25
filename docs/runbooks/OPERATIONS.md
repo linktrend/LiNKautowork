@@ -29,7 +29,7 @@ Public inbound webhooks use the separate `deploy/edge` Compose project. Server 0
 drops all public inbound traffic to containers (`linktrend-docker-firewall`), so
 ingress is an outbound-only Cloudflare Tunnel: Cloudflare terminates TLS for
 `autowork.linktrend.one`, `cloudflared` forwards to `http://caddy:80`, and Caddy
-passes only `/webhook/`, `/webhook-test/`, and `/webhook-waiting/` to
+passes only `/webhook/` and `/webhook-test/` to
 `n8n:5678`; every other path returns 404. `cloudflared` is not on the runtime
 network, so it cannot reach n8n except through Caddy. The tunnel's public
 hostname must point at `http://caddy:80`. n8n's `WEBHOOK_URL` is the public base, so

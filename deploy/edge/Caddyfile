@@ -11,7 +11,7 @@
 
 	@webhooks {
 		host {$AUTOWORK_PUBLIC_HOST}
-		path /webhook/* /webhook-test/* /webhook-waiting/*
+		path /webhook/* /webhook-test/*
 	}
 	handle @webhooks {
 		request_body {
