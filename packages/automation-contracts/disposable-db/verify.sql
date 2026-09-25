@@ -7,7 +7,7 @@ begin
 end;
 $$;
 
-insert into platform.organizations (id, slug) values
+insert into platform.organizations (id, name) values
   ('00000000-0000-0000-0000-000000000001', 'linktrend-internal'),
   ('00000000-0000-0000-0000-000000000002', 'client-a'),
   ('00000000-0000-0000-0000-000000000003', 'client-b');

@@ -1,5 +1,5 @@
 -- Disposable-only dedicated gateway role proof; no n8n or external calls.
-insert into platform.organizations(id,slug) values ('00000000-0000-0000-0000-0000000000e1','gateway-scoped-a'),('00000000-0000-0000-0000-0000000000e2','gateway-scoped-b');
+insert into platform.organizations(id,name) values ('00000000-0000-0000-0000-0000000000e1','gateway-scoped-a'),('00000000-0000-0000-0000-0000000000e2','gateway-scoped-b');
 insert into lautowork.automation_definitions(id,org_id,automation_id,display_name,summary,owning_program,owner_kind,classification)
 values ('10000000-0000-0000-0000-0000000000e1','00000000-0000-0000-0000-0000000000e1','gateway-private-check','Gateway Private Check','Disposable gateway role verification with no external effects.','linkautowork','commercial_product','commercial_capable');
 insert into lautowork.automation_releases(id,org_id,definition_id,version,channel,lifecycle,package_digest,workflow_digest,source_git_sha,n8n_version,package_path)
