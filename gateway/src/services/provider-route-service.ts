@@ -140,8 +140,7 @@ function assertRequestIdentity(request: ProviderInvocationRequest, identity: Pro
     || binding.credential_id !== identity.credentialId
     || binding.binding_id !== identity.runtimeBindingId
     || Date.parse(binding.issued_at) !== Date.parse(identity.issuedAt)
-    || Date.parse(binding.expires_at) !== Date.parse(identity.expiresAt)
-    || !identity.audience.includes(binding.audience)) {
+    || Date.parse(binding.expires_at) !== Date.parse(identity.expiresAt)) {
     throw new ProviderStoreError('forbidden', 'provider request identity does not match the authenticated Platform claim');
   }
 }
