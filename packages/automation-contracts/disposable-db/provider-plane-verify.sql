@@ -10,6 +10,7 @@ select public.assert_true(to_regprocedure('lautowork.linkautowork_provider_appen
 select public.assert_true(to_regprocedure('lautowork.linkautowork_provider_set_kill_switch(text,boolean,text)') is not null,'provider kill-switch mutation rpc exists');
 select public.assert_true(exists(select 1 from pg_attribute where attrelid='lautowork.provider_requests'::regclass and attname='request_json' and not attnotnull),'request JSON stays nullable for historical rows');
 select public.assert_true(exists(select 1 from pg_attribute where attrelid='lautowork.provider_receipts'::regclass and attname='receipt_json' and not attnotnull),'receipt JSON stays nullable for historical rows');
+select public.assert_true(exists(select 1 from pg_attribute where attrelid='lautowork.provider_kill_switches'::regclass and attname='mutation_sequence'),'kill-switch mutations have a monotonic ordering column');
 select public.assert_true(not has_function_privilege('public','lautowork.linkautowork_provider_accept(jsonb,text)','execute'),'provider rpc is not public');
 select public.assert_true(has_function_privilege('svc_lautowork_runtime','lautowork.linkautowork_provider_set_kill_switch(text,boolean,text)','execute'),'runtime role can invoke scoped kill-switch mutation');
 do $$ begin

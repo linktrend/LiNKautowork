@@ -189,7 +189,7 @@ begin
   begin
     perform lautowork.linkautowork_provider_get_request((v_request->>'request_id')::uuid);
     raise exception 'cross-organization request read unexpectedly succeeded';
-  exception when no_data_found then null;
+  exception when sqlstate '42501' then null;
   end;
   perform lautowork.linkautowork_provider_set_kill_switch('other-automation', true, 'platform://evidence/provider-killswitch/org-b');
   perform public.assert_true(lautowork.linkautowork_provider_kill_switch_active('other-automation'), 'kill switch is active only in its JWT organization');

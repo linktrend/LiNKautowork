@@ -20,6 +20,7 @@
   - Replaces provider accept/get/transition/receipt/callback RPC bodies to persist and return the complete contract JSON needed by `ProviderStore`.
   - Preserves historical projection-only rows without invented backfill; affected operations fail closed with explicit unavailable-payload errors.
   - Adds org-scoped kill-switch mutation via SECURITY INVOKER RPC, requires an opaque reason reference, grants execution only to `svc_lautowork_runtime`, and serializes admissions/transitions with global and automation-scoped toggles.
+  - Adds an identity-backed mutation sequence so same-transaction scoped/global kill-switch writes have deterministic latest-row semantics.
   - Adds a disposable-only down section; it drops the two new JSON columns and their stored payloads.
 - Added `packages/automation-contracts/disposable-db/provider-plane-legacy-seed.sql` to create pre-upgrade projected-only request/receipt rows.
 - Added `packages/automation-contracts/disposable-db/provider-persistence-verify.sql` for exact request/receipt round-trips, replay conflicts, transitions/attempts, callback receipt, fail-closed legacy rows, tenant isolation, and scoped/global kill-switch behavior.
@@ -37,11 +38,12 @@
 
 - `bash -n packages/automation-contracts/disposable-db/run.sh`: passed.
 - `git diff --check`: passed.
-- `npm --prefix packages/automation-contracts run verify:db`: attempted; failed before container start because the Docker API socket at `/Users/linktrend/.docker/run/docker.sock` was unavailable. No SQL execution was completed.
-- Exact cheapest remaining proof: run `npm --prefix packages/automation-contracts run verify:db` once the local Docker daemon is available. It uses the repository's uniquely named disposable Compose project and cleanup trap. If it fails, capture the first SQL/harness error and fix before calling the migration verified.
-- No package tests, SQL apply against shared/live databases, credential access, deployment, push, commit, or protected-source promotion were performed.
+- `npm --prefix packages/automation-contracts run verify:db`: local attempt was blocked because the Docker API socket at `/Users/linktrend/.docker/run/docker.sock` was unavailable. The full harness was then attempted on existing Server01 compute and stopped later at an unrelated product-webhook helper because the temporary checkout has no Node dependencies (`express` missing).
+- Focused provider proof on existing Server01 compute passed. It applied the base schema, seeded projected-only legacy rows, applied this additive migration, ran `provider-plane-verify.sql` and `provider-persistence-verify.sql`, verified exact request/receipt round-trips, replay conflicts, CAS attempts, callback binding, legacy fail-closed reads, tenant isolation, runtime-only kill-switch grants, deterministic scoped/global kill-switch activation/release, and rolled back the provider migrations.
+- No live or shared database was accessed; the Server01 proof used a unique disposable Compose project and cleanup trap, and all disposable containers were removed afterward.
+- No package tests or Node typecheck ran because this worktree has no installed `vitest` or `tsc` binaries. No credentials, deployment, or protected-source promotion was performed.
 - Worktree contains only the AW01 migration, the four approved disposable verification files, this handoff, and this session record. Shared checkout caches and issue #196 adapter state remain untouched.
 
 ## Exact next action
 
-Parent reviews this bounded source diff. After Docker is available, run the disposable database verifier. Before any migration is applied outside disposable local test, LiNKplatform must review and sequence it under its existing live-migration ownership. AW02 separately resolves caller reason reference, `lautowork` profile selection, and the approved runtime role client. Consumer selection remains HOLD until the PACI actor-binding gap is fixed and proven.
+Parent reviews this bounded source diff. Before any migration is applied outside disposable testing, LiNKplatform must review and sequence it under its existing live-migration ownership. AW02 separately resolves caller reason reference, `lautowork` profile selection, and the approved runtime role client. Consumer selection remains HOLD until the PACI actor-binding gap is fixed and proven.
