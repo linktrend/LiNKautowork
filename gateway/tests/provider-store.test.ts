@@ -34,10 +34,10 @@ describe('InMemoryProviderStore', () => {
   });
 
   it('honours org and automation kill switches before accepting or starting work', async () => {
-    const store = new InMemoryProviderStore(); await store.setKillSwitch(ORG_A, 'repo-status', true);
+    const store = new InMemoryProviderStore(); await store.setKillSwitch(ORG_A, 'repo-status', true, 'platform://tests/killswitch/scoped-activate');
     await expect(store.accept(ORG_A, request(), new Date(NOW))).rejects.toMatchObject({ category: 'blocked' });
-    await store.setKillSwitch(ORG_A, 'repo-status', false); const accepted = await store.accept(ORG_A, request(), new Date(NOW));
-    await store.setKillSwitch(ORG_A, null, true);
+    await store.setKillSwitch(ORG_A, 'repo-status', false, 'platform://tests/killswitch/scoped-release'); const accepted = await store.accept(ORG_A, request(), new Date(NOW));
+    await store.setKillSwitch(ORG_A, null, true, 'platform://tests/killswitch/global-activate');
     await expect(store.transition(ORG_A, accepted.record.request.request_id, 1, 'queued')).rejects.toMatchObject({ category: 'blocked' });
   });
 
