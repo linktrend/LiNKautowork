@@ -21,6 +21,7 @@ export const PROVIDER_INVOKER_RPCS = [
   'linkautowork_provider_append_event',
   'linkautowork_provider_list_events',
   'linkautowork_provider_kill_switch_active',
+  'linkautowork_provider_set_kill_switch',
 ] as const;
 
 /** Provider RPCs never use SECURITY DEFINER and never grant PUBLIC execute. */
