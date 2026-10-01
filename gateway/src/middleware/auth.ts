@@ -79,6 +79,9 @@ const platformClaimsSchema = z.object({
   iss: z.string(), aud: z.union([z.string(), z.array(z.string())]), sub: z.string().min(1),
   exp: z.number().int(), nbf: z.number().int().optional(), service: z.string().min(2),
   org_id: z.string().uuid(), org_entitlements: z.array(z.string().uuid()),
+  credential_id: z.string().min(1).optional(), binding_id: z.string().min(1).optional(),
+  issued_at: z.string().datetime({ offset: true }).optional(), expires_at: z.string().datetime({ offset: true }).optional(),
+  jti: z.string().min(1).optional(),
 }).passthrough();
 
 /** Platform PACI JWKS key. Production accepts ES256 P-256 signing keys only. */
@@ -128,7 +131,15 @@ function acceptPlatformClaims(env: AppEnv, claims: z.infer<typeof platformClaims
   if (claims.iss !== env.PLATFORM_JWT_ISSUER || !audience.includes(env.PLATFORM_JWT_AUDIENCE)) throw new HttpError(401, 'invalid Platform token issuer or audience');
   if (claims.exp <= now || (claims.nbf !== undefined && claims.nbf > now)) throw new HttpError(401, 'Platform token is expired or not active');
   if (!req.linkService || claims.service !== req.linkService || !claims.org_entitlements.includes(claims.org_id)) throw new HttpError(403, 'Platform service or organisation entitlement denied');
-  req.platformInvocation = { orgId: claims.org_id, service: claims.service, subject: claims.sub };
+  req.platformInvocation = {
+    orgId: claims.org_id, service: claims.service, subject: claims.sub,
+    ...(claims.credential_id ? { credentialId: claims.credential_id } : {}),
+    ...(claims.binding_id ? { runtimeBindingId: claims.binding_id } : {}),
+    ...(claims.jti ? { jti: claims.jti } : {}),
+    issuer: claims.iss, audience,
+    ...(claims.issued_at ? { issuedAt: claims.issued_at } : {}),
+    ...(claims.expires_at ? { expiresAt: claims.expires_at } : {}),
+  };
   next();
 }
 
@@ -181,7 +192,12 @@ export function requirePlatformInvocationClaim(env: AppEnv, injectedProvider?: P
         try { active = await introspector.introspect(value.slice(7)); }
         catch { throw new HttpError(503, 'Platform introspection unavailable'); }
         if (!isActivePaciIdentity(active, identity)) throw new HttpError(401, 'Platform token is inactive or identity changed');
-        req.platformInvocation = { orgId: identity.orgId, service: req.linkService, subject: identity.subject };
+        req.platformInvocation = {
+          orgId: identity.orgId, service: req.linkService, subject: identity.subject,
+          credentialId: identity.credentialId, runtimeBindingId: identity.runtimeBindingId, jti: identity.jti,
+          issuer: identity.issuer, audience: identity.audience,
+          issuedAt: new Date(identity.iat * 1000).toISOString(), expiresAt: new Date(identity.exp * 1000).toISOString(),
+        };
         next();
       }).catch((error) => next(error instanceof HttpError ? error : error instanceof z.ZodError ? new HttpError(401, 'invalid Platform token claims') : new HttpError(503, 'Platform JWKS verifier unavailable')));
     } catch (error) { next(error instanceof z.ZodError ? new HttpError(401, 'invalid Platform token claims') : error); }

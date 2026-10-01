@@ -43,8 +43,9 @@ import { deploymentDecisionSchema, incidentTransitionSchema, operationsActionSch
 import { OperationsService, type AlertAdapter } from './services/monitoring/operations-service.js';
 import { SupabaseOperationsStore } from './services/monitoring/supabase-operations-store.js';
 import { N8nOperationsExecutor } from './services/deployments/n8n-operations-executor.js';
-import { ProviderRouteService } from './services/provider-route-service.js';
+import { ProviderRouteService, type ProviderInvocationIdentity } from './services/provider-route-service.js';
 import { ProviderStoreError } from './services/provider-store.js';
+import { SupabaseProviderRpcClient, SupabaseProviderStore } from './services/supabase-provider-store.js';
 import { providerInvocationRequestSchema } from '../../packages/automation-contracts/src/provider-contract.js';
 import { RuntimeDispatchError, RuntimeDispatchService, runtimeDispatchStatus } from './services/runtime-dispatch/index.js';
 import { LinksitesConsumerRegistrationService, LinksitesConsumerAdmissionError } from './services/linksites-consumer-registration.js';
@@ -58,6 +59,21 @@ function parseSchema<T>(schema: z.ZodType<T>, input: unknown): T {
     }
     throw error;
   }
+}
+
+function providerIdentity(req: Request): ProviderInvocationIdentity {
+  const claim = req.platformInvocation;
+  if (!claim?.credentialId || !claim.runtimeBindingId || !claim.issuedAt || !claim.expiresAt || !claim.audience?.length) {
+    throw new HttpError(403, 'authenticated Platform identity is missing the provider binding dimensions');
+  }
+  return {
+    subject: claim.subject,
+    credentialId: claim.credentialId,
+    runtimeBindingId: claim.runtimeBindingId,
+    issuedAt: claim.issuedAt,
+    expiresAt: claim.expiresAt,
+    audience: claim.audience,
+  };
 }
 
 function normalizeApprovals(approvals: Partial<LifecycleApprovals> | undefined): LifecycleApprovals {
@@ -114,6 +130,13 @@ export function buildDependencies(env: AppEnv): AppDeps {
   const alertAdapter: AlertAdapter = { deliver: (alert) => supabaseClient.callOperationsRpc<void>('linkautowork_record_alert_delivery', { p_record: alert }) };
   const operationsExecutor = new N8nOperationsExecutor(n8nClient, supabaseClient);
   const operationsService = new OperationsService(operationsStore, alertAdapter, operationsExecutor, operationsExecutor, operationsExecutor);
+  const providerRouteService = env.SUPABASE_PROVIDER_RUNTIME_JWT
+    ? new ProviderRouteService(new SupabaseProviderStore(new SupabaseProviderRpcClient({
+      supabaseUrl: env.SUPABASE_URL,
+      runtimeJwt: env.SUPABASE_PROVIDER_RUNTIME_JWT,
+      apiKey: env.SUPABASE_API_KEY,
+    })))
+    : undefined;
   const runtimeDispatchService = new RuntimeDispatchService({ activationInterfaceSupported: false });
 
   return {
@@ -131,6 +154,7 @@ export function buildDependencies(env: AppEnv): AppDeps {
     librarianService,
     provisioningService,
     operationsService,
+    providerRouteService,
     runtimeDispatchService,
   };
 }
@@ -188,7 +212,7 @@ export function createApp(deps: AppDeps) {
   app.get('/v1/provider/capabilities', ...providerAuth, (req, res, next) => { try { res.json({ contract_version: '2026-08-13.v1', capabilities: providerService().capabilities() }); } catch (error) { next(error); } });
   app.get('/v1/provider/catalogue', ...providerAuth, (req, res, next) => { try { res.json({ contract_version: '2026-08-13.v1', automations: providerService().catalogue() }); } catch (error) { next(error); } });
   app.get('/v1/provider/catalogue/:automationId/versions/:version', ...providerAuth, (req, res, next) => { try { res.json({ automation: providerService().detail(req.params.automationId, req.params.version) }); } catch (error) { next(error); } });
-  app.post('/v1/provider/requests', ingressRateLimiter, ...providerAuth, async (req, res, next) => { try { const result = await providerService().accept(req.platformInvocation!.orgId, parseSchema(providerInvocationRequestSchema, req.body)); res.status(result.replay ? 200 : 202).json(result); } catch (error) { next(error); } });
+  app.post('/v1/provider/requests', ingressRateLimiter, ...providerAuth, async (req, res, next) => { try { const result = await providerService().accept(req.platformInvocation!.orgId, parseSchema(providerInvocationRequestSchema, req.body), providerIdentity(req)); res.status(result.replay ? 200 : 202).json(result); } catch (error) { next(error); } });
   app.get('/v1/provider/requests/:requestId', ...providerAuth, async (req, res, next) => { try { res.json({ status: await providerService().request(req.platformInvocation!.orgId, req.params.requestId) }); } catch (error) { next(error); } });
   app.get('/v1/provider/requests/:requestId/receipt', ...providerAuth, async (req, res, next) => { try { res.json({ receipt: await providerService().receipt(req.platformInvocation!.orgId, req.params.requestId) }); } catch (error) { next(error); } });
   app.post('/v1/provider/callbacks', ingressRateLimiter, ...providerAuth, async (req, res, next) => { try { res.status(202).json({ receipt: await providerService().callback(req.platformInvocation!.orgId, req.body) }); } catch (error) { next(error); } });

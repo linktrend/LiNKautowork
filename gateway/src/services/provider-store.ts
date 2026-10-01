@@ -56,7 +56,7 @@ export type ProviderStore = {
   admitCallback(orgId: string, callback: ProviderCallback, invoker?: ProviderInvokerContext): Promise<ProviderReceipt>;
   appendEvent(orgId: string, event: ProviderEvent, invoker?: ProviderInvokerContext): Promise<void>;
   listEvents(orgId: string, afterCursor: string | null, limit: number, invoker?: ProviderInvokerContext): Promise<ReturnType<typeof providerCursorPageSchema.parse>>;
-  setKillSwitch(orgId: string, automationId: string | null, active: boolean): Promise<void>;
+  setKillSwitch(orgId: string, automationId: string | null, active: boolean, reasonRef: string, invoker?: ProviderInvokerContext): Promise<void>;
 };
 
 const terminal = new Set<ProviderState>(['succeeded', 'failed', 'expired', 'cancelled', 'timed_out', 'rejected', 'quarantined', 'unavailable', 'contract_incompatible']);
@@ -117,9 +117,8 @@ export class InMemoryProviderStore implements ProviderStore {
     return this.invokeProviderRpc('linkautowork_provider_list_events', { p_after_cursor: afterCursor, p_limit: limit }, orgId, invoker) as Promise<ReturnType<typeof providerCursorPageSchema.parse>>;
   }
 
-  async setKillSwitch(orgId: string, automationId: string | null, active: boolean): Promise<void> {
-    const key = `${orgId}:${automationId ?? '*'}`;
-    if (active) this.killSwitches.add(key); else this.killSwitches.delete(key);
+  async setKillSwitch(orgId: string, automationId: string | null, active: boolean, reasonRef: string, invoker?: ProviderInvokerContext): Promise<void> {
+    await this.invokeProviderRpc('linkautowork_provider_set_kill_switch', { p_automation_id: automationId, p_active: active, p_reason_ref: reasonRef }, orgId, invoker);
   }
 
   /** Returns tenant-isolated attempt rows for one request. */
@@ -162,6 +161,8 @@ export class InMemoryProviderStore implements ProviderStore {
         return this.listEventsAtomic(orgId, body.p_after_cursor === undefined ? null : body.p_after_cursor as string | null, Number(body.p_limit));
       case 'linkautowork_provider_kill_switch_active':
         return this.isKilled(orgId, String(body.p_automation_id ?? ''));
+      case 'linkautowork_provider_set_kill_switch':
+        return this.setKillSwitchAtomic(orgId, body.p_automation_id === null || body.p_automation_id === undefined ? null : String(body.p_automation_id), Boolean(body.p_active), String(body.p_reason_ref ?? ''));
       default:
         throw new ProviderStoreError('forbidden', 'unknown provider RPC');
     }
@@ -278,6 +279,13 @@ export class InMemoryProviderStore implements ProviderStore {
   }
   private assertOrg(expected: string, actual: string): void { if (expected !== actual) throw new ProviderStoreError('forbidden', 'organisation isolation denied'); }
   private isKilled(orgId: string, automationId: string): boolean { return this.killSwitches.has(`${orgId}:*`) || this.killSwitches.has(`${orgId}:${automationId}`); }
+  private setKillSwitchAtomic(orgId: string, automationId: string | null, active: boolean, reasonRef: string): void {
+    if (!/^[a-z][a-z0-9+.-]*:\/\/[A-Za-z0-9._~/%:-]+$/.test(reasonRef) || reasonRef.length > 512) {
+      throw new ProviderStoreError('forbidden', 'provider kill-switch reason must be an opaque reference');
+    }
+    const key = `${orgId}:${automationId ?? '*'}`;
+    if (active) this.killSwitches.add(key); else this.killSwitches.delete(key);
+  }
   private assertNotKilled(orgId: string, automationId: string): void { if (this.isKilled(orgId, automationId)) throw new ProviderStoreError('blocked', 'provider kill switch prevents request acceptance'); }
   private clone(record: ProviderRequestRecord): ProviderRequestRecord { return { ...record, request: structuredClone(record.request), receipt: record.receipt ? structuredClone(record.receipt) : undefined }; }
 }

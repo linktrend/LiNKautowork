@@ -26,10 +26,19 @@ LiNKautowork authors this hashed, ordered, additive package. **LiNKplatform** re
 | 14 | `supabase/migrations/20260804_000012_lautowork_durable_audit_outbox.sql` | durable audit outbox |
 | 15 | `supabase/migrations/20260813_000001_lautowork_provider_plane.sql` | provider v1 request/attempt/receipt/outbox |
 | 16 | `supabase/migrations/20260910_000001_lautowork_server01_live_interfaces.sql` | **AW-01 additive live interfaces** |
+| 17 | `supabase/migrations/20260915031350_lautowork_product_api_scoped_runtime.sql` | AW08 Product API scoped runtime |
+| 18 | `supabase/migrations/20260915033750_lautowork_gateway_scoped_runtime.sql` | AW08 gateway scoped runtime |
+| 19 | `supabase/migrations/20261001072550_provider_request_receipt_roundtrip.sql` | **AW-01 complete provider request/receipt persistence and runtime kill-switch ordering** |
 
 There is no `20260804_000009_*` file. Archive/legacy mirrors are not part of this package.
 
 ## Additive AW-01 surface
+
+The provider persistence migration adds nullable complete request and receipt JSON
+objects, preserves historical projection-only rows as unavailable, and exposes a
+runtime-only kill-switch mutation with deterministic ordering. It does not grant
+the gateway role provider-table access and remains a source package until
+LiNKplatform reviews and applies it.
 
 The new migration supplies missing invocation, `PREPARED` intent/outbox, callback/receipt and credential-binding **fields** as dedicated `lautowork.server01_*` relations. It does not rewrite provider-plane RPCs (those remain AW-02 runtime consumers).
 
@@ -42,15 +51,15 @@ See `MIGRATION-PACKAGE.json` for SHA-256 of every ordered SQL file and the recov
 ## Conformance
 
 1. Hash-validate `MIGRATION-PACKAGE.json`.
-2. Fresh install: apply files 1–16 onto disposable Postgres after a minimal `platform` stub.
-3. Upgrade: apply files 1–15 then 16.
+2. Fresh install: apply files 1–19 onto disposable Postgres after a minimal `platform` stub.
+3. Upgrade: apply files 1–18 then 19.
 4. Run `verification.sql` and `fixtures/server01-conformance.sql`.
 5. `lautowork.server01_package_status()` must return `complete`.
 6. Partial apply (missing relations or `apply_state=started`) must return `partial` and **stop**.
 7. Live fingerprint drift must return `drift` and **stop**.
-8. Disposable `migrate:down` of file 16 only.
+8. Disposable `migrate:down` of additive files 16 and 19 only.
 
-Existing `npm --prefix packages/automation-contracts run verify:db` remains the predecessor harness (it does not yet list file 16). AW-01 focused tests apply the full package.
+Existing `npm --prefix packages/automation-contracts run verify:db` remains the predecessor harness (it does not yet list files 16 or 19). AW-01 focused tests apply the full package.
 
 ## HOLD
 
@@ -69,9 +78,9 @@ role binding. If the hosted API gateway requires a key, supply its publishable
 key separately as `PRODUCT_API_API_KEY`. The JWT is never used as an API key or
 copied into browser state. Browser identity remains a separate Platform contract.
 
-Apply the full seventeen-file package for a fresh deployment; for an installation
-already receipted through file 16, back up, isolated-restore, then apply only file
-17. Recovery uses the prior application plus forward-fix; do not run file 16's
+Apply the full nineteen-file package for a fresh deployment; for an installation
+already receipted through file 18, back up, isolated-restore, then apply only file
+19. Recovery uses the prior application plus forward-fix; do not run file 16's
 disposable down migration after file 17. The scoped SQL fixture proves audited
 read/finalization and rejects forged role headers, wrong org and missing audit.
 
@@ -80,10 +89,19 @@ read/finalization and rejects forged role headers, wrong org and missing audit.
 File 18, `20260915033750_lautowork_gateway_scoped_runtime.sql`, grants the
 `svc_lautowork_gateway` role only the existing v2 resolve/accept/callback/pause
 RPCs and an org-filtered kill-switch reader. It adds no direct execution-table
-write, provisioning, Product API, or operator grant. The first sixteen migration
-files remain byte-for-byte unchanged. Fresh deployment applies all eighteen;
-an installation receipted through sixteen applies seventeen and eighteen after
+write, provisioning, Product API, or operator grant. The first seventeen migration
+files remain byte-for-byte unchanged. Fresh deployment applies all nineteen;
+an installation receipted through eighteen applies nineteen after
 backup and isolated restore verification.
+
+## AW-01 provider persistence supplement
+
+File 19, `20261001072550_provider_request_receipt_roundtrip.sql`, adds complete
+bounded request and receipt JSON persistence to the existing provider plane,
+preserves historical projected-only rows as unavailable, and adds a runtime-only
+kill-switch mutation with deterministic ordering. It does not grant provider
+table access to the gateway role. Platform must review and apply it under the
+existing live-migration authority.
 
 The production gateway uses `SUPABASE_RUNTIME_JWT` with role
 `svc_lautowork_gateway` and `org_id` equal to `ACTIVE_TENANT_UUID`.

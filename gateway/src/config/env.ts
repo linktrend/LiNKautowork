@@ -42,6 +42,8 @@ const envSchema = z.object({
   SUPABASE_AUDIT_RPC: z.string().default('linkautowork_write_audit_run'),
   SUPABASE_RUNTIME_JWT: z.string().min(1).optional(),
   SUPABASE_RUNTIME_JWT_SECRET_NAME: z.string().default('LINKAUTOWORK_SUPABASE_RUNTIME_JWT'),
+  SUPABASE_PROVIDER_RUNTIME_JWT: z.string().min(1).optional(),
+  SUPABASE_PROVIDER_RUNTIME_JWT_SECRET_NAME: z.string().default('LINKAUTOWORK_SUPABASE_PROVIDER_RUNTIME_JWT'),
 
   N8N_BASE_URL: z.string().url(),
   N8N_WEBHOOK_PATH_PREFIX: z.string().default('/webhook'),
@@ -114,6 +116,7 @@ export async function loadEnv(
     n8nApiKey,
     slackSigningSecret,
     supabaseRuntimeJwt,
+    supabaseProviderRuntimeJwt,
     evalReceiptVerifierKeys,
     supabaseApiKey,
   ] = await Promise.all([
@@ -157,6 +160,11 @@ export async function loadEnv(
       secretName: parsed.SUPABASE_RUNTIME_JWT_SECRET_NAME,
       projectId: gcpProjectId,
     }),
+    resolveOptionalSecret({
+      directValue: parsed.SUPABASE_PROVIDER_RUNTIME_JWT,
+      secretName: parsed.SUPABASE_PROVIDER_RUNTIME_JWT_SECRET_NAME,
+      projectId: gcpProjectId,
+    }),
     resolveOptionalSecret({ directValue: parsed.EVAL_RECEIPT_VERIFIER_KEYS, secretName: parsed.EVAL_RECEIPT_VERIFIER_KEYS_SECRET_NAME, projectId: gcpProjectId }),
     resolveOptionalSecret({ directValue: parsed.SUPABASE_API_KEY, secretName: parsed.SUPABASE_API_KEY_SECRET_NAME, projectId: gcpProjectId }),
   ]);
@@ -171,6 +179,7 @@ export async function loadEnv(
     N8N_API_KEY: n8nApiKey,
     SLACK_SIGNING_SECRET: slackSigningSecret,
     SUPABASE_RUNTIME_JWT: supabaseRuntimeJwt,
+    SUPABASE_PROVIDER_RUNTIME_JWT: supabaseProviderRuntimeJwt,
     SUPABASE_API_KEY: supabaseApiKey,
     hmacSecrets: parseKeyValuePairs(linkHmacSharedSecrets),
     serviceTokens: parseKeyValuePairs(linkServiceTokens),

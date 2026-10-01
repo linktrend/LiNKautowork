@@ -51,7 +51,7 @@ describe('Product API production constructor', () => {
     const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
     createProductionServer();
-    const rpc = createPostgrestRpc({ restUrl: process.env.PRODUCT_API_POSTGREST_URL!, rpcPath: process.env.PRODUCT_API_POSTGREST_RPC_PATH!, runtimeToken: process.env.PRODUCT_API_RUNTIME_TOKEN! });
+    const rpc = createPostgrestRpc({ restUrl: process.env.PRODUCT_API_POSTGREST_URL!, rpcPath: process.env.PRODUCT_API_POSTGREST_RPC_PATH!, runtimeToken: process.env.PRODUCT_API_RUNTIME_TOKEN || 'ltfx.product.api.runtime.token.1.v1' });
     await rpc('linkautowork_product_published_products', { p_limit: 1, p_cursor: null });
     expect(fetchMock).toHaveBeenCalledWith('http://product-api-postgrest:3000/rpc/linkautowork_product_published_products', expect.anything());
   });
