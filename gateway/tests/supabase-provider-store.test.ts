@@ -20,11 +20,11 @@ describe('SupabaseProviderStore', () => {
   it('sends provider RPCs with the custom schema profile and dedicated runtime JWT', async () => {
     const calls: Array<{ url: string; init?: RequestInit }> = [];
     const fetchImpl: typeof fetch = async (url, init) => { calls.push({ url: String(url), init }); return new Response('{}', { status: 200 }); };
-    const client = new SupabaseProviderRpcClient({ supabaseUrl: 'https://db.test', runtimeJwt: jwt('svc_lautowork_runtime'), apiKey: 'public-key' }, fetchImpl);
+    const client = new SupabaseProviderRpcClient({ supabaseUrl: 'https://db.test', runtimeJwt: jwt('svc_lautowork_runtime'), apiKey: process.env.SUPABASE_ANON_KEY ?? 'ltfx.provider.test.supabase.apikey.1.v1' }, fetchImpl);
     await client.callProviderRpc('linkautowork_provider_set_kill_switch', { p_automation_id: 'repo-status', p_active: true, p_reason_ref: 'platform://tests/reason' }, ORG);
     expect(calls[0]).toMatchObject({ url: 'https://db.test/rest/v1/rpc/linkautowork_provider_set_kill_switch' });
     expect(calls[0].init?.headers).toMatchObject({
-      apikey: 'public-key', authorization: `Bearer ${jwt('svc_lautowork_runtime')}`,
+      apikey: process.env.SUPABASE_ANON_KEY ?? 'ltfx.provider.test.supabase.apikey.1.v1', authorization: `Bearer ${jwt('svc_lautowork_runtime')}`,
       'Accept-Profile': 'lautowork', 'Content-Profile': 'lautowork', 'x-link-org-id': ORG,
     });
   });

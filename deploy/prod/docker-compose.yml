@@ -177,7 +177,7 @@ services:
     pids_limit: 64
     environment:
       PGRST_DB_URI: "@/run/secrets/db-uri"
-      PGRST_JWT_SECRET: "@/run/secrets/jwt-secret"
+      PGRST_JWT_SECRET: "${PGRST_JWT_SECRET_FILE:-@/run/secrets/jwt-secret}"
       PGRST_DB_ANON_ROLE: svc_lautowork_product_api_anon
       PGRST_DB_SCHEMAS: public
       PGRST_DB_POOL: "5"
