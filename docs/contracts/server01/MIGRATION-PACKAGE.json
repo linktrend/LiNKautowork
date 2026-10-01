@@ -119,13 +119,19 @@
       "path": "supabase/migrations/20260915033750_lautowork_gateway_scoped_runtime.sql",
       "sha256": "48faa989d513d4749499233baa62ba3381d2f923a92557185773dde03621eab3",
       "bytes": 5150
+    },
+    {
+      "order": 19,
+      "path": "supabase/migrations/20261001072550_provider_request_receipt_roundtrip.sql",
+      "sha256": "f733c67ca5415a627a34f2c1ebc31423f966c2d76f98662c26d53a550160aff3",
+      "bytes": 26984
     }
   ],
   "contracts": [
     {
       "path": "docs/contracts/server01/README.md",
-      "sha256": "60ae925a649f63924e5753d92b5a26d6fb0ce73e902bc0506d91b313d874f899",
-      "bytes": 8895
+      "sha256": "b3a550274138b4a4942db50925be3de51311049bf4f5780b164367e57bc83195",
+      "bytes": 10145
     },
     {
       "path": "docs/contracts/server01/CONTRACT-VERSION-MATRIX.md",
@@ -163,6 +169,6 @@
       "bytes": 5766
     }
   ],
-  "orderedSqlCanonicalSha256": "8a8fb23ebb58229068cce6798d5a205d0e6199098a429ae1e9417e3312dab368",
+  "orderedSqlCanonicalSha256": "45f581c487f43f2b0dc1e95cca31d6ff1d880953ccbc2936d48e00630070354f",
   "liveApply": "HOLD"
 }

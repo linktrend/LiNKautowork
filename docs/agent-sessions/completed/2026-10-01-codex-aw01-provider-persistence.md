@@ -1,0 +1,22 @@
+# Active session: AW-01 provider persistence contract
+
+- Session time: 2026-10-01 15:24 Asia/Taipei
+- Agent: Codex Desktop Agent; macOS; local execution; feature role
+- Matching Orchestrator key: `/root`
+- Repo: LiNKautowork
+- Issue/branch/worktree: #197, `issue/197-aw-01-persist-full-provider-requests-and-receipt`, `.git/linktrend-worktrees/issue-197-aw-01-persist-full-provider-requests-and-receipt`
+- Base: protected development commit `816ad18254ee8bb79555d89eed9b00ec0b38148e`, tree `ffe9381a383d0c61160db18e094dadad34d9ddcb`
+- Authorized scope: AW-01 additive provider-persistence migration and the directly required disposable SQL conformance proof, after owner confirmation of no active overlap. AW-02 adapter stays isolated in issue #196. AW-03 composition/wiring remains out of scope.
+- Prohibited: migration application to any shared/live database, credentials/secrets, deployment, push/promotion, product runtime wiring, package manifests, and unrelated Platform/IDE work.
+- Coordination: LiNKautowork AW-01 owns `supabase/migrations/**`; AW-02 explicitly prohibits migrations. AW-01 is the only active migration owner. Parent `/root` is coordinating LiNKautowork Completion.
+- Initial evidence: provider migration stores request/receipt projections only; historical full payloads are unavailable. Private `lautowork` schema RPC selection also needs an integration-client change owned outside this session.
+- Initial repository state: clean isolated worktree; shared checkout's three pre-existing untracked Python cache paths remain untouched.
+- Planned proof: disposable database fresh-install/upgrade conformance for full request and receipt round-trip, null legacy rows, organization scoping, RPC grants, and kill-switch activate/release; `git diff --check`.
+- Contract decision: add nullable object JSONB columns and preserve historical rows as null. No synthetic request or receipt is backfilled from projections. Reads/replay/transitions fail closed with unavailable-payload errors when the original complete object is absent.
+- Kill-switch decision: add a runtime-only SECURITY INVOKER mutation RPC requiring an opaque `reason_ref`; serialize its global/scoped writes with the same tenant-global then automation advisory locks used by admission and transition guards. Scope is organization from the invoker JWT; this schema does not authenticate an actor separately.
+- Source changes: `supabase/migrations/20261001072550_provider_request_receipt_roundtrip.sql`; `packages/automation-contracts/disposable-db/provider-plane-legacy-seed.sql`; `packages/automation-contracts/disposable-db/provider-persistence-verify.sql`; `packages/automation-contracts/disposable-db/provider-plane-verify.sql`; `packages/automation-contracts/disposable-db/run.sh`.
+- Validation run: `bash -n packages/automation-contracts/disposable-db/run.sh` passed; `git diff --check` passed. `npm --prefix packages/automation-contracts run verify:db` could not start because Docker API socket `/Users/linktrend/.docker/run/docker.sock` was unavailable. No database container started and no shared/live database was accessed.
+- Remaining proof: rerun the existing disposable `npm --prefix packages/automation-contracts run verify:db` after the local Docker daemon is available. SQL execution was not verified in this session.
+- Integration dependencies: the Supabase RPC caller must select the `lautowork` schema using `Content-Profile`; runtime calls need an approved client/JWT authorized as `svc_lautowork_runtime`, because the existing gateway runtime JWT is `svc_lautowork_gateway` and AW08 intentionally does not grant that role provider table/RPC access. This session did not change the client or role model.
+- Actor-binding gap: provider request `platform` includes actor, credential, binding, issued/expiry and revocation references, but current route source does not compare those body fields against authenticated PACI identity. AW01 persistence does not establish that binding. Parent owner review/consumer handoff must keep the invocation unselectable until its owner resolves the gap.
+- Result: bounded source candidate complete for parent review; no commit, push, source promotion, live migration, credentials, deployment, or runtime claim.
