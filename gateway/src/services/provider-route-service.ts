@@ -124,15 +124,38 @@ const canaryDetail = providerCatalogueDetailSchema.parse({ ...canarySummary, inp
 /** Compact route-safe provider status that never claims a consumer result or authority. */
 export type ProviderRouteStatus = { request_id: string; state: string; attempt_count: number; automation: { automation_id: string; version: string; definition_digest: string; configuration_digest: string }; receipt_id?: string };
 
+/** Authenticated PACI dimensions that are mirrored by the provider request binding. */
+export type ProviderInvocationIdentity = {
+  subject: string;
+  credentialId: string;
+  runtimeBindingId: string;
+  issuedAt: string;
+  expiresAt: string;
+  audience: readonly string[];
+};
+
+function assertRequestIdentity(request: ProviderInvocationRequest, identity: ProviderInvocationIdentity): void {
+  const binding = request.platform;
+  if (binding.actor_id !== identity.subject
+    || binding.credential_id !== identity.credentialId
+    || binding.binding_id !== identity.runtimeBindingId
+    || Date.parse(binding.issued_at) !== Date.parse(identity.issuedAt)
+    || Date.parse(binding.expires_at) !== Date.parse(identity.expiresAt)
+    || !identity.audience.includes(binding.audience)) {
+    throw new ProviderStoreError('forbidden', 'provider request identity does not match the authenticated Platform claim');
+  }
+}
+
 /** Route facade: callers choose exact catalogue entries; this provider never selects consumer work. */
 export class ProviderRouteService {
   constructor(private readonly store: ProviderStore = new InMemoryProviderStore()) {}
   capabilities() { return [providerCapabilityStatusSchema.parse({ capability: 'provider.catalogue', state: 'available', observed_at: observedAt, does_not_prove: ['automation_run', 'consumer_outcome', 'consumer_gate', 'external_side_effect', 'e2e_readiness', 'production_readiness'] }), providerCapabilityStatusSchema.parse({ capability: 'provider.external_assistance_activation', state: 'hold', observed_at: observedAt, detail_ref: 'autowork://holds/external-assistance-activation', does_not_prove: ['automation_run', 'consumer_outcome', 'consumer_gate', 'external_side_effect', 'e2e_readiness', 'production_readiness'] })]; }
   catalogue() { return [canarySummary]; }
   detail(automationId: string, version: string) { if (automationId !== canaryDetail.automation.automation_id || version !== canaryDetail.automation.version) throw new ProviderStoreError('not_found', 'exact automation version is unavailable'); return canaryDetail; }
-  async accept(orgId: string, input: unknown): Promise<{ replay: boolean; status: ProviderRouteStatus }> {
+  async accept(orgId: string, input: unknown, identity?: ProviderInvocationIdentity): Promise<{ replay: boolean; status: ProviderRouteStatus }> {
     const request = providerInvocationRequestSchema.parse(input);
     if (request.platform.org_id !== orgId) throw new ProviderStoreError('forbidden', 'payload organisation does not match authenticated Platform claim');
+    if (identity) assertRequestIdentity(request, identity);
     if (request.operation_kind === 'external_assistance') throw new ProviderStoreError('blocked', 'external assistance activation is HOLD/unavailable');
     const detail = this.detail(request.automation.automation_id, request.automation.version);
     if (request.platform.audience !== 'lautowork' || request.platform.capability !== detail.capability_requirement) throw new ProviderStoreError('forbidden', 'payload Platform audience or capability does not satisfy exact automation');
