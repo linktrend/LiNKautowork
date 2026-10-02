@@ -131,6 +131,23 @@ class GateReceiptTransitionTests(unittest.TestCase):
                 target_tree=development_identity.git_tree,
                 protected_base_commit=git(repo, "rev-parse", "HEAD^"),
             ).to_dict()
+            transition_path.write_text(json.dumps(development_transition))
+            development_command = list(command)
+            development_command[development_command.index("staging")] = "development"
+            development_verified = subprocess.run(
+                development_command,
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(
+                development_verified.returncode,
+                0,
+                development_verified.stdout + development_verified.stderr,
+            )
+            self.assertTrue(json.loads(development_verified.stdout)["accepted"])
+
             github = FakeGitHub("b" * 40)
             delivery_controller.promote_to_staging(
                 github=github,

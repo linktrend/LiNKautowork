@@ -123,7 +123,7 @@ jobs:
             --receipt receipt-artifact/full-suite-receipt.json
             --repo "${candidate_dir}"
             --profile full
-            --source-branch staging
+            --source-branch development
             --workflow-run-id "${RECEIPT_RUN_ID}"
             --gate full-gate
           )
