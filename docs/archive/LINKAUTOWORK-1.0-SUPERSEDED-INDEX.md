@@ -1,19 +1,22 @@
 # LiNKautowork 1.0 — superseded development-only index
 
-Prepared: 2026-09-18 with issue 166. This index classifies documents that
-**must not** be used as the 1.0 agent entrypoint. Original files that sit
-outside this packet’s allowed write paths were **not physically moved**;
-pointer files under `development-only/` record the replacement.
+Prepared: 2026-09-18; archive consolidation updated 2026-10-02. This index
+classifies documents that **must not** be used as the 1.0 agent entrypoint.
+Superseded plans, dated handoffs, the old build log, and production-roadmap
+development records have been physically moved under
+`docs/archive/development-history/`. Historical source-release receipts remain
+in their original directory and are not current status evidence.
 
 `npm run release:check` still requires `docs/LINKAUTOWORK-INTENT.md`,
 `docs/LINKAUTOWORK-TECHNICAL-PRD.md`, `docs/LINKAUTOWORK-OPERATIONS-MANUAL.md`,
-and `docs/OPEN-ISSUES.md` to exist on those paths.
+and the small `docs/OPEN-ISSUES.md` archive pointer to exist on those paths.
 
 ## Replacement set
 
 | Use | Replacement |
 |---|---|
 | Agent bootstrap / identity / toolchain / HOLDs | [`../LINKAUTOWORK-AI-AGENT-GUIDE.md`](../LINKAUTOWORK-AI-AGENT-GUIDE.md) |
+| Current protected refs, receipt, tag, deployment state | [`../LINKAUTOWORK-RELEASE-STATUS.md`](../LINKAUTOWORK-RELEASE-STATUS.md) |
 | Source receipts | [`../end-to-end-delivery/evidence/source-release/`](../end-to-end-delivery/evidence/source-release/) |
 | Later Server01 install | [`../end-to-end-delivery/evidence/source-release/DEPLOYMENT-HANDOFF.md`](../end-to-end-delivery/evidence/source-release/DEPLOYMENT-HANDOFF.md) |
 | Compose topology | [`../runbooks/OPERATIONS.md`](../runbooks/OPERATIONS.md) |
@@ -23,14 +26,11 @@ and `docs/OPEN-ISSUES.md` to exist on those paths.
 
 | Original path | Why superseded for 1.0 agents | Replacement |
 |---|---|---|
-| `docs/end-to-end-delivery/CURSOR-CLOUD-EXECUTION-ROUTE.md` | Planning-era dispatcher/Keychain route; nested workers forbidden in this packet | AI agent guide §6 |
-| `docs/end-to-end-delivery/README.md` | 2026-09-10 “implementation not authorised” planning banner | source-release README + AI agent guide |
-| `docs/end-to-end-delivery/READINESS-REPORT.md` | Advisor-acceptance planning report | source-release VALIDATION-RECORD.json |
-| `docs/end-to-end-delivery/WORK-PACKETS.md` | PLAN-state packet table; AW-01–07 source work is already on `development` | AI agent guide §9–11 |
-| `docs/handoffs/*` | Dated session notes | AI agent guide + this issue’s source-release files |
-| `docs/planning/*` | PKT-03 hold analyses | Technical PRD + provider contracts |
-| `docs/OPEN-ISSUES.md` | Append-only MVO build log | AI agent guide for procedure; keep file as history |
-| `docs/production-roadmap/evidence/*` | Pre-VPS wave evidence | source-release IMAGE-CONFIG-MIGRATION-REFERENCES.json (pins only) |
+| `docs/archive/development-history/end-to-end-delivery/*` | Superseded planning and execution documents | AI agent guide + current release status |
+| `docs/archive/development-history/handoffs/*` | Dated session notes | AI agent guide + current release status |
+| `docs/archive/development-history/planning/*` | Historical provider/consumer hold analyses | Technical PRD + current provider contracts |
+| `docs/archive/development-history/OPEN-ISSUES.md` | Append-only engineering build log | Current release status and runbooks |
+| `docs/archive/development-history/production-roadmap/*` | Completed development roadmap and pre-VPS evidence | Current release status + deployment runbooks |
 | `docs/archive/root-docs/*` | Original PRD / git notes | Intent + Technical PRD + AGENTS.md |
 | `docs/archive/BRANCHING_AND_DEPLOYMENT_POLICY.md` | Prose snapshot | `.github/workflows/branch-source-policy.yml` + AI agent guide §6 |
 | `docs/archive/RELEASE_GATE_CHECKLIST.md` | Early checklist | `docs/runbooks/PRODUCTION_RELEASE_GATES.md` (live still HOLD) |
@@ -42,8 +42,8 @@ and `docs/OPEN-ISSUES.md` to exist on those paths.
 ## Still current (not archived)
 
 Intent, Technical PRD, Operations Manual, production PRD / PROD packets,
-runbooks, Server01 contracts, `deploy/prod` Compose, and the source-release
-packet itself.
+runbooks, Server01 contracts, `deploy/prod` Compose, source-release historical
+receipts, current release status, and the AI agent guide.
 
 ## Bulk mirror (untouched)
 

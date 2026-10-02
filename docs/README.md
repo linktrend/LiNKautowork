@@ -1,12 +1,14 @@
 # LiNKautowork Documentation Index
 
 Owner: LiNKtrend Platform  
-Last updated: 2026-09-18 (1.0 source consolidation)
+Last updated: 2026-10-02 (1.0 status and archive consolidation)
 
 ## 1.0 agent entry
 
 - [AI agent guide](./LINKAUTOWORK-AI-AGENT-GUIDE.md) — identity, toolchain, git
   roles, HOLDs, and tagged-main deploy contract.
+- [Current release status](./LINKAUTOWORK-RELEASE-STATUS.md) — protected refs,
+  current receipt gate, tag status, and deployment HOLDs.
 - [1.0 source-release packet](./end-to-end-delivery/evidence/source-release/README.md)
 - [Deployment handoff (non-secret, AW-08)](./end-to-end-delivery/evidence/source-release/DEPLOYMENT-HANDOFF.md)
 - [1.0 superseded index](./archive/LINKAUTOWORK-1.0-SUPERSEDED-INDEX.md)
@@ -16,8 +18,8 @@ Last updated: 2026-09-18 (1.0 source consolidation)
 - [Intent](./LINKAUTOWORK-INTENT.md)
 - [Technical PRD](./LINKAUTOWORK-TECHNICAL-PRD.md)
 - [Operations Manual](./LINKAUTOWORK-OPERATIONS-MANUAL.md)
-- [Open Issues / build log](./OPEN-ISSUES.md) — historical engineering trace;
-  not the 1.0 agent entrypoint.
+- [Archived Open Issues / build log](./archive/development-history/OPEN-ISSUES.md) —
+  historical engineering trace; not the 1.0 agent entrypoint.
 
 ## Remaining production configuration (not live-accepted)
 
@@ -27,9 +29,9 @@ Last updated: 2026-09-18 (1.0 source consolidation)
 
 ## Operational docs (source topology; live start HOLD)
 
-- [Server01 end-to-end delivery package](./end-to-end-delivery/README.md) —
-  planning record; implementation authority is the source-release packet plus
-  later AW-08, not the 2026-09-10 “not authorised” banner alone.
+- [Server01 deployment handoff](./end-to-end-delivery/evidence/source-release/DEPLOYMENT-HANDOFF.md) —
+  historical source packet; current release status and runbooks determine
+  whether deployment is allowed.
 - [Operations runbook](./runbooks/OPERATIONS.md)
 - [Server01 JetStream / restore rehearsal](./runbooks/SERVER01-OPERATIONS.md)
 - [Production release gates](./runbooks/PRODUCTION_RELEASE_GATES.md)
@@ -48,10 +50,12 @@ Last updated: 2026-09-18 (1.0 source consolidation)
 - [Archive index](./archive/README.md)
 - [1.0 superseded development-only documents](./archive/LINKAUTOWORK-1.0-SUPERSEDED-INDEX.md)
 - [Legacy document register](./archive/LEGACY-DOCUMENT-REGISTER.md)
+- [Archived development history](./archive/development-history/)
 
 ## Rule
 
 If 1.0 agent procedure changes, update the AI agent guide and the
 source-release packet in the same checkpoint. Do not open an implementer PR.
-Physical moves of `release:check`-required files are out of consolidation
-scope; classify them in the superseded index instead of deleting them.
+Historical source receipts remain preserved. Dated planning, build logs,
+roadmap evidence, and completed handoffs have been moved under the archive;
+the release check follows the archived locations.
