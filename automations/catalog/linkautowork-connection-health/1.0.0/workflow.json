@@ -1,0 +1,62 @@
+{
+  "id": "linkautowork-connection-health-v1",
+  "name": "LiNKautowork Connection Health",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "linkautowork-connection-health-v1",
+        "responseMode": "responseNode",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "id": "a8f1e0da-2f46-47c6-8ec6-5d7777771001",
+      "name": "Authenticated Provider Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [260, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "d41a5ec6-a1e8-4dfd-84c8-3f7777771002", "name": "status", "value": "ok", "type": "string" },
+            { "id": "29b9bcdd-fd70-47bb-99b3-9d7777771003", "name": "scope", "value": "provider_to_n8n_dispatch", "type": "string" },
+            { "id": "ec18d47c-daf2-45ab-aaf4-3f7777771004", "name": "automation_id", "value": "linkautowork-connection-health", "type": "string" },
+            { "id": "ec18d47c-daf2-45ab-aaf4-3f7777771005", "name": "version", "value": "1.0.0", "type": "string" },
+            { "id": "ec18d47c-daf2-45ab-aaf4-3f7777771006", "name": "request_id", "value": "={{ $json.body.request_id }}", "type": "string" },
+            { "id": "ec18d47c-daf2-45ab-aaf4-3f7777771007", "name": "request_fingerprint", "value": "={{ $json.body.request_fingerprint }}", "type": "string" },
+            { "id": "ec18d47c-daf2-45ab-aaf4-3f7777771008", "name": "execution_id", "value": "={{ $execution.id }}", "type": "string" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c0fa1162-56a3-43ec-ae6b-0b7777771009",
+      "name": "Return Correlated Canary",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "26e23419-f703-42ec-ae80-3f7777771010",
+      "name": "Respond to Provider",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [740, 300]
+    }
+  ],
+  "connections": {
+    "Authenticated Provider Webhook": { "main": [[{ "node": "Return Correlated Canary", "type": "main", "index": 0 }]] },
+    "Return Correlated Canary": { "main": [[{ "node": "Respond to Provider", "type": "main", "index": 0 }]] }
+  },
+  "pinData": {},
+  "settings": { "executionOrder": "v1" },
+  "active": false,
+  "versionId": "a2121212-0000-4000-8000-000000000215",
+  "tags": []
+}

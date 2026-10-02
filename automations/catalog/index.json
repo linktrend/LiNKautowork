@@ -2,7 +2,7 @@
   "schema_version": "0.1",
   "catalogue_kind": "operator_metadata_index",
   "source_packages_root": "automations/catalog",
-  "release_count": 1,
+  "release_count": 2,
   "releases": [
     {
       "automation_id": "ide-repository-status",
@@ -23,6 +23,26 @@
       "package_digest": "sha256:09c687f893d1bf3b02ecbe7d97444557dcd2492372388d5670e3aa4f7d5620ad",
       "workflow_digest": "sha256:c9acb15b3aaab981945365d9dc248c99b118b96ec5e16ab89f2aa34587722c82",
       "path": "automations/catalog/ide-repository-status/1.0.0"
+    },
+    {
+      "automation_id": "linkautowork-connection-health",
+      "version": "1.0.0",
+      "lifecycle": "draft",
+      "channel": "development",
+      "display_name": "LiNKautowork Connection Health",
+      "summary": "Read-only service-to-n8n connection canary. It reports only that this provider request reached the configured n8n webhook and returned a correlated execution receipt.",
+      "owning_program": "linkautowork",
+      "classification": "internal_only",
+      "binding_operations": [
+        "linkautowork.linkautowork-connection-health"
+      ],
+      "runtime": {
+        "engine": "n8n",
+        "n8n_version": "2.30.0"
+      },
+      "package_digest": "sha256:b5b835f2ffab4c1e5abef8fc7e71fb9ab18a42a255d47f9646984ee2b3aa4764",
+      "workflow_digest": "sha256:132a963cc5415942d34e9a16c0e9ff049759167b8102e6b7921b0127078d64ea",
+      "path": "automations/catalog/linkautowork-connection-health/1.0.0"
     }
   ]
 }
