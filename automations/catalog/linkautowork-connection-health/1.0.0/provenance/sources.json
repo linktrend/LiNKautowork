@@ -1,0 +1,36 @@
+{
+  "schema_version": "0.1",
+  "automation_id": "linkautowork-connection-health",
+  "automation_version": "1.0.0",
+  "required_runtime": {
+    "engine": "n8n",
+    "n8n_version": "2.30.0"
+  },
+  "sources": [
+    {
+      "source_id": "linkautowork-gap-v01",
+      "kind": "internal",
+      "locator": "https://github.com/linktrend/LiNKautowork",
+      "revision": "93954faa4f268cf149390f7b5831504c86850727",
+      "content_digest": "sha256:253835c87a6d51fe4915770396d45f64edf6d7ce08f7900c5b54d61918fadc80",
+      "license": "LicenseRef-LiNKtrend-Internal",
+      "commercial_use": "not_applicable",
+      "adaptation_status": "reference_only"
+    }
+  ],
+  "source_to_target_map": [
+    {
+      "source_id": "linkautowork-gap-v01",
+      "source_content_digest": "sha256:253835c87a6d51fe4915770396d45f64edf6d7ce08f7900c5b54d61918fadc80",
+      "source_component_ref": "packages/automation-contracts/src/provider-contract.ts",
+      "target_component_ref": "automation.json",
+      "action": "reference_only",
+      "reason": "The existing v1 provider invocation contract supplies the bounded identity, operation, policy, and receipt shape used by this canary."
+    }
+  ],
+  "review": {
+    "status": "not_applicable",
+    "reviewer_role": "LiNKautowork product contract",
+    "conclusion": "This draft package adds no third-party source, credential value, or external-action node."
+  }
+}

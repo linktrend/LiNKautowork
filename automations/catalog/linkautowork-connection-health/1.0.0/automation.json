@@ -1,0 +1,94 @@
+{
+  "schema_version": "0.1",
+  "automation_id": "linkautowork-connection-health",
+  "display_name": "LiNKautowork Connection Health",
+  "summary": "Read-only service-to-n8n connection canary. It reports only that this provider request reached the configured n8n webhook and returned a correlated execution receipt.",
+  "ownership": {
+    "owner_kind": "shared_internal",
+    "owning_program": "linkautowork",
+    "classification": "internal_only",
+    "binding_operations": [
+      "linkautowork.linkautowork-connection-health"
+    ]
+  },
+  "release": {
+    "version": "1.0.0",
+    "channel": "development",
+    "lifecycle": "draft",
+    "identity": {
+      "package_digest": "sha256:b5b835f2ffab4c1e5abef8fc7e71fb9ab18a42a255d47f9646984ee2b3aa4764",
+      "workflow_digest": "sha256:132a963cc5415942d34e9a16c0e9ff049759167b8102e6b7921b0127078d64ea",
+      "source_git_sha": "93954faa4f268cf149390f7b5831504c86850727",
+      "n8n_version": "2.30.0"
+    }
+  },
+  "runtime": {
+    "engine": "n8n",
+    "workflow_ref": "workflow.json",
+    "trigger_mode": "webhook",
+    "result_mode": "synchronous_response",
+    "approved_node_policy": "n8n-core-only-v0.1"
+  },
+  "contracts": {
+    "input_schema_ref": "contracts/input.schema.json",
+    "output_schema_ref": "contracts/output.schema.json",
+    "configuration_schema_ref": "contracts/configuration.schema.json",
+    "invocation_contract_version": "v1"
+  },
+  "secrets": [],
+  "execution_policy": {
+    "criticality": "low",
+    "side_effects": [
+      "none"
+    ],
+    "approval": {
+      "mode": "none",
+      "evidence_required": true
+    },
+    "retry": {
+      "max_attempts": 0,
+      "backoff": "none",
+      "max_delay_seconds": 0
+    },
+    "idempotency": {
+      "required": true,
+      "key_location": "request"
+    },
+    "kill_switch_scope": "instance"
+  },
+  "telemetry": {
+    "classification": "internal",
+    "redaction_rules": [
+      "Do not retain input values beyond the redacted test fixture."
+    ],
+    "retention_days": 30,
+    "required_fields": [
+      "org_id",
+      "instance_id",
+      "release_id",
+      "execution_id",
+      "status",
+      "latency_ms",
+      "retry_count",
+      "failure_class"
+    ]
+  },
+  "evaluation": {
+    "suite_ref": "evals/suite.json",
+    "required_for_certification": true
+  },
+  "operations": {
+    "monitoring_ref": "operations/monitoring.json",
+    "maintenance_ref": "operations/maintenance.json",
+    "deployment_ref": "operations/deployment.json",
+    "runbook_ref": "operations/runbook.md"
+  },
+  "provenance": {
+    "sources_ref": "provenance/sources.json",
+    "commercial_use_clearance": "not_applicable"
+  },
+  "source_authority": {
+    "kind": "golden_automation_package",
+    "cutover_state": "package_authoritative"
+  }
+}
