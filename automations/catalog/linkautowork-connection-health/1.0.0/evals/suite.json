@@ -1,0 +1,60 @@
+{
+  "schema_version": "0.1",
+  "suite_id": "linkautowork-connection-health-suite",
+  "automation_id": "linkautowork-connection-health",
+  "automation_version": "1.0.0",
+  "required_runtime": {
+    "engine": "n8n",
+    "n8n_version": "2.30.0"
+  },
+  "pass_threshold": 1,
+  "cases": [
+    {
+      "case_id": "correlated-webhook-response",
+      "case_type": "happy_path",
+      "fixture_ref": "fixtures/manual-output-contract.json",
+      "expected": {
+        "outcome": "success",
+        "assertions": [
+          "The synchronous webhook response matches the request ID and fingerprint.",
+          "The response reports only provider-to-n8n dispatch and an execution ID."
+        ],
+        "receipt_fields": [
+          "execution_id",
+          "status"
+        ]
+      },
+      "side_effect_mode": "none"
+    },
+    {
+      "case_id": "no-external-side-effects",
+      "case_type": "side_effect_safety",
+      "fixture_ref": "fixtures/no-side-effects.json",
+      "expected": {
+        "outcome": "no_side_effect",
+        "assertions": [
+          "The workflow uses only Webhook, Set, and Respond to Webhook core nodes.",
+          "The package contains no credential values or external-action nodes."
+        ],
+        "receipt_fields": [
+          "execution_id",
+          "status"
+        ]
+      },
+      "side_effect_mode": "prohibited"
+    }
+  ],
+  "evidence_policy": {
+    "retain": [
+      "case_result",
+      "assertion_result",
+      "release_hash",
+      "runtime_version",
+      "receipt_hash"
+    ],
+    "redact": [
+      "Do not persist invocation identifiers outside test evidence."
+    ],
+    "independent_verdict_required": true
+  }
+}
