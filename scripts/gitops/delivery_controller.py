@@ -969,6 +969,7 @@ def promote_to_staging(
         "fullRunAttempt": _receipt_workflow_run_attempt(receipt),
     }
     if transition_receipt is not None:
+        marker["transitionReceipt"] = dict(transition_receipt)
         marker["transitionReceiptDigest"] = compute_transition_digest(transition_receipt)
     body = f"<!-- linktrend-promote: {json.dumps(marker, sort_keys=True)} -->"
     pr = call_with_infrastructure_retry(
@@ -1070,6 +1071,7 @@ def prepare_main_promotion(
         "awaitingFounderApproval": True,
     }
     if transition_receipt is not None:
+        marker["transitionReceipt"] = dict(transition_receipt)
         marker["transitionReceiptDigest"] = compute_transition_digest(transition_receipt)
     body = f"<!-- linktrend-promote: {json.dumps(marker, sort_keys=True)} -->"
     pr = call_with_infrastructure_retry(
