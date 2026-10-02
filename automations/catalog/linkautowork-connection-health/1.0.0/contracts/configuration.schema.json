@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.dev/schemas/linkautowork/linkautowork-connection-health/configuration-v1.json",
+  "title": "LiNKautowork Connection Health Configuration v1",
+  "description": "The gateway-owned Header Auth token is resolved outside this package and is never an invocation input.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {}
+}

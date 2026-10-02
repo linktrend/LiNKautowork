@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.dev/schemas/linkautowork/linkautowork-connection-health/output-v1.json",
+  "title": "LiNKautowork Connection Health Output v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "status",
+    "scope",
+    "automation_id",
+    "version",
+    "request_id",
+    "request_fingerprint",
+    "execution_id"
+  ],
+  "properties": {
+    "status": {
+      "const": "ok"
+    },
+    "scope": {
+      "const": "provider_to_n8n_dispatch"
+    },
+    "automation_id": {
+      "const": "linkautowork-connection-health"
+    },
+    "version": {
+      "const": "1.0.0"
+    },
+    "request_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "request_fingerprint": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "execution_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    }
+  }
+}

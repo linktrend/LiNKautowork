@@ -131,11 +131,16 @@ export function buildDependencies(env: AppEnv): AppDeps {
   const operationsExecutor = new N8nOperationsExecutor(n8nClient, supabaseClient);
   const operationsService = new OperationsService(operationsStore, alertAdapter, operationsExecutor, operationsExecutor, operationsExecutor);
   const providerRouteService = env.SUPABASE_PROVIDER_RUNTIME_JWT
-    ? new ProviderRouteService(new SupabaseProviderStore(new SupabaseProviderRpcClient({
-      supabaseUrl: env.SUPABASE_URL,
-      runtimeJwt: env.SUPABASE_PROVIDER_RUNTIME_JWT,
-      apiKey: env.SUPABASE_API_KEY,
-    })))
+    ? new ProviderRouteService(
+      new SupabaseProviderStore(new SupabaseProviderRpcClient({
+        supabaseUrl: env.SUPABASE_URL,
+        runtimeJwt: env.SUPABASE_PROVIDER_RUNTIME_JWT,
+        apiKey: env.SUPABASE_API_KEY,
+      })),
+      env.LINKAUTOWORK_CONNECTION_HEALTH_WEBHOOK_TOKEN
+        ? (payload) => n8nClient.triggerConnectionHealthWebhook(payload, env.LINKAUTOWORK_CONNECTION_HEALTH_WEBHOOK_TOKEN!)
+        : undefined,
+    )
     : undefined;
   const runtimeDispatchService = new RuntimeDispatchService({ activationInterfaceSupported: false });
 
@@ -212,7 +217,24 @@ export function createApp(deps: AppDeps) {
   app.get('/v1/provider/capabilities', ...providerAuth, (req, res, next) => { try { res.json({ contract_version: '2026-08-13.v1', capabilities: providerService().capabilities() }); } catch (error) { next(error); } });
   app.get('/v1/provider/catalogue', ...providerAuth, (req, res, next) => { try { res.json({ contract_version: '2026-08-13.v1', automations: providerService().catalogue() }); } catch (error) { next(error); } });
   app.get('/v1/provider/catalogue/:automationId/versions/:version', ...providerAuth, (req, res, next) => { try { res.json({ automation: providerService().detail(req.params.automationId, req.params.version) }); } catch (error) { next(error); } });
-  app.post('/v1/provider/requests', ingressRateLimiter, ...providerAuth, async (req, res, next) => { try { const result = await providerService().accept(req.platformInvocation!.orgId, parseSchema(providerInvocationRequestSchema, req.body), providerIdentity(req)); res.status(result.replay ? 200 : 202).json(result); } catch (error) { next(error); } });
+  app.post('/v1/provider/requests', ingressRateLimiter, ...providerAuth, async (req, res, next) => {
+    try {
+      const input = parseSchema(providerInvocationRequestSchema, req.body);
+      const service = providerService();
+      const result = await service.accept(req.platformInvocation!.orgId, input, providerIdentity(req));
+      const isConnectionHealth = input.automation.automation_id === 'linkautowork-connection-health';
+      if (!result.replay && isConnectionHealth) {
+        const outcome = await service.dispatchConnectionHealth(req.platformInvocation!.orgId, input.request_id);
+        res.status(outcome.recovery_required ? 503 : 202).json({ ...result, ...outcome, ...(outcome.recovery_required ? { recovery_ref: 'autowork://runbooks/linkautowork-connection-health' } : {}) });
+        return;
+      }
+      if (result.replay && isConnectionHealth && result.status.state === 'accepted') {
+        res.status(503).json({ ...result, dispatch_attempted: false, dispatch_confirmed: false, ambiguous: false, recovery_required: true, recovery_reason: 'dispatch_claim_pending_recovery', recovery_ref: 'autowork://runbooks/linkautowork-connection-health' });
+        return;
+      }
+      res.status(result.replay ? 200 : 202).json(result);
+    } catch (error) { next(error); }
+  });
   app.get('/v1/provider/requests/:requestId', ...providerAuth, async (req, res, next) => { try { res.json({ status: await providerService().request(req.platformInvocation!.orgId, req.params.requestId) }); } catch (error) { next(error); } });
   app.get('/v1/provider/requests/:requestId/receipt', ...providerAuth, async (req, res, next) => { try { res.json({ receipt: await providerService().receipt(req.platformInvocation!.orgId, req.params.requestId) }); } catch (error) { next(error); } });
   app.post('/v1/provider/callbacks', ingressRateLimiter, ...providerAuth, async (req, res, next) => { try { res.status(202).json({ receipt: await providerService().callback(req.platformInvocation!.orgId, req.body) }); } catch (error) { next(error); } });

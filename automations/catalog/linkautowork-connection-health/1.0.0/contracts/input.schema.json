@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linktrend.dev/schemas/linkautowork/linkautowork-connection-health/input-v1.json",
+  "title": "LiNKautowork Connection Health Input v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "request_id",
+    "request_fingerprint"
+  ],
+  "properties": {
+    "request_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "request_fingerprint": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}
