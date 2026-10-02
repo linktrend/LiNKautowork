@@ -8,6 +8,7 @@ active documentation paths as part of LiNKautowork 1.0 consolidation.
   readiness documents. The separate source-release receipt folder remains at
   `docs/end-to-end-delivery/evidence/source-release/`.
 - `handoffs/` — completed and dated agent session notes.
+- `agent-sessions/completed/` — completed session coordination records.
 - `planning/` — completed provider/consumer planning and hold analysis.
 - `production-roadmap/` — historical roadmap, work packets, and development
   evidence. It is not proof of current production acceptance.

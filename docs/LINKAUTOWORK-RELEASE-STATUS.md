@@ -50,8 +50,11 @@ packet as directed by the deployment runbooks.
 
 ## Branch and workspace cleanup
 
-The verified local LiNKautowork checkout has only `development`, `staging`,
-and `main` branches and no extra worktrees. Remote stale branch
+The three-branch / no-extra-worktree check was recorded on 2026-10-02 before
+this documentation cleanup branch was created. This packet is on active issue
+branch `issue/220-archive-superseded-linkautowork-development-docu`; that branch
+and its worktree are temporary and should be removed after controller
+integration. Remote stale branch
 `issue/215-add-read-only-provider-connection-health-canary` was deleted after
 confirming its PR was closed and its tree had no unique content. Old `v1.0.x`
 tags were retained because tags are release records and must not be rewritten.

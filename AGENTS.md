@@ -48,10 +48,10 @@ The canonical **`05-agent-behavior.mdc`** and this **`AGENTS.md`** template are 
 
 ## Handoff
 
-- Record active coordination in `docs/agent-sessions/active/` and completed
-  coordination in `docs/agent-sessions/completed/`. Historical handoffs from
-  the former `docs/handoffs/` folder are archived under
-  `docs/archive/development-history/handoffs/`.
+- Record active coordination in `docs/agent-sessions/active/`. Move completed
+  session records into `docs/archive/development-history/agent-sessions/completed/`.
+  Historical handoffs from the former `docs/handoffs/` folder are archived
+  under `docs/archive/development-history/handoffs/`.
 - Read the latest relevant active/completed agent-session record before
   starting work on a branch.
 

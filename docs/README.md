@@ -56,6 +56,8 @@ Last updated: 2026-10-02 (1.0 status and archive consolidation)
 
 If 1.0 agent procedure changes, update the AI agent guide and the
 source-release packet in the same checkpoint. Do not open an implementer PR.
-Historical source receipts remain preserved. Dated planning, build logs,
-roadmap evidence, and completed handoffs have been moved under the archive;
-the release check follows the archived locations.
+Historical source receipts remain byte-for-byte preserved. Dated planning,
+build logs, roadmap evidence, and completed handoffs have been moved under the
+archive. Small compatibility links at former paths point into the archive so
+old receipts and references still resolve; there is only one stored copy.
+The release check validates the archived locations.

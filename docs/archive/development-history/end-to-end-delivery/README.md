@@ -22,11 +22,11 @@ the completed pre-VPS engineering record.
 ## Existing authorities reused, not copied
 
 - [`docs/production-roadmap/LINKAUTOWORK-PRODUCTION-ROADMAP.md`](../production-roadmap/LINKAUTOWORK-PRODUCTION-ROADMAP.md) — approved product intent, ownership, architecture, and pre-VPS definition.
-- [`docs/PRD.md`](../PRD.md) — current source/configuration/production acceptance boundary.
-- [`docs/WORK-PACKETS.md`](../WORK-PACKETS.md) — existing PROD-01 through PROD-10 configuration and rollout outcomes.
+- [`docs/PRD.md`](../../../PRD.md) — current source/configuration/production acceptance boundary.
+- [`docs/WORK-PACKETS.md`](../../../WORK-PACKETS.md) — existing PROD-01 through PROD-10 configuration and rollout outcomes.
 - [`docs/production-roadmap/EXECUTION-STATE.yaml`](../production-roadmap/EXECUTION-STATE.yaml) — accepted pre-VPS wave record.
-- [`docs/runbooks/PRODUCTION_RELEASE_GATES.md`](../runbooks/PRODUCTION_RELEASE_GATES.md) — release gates.
-- [`docs/runbooks/OPERATIONS.md`](../runbooks/OPERATIONS.md) — existing operating commands; it must be corrected or extended only by an implementation packet when live topology requires it.
+- [`docs/runbooks/PRODUCTION_RELEASE_GATES.md`](../../../runbooks/PRODUCTION_RELEASE_GATES.md) — release gates.
+- [`docs/runbooks/OPERATIONS.md`](../../../runbooks/OPERATIONS.md) — existing operating commands; it must be corrected or extended only by an implementation packet when live topology requires it.
 - [`docs/production-roadmap/evidence/WP-12-VPS-DEPLOYMENT-INPUT-REGISTER.md`](../production-roadmap/evidence/WP-12-VPS-DEPLOYMENT-INPUT-REGISTER.md) — historical placeholder register, superseded for Server01 values only by this package.
 
 ## Authority boundary

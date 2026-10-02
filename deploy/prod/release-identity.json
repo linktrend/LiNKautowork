@@ -25,7 +25,7 @@
     "n8n": {
       "name": "n8nio/n8n:2.30.0",
       "evidenceDigest": "sha256:62294bc32d5a521ebb56abd98d6f6d3c6983cf9cf39c53cafb1fa87d971ae72f",
-      "evidenceDigestSource": "docs/archive/development-history/production-roadmap/evidence/WP-12-RELEASE-CANDIDATE-MANIFEST.md",
+      "evidenceDigestSource": "docs/production-roadmap/evidence/WP-12-RELEASE-CANDIDATE-MANIFEST.md",
       "hostImageId": "HOLD"
     },
     "gateway": {

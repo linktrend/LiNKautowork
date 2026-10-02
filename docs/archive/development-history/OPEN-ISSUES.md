@@ -2,7 +2,7 @@
 
 **Role:** Append-only engineering build / compliance log for this Program. Prefer this file over stale prose elsewhere when asking "what was actually built, deferred, or limited?"
 
-**Current source of truth for product description:** [`LINKAUTOWORK-INTENT.md`](./LINKAUTOWORK-INTENT.md), [`LINKAUTOWORK-TECHNICAL-PRD.md`](./LINKAUTOWORK-TECHNICAL-PRD.md), [`LINKAUTOWORK-OPERATIONS-MANUAL.md`](./LINKAUTOWORK-OPERATIONS-MANUAL.md).
+**Current source of truth for product description:** [`LINKAUTOWORK-INTENT.md`](../../LINKAUTOWORK-INTENT.md), [`LINKAUTOWORK-TECHNICAL-PRD.md`](../../LINKAUTOWORK-TECHNICAL-PRD.md), [`LINKAUTOWORK-OPERATIONS-MANUAL.md`](../../LINKAUTOWORK-OPERATIONS-MANUAL.md).
 
 **History note:** This file was renamed from root `IMPLEMENTATION_AGAINST_PRD.md` on 2026-07-19 (documentation cleanup). Sections 1–12 below are the preserved MVO implementation trace against the original PRD; path references inside them were updated to `docs/archive/...` where those docs moved. New dated entries append after that baseline.
 

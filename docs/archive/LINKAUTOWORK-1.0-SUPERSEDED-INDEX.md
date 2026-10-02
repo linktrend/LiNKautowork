@@ -5,7 +5,9 @@ classifies documents that **must not** be used as the 1.0 agent entrypoint.
 Superseded plans, dated handoffs, the old build log, and production-roadmap
 development records have been physically moved under
 `docs/archive/development-history/`. Historical source-release receipts remain
-in their original directory and are not current status evidence.
+in their original directory and are not current status evidence. Compatibility
+symlinks at former plan/manifest paths point into the archive; no second copy
+of the archived files is retained.
 
 `npm run release:check` still requires `docs/LINKAUTOWORK-INTENT.md`,
 `docs/LINKAUTOWORK-TECHNICAL-PRD.md`, `docs/LINKAUTOWORK-OPERATIONS-MANUAL.md`,
@@ -28,6 +30,7 @@ and the small `docs/OPEN-ISSUES.md` archive pointer to exist on those paths.
 |---|---|---|
 | `docs/archive/development-history/end-to-end-delivery/*` | Superseded planning and execution documents | AI agent guide + current release status |
 | `docs/archive/development-history/handoffs/*` | Dated session notes | AI agent guide + current release status |
+| `docs/archive/development-history/agent-sessions/completed/*` | Completed coordination records | AI agent guide + current release status |
 | `docs/archive/development-history/planning/*` | Historical provider/consumer hold analyses | Technical PRD + current provider contracts |
 | `docs/archive/development-history/OPEN-ISSUES.md` | Append-only engineering build log | Current release status and runbooks |
 | `docs/archive/development-history/production-roadmap/*` | Completed development roadmap and pre-VPS evidence | Current release status + deployment runbooks |
