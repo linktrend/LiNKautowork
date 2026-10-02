@@ -1,4 +1,4 @@
-# Archive — superseded by the 1.0 agent authority
+# Archive — historical and superseded documents
 
 Everything under `docs/archive/` is retained for history. It is **not** the
 entrypoint for a 1.0 implementer, reviewer, packager, or Server01 deploy
@@ -7,7 +7,14 @@ agent.
 **Do not confuse this folder with** `archive/legacy-dev-mirrors-2026-07-15/`
 at the repo root — that tree is a separate bulk archive and stays untouched.
 
-**1.0 replacements (2026-09-18):**
+Current entrypoints:
+
+- [AI agent guide](../LINKAUTOWORK-AI-AGENT-GUIDE.md)
+- [Current release status](../LINKAUTOWORK-RELEASE-STATUS.md)
+- [Deployment handoff](../end-to-end-delivery/evidence/source-release/DEPLOYMENT-HANDOFF.md)
+- [Archived development history](./development-history/README.md)
+
+**1.0 replacements:**
 
 - [`../LINKAUTOWORK-AI-AGENT-GUIDE.md`](../LINKAUTOWORK-AI-AGENT-GUIDE.md)
 - [`../end-to-end-delivery/evidence/source-release/README.md`](../end-to-end-delivery/evidence/source-release/README.md)
@@ -24,7 +31,14 @@ at the repo root — that tree is a separate bulk archive and stays untouched.
 `../SLO.md`. Live Server01 start remains HOLD until AW-08 on a tagged main
 candidate.
 
-## What's already in this folder
+## Archived development history
+
+- [`development-history/`](./development-history/) — moved planning packets,
+  completed session handoffs, the old engineering build log, and completed
+  production-roadmap evidence. These are historical records, not current
+  execution instructions.
+
+## Older items already in this folder
 
 - `root-docs/` — original root PRD, plain-English explainer, git-strategy note.
 - `UPSTREAM.md` — retired fork policy (stock upstream n8n only).
@@ -36,8 +50,7 @@ candidate.
   `.github/workflows/branch-source-policy.yml`).
 - `adr/0001-adopt-shared-platform-org-model.md` — historical ADR.
 - `LEGACY-DOCUMENT-REGISTER.md` — 2026-09-04 production-PRD supersession note.
-- `development-only/` — 1.0 pointer files for documents that remain on their
-  original paths because this packet cannot move `release:check`-required files.
+- `development-only/` — pointer files created by the earlier 2026-09 cleanup.
 
 If something here conflicts with the AI agent guide or Technical PRD, **those
 win.**

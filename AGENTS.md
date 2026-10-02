@@ -48,8 +48,12 @@ The canonical **`05-agent-behavior.mdc`** and this **`AGENTS.md`** template are 
 
 ## Handoff
 
-- Write handoff docs to `docs/handoffs/` when finishing a session.
-- Read latest handoff before starting work on a branch.
+- Record active coordination in `docs/agent-sessions/active/`. Move completed
+  session records into `docs/archive/development-history/agent-sessions/completed/`.
+  Historical handoffs from the former `docs/handoffs/` folder are archived
+  under `docs/archive/development-history/handoffs/`.
+- Read the latest relevant active/completed agent-session record before
+  starting work on a branch.
 
 ## Testing
 
@@ -92,4 +96,3 @@ Installed managed core: **`.ide-development/`** (versioned package; treat as rea
 
 When needed, open files under `.ide-development/` (and local `docs/` / `scripts/` already installed). Prefer progressive disclosure; do not scan the entire package.
 <!-- END LINKTREND-IDE-MANAGED -->
-
