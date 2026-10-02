@@ -54,19 +54,33 @@ jobs:
           export PR_BODY="${pr_body}"
           coordinates="$(python3 - <<'PY'
           import json, os, re
+          from pathlib import Path
           match = re.search(r"<!-- linktrend-promote:\s*(\{.*?\})\s*-->", os.environ.get("PR_BODY", ""), re.S)
           if not match:
               raise SystemExit("receipt_gate_promotion_marker_missing")
           marker = json.loads(match.group(1))
           run_id = str(marker.get("fullRunId") or "").strip()
           artifact = ""
+          transition_path = ""
           if not run_id.isdigit() or int(run_id) < 1:
               raise SystemExit("receipt_gate_full_run_invalid")
-          print(json.dumps({"runId": run_id, "artifactName": artifact}))
+          transition = marker.get("transitionReceipt")
+          transition_digest = str(marker.get("transitionReceiptDigest") or "").strip()
+          if transition is not None:
+              if not isinstance(transition, dict) or not transition_digest:
+                  raise SystemExit("receipt_gate_transition_receipt_invalid")
+              if transition.get("receiptDigest") != transition_digest:
+                  raise SystemExit("receipt_gate_transition_digest_mismatch")
+              transition_path = str(Path(os.environ["RUNNER_TEMP"]) / "linktrend-transition-receipt.json")
+              Path(transition_path).write_text(json.dumps(transition, sort_keys=True) + "\n", encoding="utf-8")
+          elif transition_digest:
+              raise SystemExit("receipt_gate_transition_receipt_missing")
+          print(json.dumps({"runId": run_id, "artifactName": artifact, "transitionReceiptPath": transition_path}))
           PY
           )"
           run_id="$(jq -r .runId <<<"${coordinates}")"
           requested_name="$(jq -r .artifactName <<<"${coordinates}")"
+          transition_receipt_path="$(jq -r .transitionReceiptPath <<<"${coordinates}")"
           run="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}")"
           jq -e '.path == ".github/workflows/linktrend-integrator-merge.yml" and .event == "pull_request" and .conclusion == "success"' <<<"${run}" >/dev/null \
             || { echo "receipt_gate_full_run_not_reusable=${run_id}"; exit 1; }
@@ -79,7 +93,7 @@ jobs:
             | if length == 1 then .[0].name else empty end
           ' <<<"${artifacts}")"
           test -n "${artifact_name}" || { echo "receipt_gate_artifact_not_unique_or_missing=${run_id}"; exit 1; }
-          printf 'run_id=%s\nartifact_name=%s\n' "${run_id}" "${artifact_name}" >> "$GITHUB_OUTPUT"
+          printf 'run_id=%s\nartifact_name=%s\ntransition_receipt_path=%s\n' "${run_id}" "${artifact_name}" "${transition_receipt_path}" >> "$GITHUB_OUTPUT"
 
       - name: Fetch exact promotion candidate without executing it
         run: |
@@ -101,13 +115,21 @@ jobs:
       - name: Verify receipt identity and branch policy result
         env:
           RECEIPT_RUN_ID: ${{ steps.receipt.outputs.run_id }}
+          TRANSITION_RECEIPT_PATH: ${{ steps.receipt.outputs.transition_receipt_path }}
         run: |
           set -euo pipefail
           candidate_dir="$(cat candidate-dir.txt)"
-          python3 "$GITHUB_WORKSPACE/scripts/gitops/gate_receipt.py" verify \
-            --receipt receipt-artifact/full-suite-receipt.json \
-            --repo "${candidate_dir}" \
-            --profile full \
-            --workflow-run-id "${RECEIPT_RUN_ID}" \
+          receipt_args=(
+            --receipt receipt-artifact/full-suite-receipt.json
+            --repo "${candidate_dir}"
+            --profile full
+            --source-branch development
+            --workflow-run-id "${RECEIPT_RUN_ID}"
             --gate full-gate
+          )
+          if [[ -n "${TRANSITION_RECEIPT_PATH}" ]]; then
+            receipt_args+=(--transition-receipt "${TRANSITION_RECEIPT_PATH}")
+          fi
+          python3 "$GITHUB_WORKSPACE/scripts/gitops/gate_receipt.py" verify \
+            "${receipt_args[@]}"
           echo "Linktrend Receipt Gate passed: exact tree/dependency/profile/workflow identity reused; no full suite rerun."

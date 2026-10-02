@@ -81,6 +81,15 @@ def _parser() -> argparse.ArgumentParser:
     verify.add_argument("--workflow-run-id", type=int)
     verify.add_argument("--workflow-run-attempt", type=int)
     verify.add_argument("--workflow-head-commit")
+    verify.add_argument(
+        "--source-branch",
+        help="protected target branch represented by a same-tree transition candidate",
+    )
+    verify.add_argument(
+        "--transition-receipt",
+        type=Path,
+        help="authenticated controller receipt bridging the Full Suite commit to this protected candidate",
+    )
     verify.add_argument("--gate", required=True, help="required gate id")
     return parser
 
@@ -116,6 +125,7 @@ def main(argv: list[str] | None = None) -> int:
                     args.profile,
                     profile_files=resolved_profile_files(args.repo, args.profile_file),
                     workflow_files=args.workflow_file or None,
+                    source_branch=args.source_branch,
                 )
             verdict = verify_receipt(
                 receipt,
@@ -124,6 +134,7 @@ def main(argv: list[str] | None = None) -> int:
                 workflow_run_id=args.workflow_run_id,
                 workflow_run_attempt=args.workflow_run_attempt,
                 workflow_head_commit=args.workflow_head_commit,
+                transition_receipt=load_json(args.transition_receipt) if args.transition_receipt else None,
             )
             _json_output(
                 {
