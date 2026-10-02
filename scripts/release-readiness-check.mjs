@@ -8,8 +8,8 @@ const supportedRoots = [
 ];
 const retiredRuntimeMarker = /(?:\baios\b|link[-_ ]?aios|linktrend[-_ ]?system)/i;
 const allowedHistorical = new Set([
-  'docs/production-roadmap/work-packets/WP-12-RELEASE-READINESS.md',
-  'docs/production-roadmap/evidence/WP-12-LEGACY-RETIREMENT-INVENTORY.md',
+  'docs/archive/development-history/production-roadmap/work-packets/WP-12-RELEASE-READINESS.md',
+  'docs/archive/development-history/production-roadmap/evidence/WP-12-LEGACY-RETIREMENT-INVENTORY.md',
 ]);
 
 function filesAt(relative) {
@@ -31,9 +31,9 @@ for (const supportedRoot of supportedRoots) {
 }
 
 const required = [
-  'docs/production-roadmap/evidence/WP-12-SUPPORTED-SURFACE-INVENTORY.md',
-  'docs/production-roadmap/evidence/WP-12-RELEASE-CANDIDATE-MANIFEST.md',
-  'docs/production-roadmap/evidence/WP-12-VPS-DEPLOYMENT-INPUT-REGISTER.md',
+  'docs/archive/development-history/production-roadmap/evidence/WP-12-SUPPORTED-SURFACE-INVENTORY.md',
+  'docs/archive/development-history/production-roadmap/evidence/WP-12-RELEASE-CANDIDATE-MANIFEST.md',
+  'docs/archive/development-history/production-roadmap/evidence/WP-12-VPS-DEPLOYMENT-INPUT-REGISTER.md',
   'deploy/templates/traefik-dynamic.yml.example',
   'deploy/templates/tailscale-boundary.env.example',
   'ops/reconcile-disposable-eval-resources.sh',

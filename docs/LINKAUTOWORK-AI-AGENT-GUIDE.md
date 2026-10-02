@@ -1,267 +1,174 @@
-# LiNKautowork 1.0 — AI agent guide
+# LiNKautowork — AI agent guide
 
-Audience: every AI agent that will read, review, integrate, or later deploy
-this Program. Humans may read it; it is written so an agent can execute
-without inventing architecture or live authority.
+Last checked: 2026-10-02. This is the current orientation document for coding,
+review, release, operations, and deployment agents. Read it before acting, then
+read the linked contract or runbook for the task you own. It describes the
+repository and its intended operation; it does not grant production access.
 
-Status: **source 1.0 consolidation** on work branch
-`issue/166-consolidate-linkautowork-1-0-repository-and-publ`. This document
-does **not** claim Server01 is live, does **not** authorise protected merges,
-and does **not** replace Phase Packager / delivery-controller integration.
+Current branch, receipt, and deployment facts are maintained in the
+[release status](./LINKAUTOWORK-RELEASE-STATUS.md). Historical plans and
+session notes are under [`archive/development-history/`](./archive/development-history/).
 
-Companion packet (non-secret install inputs for a later Server01 agent):
-[`end-to-end-delivery/evidence/source-release/DEPLOYMENT-HANDOFF.md`](./end-to-end-delivery/evidence/source-release/DEPLOYMENT-HANDOFF.md).
+## 1. What the software does
 
----
+LiNKautowork is LiNKtrend's self-hosted automation engine. It hosts and governs
+approved workflows, receives signed requests through a policy gateway,
+checks tenant and lifecycle rules, records durable control state, and emits
+versioned events for other LiNKtrend Programs. Stock n8n runs workflows; the
+gateway and supporting services enforce LiNKtrend's policy and operational
+boundaries. Canonical workflow templates are in `automations/templates/`.
 
-## 1. What this repository is
+This repository is not a customer-facing automation marketplace. Other
+Programs integrate through documented HTTP, NATS, and database contracts. The
+internal organisation identifier is
+`00000000-0000-0000-0000-000000000001` (`linktrend_internal`); the event prefix
+is `linkautowork.v1.*`. Ritual times in the product are Taipei time.
 
-LiNKautowork is LiNKtrend’s self-hosted automation engine:
+## 2. Main parts and technology
 
-- pinned stock n8n Community `2.30.0` (no `link-n8n` fork);
-- a policy/security gateway (signed ingress, tokens, GSM names, audit, kill-switch, NATS);
-- canonical governance templates under `automations/templates/`;
-- durable control data on the shared platform database (`lautowork` + `lautowork_n8n`);
-- product-api, operator-console, and a retained (not initial-route) client-web image.
+- **Workflow engine:** pinned stock n8n Community image `n8nio/n8n:2.30.0`;
+  this project does not maintain a fork.
+- **Policy gateway:** TypeScript/Node.js service for signed ingress,
+  authorization, token handling, audit events, lifecycle and kill-switch
+  checks, and NATS publication.
+- **Product surfaces:** `apps/product-api`, `apps/operator-console`, and
+  `apps/web`. The client web image is retained for later use and is not part of
+  the initial public route.
+- **Automation packages:** the `packages/automation-*` packages provide
+  contracts, authoring, operations, evaluation, and supporting automation
+  services.
+- **Durable data:** ordered SQL migrations in `supabase/migrations/` describe
+  the `lautowork` and `lautowork_n8n` schemas on LiNKtrend's shared platform
+  database. LiNKplatform owns and applies production migrations; an Autowork
+  agent must not apply them directly.
+- **Messaging:** NATS JetStream provides durable internal events. The
+  production Compose definition pins NATS to `nats:2.10.26-alpine`.
+- **Deployment:** Docker Compose is defined in `deploy/prod/`. Private routing
+  templates are under `deploy/templates/`; runtime secret values are supplied
+  on the host from Google Secret Manager (GSM), never committed to Git.
+- **Build and checks:** Node.js 22, npm with the committed `package-lock.json`
+  (lockfile version 3), TypeScript, Vitest, and Playwright. GitHub Actions is
+  the authority for full hosted CI, including checks that require Docker.
 
-Internal org UUID: `00000000-0000-0000-0000-000000000001` (`linktrend_internal`).
-Event namespace: `linkautowork.v1.*`. Ritual windows (Taipei): `08:00` / `10:45` / `14:45`.
+See the [Technical PRD](./LINKAUTOWORK-TECHNICAL-PRD.md) for component and
+contract details, and the [Operations Manual](./LINKAUTOWORK-OPERATIONS-MANUAL.md)
+for the founder-facing explanation.
 
-It is **not** a customer SaaS marketplace. External Programs consume published
-HTTP/NATS/SQL contracts; they do not embed this repo as a library.
+## 3. Repository map
 
----
-
-## 2. Exact identity before any product work
-
-Cursor cached builds may check out `main`. Do not treat `main`, `staging`, or
-`latest development` as this 1.0 line until the recorded tag on `main` exists
-(see §8).
-
-Verify, in order:
-
-1. Origin is `https://github.com/linktrend/LiNKautowork` (ignore token userinfo).
-2. Fetch **only** the supplied work ref first.
-3. Compare fetched commit **and** tree to the supplied identity. Stop on mismatch.
-4. Checkout that commit (read-only) or the owned `issue/<n>-<slug>` (writer).
-5. If the working tree is unexpectedly dirty, stop. Do not reset unknown work.
-
-This consolidation packet admitted:
-
-| Field | Value |
+| Location | What it contains |
 |---|---|
-| Repository | `linktrend/LiNKautowork` |
-| Writer branch | `issue/166-consolidate-linkautowork-1-0-repository-and-publ` |
-| Starting commit | `a3c22a868a89c7627bd3018ece5edb21e7c59351` |
-| Starting tree | `bf85913dc6fb0b41c3c235cb6e8050db597802a3` |
+| `gateway/` | Policy gateway and service interfaces |
+| `apps/` | API, operator console, and web application |
+| `packages/` | Reusable automation and domain packages |
+| `automations/templates/` | Governed workflow templates |
+| `automations/evals/` | Source evaluation fixtures; they do not perform live dispatch |
+| `deploy/prod/` | Production Compose contract and names-only environment example |
+| `deploy/templates/` | Private routing and network boundary examples |
+| `supabase/migrations/` | Ordered Platform-owned database migrations |
+| `ops/` | Deployment, migration preflight, backup, GSM, and operations helpers |
+| `docs/contracts/` | Provider and Server01 contracts |
+| `docs/runbooks/` | Current operating and release procedures |
+| `docs/end-to-end-delivery/evidence/source-release/` | Historical source-release packet and deployment handoff; read current release status before use |
+| `docs/archive/development-history/` | Archived planning, build log, roadmap evidence, and dated handoffs |
+| `archive/legacy-dev-mirrors-2026-07-15/` | Separate legacy mirror archive; preserve unchanged |
 
-Agent 1 (issue 165) sealed the engineering candidate that hosted CI passed:
+## 4. How agents operate safely
 
-| Field | Value |
-|---|---|
-| Engineering commit | `20f3d4cc03445ca443e31c41f22d34347c866acf` |
-| Engineering tree | `95bec98a0d65ca30889e595a7bcaa85ddfe52b47` |
-| Hosted CI | https://github.com/linktrend/LiNKautowork/actions/runs/34955615212 (`success`) |
+1. Read this guide, the current [release status](./LINKAUTOWORK-RELEASE-STATUS.md),
+   applicable `AGENTS.md` instructions, and the exact task contract/runbook.
+2. Verify the repository is `https://github.com/linktrend/LiNKautowork` and
+   inspect the exact branch, commit, tree, and working-tree status. Never reset
+   or overwrite unknown local work.
+3. Use an issue branch created by `python3 scripts/gitops/create_issue_branch.py`.
+   Commit and push checkpoints to that branch.
+4. Run the required focused checks. Phase Packager/Coordinator creates the
+   Phase PR; the delivery controller integrates it to `development`. Only the
+   founder/controller handles promotion through `staging` and `main`.
+5. Do not make a live change unless the exact task has the required approval,
+   access, current backup, and recovery evidence. A passed source test is not
+   permission to touch production.
 
-`origin/development` at admission equalled that engineering SHA. Docs-only
-evidence commits sit **on top** of it on issues 165/166. Protected `main` at
-admission was still `2e30109acfb9510cd77e49f759648b2b6a666adc` (bootstrap),
-**not** this 1.0 line.
+Implementers do not open their own PR, review their own work, merge protected
+branches, tag a release, or promote to `staging` or `main`. Never bypass a
+required check or invent a receipt. Never commit secrets or runtime `.env`
+files. Use GSM secret names in configuration examples and obtain values only
+through the approved host process.
 
-Existing annotated tag `v1.0.0` peels to `7e76a5e77306d42cdcfd4fd59f22473235c7e7fc`
-tree `44e85044d16c9a3a6fad5f7e95e607ca0e027358`. That is **not** the 1.0
-candidate. Do not deploy it.
+## 5. Build and verify
 
----
-
-## 3. Authoritative documents vs development-only
-
-**Start here (1.0 agent authority):**
-
-1. This guide.
-2. [`end-to-end-delivery/evidence/source-release/README.md`](./end-to-end-delivery/evidence/source-release/README.md) — AW-07 source packet.
-3. [`end-to-end-delivery/evidence/source-release/DEPLOYMENT-HANDOFF.md`](./end-to-end-delivery/evidence/source-release/DEPLOYMENT-HANDOFF.md) — AW-08 inputs.
-4. [`runbooks/OPERATIONS.md`](./runbooks/OPERATIONS.md) — source Compose topology (no live start).
-5. [`contracts/server01/MIGRATION-PACKAGE.json`](./contracts/server01/MIGRATION-PACKAGE.json) — Platform-owned SQL package (live apply HOLD).
-6. Product description still in [`LINKAUTOWORK-INTENT.md`](./LINKAUTOWORK-INTENT.md), [`LINKAUTOWORK-TECHNICAL-PRD.md`](./LINKAUTOWORK-TECHNICAL-PRD.md), [`LINKAUTOWORK-OPERATIONS-MANUAL.md`](./LINKAUTOWORK-OPERATIONS-MANUAL.md).
-
-**Remaining production configuration (not claimed done by 1.0 source):**
-[`PRD.md`](./PRD.md), [`WORK-PACKETS.md`](./WORK-PACKETS.md), [`PRODUCTION-READINESS.md`](./PRODUCTION-READINESS.md).
-
-**Superseded for agent entry:** session handoffs, Cursor Cloud planning routes,
-dated packet planning, and pre-1.0 checklists. Index and replacement pointers:
-[`archive/LINKAUTOWORK-1.0-SUPERSEDED-INDEX.md`](./archive/LINKAUTOWORK-1.0-SUPERSEDED-INDEX.md).
-Physical moves of files required by `npm run release:check` are out of this
-packet’s allowed paths; those files remain on disk but **must not** override
-this guide.
-
-If two documents disagree, this guide plus the source-release packet win for
-1.0 agent procedure. The Technical PRD still wins for how the running code is
-shaped.
-
----
-
-## 4. Layout (what you may touch depends on your issue)
-
-| Path | Role |
-|---|---|
-| `gateway/` | Policy gateway, provider v2, in-process runtime dispatch |
-| `apps/product-api`, `apps/operator-console`, `apps/web` | Product surfaces; `client-web` is `--profile retained-images` only |
-| `packages/automation-*` | Architect, contracts, operations, eval-runner, librarian |
-| `automations/templates/` | Live governance JSON (authority for n8n) |
-| `automations/evals/server01-runtime-acceptance/` | Source eval fixture (`n8n_dispatched` always false here) |
-| `deploy/prod/` | Production Compose contract, names-only `.env.example` |
-| `supabase/migrations/` | Ordered SQL; Platform applies live |
-| `ops/` | Deploy/backup/GSM/import helpers; many refuse `--live` |
-| `docs/end-to-end-delivery/evidence/source-release/` | 1.0 source receipts |
-| `docs/archive/` | Historical / superseded |
-| `archive/legacy-dev-mirrors-2026-07-15/` | Untouched bulk mirror |
-
----
-
-## 5. Toolchain (do not silently unpin)
-
-Admitted CI (`.github/workflows/ci.yml`):
-
-- Runner: `ubuntu-24.04-arm`
-- Node: `actions/setup-node` **major 22** (not a patch pin)
-- Install: **`npm ci`** against `package-lock.json` lockfileVersion 3
-- Playwright: `npx playwright install --with-deps chromium`
-- Images: `FROM node:22.13.1-alpine` in application Dockerfiles
-- n8n image tag: `n8nio/n8n:2.30.0`
-- NATS image tag: `nats:2.10.26-alpine`
-
-**Pin defects (diagnosed, not repaired in this docs packet):**
-
-- No `package.json` `engines` field.
-- No `.nvmrc` / `.node-version`.
-- Python is stdlib `json.tool` only; no project pin.
-- Writer cloud PATH may expose `/exec-daemon/node` (observed v22.14.0) **before** nvm. Prefix `PATH` with the nvm Node 22 binary directory before `npm ci`.
-
-Do not change `package-lock.json` in a docs/consolidation role. Do not install
-or start Docker unless your packet explicitly owns live/disposable Docker and
-policy allows it.
-
-Locked tool versions observed from this lockfile: TypeScript `5.9.3`, Vitest
-`4.1.10`, Playwright `1.57.0`.
-
----
-
-## 6. Git and roles (hard stops)
-
-- Work on `issue/<n>-<slug>` created/reused by `python3 scripts/gitops/create_issue_branch.py`.
-- That helper **fetches `origin/development`**. If your packet requires an exact
-  supplied SHA that is not latest development, **do not run it**; reuse the
-  already-owned issue branch at that SHA.
-- **Implementers do not open PRs, merge, self-review, or promote.** Phase
-  Packager/Coordinator (`scripts/gitops/packager_coordinator.py`) opens the
-  draft Phase PR. Delivery controller merges to `development`. Principal /
-  controller promote `development` → `staging` → `main`.
-- Ship = commit + push on the issue branch (checkpoint).
-- Finished issues: tests, `completion_gate.py write-evidence`, then
-  `review-ready` only from the trusted publisher path. Never write
-  `.linktrend/review-ready.json`.
-- Protected refs: `development`, `staging`, `main`. Never push them. Never
-  `--prefer-incoming`.
-- Nested workers / extra Cursor dispatches are forbidden unless the governing
-  packet says otherwise.
-
-Secrets: GSM names `LINKTREND_[SERVICE]_[ENV]_[RESOURCE]_[IDENTIFIER]`. Never
-commit values. Runtime env files are mode `0600` **outside git**.
-
----
-
-## 7. Acceptance commands used by this consolidation
+From a clean checkout using Node.js 22:
 
 ```bash
+npm ci
 git diff --check
-python3 -m json.tool docs/end-to-end-delivery/EXECUTION-MANIFEST.json
-# PATH must be nvm Node 22, not /exec-daemon/node
 npm run release:check
+npm run ci
 ```
 
-Full hosted proof remains `npm run ci` on GitHub Actions (`LiNKautowork CI`).
-Writer VMs without Docker **must not** retry an unchanged `npm run ci` after
-`spawnSync docker ENOENT`. Substitute hosted CI on the **engineering** SHA
-`20f3d4cc03445ca443e31c41f22d34347c866acf` for Docker-backed steps.
+`release:check` checks supported files and required release artifacts. `npm
+run ci` is the full repository suite; hosted GitHub Actions is authoritative
+when a local machine lacks Docker or browser dependencies. Report the exact
+commit and the actual result of every check. Do not substitute old CI for a
+new candidate's receipt.
 
-Planning JSON `docs/end-to-end-delivery/EXECUTION-MANIFEST.json` still records
-baseline commit `a13a6467fc9bc2fccdddd1de8d9e258c78e57fdd`. Do not rewrite it
-from a docs-only packet.
+For JSON files, validate the specific file with `python3 -m json.tool
+<path>`. Do not rerun live or Docker-backed commands from a documentation-only
+task. Follow the repository's installed completion-gate and packager workflow
+for evidence and integration.
 
----
+## 6. Deployment and operations
 
-## 8. Exact tagged main candidate (for a **separate** Server01 agent)
+Production uses `deploy/prod/docker-compose.yml` with project name
+`linkautowork-prod`. The names-only environment contract is
+`deploy/prod/.env.example`; actual secret values are rendered from GSM to
+mode-`0600` files outside the repository. Application images and deployment
+configuration are selected by an exact release commit, not `latest` or a work
+branch. Private routing examples are in `deploy/templates/`.
 
-This implementer **does not** tag, promote, SSH, compose-up, apply SQL, or
-resolve GSM.
+The intended host layout is `/srv/linktrend/deploy/linkautowork/releases/<commit>`
+with `current` and `previous` release pointers. Runtime env files belong under
+`/srv/linktrend/runtime/linkautowork/*.env.runtime`, outside Git and mode
+`0600`. The Compose stack must remain private; do not publish the internal
+service ports on the host. Image IDs/digests and live configuration evidence
+are recorded on the host as the runbook directs, never as secret values in a
+source commit.
 
-The Server01 deployment agent must install **only** an annotated tag on
-protected `main` after controller promotion of this 1.0 line. Required checks
-before any live action:
+Use `docs/runbooks/OPERATIONS.md` for the Compose topology,
+`docs/runbooks/SERVER01-OPERATIONS.md` for Server01 operation and restore,
+`docs/runbooks/PRODUCTION_RELEASE_GATES.md` for release gates, and
+`docs/end-to-end-delivery/evidence/source-release/DEPLOYMENT-HANDOFF.md` for
+the deployment input inventory. That older handoff records its own historic
+admission state; the current [release status](./LINKAUTOWORK-RELEASE-STATUS.md)
+and the protected main ref take precedence.
 
-1. `git fetch origin tag <tag> --no-tags` (or equivalent single-tag fetch).
-2. Peeled commit `git rev-parse <tag>^{}` equals `origin/main`.
-3. Tree `git rev-parse <tag>^{tree}` equals the tree recorded on that main tip.
-4. Tag is **not** the stale `v1.0.0` object `88330d2e5ff1dc1627ab52652714681dd5c1af61`.
-5. Hosted `LiNKautowork CI` is green on that peeled commit.
-6. Compose file is `deploy/prod/docker-compose.yml`, project `linkautowork-prod`.
-7. Env names only from `deploy/prod/.env.example`; values from GSM on the host.
-8. Migration package `lautowork.server01.migration-identity/1.0.0` is applied
-   **by LiNKplatform**, not by Autowork workers.
-9. Release layout: `/srv/linktrend/deploy/linkautowork/releases/<commit>` with
-   `current` / `previous` pointers. Runtime env under
-   `/srv/linktrend/runtime/linkautowork/*.env.runtime` mode `0600`.
+The ordered database package is described in
+`docs/contracts/server01/MIGRATION-PACKAGE.json`. LiNKplatform owns production
+database application and acceptance. Autowork deployment agents must not
+apply that SQL directly. Until release identity, hosted checks, Platform
+approval, backup/isolated-restore evidence, host configuration, and acceptance
+are all current and exact, report **HOLD** and leave production unchanged.
 
-Until those identities exist on `main`, the deployment agent’s result is
-**HOLD**. Do not fall back to issue 165/166, `cursor/*`, `development`, or
-`staging`.
+For any approved deployment, first prove the peeled annotated tag equals the
+protected `origin/main` commit and that both trees match. Require green hosted
+LiNKautowork CI for that exact commit. Install the stack inactive, import the
+technical fixture inactive, and do not activate a canary without explicit
+founder and Platform authority. Before acceptance, prove backup and isolated
+restore plus rollback to `previous`. See `docs/runbooks/PRODUCTION_RELEASE_GATES.md`
+and the deployment handoff for the ordered checklist; this guide does not
+replace those procedures.
 
-Non-secret procedure: [`end-to-end-delivery/evidence/source-release/DEPLOYMENT-HANDOFF.md`](./end-to-end-delivery/evidence/source-release/DEPLOYMENT-HANDOFF.md).
-Rollback contract (not executed here): [`end-to-end-delivery/evidence/source-release/ROLLBACK.md`](./end-to-end-delivery/evidence/source-release/ROLLBACK.md).
+## 7. Product and operational references
 
----
+- [Product intent](./LINKAUTOWORK-INTENT.md)
+- [Technical PRD](./LINKAUTOWORK-TECHNICAL-PRD.md)
+- [Operations Manual](./LINKAUTOWORK-OPERATIONS-MANUAL.md)
+- [Production configuration PRD](./PRD.md)
+- [Production work packets](./WORK-PACKETS.md)
+- [Production-readiness index](./PRODUCTION-READINESS.md)
+- [Documentation index](./README.md)
+- [Archive index](./archive/README.md)
 
-## 9. Live HOLDs (still true after this packet)
-
-- Server01 SSH, Docker up, Tailscale mutation, public DNS/TLS.
-- GSM resolve of secret **values** (names in git are OK).
-- Platform SQL apply, role grants, `lautowork.server01_live_fingerprint()`.
-- Live n8n activation, provider dispatch, queue drain, consumer factory writes.
-- Host image IDs/digests in `deploy/prod/release-identity.json`.
-- Protected merge/promotion by implementers.
-- Slack/email/payments/business automations unless separately approved.
-
-Canary: `ops/verify-server01-acceptance.sh --environment prod` is read-only in
-source; `--canary` still HOLD for live binding.
-
----
-
-## 10. Branch hygiene
-
-Repository cleanup is `scripts/cleanup-merged-branches.sh --remote` (default
-dry-run). It never deletes `main` / `staging` / `development`, never deletes
-local worktrees, and fail-closes if preserve policy cannot be loaded.
-
-On this writer VM, `scripts/gitops/cleanup_preserve.defaults.json` is
-**missing**, so apply was refused. Precise classification:
-[`end-to-end-delivery/evidence/source-release/BRANCH-CLEANUP-MANIFEST.json`](./end-to-end-delivery/evidence/source-release/BRANCH-CLEANUP-MANIFEST.json).
-
-`cursor/*` and Dependabot refs are not cleanup-candidate forms. Open PR #128
-(`dependabot/npm_and_yarn/multi-d0c2d048a7` → `main`) is kept. Issues 165 and
-166 are kept.
-
----
-
-## 11. What “done” means for 1.0 source vs live
-
-| Claim | State |
-|---|---|
-| Pre-configuration engineering on `development` | Complete at `20f3d4cc…` |
-| Source-release receipts + this agent guide | This issue line |
-| Integrated `development` including this packet | Packager/controller |
-| Tagged `main` candidate | Principal/controller; **absent at admission** |
-| Server01 accepted | AW-08 HOLD |
-
-Do not write “production accepted” until AW-08 evidence exists under
-`docs/end-to-end-delivery/evidence/live-acceptance/` (out of this packet).
+Archived records may explain why prior decisions were made. They are not
+current instructions where they conflict with this guide, live contracts,
+runbooks, or current release status.
