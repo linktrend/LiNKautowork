@@ -12,7 +12,7 @@ import { connectionHealthPackageDigests, loadConnectionHealthPackage, ProviderRo
 const orgId = '11111111-1111-4111-8111-111111111111';
 const issuedAt = new Date(Date.now() - 60_000).toISOString();
 const expiresAt = new Date(Date.now() + 60_000).toISOString();
-const webhookToken = 'test-only-header-token';
+const webhookToken = 'ltfx.provider.connection.health.test.webhook.v1';
 const platformSecret = 'ltfx.provider.connection.health.test.secret.15.1.v1';
 const identity: ProviderInvocationIdentity = { subject: 'canary-agent', credentialId: 'credential-215', runtimeBindingId: 'binding-215', issuedAt, expiresAt, audience: ['linkautowork-gateway'] };
 
@@ -133,10 +133,10 @@ describe('provider connection-health canary', () => {
     vi.spyOn(store, 'transition').mockRejectedValue(new Error('simulated persistence failure'));
     let calls = 0;
     const service = new ProviderRouteService(store, async () => { calls += 1; return exactResponse({ request_id: '00000000-0000-4000-8000-000000000001', request_fingerprint: connectionHealthPackageDigests.definition }); });
-    const env = { NODE_ENV: 'test', REPLAY_WINDOW_SECONDS: 60, serviceTokens: new Map([['canary-client', 'internal-test-token']]), hmacSecrets: new Map(), PLATFORM_JWT_TEST_SECRET: platformSecret, PLATFORM_JWT_ISSUER: 'platform-test', PLATFORM_JWT_AUDIENCE: 'linkautowork-gateway' } as AppEnv;
+    const env = { NODE_ENV: 'test', REPLAY_WINDOW_SECONDS: 60, serviceTokens: new Map([['canary-client', 'ltfx.provider.connection.health.test.internal-token.v1']]), hmacSecrets: new Map(), PLATFORM_JWT_TEST_SECRET: platformSecret, PLATFORM_JWT_ISSUER: 'platform-test', PLATFORM_JWT_AUDIENCE: 'linkautowork-gateway' } as AppEnv;
     const app = createApp({ env, nonceStore: new NonceStore(60), providerRouteService: service } as AppDeps);
     const requestBody = input();
-    const headers = { 'x-link-service': 'canary-client', 'x-link-service-token': 'internal-test-token', authorization: `Bearer ${platformToken()}` };
+    const headers = { 'x-link-service': 'canary-client', 'x-link-service-token': 'ltfx.provider.connection.health.test.internal-token.v1', authorization: `Bearer ${platformToken()}` };
     const response = await request(app).post('/v1/provider/requests').set(headers).send(requestBody).expect(503);
     expect(response.body).toMatchObject({ recovery_required: true, recovery_reason: 'dispatch_claim_terminalization_failed', recovery_ref: 'autowork://runbooks/linkautowork-connection-health', status: { state: 'accepted', attempt_count: 0 } });
     expect(await request(app).post('/v1/provider/requests').set(headers).send(requestBody).expect(503).then((replay) => replay.body)).toMatchObject({ replay: true, recovery_required: true, recovery_reason: 'dispatch_claim_pending_recovery', status: { state: 'accepted' } });
@@ -171,9 +171,9 @@ describe('provider connection-health canary', () => {
     const store = new InMemoryProviderStore();
     let calls = 0;
     const service = new ProviderRouteService(store, async (payload) => { calls += 1; return exactResponse(payload); });
-    const env = { NODE_ENV: 'test', REPLAY_WINDOW_SECONDS: 60, serviceTokens: new Map([['canary-client', 'internal-test-token']]), hmacSecrets: new Map(), PLATFORM_JWT_TEST_SECRET: platformSecret, PLATFORM_JWT_ISSUER: 'platform-test', PLATFORM_JWT_AUDIENCE: 'linkautowork-gateway' } as AppEnv;
+    const env = { NODE_ENV: 'test', REPLAY_WINDOW_SECONDS: 60, serviceTokens: new Map([['canary-client', 'ltfx.provider.connection.health.test.internal-token.v1']]), hmacSecrets: new Map(), PLATFORM_JWT_TEST_SECRET: platformSecret, PLATFORM_JWT_ISSUER: 'platform-test', PLATFORM_JWT_AUDIENCE: 'linkautowork-gateway' } as AppEnv;
     const app = createApp({ env, nonceStore: new NonceStore(60), providerRouteService: service } as AppDeps);
-    const headers = { 'x-link-service': 'canary-client', 'x-link-service-token': 'internal-test-token', authorization: `Bearer ${platformToken()}` };
+    const headers = { 'x-link-service': 'canary-client', 'x-link-service-token': 'ltfx.provider.connection.health.test.internal-token.v1', authorization: `Bearer ${platformToken()}` };
     const requestBody = input();
     const first = await request(app).post('/v1/provider/requests').set(headers).send(requestBody).expect(202);
     expect(first.body).toMatchObject({ replay: false, dispatch_attempted: true, dispatch_confirmed: true, ambiguous: false, status: { state: 'succeeded', attempt_count: 1 } });
