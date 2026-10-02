@@ -1,0 +1,8 @@
+{
+  "nodes": [
+    "n8n-nodes-base.webhook",
+    "n8n-nodes-base.set",
+    "n8n-nodes-base.respondToWebhook"
+  ],
+  "workflow_active": false
+}

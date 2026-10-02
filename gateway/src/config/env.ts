@@ -50,6 +50,8 @@ const envSchema = z.object({
   N8N_API_BASE_PATH: z.string().default('/api/v1'),
   N8N_API_KEY: z.string().min(1).optional(),
   N8N_API_KEY_SECRET_NAME: z.string().default('LINKAUTOWORK_N8N_API_KEY'),
+  LINKAUTOWORK_CONNECTION_HEALTH_WEBHOOK_TOKEN: z.string().min(1).optional(),
+  LINKAUTOWORK_CONNECTION_HEALTH_WEBHOOK_TOKEN_SECRET_NAME: z.string().default(''),
 
   NATS_URL: z.string().default('nats://nats:4222'),
 
@@ -119,6 +121,7 @@ export async function loadEnv(
     supabaseProviderRuntimeJwt,
     evalReceiptVerifierKeys,
     supabaseApiKey,
+    connectionHealthWebhookToken,
   ] = await Promise.all([
     resolveRequiredSecret({
       directValue: parsed.LINK_HMAC_SHARED_SECRETS,
@@ -167,6 +170,7 @@ export async function loadEnv(
     }),
     resolveOptionalSecret({ directValue: parsed.EVAL_RECEIPT_VERIFIER_KEYS, secretName: parsed.EVAL_RECEIPT_VERIFIER_KEYS_SECRET_NAME, projectId: gcpProjectId }),
     resolveOptionalSecret({ directValue: parsed.SUPABASE_API_KEY, secretName: parsed.SUPABASE_API_KEY_SECRET_NAME, projectId: gcpProjectId }),
+    resolveOptionalSecret({ directValue: parsed.LINKAUTOWORK_CONNECTION_HEALTH_WEBHOOK_TOKEN, secretName: parsed.LINKAUTOWORK_CONNECTION_HEALTH_WEBHOOK_TOKEN_SECRET_NAME, projectId: gcpProjectId }),
   ]);
 
   return {
@@ -181,6 +185,7 @@ export async function loadEnv(
     SUPABASE_RUNTIME_JWT: supabaseRuntimeJwt,
     SUPABASE_PROVIDER_RUNTIME_JWT: supabaseProviderRuntimeJwt,
     SUPABASE_API_KEY: supabaseApiKey,
+    LINKAUTOWORK_CONNECTION_HEALTH_WEBHOOK_TOKEN: connectionHealthWebhookToken,
     hmacSecrets: parseKeyValuePairs(linkHmacSharedSecrets),
     serviceTokens: parseKeyValuePairs(linkServiceTokens),
     evalReceiptVerifierKeys: parseKeyValuePairs(evalReceiptVerifierKeys ?? ''),
