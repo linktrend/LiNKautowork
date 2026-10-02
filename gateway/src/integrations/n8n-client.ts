@@ -16,6 +16,48 @@ type N8nWorkflowListResponse = {
 export class N8nClient {
   constructor(private readonly env: AppEnv) {}
 
+  /** Sends only the fixed provider correlation envelope to the authenticated canary webhook. */
+  async triggerConnectionHealthWebhook(payload: { request_id: string; request_fingerprint: string }, token: string): Promise<unknown> {
+    if (!token.trim()) throw new Error('connection-health webhook token is not configured');
+    const normalizedPrefix = this.env.N8N_WEBHOOK_PATH_PREFIX.endsWith('/')
+      ? this.env.N8N_WEBHOOK_PATH_PREFIX.slice(0, -1)
+      : this.env.N8N_WEBHOOK_PATH_PREFIX;
+    const url = `${this.env.N8N_BASE_URL}${normalizedPrefix}/linkautowork-connection-health-v1`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000);
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        redirect: 'error',
+        headers: { 'content-type': 'application/json', 'x-link-connection-health-token': token },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        await response.body?.cancel();
+        throw new Error('connection-health webhook did not return a successful response');
+      }
+      if (!response.body) throw new Error('connection-health webhook did not return a response body');
+      const reader = response.body.getReader();
+      const chunks: Uint8Array[] = [];
+      let size = 0;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        size += value.byteLength;
+        if (size > 8192) {
+          await reader.cancel();
+          throw new Error('connection-health webhook response exceeded its size limit');
+        }
+        chunks.push(value);
+      }
+      const raw = Buffer.concat(chunks).toString('utf8');
+      try { return JSON.parse(raw) as unknown; } catch { throw new Error('connection-health webhook response was not valid JSON'); }
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
   async triggerWebhook(path: string, method: string, payload: Record<string, unknown>, signal?: AbortSignal): Promise<{
     status: number;
     body: unknown;
