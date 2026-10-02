@@ -1,0 +1,10 @@
+{
+  "request_id": "00000000-0000-4000-8000-000000000001",
+  "request_fingerprint": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "expected": {
+    "status": "ok",
+    "scope": "provider_to_n8n_dispatch",
+    "automation_id": "linkautowork-connection-health",
+    "version": "1.0.0"
+  }
+}
