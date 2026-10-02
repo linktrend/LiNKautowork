@@ -4,23 +4,26 @@ LiNKtrend’s self-hosted automation engine: pinned stock n8n `2.30.0`, a policy
 gateway, canonical governance templates, durable kill-switch/lifecycle data,
 and `linkautowork.v1.*` events on the shared platform database.
 
-**1.0 source status:** engineering candidate is sealed; live Server01 install
-is a later packet. Protected `main` is not yet this line. Do not treat tag
-`v1.0.0` as this candidate (it peels to an older commit).
+**LiNKautowork 1.0 status:** `development`, `staging`, and `main` currently
+have identical source trees. The current main tree has not passed the required
+receipt gate, has no valid 1.0 tag, and is **not ready to deploy**. See the
+[current release status](docs/LINKAUTOWORK-RELEASE-STATUS.md) before treating
+any branch or tag as a release.
 
 ## Start here
 
 | Role | Document |
 |---|---|
 | **Any AI agent** | [`docs/LINKAUTOWORK-AI-AGENT-GUIDE.md`](docs/LINKAUTOWORK-AI-AGENT-GUIDE.md) |
+| **Current release status** | [`docs/LINKAUTOWORK-RELEASE-STATUS.md`](docs/LINKAUTOWORK-RELEASE-STATUS.md) |
 | **Server01 deploy agent (later)** | [`docs/end-to-end-delivery/evidence/source-release/DEPLOYMENT-HANDOFF.md`](docs/end-to-end-delivery/evidence/source-release/DEPLOYMENT-HANDOFF.md) |
 | Product “why / how / Principal handbook” | [`docs/LINKAUTOWORK-INTENT.md`](docs/LINKAUTOWORK-INTENT.md), [`docs/LINKAUTOWORK-TECHNICAL-PRD.md`](docs/LINKAUTOWORK-TECHNICAL-PRD.md), [`docs/LINKAUTOWORK-OPERATIONS-MANUAL.md`](docs/LINKAUTOWORK-OPERATIONS-MANUAL.md) |
 | Remaining live configuration work | [`docs/PRD.md`](docs/PRD.md), [`docs/WORK-PACKETS.md`](docs/WORK-PACKETS.md) |
-| Historical / superseded | [`docs/archive/LINKAUTOWORK-1.0-SUPERSEDED-INDEX.md`](docs/archive/LINKAUTOWORK-1.0-SUPERSEDED-INDEX.md) |
+| Historical / superseded | [`docs/archive/README.md`](docs/archive/README.md) |
 
-If older prose (including `docs/archive/` and dated handoffs) disagrees with
-the AI agent guide plus the source-release packet, **those two win for 1.0
-procedure**.
+If older prose in the archive or source-release packet disagrees with current
+branch/gate facts, follow the release-status document. For current operation,
+follow the AI agent guide, live contracts, and runbooks.
 
 ## Layout
 
@@ -30,7 +33,7 @@ procedure**.
 - `supabase/migrations/` — `lautowork` + `lautowork_n8n` (Platform applies live)
 - `ops/` — import/export/backup/GSM/deploy scripts (many refuse `--live`)
 - `docs/runbooks/` — operator procedures for source topology and later bring-up
-- `docs/archive/` — superseded documentation
+- `docs/archive/` — archived development plans, handoffs, and superseded documents
 - `archive/legacy-dev-mirrors-2026-07-15/` — bulk archive; leave untouched
 
 ## Constants
@@ -48,7 +51,7 @@ From a clean checkout bound to the intended commit/tree:
 # Prefix nvm Node 22 if PATH still has /exec-daemon/node
 npm ci
 git diff --check
-python3 -m json.tool docs/end-to-end-delivery/EXECUTION-MANIFEST.json
+python3 -m json.tool docs/archive/development-history/end-to-end-delivery/EXECUTION-MANIFEST.json
 npm run release:check
 ```
 

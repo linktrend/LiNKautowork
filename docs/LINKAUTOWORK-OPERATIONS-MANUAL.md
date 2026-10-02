@@ -130,7 +130,7 @@ Not as a finished commercial offering. The MVO is internal studio utility with c
 - Intent (why) — `docs/LINKAUTOWORK-INTENT.md`  
 - Technical reference (how) — `docs/LINKAUTOWORK-TECHNICAL-PRD.md`  
 - This handbook — `docs/LINKAUTOWORK-OPERATIONS-MANUAL.md`  
-- Engineering build log — `docs/OPEN-ISSUES.md`  
+- Archived engineering build log — `docs/archive/development-history/OPEN-ISSUES.md`
 
 Older PRD and implementation writeups are archived under `docs/archive/`.
 

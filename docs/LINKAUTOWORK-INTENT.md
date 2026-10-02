@@ -111,7 +111,7 @@ For the current Minimum Viable Operations (MVO) bar, "done" means:
 
 | Document | Role |
 |---|---|
-| `docs/OPEN-ISSUES.md` | Append-only build / compliance log — what was built, deferred, and limited. Prefer over stale prose elsewhere. |
+| `docs/archive/development-history/OPEN-ISSUES.md` | Archived build / compliance log. It records historical work and does not override current release status or runbooks. |
 | `docs/LINKAUTOWORK-TECHNICAL-PRD.md` | Exhaustive technical reference for how the system works. |
 | `docs/LINKAUTOWORK-OPERATIONS-MANUAL.md` | Plain-English handbook for the Principal. |
 | `docs/DEPLOY_READINESS.md` | Live DONE definition for VPS bring-up (kept operational). |
